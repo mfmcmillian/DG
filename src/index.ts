@@ -1,4 +1,7 @@
 import { AvatarLocomotionSettings, engine, Entity, SkyboxTime } from '@dcl/sdk/ecs'
+import { isServer as isServerApi } from '~system/EngineApi'
+import './shared/messages'
+import { initServer } from './server'
 import { loadDungeon } from './dungeon'
 import { initializePlayerPlacement } from './playerPlacement'
 import {
@@ -25,7 +28,19 @@ import { CHARACTERS } from './characterPicker'
 
 export const DUNGEON_SEED = 1337
 
-export function main() {
+export async function main() {
+  // Ask the runtime directly rather than reading the SDK's isServer() atom: that
+  // atom is filled by the same RPC asynchronously and may not have landed yet
+  // on the first tick, which is when main() runs.
+  const server = (await isServerApi({})).isServer
+  if (server) {
+    initServer(DUNGEON_SEED)
+    return
+  }
+  initClient()
+}
+
+function initClient() {
   // Deep night so the torches carry the lighting.
   SkyboxTime.create(engine.RootEntity, { fixedTime: 1800 })
   // Ask the renderer for everything the first minute needs before the title
@@ -55,7 +70,7 @@ export function main() {
   })
   initializeCombatFx()
   initializeLoot()
-  initializeMultiplayer()
+  initializeMultiplayer(false)
   initializeAvatarHiding()
   initializeRemotePlayers()
 

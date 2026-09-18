@@ -472,9 +472,7 @@ function publishLocalPlayer(player: { position: Vector3; rotation: Quaternion },
   ].join('|')
   publishAge += dt
   if (key === lastPublishKey && publishAge < 0.12) return
-  publishAge = 0
-  lastPublishKey = key
-  publishPlayer({
+  if (!publishPlayer({
     id,
     x: player.position.x,
     y: player.position.y,
@@ -490,7 +488,9 @@ function publishLocalPlayer(player: { position: Vector3; rotation: Quaternion },
     block: roamingCombat.blocking,
     dodge: !!roamingCombat.dodge,
     health: roamingCombat.health
-  })
+  })) return
+  publishAge = 0
+  lastPublishKey = key
 }
 
 function updateLocomotion(position: Vector3, dt: number) {

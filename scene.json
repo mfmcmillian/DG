@@ -1,6 +1,10 @@
 {
   "ecs7": true,
   "runtimeVersion": "7",
+  "authoritativeMultiplayer": true,
+  "logsPermissions": [
+    "0xfe2d424af0df49bb3316cb2e9f574b0d09cf98ad"
+  ],
   "display": {
     "title": "Sidekick Demo — Dark Fortress Dungeon",
     "description": "A procedurally generated Dark Fortress dungeon with roaming enemies and a boss, explored with a top-down crawler camera.",

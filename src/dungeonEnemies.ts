@@ -175,7 +175,8 @@ export function initializeDungeonEnemies() {
     },
     impact: presentImpact,
     enemies: applyEnemySnapshots,
-    loot: grantLoot
+    loot: grantLoot,
+    join: () => publishEnemies(enemySnaps())
   })
   engine.addSystem(updateEnemies)
   onDungeonLoaded(populate)
@@ -258,16 +259,18 @@ function spawnEnemy(home: CombatPose, archetype: Archetype, boss: boolean): Enem
     rotation: Quaternion.fromEulerDegrees(0, (home.facing * 180) / Math.PI, 0),
     scale: Vector3.create(archetype.scale, archetype.scale, archetype.scale)
   })
-  setEquipmentAvatar(body, archetype.characterId, archetypeLoadout(archetype), false, boss ? { appearance: BOSS_APPEARANCE } : undefined)
-  setEquipmentVisible(body, false)
-  setEquipmentMotion(body, boss ? 'menace' : 'combat_idle', true)
-  // Enemies advance at a fixed pace; play the walk cycle (authored for ~1.5 m/s) to match it.
-  setEquipmentStride(body, Math.min(1.35, Math.max(0.7, (COMBAT_RULES.rivalSpeed * archetype.speed) / 1.5)))
+  if (!isHost()) {
+    setEquipmentAvatar(body, archetype.characterId, archetypeLoadout(archetype), false, boss ? { appearance: BOSS_APPEARANCE } : undefined)
+    setEquipmentVisible(body, false)
+    setEquipmentMotion(body, boss ? 'menace' : 'combat_idle', true)
+    // Enemies advance at a fixed pace; play the walk cycle (authored for ~1.5 m/s) to match it.
+    setEquipmentStride(body, Math.min(1.35, Math.max(0.7, (COMBAT_RULES.rivalSpeed * archetype.speed) / 1.5)))
+  }
   return {
     root, body, archetype, boss, home, position: { ...home.position }, facing: home.facing, lastFacing: home.facing,
     health: archetype.health, recovery: 0, stagger: 0, blocking: false, visible: false,
     motion: 'combat_idle', healthBar: createEnemyHealthBar(body), brain: createRivalBrain(), slamming: false,
-    engaged: false, returningHome: false, dead: false, deadSeconds: 0, loading: 'loading', loadSeconds: 0,
+    engaged: false, returningHome: false, dead: false, deadSeconds: 0, loading: isHost() ? 'ready' : 'loading', loadSeconds: 0,
     ring: createDecal('ring'), ritual: boss ? createDecal('ritual') : undefined, hitStop: 0, announced: false, stillSeconds: 0,
     bossBrain: boss ? createBossBrain() : undefined, hyperArmor: false, rollSeconds: 0, rollDir: 1
   }
@@ -399,9 +402,7 @@ function updateEnemies(deltaTime: number) {
     snapshotAge += dt
     if (snapshotAge >= 0.12) {
       snapshotAge = 0
-      publishEnemies(enemies.map((e, i) => ({
-        i, x: e.position.x, z: e.position.z, f: e.facing, h: e.health, m: e.motion, dead: e.dead, engaged: e.engaged
-      })))
+      publishEnemies(enemySnaps())
     }
   }
 
@@ -765,9 +766,19 @@ function applyRemoteHit(id: string, index: number, motion: string, finisher: boo
   const attack = asAttack(motion)
   const e = enemies[index]
   if (!attack || !e || e.dead || e.loading !== 'ready') return
-  const attacker = allFighters(getPlayerCombatPose()).find((f) => f.address === id)
+  const attacker = allFighters().find((f) => f.address === id)
+  // Reach is checked on the server pose with slack for the lunge the client
+  // already played; facing is not, because the body yaw is still client-owned.
   if (!attacker) return
+  if (Math.abs(attacker.position.y - e.position.y) > COMBAT_RULES.maximumVerticalReach + 0.5) return
+  if (combatDistance(attacker, e) > attackRange(attack) + 1.5) return
   applyPlayerHit(attacker, e, attack, { finisher })
+}
+
+function enemySnaps(): EnemySnap[] {
+  return enemies.map((e, i) => ({
+    i, x: e.position.x, z: e.position.z, f: e.facing, h: e.health, m: e.motion, dead: e.dead, engaged: e.engaged
+  }))
 }
 
 function applyPlayerHit(
@@ -840,7 +851,6 @@ function kill(e: Enemy) {
   const heart = e.boss ? 2 : Math.random() < 0.35 ? 1 : 0
   const dusk = !!(e.boss && !bossDropGiven)
   if (dusk) bossDropGiven = true
-  grantLoot(e.position.x, e.position.z, coin, heart, dusk)
   publishLoot(e.position.x, e.position.z, coin, heart, dusk)
 }
 

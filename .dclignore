@@ -19,6 +19,8 @@ README.md
 *.rar
 *.md
 src
+agent/
+skills-lock.json
 cursor.config
 cursorignore
 .github
