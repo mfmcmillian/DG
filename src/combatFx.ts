@@ -3,7 +3,7 @@
 // pooled; nothing here owns gameplay state.
 
 import {
-  AudioSource, Billboard, BillboardMode, engine, Entity, Material, MaterialTransparencyMode,
+  AudioSource, AvatarAttach, Billboard, BillboardMode, engine, Entity, Material, MaterialTransparencyMode,
   MeshRenderer, ParticleSystem, PBParticleSystem, PBParticleSystem_BlendMode, PBParticleSystem_PlaybackState,
   TextShape, Transform, VisibilityComponent
 } from '@dcl/sdk/ecs'
@@ -17,6 +17,7 @@ const STOPPED = 2 as PBParticleSystem_PlaybackState
 import { Color3, Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
 import { AttackMotion } from './combatActions'
 import { COMBAT_CLIPS } from './combatAnimations'
+import { playerEntityByAddress } from './multiplayer'
 
 export type FxSound =
   | 'swing_light' | 'swing_heavy' | 'hit_light' | 'hit_heavy' | 'block' | 'hurt'
@@ -264,11 +265,23 @@ function updateSlash(s: Slash, dt: number) {
   }
 }
 
-/** World yaw (degrees) of a body entity, summing its yaw-only ancestors (the player root is the only deep case). */
+/**
+ * World yaw (degrees) of a body entity, summing its yaw-only ancestors (the
+ * player root is the only deep case). An AvatarAttach anchor turns with the
+ * avatar it follows; the Transform the renderer reports for it is relative to
+ * the local player, so the yaw is read from that player's entity instead.
+ */
 function bodyWorldYaw(entity: Entity): number {
   let yaw = 0
   let cursor: Entity | undefined = entity
   for (let depth = 0; cursor !== undefined && depth < 6; depth++) {
+    const attach = AvatarAttach.getOrNull(cursor)
+    if (attach) {
+      const player = attach.avatarId ? playerEntityByAddress(attach.avatarId) : engine.PlayerEntity
+      const rotation = player !== undefined ? Transform.getOrNull(player)?.rotation : undefined
+      if (rotation) yaw += Quaternion.toEulerAngles(rotation).y
+      break
+    }
     const t = Transform.getOrNull(cursor)
     if (!t) break
     yaw += Quaternion.toEulerAngles(t.rotation).y

@@ -15,6 +15,7 @@ import { fxSoundAssets, initializeCombatFx } from './combatFx'
 import { initializeLoot } from './loot'
 import { initializeMultiplayer } from './multiplayer'
 import { initializeRemotePlayers } from './remotePlayers'
+import { initializeAvatarHiding } from './avatarHiding'
 import { adoptPlayerCharacter, initializePlayerCharacter, setPlayerCharacter } from './playerCharacter'
 import { preloadAssets } from './preload'
 import { BRICK_TEXTURE, FLOOR_TEXTURE, KIT } from './dungeon/kit'
@@ -55,6 +56,7 @@ export function main() {
   initializeCombatFx()
   initializeLoot()
   initializeMultiplayer()
+  initializeAvatarHiding()
   initializeRemotePlayers()
 
   initializePlayerCharacter()

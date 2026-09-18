@@ -1,9 +1,9 @@
 import {
-  AvatarModifierArea, AvatarModifierType, CameraMode, CameraType, engine, Entity, InputAction, InputModifier, inputSystem,
-  PlayerIdentityData, Transform
+  CameraMode, CameraType, engine, Entity, InputAction, InputModifier, inputSystem, Transform
 } from '@dcl/sdk/ecs'
 import { Quaternion, Vector3 } from '@dcl/sdk/math'
 import { movePlayerTo } from '~system/RestrictedActions'
+import { setNativeAvatarHidden } from './avatarHiding'
 import { COURTYARD, isInCourtyard } from './courtyard'
 import { EquipmentLoadout } from './equipmentCatalog'
 import {
@@ -42,7 +42,6 @@ const WALK_DWELL_SECONDS = 0.22
 /** A new gait plays as authored for this long before speed matching starts. */
 const STRIDE_SETTLE_SECONDS = 0.4
 let characterRoot: Entity | undefined
-let modifierArea: Entity | undefined
 let systemAdded = false
 let active = false
 let suspended = false
@@ -51,8 +50,6 @@ let visible = false
 let characterId: string | undefined
 let requestedLoadout: EquipmentLoadout | undefined
 let requestedOptions: EquipmentAvatarOptions = {}
-let exclusionsKey = ''
-let refreshModifier = false
 let samplePosition: Vector3 | undefined
 let sampleElapsed = 0
 let locomotion: Locomotion = 'idle'
@@ -391,7 +388,7 @@ export function disposePlayerCharacter() {
   samplePosition = undefined
   sampleElapsed = 0
   locomotion = 'idle'
-  removeNativeAvatarModifier()
+  hideNativeAvatar(false)
   if (characterRoot !== undefined) {
     destroyEquipmentAvatar(characterRoot)
     engine.removeEntity(characterRoot)
@@ -418,7 +415,7 @@ function updatePlayerCharacter(dt: number) {
     resetRoamingCombat(roamingCombat)
     syncInputFreeze(false)
     setCharacterVisible(false)
-    removeNativeAvatarModifier()
+    hideNativeAvatar(false)
     samplePosition = undefined
     sampleElapsed = 0
     return
@@ -455,10 +452,8 @@ function updatePlayerCharacter(dt: number) {
     }
   }
 
-  const localId = PlayerIdentityData.getOrNull(engine.PlayerEntity)?.address
-  const canReplace = hasReadyCharacter && !!localId
-  if (canReplace) updateNativeAvatarModifier(localId!)
-  else removeNativeAvatarModifier()
+  const canReplace = hasReadyCharacter && !!localAddress()
+  hideNativeAvatar(canReplace)
 
   const firstPerson = CameraMode.getOrNull(engine.CameraEntity)?.mode === CameraType.CT_FIRST_PERSON
   setCharacterVisible(canReplace && !suspended && !firstPerson)
@@ -559,34 +554,8 @@ function updateLocomotion(position: Vector3, dt: number) {
   }
 }
 
-function updateNativeAvatarModifier(_localId: string) {
-  // Hide every native avatar in this volume, including remotes who walk through
-  // it. Custom replicas are parented to those players and stay visible.
-  if (modifierArea === undefined) {
-    modifierArea = engine.addEntity()
-    Transform.create(modifierArea, {
-      parent: engine.PlayerEntity,
-      position: Vector3.create(0, 1, 0)
-    })
-    refreshModifier = true
-  }
-  if (!refreshModifier && exclusionsKey === '*') return
-  AvatarModifierArea.createOrReplace(modifierArea, {
-    area: Vector3.create(3, 4, 3),
-    modifiers: [AvatarModifierType.AMT_HIDE_AVATARS],
-    excludeIds: []
-  })
-  exclusionsKey = '*'
-  refreshModifier = false
-}
-
-function removeNativeAvatarModifier() {
-  if (modifierArea !== undefined) {
-    // Remove the whole trigger entity so renderer trigger state cannot survive a
-    // component-only removal and interfere with the next activation.
-    engine.removeEntity(modifierArea)
-    modifierArea = undefined
-  }
-  exclusionsKey = ''
-  refreshModifier = false
+/** The native avatar is hidden only while a ready custom body stands in for it. */
+function hideNativeAvatar(hide: boolean) {
+  const id = localAddress()
+  if (id) setNativeAvatarHidden(id, hide)
 }

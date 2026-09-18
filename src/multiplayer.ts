@@ -1,4 +1,4 @@
-import { AvatarModifierArea, AvatarModifierType, engine, PlayerIdentityData, Transform } from '@dcl/sdk/ecs'
+import { engine, PlayerIdentityData, Transform } from '@dcl/sdk/ecs'
 import { Vector3 } from '@dcl/sdk/math'
 import { MessageBus } from '@dcl/sdk/message-bus'
 import { onLeaveScene } from '@dcl/sdk/players'
@@ -68,14 +68,12 @@ type Envelope =
 
 const bus = new MessageBus()
 const remotes = new Map<string, PlayerNet>()
-let hideArea: ReturnType<typeof engine.addEntity> | undefined
 let initialized = false
 let hostId = ''
 
 export function initializeMultiplayer() {
   if (initialized) return
   initialized = true
-  hideEveryone()
   bus.on('koa', (msg: Envelope) => onMessage(msg))
   onLeaveScene((userId) => {
     remotes.delete(userId.toLowerCase())
@@ -261,15 +259,4 @@ function electHost() {
   }
   const ranked = Array.from(ids).sort()
   hostId = ranked[0] || me
-}
-
-function hideEveryone() {
-  if (hideArea !== undefined) return
-  hideArea = engine.addEntity()
-  Transform.create(hideArea, { position: Vector3.create(48, 10, 48) })
-  AvatarModifierArea.create(hideArea, {
-    area: Vector3.create(96, 24, 96),
-    modifiers: [AvatarModifierType.AMT_HIDE_AVATARS],
-    excludeIds: []
-  })
 }
