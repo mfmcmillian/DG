@@ -3,7 +3,7 @@ import { Quaternion, Vector3 } from '@dcl/sdk/math'
 import { setNativeAvatarHidden } from './avatarHiding'
 import { AttackMotion } from './combatActions'
 import { EquipmentMotion } from './combatAnimations'
-import { fxSlash, fxSound } from './combatFx'
+import { fxImpact, fxNumber, fxSlash, fxSound } from './combatFx'
 import {
   destroyEquipmentAvatar, getEquipmentLoading, setEquipmentAvatar, setEquipmentMotion, setEquipmentVisible
 } from './equipmentAvatar'
@@ -89,7 +89,51 @@ function upsertReplica(p: PlayerNet) {
     loadOutfit(replica, p)
   }
   replica.facing = p.f
-  applyMotion(replica, p.motion, p.motion !== replica.motion && RESET_MOTIONS.has(p.motion))
+  // The host's health wins over the published pose: a downed hero lies down
+  // for everyone, even a late joiner who missed the blow.
+  const motion: EquipmentMotion = p.health <= 0 ? 'death' : p.motion
+  applyMotion(replica, motion, motion !== replica.motion && RESET_MOTIONS.has(motion))
+}
+
+/** Chest height above the remote avatar the renderer is driving. */
+function remoteChest(id: string): Vector3 | undefined {
+  const entity = playerEntityByAddress(id)
+  const position = entity !== undefined ? Transform.getOrNull(entity)?.position : undefined
+  return position ? Vector3.add(position, Vector3.create(0, 1.9, 0)) : undefined
+}
+
+/** An enemy blow the host resolved against another hero. */
+export function presentRemoteHit(id: string, damage: number, health: number, blocked: boolean, dodged: boolean) {
+  const replica = replicas.get(id)
+  const at = remoteChest(id)
+  if (blocked) {
+    if (at) {
+      fxNumber(at, 'Blocked', 'blocked')
+      fxImpact(Vector3.add(at, Vector3.create(0, -0.7, 0)), false, true)
+    }
+    fxSound('block', 0.5)
+    return
+  }
+  if (dodged) {
+    if (at) fxNumber(at, 'Dodged', 'note')
+    return
+  }
+  if (at) {
+    fxNumber(at, `-${damage}`, 'player')
+    fxImpact(Vector3.add(at, Vector3.create(0, -0.7, 0)), health <= 0, false)
+  }
+  if (replica) applyMotion(replica, health <= 0 ? 'death' : 'hit', true)
+  fxSound(health <= 0 ? 'death' : 'hurt', 0.6)
+}
+
+export function presentRemoteHeal(id: string, amount: number) {
+  const at = remoteChest(id)
+  if (at && amount > 0) fxNumber(at, `+${Math.round(amount)}`, 'heal')
+}
+
+export function presentRemoteRevive(id: string) {
+  const replica = replicas.get(id)
+  if (replica && replica.motion === 'death') applyMotion(replica, 'idle', true)
 }
 
 function loadOutfit(replica: Replica, p: PlayerNet) {

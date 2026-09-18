@@ -30,9 +30,12 @@ import {
   createEnemyHealthBar, destroyEnemyHealthBar, EnemyHealthBar, updateEnemyHealthBar
 } from './enemyHealthBar'
 import {
-  getPlayerCombatPose, hitStopPlayer, playerBlockedHit, receivePlayerCombatHit, restorePlayerCombatHealth,
+  getPlayerCombatPose, healPlayer, hitStopPlayer, isPlayerDown, playerBlockedHit, playerDodgedHit,
+  receivePlayerCombatHit, reconcilePlayerHealth, restorePlayerCombatHealth,
   setPlayerAttackContactHandler, setPlayerAttackStartHandler, setPlayerFacingOverride, setPlayerStepIn
 } from './playerCharacter'
+import { presentRemoteHeal, presentRemoteHit, presentRemoteRevive } from './remotePlayers'
+import { RECOVER_SECONDS, strikeHero } from './heroVitals'
 import { movePlayerToSpawn } from './playerPlacement'
 import { dungeonCell, DungeonState, getDungeonState, isDungeonFloor, onDungeonLoaded } from './dungeon'
 import { DOOR_OPENINGS } from './dungeon/kit'
@@ -45,8 +48,8 @@ import { clearLoot, spawnLoot } from './loot'
 import { unlockInventoryItem } from './inventory'
 import { AttackContext } from './roamingCombat'
 import {
-  allFighters, EnemySnap, ImpactNet, isHost, localAddress, NetFighter, publishEnemies, publishHitEnemy,
-  publishHitPlayer, publishImpact, publishLoot, remoteCount, setMultiplayerHandlers
+  allFighters, EnemySnap, HeroHit, ImpactNet, isHost, localAddress, NetFighter, publishEnemies, publishHitEnemy,
+  publishImpact, publishLoot, publishRespawn, remoteCount, setMultiplayerHandlers
 } from './multiplayer'
 
 type WorldPhase = 'loading' | 'idle' | 'fighting' | 'victory' | 'defeat' | 'error'
@@ -132,7 +135,6 @@ export function enemyPreloadAssets(): string[] {
 
 const SLAM_RADIUS = 3.2
 const SLAM_DAMAGE = 32
-const RECOVER_SECONDS = 4
 const CORPSE_SECONDS = 4
 const BODY_RADIUS = 0.42
 /** Soft lock-on only engages once a target is just about in reach, within this half-angle. */
@@ -154,6 +156,8 @@ let graceSeconds = 1.2
 let noticeSeconds = 0
 let paused = true
 let defeated = false
+/** The local countdown ran out and a `respawn` was sent; cleared by the revive. */
+let respawnAsked = false
 let bossDropGiven = false
 let snapshotAge = 0
 /** Edges that block or gate movement between floor cells, keyed from both sides. */
@@ -167,11 +171,19 @@ export function initializeDungeonEnemies() {
   setPlayerAttackContactHandler(hitEnemies)
   setMultiplayerHandlers({
     hitEnemy: applyRemoteHit,
-    hitPlayer: (id, damage, stagger, yaw) => {
-      if (id !== localAddress()) return
-      if (!receivePlayerCombatHit(damage, stagger, yaw)) return
-      state.playerHealth = getPlayerCombatPose()?.health ?? state.playerHealth
-      if (state.playerHealth === 0) onLocalDefeated()
+    hitPlayer: applyHeroHit,
+    heal: (id, amount, health) => {
+      if (id === localAddress()) healPlayer(amount, health)
+      else presentRemoteHeal(id, amount)
+    },
+    revive: (id) => {
+      if (id === localAddress()) recoverPlayer()
+      else presentRemoteRevive(id)
+    },
+    self: (health) => {
+      const change = reconcilePlayerHealth(health)
+      if (change === 'died') onLocalDefeated()
+      else if (change === 'revived') recoverPlayer()
     },
     impact: presentImpact,
     enemies: applyEnemySnapshots,
@@ -214,6 +226,7 @@ function populate(dungeon: Readonly<DungeonState>) {
   enemies = []
   clearLoot()
   defeated = false
+  respawnAsked = false
   bossDropGiven = false
   state.respawnSeconds = 0
   indexEdges(dungeon)
@@ -299,8 +312,13 @@ function updateEnemies(deltaTime: number) {
   noticeSeconds = Math.max(0, noticeSeconds - dt)
 
   if (defeated) {
+    // The host stands us back up (`revive`); the countdown is for the HUD, and
+    // when it runs out we remind the host in case that message was lost.
     state.respawnSeconds = Math.max(0, state.respawnSeconds - dt)
-    if (state.respawnSeconds === 0) recoverPlayer()
+    if (state.respawnSeconds === 0 && !respawnAsked) {
+      respawnAsked = true
+      publishRespawn()
+    }
   }
 
   if (fighters.length === 0) {
@@ -892,14 +910,11 @@ function advanceSwing(e: Enemy, dt: number, target: NetFighter, fighters: NetFig
     const guarded = target.blocking && facesCombatant(target, e, 0.1)
     const hit = resolveCombatHit(swing.motion, guarded)
     if (hit.damage === 0) {
-      if (target.local) playerBlockedHit(e.facing)
-      fxImpact(Vector3.add(target.position, Vector3.create(0, 1.2, 0)), false, true)
+      blockFighter(target, e.facing)
       return
     }
     const damage = Math.round(hit.damage * e.archetype.damageScale)
     strikeFighter(target, damage, hit.stagger, e.facing)
-    fxImpact(Vector3.add(target.position, Vector3.create(0, 1.2, 0)), isHeavyMotion(swing.motion), false)
-    fxSound(isHeavyMotion(swing.motion) ? 'hit_heavy' : 'hit_light', 0.8)
   })
   if (e.swing === swing && finished) {
     e.swing = undefined
@@ -929,30 +944,61 @@ function slam(e: Enemy, fighters: NetFighter[]) {
   }
 }
 
+/**
+ * Enemy blows only ever land on the host, which owns every hero's health. The
+ * hero's roll (`invulnerable`) is read from their last pose; the host decides
+ * the dodge so every screen agrees, and broadcasts the outcome as `hitPlayer`.
+ */
 function strikeFighter(target: NetFighter, damage: number, stagger: number, yaw: number) {
-  if (target.local) {
-    if (!receivePlayerCombatHit(damage, stagger, yaw)) return
-    state.playerHealth = getPlayerCombatPose()?.health ?? state.playerHealth
-    if (state.playerHealth === 0) onLocalDefeated()
+  if (!isHost()) return
+  strikeHero(target.address, damage, stagger, yaw, { dodged: target.invulnerable })
+}
+
+function blockFighter(target: NetFighter, yaw: number) {
+  if (!isHost()) return
+  strikeHero(target.address, 0, 0, yaw, { blocked: true })
+}
+
+/** Client: the host's verdict on an enemy blow against a hero, ours or another's. */
+function applyHeroHit(hit: HeroHit) {
+  if (hit.id !== localAddress()) {
+    presentRemoteHit(hit.id, hit.damage, hit.health, hit.blocked, hit.dodged)
     return
   }
-  publishHitPlayer(target.address, damage, stagger, yaw)
+  if (hit.blocked) {
+    playerBlockedHit(hit.yaw)
+    return
+  }
+  if (hit.dodged) {
+    playerDodgedHit()
+    return
+  }
+  const pose = getPlayerCombatPose()
+  if (pose) fxImpact(Vector3.add(pose.position, Vector3.create(0, 1.2, 0)), hit.health <= 0, false)
+  const down = receivePlayerCombatHit(hit.damage, hit.stagger, hit.health, hit.yaw)
+  state.playerHealth = hit.health
+  if (down) onLocalDefeated()
 }
 
 function onLocalDefeated() {
+  if (defeated) return
   defeated = true
+  respawnAsked = false
   state.phase = 'defeat'
   state.respawnSeconds = RECOVER_SECONDS
   state.telegraph = ''
   setPlayerFacingOverride(undefined)
 }
 
-/** Back to the entrance with full health. Living enemies keep fighting anyone still standing. */
+/** The host stood us back up: full health at the entrance. Living enemies keep fighting anyone still standing. */
 function recoverPlayer() {
+  if (!defeated && !isPlayerDown()) return
   defeated = false
+  respawnAsked = false
   restorePlayerCombatHealth()
   graceSeconds = 2
   state.phase = 'idle'
+  state.respawnSeconds = 0
   state.playerHealth = MAX_COMBAT_HEALTH
   state.message = ''
   movePlayerToSpawn()

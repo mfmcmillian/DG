@@ -5,6 +5,7 @@ import { CombatPose } from './combatActions'
 import { EquipmentMotion } from './combatAnimations'
 import { CharacterAppearance } from './appearance'
 import { EquipmentLoadout, EQUIPMENT_SLOTS } from './equipmentCatalog'
+import { dropHero, heroHealth, rememberHeartDrop, resetHero } from './heroVitals'
 import { room } from './shared/messages'
 
 export type NetFighter = CombatPose & {
@@ -68,6 +69,8 @@ const LEAVE_GRACE = 1.5
  * peer is gone and a leave was lost or never produced.
  */
 const SILENCE_LIMIT = 20
+/** A hero silent this long and back again (title screen, reconnect) restarts at full health. */
+const FRESH_HERO_SILENCE = 3
 let initialized = false
 let hostMode = false
 
@@ -146,11 +149,17 @@ export function publishImpact(p: ImpactNet) {
   void room.send('impact', { ...p, id })
 }
 
-export function publishHitPlayer(id: string, damage: number, stagger: number, yaw: number) {
-  if (!hostMode) return
-  // Broadcast: `to` matching is case-sensitive in some runtimes, and the
-  // struck client already ignores packets that are not addressed to it.
-  void room.send('hitPlayer', { id: id.toLowerCase(), damage, stagger, yaw })
+/** Client -> server: the hero stepped onto a heart it saw at (x, z). Healing comes back as `heal`. */
+export function publishPickup(x: number, z: number) {
+  if (!clientReady()) return
+  void room.send('pickup', { x, z })
+}
+
+/** Client -> server: the local recover countdown ended and no `revive` has arrived. */
+export function publishRespawn() {
+  const id = localAddress()
+  if (!clientReady() || !id) return
+  void room.send('respawn', { id })
 }
 
 export function publishEnemies(list: EnemySnap[]) {
@@ -160,12 +169,20 @@ export function publishEnemies(list: EnemySnap[]) {
 
 export function publishLoot(x: number, z: number, coin: number, heart: number, dusk: boolean) {
   if (!hostMode) return
+  rememberHeartDrop(x, z, heart)
   void room.send('loot', { x, z, coin, heart, dusk })
+}
+
+export type HeroHit = {
+  id: string; damage: number; stagger: number; yaw: number; health: number; blocked: boolean; dodged: boolean
 }
 
 let onSwing: ((id: string, motion: string, facing: number) => void) | undefined
 let onHitEnemy: ((id: string, i: number, motion: string, finisher: boolean) => void) | undefined
-let onHitPlayer: ((id: string, damage: number, stagger: number, yaw: number) => void) | undefined
+let onHitPlayer: ((hit: HeroHit) => void) | undefined
+let onHeal: ((id: string, amount: number, health: number) => void) | undefined
+let onRevive: ((id: string, health: number) => void) | undefined
+let onSelf: ((health: number) => void) | undefined
 let onImpact: ((p: ImpactNet) => void) | undefined
 let onEnemies: ((list: EnemySnap[]) => void) | undefined
 let onLoot: ((x: number, z: number, coin: number, heart: number, dusk: boolean) => void) | undefined
@@ -177,6 +194,10 @@ export function setMultiplayerHandlers(handlers: {
   swing?: typeof onSwing
   hitEnemy?: typeof onHitEnemy
   hitPlayer?: typeof onHitPlayer
+  heal?: typeof onHeal
+  revive?: typeof onRevive
+  /** The server's echo of our own `player` packet, carrying its idea of our health. */
+  self?: typeof onSelf
   impact?: typeof onImpact
   enemies?: typeof onEnemies
   loot?: typeof onLoot
@@ -187,6 +208,9 @@ export function setMultiplayerHandlers(handlers: {
   if (handlers.swing) onSwing = handlers.swing
   if (handlers.hitEnemy) onHitEnemy = handlers.hitEnemy
   if (handlers.hitPlayer) onHitPlayer = handlers.hitPlayer
+  if (handlers.heal) onHeal = handlers.heal
+  if (handlers.revive) onRevive = handlers.revive
+  if (handlers.self) onSelf = handlers.self
   if (handlers.impact) onImpact = handlers.impact
   if (handlers.enemies) onEnemies = handlers.enemies
   if (handlers.loot) onLoot = handlers.loot
@@ -211,7 +235,8 @@ export function allFighters(local?: (CombatPose & { health: number; invulnerable
       address: p.id,
       position,
       facing: p.f,
-      health: p.health,
+      // The host reads its own ledger; clients get that ledger relayed inside `player`.
+      health: hostMode ? heroHealth(p.id) : p.health,
       invulnerable: p.dodge,
       blocking: p.block,
       local: false
@@ -247,8 +272,12 @@ function bindServer() {
   room.onMessage('player', (p, context) => {
     if (!context) return
     const id = context.from.toLowerCase()
-    const isNew = !remotes.has(id)
-    const net = asPlayer({ ...p, id, motion: p.motion as EquipmentMotion })
+    const previous = remotes.get(id)
+    const isNew = previous === undefined
+    // Health is never taken from the client: a new hero, a different character
+    // or a return after silence starts full; otherwise the ledger stands.
+    if (isNew || previous.cid !== p.cid || (silentFor.get(id) ?? 0) > FRESH_HERO_SILENCE) resetHero(id)
+    const net = asPlayer({ ...p, id, motion: p.motion as EquipmentMotion, health: heroHealth(id) })
     remember(net)
     missingSince.delete(id)
     void room.send('player', net)
@@ -277,7 +306,11 @@ function bindServer() {
 
 function bindClient() {
   room.onMessage('player', (p) => {
-    if (!p.id || p.id === localAddress()) return
+    if (!p.id) return
+    if (p.id === localAddress()) {
+      onSelf?.(p.health)
+      return
+    }
     const net = asPlayer({ ...p, motion: p.motion as EquipmentMotion })
     remember(net)
     onRemote?.(net)
@@ -290,7 +323,13 @@ function bindClient() {
     onSwing?.(msg.id, msg.motion, msg.facing)
   })
   room.onMessage('hitPlayer', (msg) => {
-    onHitPlayer?.(msg.id, msg.damage, msg.stagger, msg.yaw)
+    onHitPlayer?.(msg)
+  })
+  room.onMessage('heal', (msg) => {
+    onHeal?.(msg.id, msg.amount, msg.health)
+  })
+  room.onMessage('revive', (msg) => {
+    onRevive?.(msg.id, msg.health)
   })
   room.onMessage('impact', (msg) => {
     if (msg.id === localAddress()) return
@@ -328,10 +367,10 @@ function pruneGonePlayers(dt: number) {
   }
   const span = Number.isFinite(dt) && dt > 0 ? dt : 0
   for (const id of [...remotes.keys()]) {
-    if (present.has(id)) {
-      silentFor.set(id, 0)
-      continue
-    }
+    // Packet silence runs for everyone (it also tells a returning hero apart).
+    const silence = (silentFor.get(id) ?? 0) + span
+    silentFor.set(id, silence)
+    if (present.has(id)) continue
     let gone: boolean
     if (seenPlayers.has(id)) {
       // Known player whose entity vanished: short grace for comms hiccups.
@@ -340,8 +379,6 @@ function pruneGonePlayers(dt: number) {
       gone = missing >= LEAVE_GRACE
     } else {
       // Never surfaced as a player entity here; fall back to packet silence.
-      const silence = (silentFor.get(id) ?? 0) + span
-      silentFor.set(id, silence)
       gone = silence >= SILENCE_LIMIT
     }
     if (!gone) continue
@@ -349,6 +386,7 @@ function pruneGonePlayers(dt: number) {
     seenPlayers.delete(id)
     missingSince.delete(id)
     silentFor.delete(id)
+    dropHero(id)
     void room.send('leave', { id })
   }
 }

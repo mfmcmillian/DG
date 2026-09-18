@@ -5,7 +5,8 @@ import { engine, Entity, GltfContainer, Transform } from '@dcl/sdk/ecs'
 import { Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
 import { fxGlitter, fxNumber, fxSound } from './combatFx'
 import { isInCourtyard } from './courtyard'
-import { getPlayerCombatPose, getPlayerVitals, healPlayer } from './playerCharacter'
+import { publishPickup } from './multiplayer'
+import { getPlayerCombatPose, getPlayerVitals } from './playerCharacter'
 
 export type LootKind = 'coin' | 'heart'
 
@@ -20,7 +21,6 @@ type Drop = {
 }
 
 const POP = 0.55
-const HEART_HEAL = 30
 const PICKUP_RADIUS = 0.95
 const MAX_DROPS = 40
 const drops: Drop[] = []
@@ -105,7 +105,9 @@ function collect(d: Drop) {
     fxGlitter(at, Color4.create(1, 0.85, 0.3, 1))
     fxNumber(at, '+1', 'coin')
   } else {
-    healPlayer(HEART_HEAL)
+    // The host owns hero health: it checks the heart against its own drop
+    // record and answers with `heal`, which plays the +N. The sparkle is local.
+    publishPickup(d.to.x, d.to.z)
     fxSound('heal', 0.8)
     fxGlitter(at, Color4.create(0.5, 1, 0.6, 1))
   }

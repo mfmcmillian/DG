@@ -130,10 +130,13 @@ export function isRoamingBlocking(combat: RoamingCombat): boolean {
   return combat.blocking
 }
 
-/** Returns true when this blow was the killing one. */
-export function hitRoamingCharacter(combat: RoamingCombat, damage: number, stagger: number): boolean {
+/**
+ * Returns true when this blow was the killing one. `health` is the host's
+ * value after the blow; the local number only ever follows it.
+ */
+export function hitRoamingCharacter(combat: RoamingCombat, health: number, stagger: number): boolean {
   if (combat.health <= 0) return false
-  combat.health = Math.max(0, combat.health - damage)
+  combat.health = Math.max(0, Math.min(MAX_COMBAT_HEALTH, health))
   combat.stagger = Math.max(combat.stagger, stagger)
   combat.swing = undefined
   combat.buffered = undefined
@@ -156,10 +159,16 @@ export function isRoamingDead(combat: RoamingCombat): boolean {
   return combat.health <= 0
 }
 
-export function healRoamingCharacter(combat: RoamingCombat, amount: number): number {
+/** Adopt the host's number after a heal; returns how much it rose locally. */
+export function healRoamingCharacter(combat: RoamingCombat, health: number): number {
   const before = combat.health
-  combat.health = Math.min(MAX_COMBAT_HEALTH, combat.health + amount)
+  combat.health = Math.max(0, Math.min(MAX_COMBAT_HEALTH, health))
   return combat.health - before
+}
+
+/** Silent correction from the host's echo of our own packet (a lost message). */
+export function setRoamingHealth(combat: RoamingCombat, health: number) {
+  combat.health = Math.max(0, Math.min(MAX_COMBAT_HEALTH, health))
 }
 
 /** Only owns the outfit's action pose. Explorer owns movement, jump and camera. */

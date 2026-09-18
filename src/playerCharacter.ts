@@ -8,9 +8,9 @@ import { COURTYARD, isInCourtyard } from './courtyard'
 import { EquipmentLoadout } from './equipmentCatalog'
 import {
   AttackContext, createRoamingCombat, healRoamingCharacter, hitRoamingCharacter, isRoamingBlocking, isRoamingInvulnerable,
-  isRoamingRooted, resetRoamingCombat, restoreRoamingHealth, RoamingCombatHooks, updateRoamingCombat
+  isRoamingRooted, resetRoamingCombat, restoreRoamingHealth, RoamingCombatHooks, setRoamingHealth, updateRoamingCombat
 } from './roamingCombat'
-import { AttackMotion, CombatPose, STAMINA } from './combatActions'
+import { AttackMotion, CombatPose, MAX_COMBAT_HEALTH, STAMINA } from './combatActions'
 import { getCommittedAppearance } from './appearance'
 import {
   destroyEquipmentAvatar, EquipmentAvatarOptions, EquipmentLoading,
@@ -68,6 +68,7 @@ let hitStopSeconds = 0
 let exhaustedNotice = 0
 let publishAge = 0
 let lastPublishKey = ''
+let echoMismatches = 0
 
 export type PlayerVitals = {
   health: number; maxHealth: number; stamina: number; maxStamina: number
@@ -86,7 +87,7 @@ export function getPlayerCombatPose(): (CombatPose & { health: number; invulnera
 
 export function getPlayerVitals(): PlayerVitals {
   return {
-    health: roamingCombat.health, maxHealth: 100, stamina: roamingCombat.stamina, maxStamina: STAMINA.max,
+    health: roamingCombat.health, maxHealth: MAX_COMBAT_HEALTH, stamina: roamingCombat.stamina, maxStamina: STAMINA.max,
     comboStep: roamingCombat.comboStep, dodging: !!roamingCombat.dodge, blocking: roamingCombat.blocking,
     exhausted: exhaustedNotice > 0
   }
@@ -203,19 +204,27 @@ export function playerBlockedHit(fromYaw: number) {
   hitStopPlayer(0.05)
 }
 
-export function receivePlayerCombatHit(damage: number, stagger: number, fromYaw?: number): boolean {
+/** The host judged a blow as rolled through: feedback only. */
+export function playerDodgedHit() {
   const pose = getPlayerCombatPose()
-  if (!pose || roamingCombat.health <= 0 || characterRoot === undefined) return false
-  if (pose.invulnerable) {
-    fxNumber(Vector3.add(pose.position, Vector3.create(0, 1.9, 0)), 'Dodged', 'note')
-    return false
-  }
-  const killed = hitRoamingCharacter(roamingCombat, damage, stagger)
+  if (!pose) return
+  fxNumber(Vector3.add(pose.position, Vector3.create(0, 1.9, 0)), 'Dodged', 'note')
+}
+
+/**
+ * An enemy blow the host resolved against us. `health` is the host's number
+ * after the blow; the local mirror adopts it and plays the matching feedback.
+ * Returns true when the hero went down.
+ */
+export function receivePlayerCombatHit(damage: number, stagger: number, health: number, fromYaw?: number): boolean {
+  if (roamingCombat.health <= 0 || characterRoot === undefined) return false
+  const pose = getPlayerCombatPose()
+  const killed = hitRoamingCharacter(roamingCombat, health, stagger)
   setPlayerFacingOverride(undefined)
-  fxNumber(Vector3.add(pose.position, Vector3.create(0, 1.9, 0)), `-${damage}`, 'player')
-  const yaw = fromYaw ?? pose.facing + Math.PI
+  if (pose && damage > 0) fxNumber(Vector3.add(pose.position, Vector3.create(0, 1.9, 0)), `-${damage}`, 'player')
+  const yaw = fromYaw ?? (pose ? pose.facing + Math.PI : 0)
   if (killed) {
-    // The fall plays once and rests on its last frame until the world revives the hero.
+    // The fall plays once and rests on its last frame until the host revives the hero.
     setEquipmentMotion(characterRoot, 'death', true)
     fxSound('death', 0.9)
     kickCrawlerCamera(Vector3.create(Math.sin(yaw) * 0.4, -0.25, Math.cos(yaw) * 0.4))
@@ -226,14 +235,48 @@ export function receivePlayerCombatHit(damage: number, stagger: number, fromYaw?
   fxSound('hurt', 0.9)
   kickCrawlerCamera(Vector3.create(Math.sin(yaw) * 0.25, -0.1, Math.cos(yaw) * 0.25))
   hitStopPlayer(0.06)
-  return true
+  return false
 }
 
-export function healPlayer(amount: number): number {
-  const healed = healRoamingCharacter(roamingCombat, amount)
+/** The host restored health (heart pickup, later a spell). */
+export function healPlayer(amount: number, health: number) {
+  const rose = healRoamingCharacter(roamingCombat, health)
   const pose = getPlayerCombatPose()
-  if (healed > 0 && pose) fxNumber(Vector3.add(pose.position, Vector3.create(0, 1.9, 0)), `+${healed}`, 'heal')
-  return healed
+  const shown = amount > 0 ? amount : rose
+  if (shown > 0 && pose) fxNumber(Vector3.add(pose.position, Vector3.create(0, 1.9, 0)), `+${Math.round(shown)}`, 'heal')
+}
+
+/**
+ * The host echoes our own packet with its idea of our health. Normally it
+ * matches; when a `hitPlayer`, `heal` or `revive` was lost this pulls the
+ * mirror back in line, and reports a death or revive the world must act on.
+ */
+export function reconcilePlayerHealth(health: number): 'died' | 'revived' | undefined {
+  if (characterRoot === undefined || !Number.isFinite(health)) return undefined
+  const before = roamingCombat.health
+  const after = Math.max(0, Math.min(MAX_COMBAT_HEALTH, health))
+  if (Math.abs(before - after) < 0.5) {
+    echoMismatches = 0
+    return undefined
+  }
+  // An echo relayed just before a blow legitimately lags one step behind the
+  // `hitPlayer` that follows it; only a mismatch that persists is a lost message.
+  if (++echoMismatches < 3) return undefined
+  echoMismatches = 0
+  if (before > 0 && after <= 0) {
+    hitRoamingCharacter(roamingCombat, 0, 0)
+    setPlayerFacingOverride(undefined)
+    setEquipmentMotion(characterRoot, 'death', true)
+    fxSound('death', 0.9)
+    return 'died'
+  }
+  if (before <= 0 && after > 0) return 'revived'
+  setRoamingHealth(roamingCombat, after)
+  return undefined
+}
+
+export function isPlayerDown(): boolean {
+  return roamingCombat.health <= 0
 }
 
 export function restorePlayerCombatHealth() {
@@ -466,9 +509,12 @@ function publishLocalPlayer(player: { position: Vector3; rotation: Quaternion },
   if (!id) return
   const appearance = requestedOptions.appearance ?? getCommittedAppearance(characterId)
   const motion = getEquipmentMotion(characterRoot)
+  // The host reads `dodge` as "blows pass through right now", so publish the
+  // roll's invulnerable window rather than the whole roll.
+  const invulnerable = isRoamingInvulnerable(roamingCombat)
   const key = [
     characterId, motion, roamingCombat.health, roamingCombat.blocking ? 1 : 0,
-    roamingCombat.dodge ? 1 : 0, facingOverride ?? playerYaw(player.rotation)
+    invulnerable ? 1 : 0, facingOverride ?? playerYaw(player.rotation)
   ].join('|')
   publishAge += dt
   if (key === lastPublishKey && publishAge < 0.12) return
@@ -486,7 +532,8 @@ function publishLocalPlayer(player: { position: Vector3; rotation: Quaternion },
     skin: appearance.skinTone,
     loadout: { ...requestedLoadout },
     block: roamingCombat.blocking,
-    dodge: !!roamingCombat.dodge,
+    dodge: invulnerable,
+    // Informational only: the host keeps the real number and echoes it back.
     health: roamingCombat.health
   })) return
   publishAge = 0
