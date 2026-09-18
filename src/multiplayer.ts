@@ -228,8 +228,9 @@ export function allFighters(local?: (CombatPose & { health: number; invulnerable
   for (const p of remotes.values()) {
     const entity = playerEntityByAddress(p.id)
     const transform = entity !== undefined ? Transform.getOrNull(entity) : undefined
-    // On the server, never fight from a client-reported coordinate.
-    if (hostMode && !transform) continue
+    // Prefer the position the runtime reports for the avatar; fall back to the
+    // hero's own packet when the runtime has none for them (the host does not
+    // always surface player transforms), so the dungeon never stalls.
     const position = transform?.position ?? Vector3.create(p.x, p.y, p.z)
     list.push({
       address: p.id,
@@ -282,6 +283,9 @@ function bindServer() {
     missingSince.delete(id)
     void room.send('player', net)
     if (!isNew) return
+    const entity = playerEntityByAddress(id)
+    const tracked = entity !== undefined && Transform.has(entity)
+    console.log(`[Server] hero ${id} joined as ${p.cid}; runtime transform: ${tracked ? 'yes' : 'no'}; heroes: ${remotes.size}`)
     // A joiner otherwise waits until every other hero happens to move.
     for (const other of remotes.values()) {
       if (other.id !== id) void room.send('player', other)
@@ -356,16 +360,26 @@ function pruneSilentRemotes(dt: number) {
   }
 }
 
+let heartbeatAge = 0
+const HEARTBEAT_SECONDS = 15
+
 function pruneGonePlayers(dt: number) {
   const present = new Set<string>()
-  for (const [, identity] of engine.getEntitiesWith(PlayerIdentityData)) {
+  let tracked = 0
+  for (const [entity, identity] of engine.getEntitiesWith(PlayerIdentityData)) {
     if (!identity.address) continue
     const id = identity.address.toLowerCase()
     present.add(id)
     seenPlayers.add(id)
     missingSince.delete(id)
+    if (Transform.has(entity)) tracked++
   }
   const span = Number.isFinite(dt) && dt > 0 ? dt : 0
+  heartbeatAge += span
+  if (heartbeatAge >= HEARTBEAT_SECONDS) {
+    heartbeatAge = 0
+    console.log(`[Server] heartbeat: ${present.size} player entit(ies), ${tracked} with transform, ${remotes.size} hero(es) publishing`)
+  }
   for (const id of [...remotes.keys()]) {
     // Packet silence runs for everyone (it also tells a returning hero apart).
     const silence = (silentFor.get(id) ?? 0) + span
@@ -387,6 +401,7 @@ function pruneGonePlayers(dt: number) {
     missingSince.delete(id)
     silentFor.delete(id)
     dropHero(id)
+    console.log(`[Server] hero ${id} left; heroes: ${remotes.size}`)
     void room.send('leave', { id })
   }
 }

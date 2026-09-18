@@ -335,6 +335,7 @@ function updateEnemies(deltaTime: number) {
       }
     }
     state.telegraph = ''
+    if (!paused && isHost()) console.log('[Server] dungeon paused: no heroes in the fight')
     paused = true
     for (const e of enemies) {
       tickEnemyPresentation(e, dt)
@@ -345,6 +346,10 @@ function updateEnemies(deltaTime: number) {
   if (paused) {
     graceSeconds = 1.2
     paused = false
+    if (isHost()) {
+      const f = fighters[0]
+      console.log(`[Server] dungeon live: ${fighters.length} hero(es); first at ${f.position.x.toFixed(1)}, ${f.position.z.toFixed(1)} health ${f.health}`)
+    }
   }
 
   let anyLoading = false
