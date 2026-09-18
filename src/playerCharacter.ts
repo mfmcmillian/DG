@@ -8,7 +8,7 @@ import { COURTYARD, isInCourtyard } from './courtyard'
 import { EquipmentLoadout } from './equipmentCatalog'
 import {
   AttackContext, createRoamingCombat, healRoamingCharacter, hitRoamingCharacter, isRoamingBlocking, isRoamingInvulnerable,
-  resetRoamingCombat, restoreRoamingHealth, RoamingCombatHooks, updateRoamingCombat
+  isRoamingRooted, resetRoamingCombat, restoreRoamingHealth, RoamingCombatHooks, updateRoamingCombat
 } from './roamingCombat'
 import { AttackMotion, CombatPose, STAMINA } from './combatActions'
 import { getCommittedAppearance } from './appearance'
@@ -110,18 +110,6 @@ export function setPlayerFacingOverride(yaw: number | undefined) {
   if (yaw === undefined && characterRoot !== undefined) Transform.getMutable(characterRoot).rotation = Quaternion.Identity()
 }
 
-/** Teleport the native player by a ground offset if the whole step stays on dungeon floor. */
-export function nudgePlayer(offset: Vector3): boolean {
-  const player = Transform.getOrNull(engine.PlayerEntity)
-  if (!player) return false
-  const from = player.position
-  const to = Vector3.create(from.x + offset.x, from.y, from.z + offset.z)
-  const mid = Vector3.create(from.x + offset.x / 2, from.y, from.z + offset.z / 2)
-  if (!footprintOnFloor(to) || !footprintOnFloor(mid)) return false
-  movePlayerTo({ newRelativePosition: to }).catch((error: unknown) => console.log('nudge failed', error))
-  return true
-}
-
 function footprintOnFloor(p: Vector3): boolean {
   const r = 0.32
   return isInCourtyard(Vector3.create(p.x - r, p.y, p.z - r)) && isInCourtyard(Vector3.create(p.x + r, p.y, p.z - r)) &&
@@ -129,44 +117,70 @@ function footprintOnFloor(p: Vector3): boolean {
 }
 
 /**
- * Carry the native player along the dodge roll. The renderer's timed move
- * (`movePlayerTo` with a duration) glides the character every frame with a
- * smooth-step and turns it to face the way it goes, so the roll reads as one
- * motion rather than a string of teleports; it ignores colliders, so the path
- * is walked against the dungeon floor first and cut at the first wall.
+ * Carry the native player along the ground: the dodge roll, or a swing's lunge.
+ * The renderer's timed move (`movePlayerTo` with a duration) glides the
+ * character every frame with a smooth-step and turns it to face the way it
+ * goes, so the travel reads as one motion rather than a string of teleports;
+ * it ignores colliders, so the path is walked against the dungeon floor first
+ * and cut at the first wall.
  */
-function rollPlayer(direction: Vector3, distance: number, seconds: number) {
+function glidePlayer(direction: Vector3, distance: number, seconds: number) {
   const player = Transform.getOrNull(engine.PlayerEntity)
   if (!player) return
   const from = player.position
   const step = 0.25
   let reach = 0
-  for (let d = step; d <= distance + 1e-6; d += step) {
+  for (let d = Math.min(step, distance); ; d = Math.min(d + step, distance)) {
     const p = Vector3.create(from.x + direction.x * d, from.y, from.z + direction.z * d)
     if (!footprintOnFloor(p)) break
     reach = d
+    if (d >= distance) break
   }
-  if (reach < step) return
+  if (reach < 0.05) return
   const to = Vector3.create(from.x + direction.x * reach, from.y, from.z + direction.z * reach)
-  // Keep the roll's speed when a wall shortens it.
+  // Keep the travel's speed when a wall shortens it.
   movePlayerTo({ newRelativePosition: to, duration: seconds * (reach / distance) })
-    .catch((error: unknown) => console.log('roll failed', error))
+    .catch((error: unknown) => console.log('glide failed', error))
 }
 
-let dodgeFrozen = false
+/**
+ * Ground the swing clips are animated to cover when nothing is locked on. With a
+ * target, `lockOn` sizes the step to land at sword reach instead.
+ */
+const LUNGE_DISTANCE: Record<AttackMotion, number> = { attack_light: 0.45, attack_light2: 0.4, attack_heavy: 0.7 }
+const LUNGE_MAX = 1.3
+let stepIn: number | undefined
+
+/** Distance the next swing's wind-up should carry the hero (clamped; 0 = stand and swing). */
+export function setPlayerStepIn(distance: number) {
+  stepIn = Math.min(LUNGE_MAX, Math.max(0, distance))
+}
+
+/** The wind-up carries the body toward where it faces, arriving as the blow lands. */
+function lungePlayer(motion: AttackMotion, seconds: number) {
+  const distance = stepIn ?? LUNGE_DISTANCE[motion]
+  stepIn = undefined
+  const player = Transform.getOrNull(engine.PlayerEntity)
+  if (!player || distance < 0.05) return
+  const yaw = facingOverride ?? playerYaw(player.rotation)
+  glidePlayer(Vector3.create(Math.sin(yaw), 0, Math.cos(yaw)), distance, seconds)
+}
+
+let inputFrozen = false
 
 /**
- * While rolling, WASD and jump are muted at the renderer: the timed move is
- * cancelled by any movement input, and a hero that keeps jogging through a roll
- * slides. Menus own `InputModifier` while they are open (disableAll), so only a
- * modifier of our own shape is ever removed.
+ * While rooted (rolling, mid-swing on the ground, or dead) WASD and jump are
+ * muted at the renderer: a timed move is cancelled by any movement input, and a
+ * hero that keeps jogging through a roll or a swing slides. Menus own
+ * `InputModifier` while they are open (disableAll), so only a modifier of our
+ * own shape is ever removed.
  */
-function syncDodgeFreeze(rolling: boolean) {
-  if (rolling === dodgeFrozen) return
-  dodgeFrozen = rolling
+function syncInputFreeze(rooted: boolean) {
+  if (rooted === inputFrozen) return
+  inputFrozen = rooted
   const current = InputModifier.getOrNull(engine.PlayerEntity)
   const menuOwned = current?.mode?.$case === 'standard' && !!current.mode.standard.disableAll
-  if (rolling) {
+  if (rooted) {
     if (!menuOwned) InputModifier.createOrReplace(engine.PlayerEntity, {
       mode: InputModifier.Mode.Standard({ disableWalk: true, disableJog: true, disableRun: true, disableJump: true })
     })
@@ -199,12 +213,20 @@ export function receivePlayerCombatHit(damage: number, stagger: number, fromYaw?
     fxNumber(Vector3.add(pose.position, Vector3.create(0, 1.9, 0)), 'Dodged', 'note')
     return false
   }
-  hitRoamingCharacter(roamingCombat, damage, stagger)
+  const killed = hitRoamingCharacter(roamingCombat, damage, stagger)
   setPlayerFacingOverride(undefined)
-  setEquipmentMotion(characterRoot, 'hit', true)
-  fxSound('hurt', 0.9)
   fxNumber(Vector3.add(pose.position, Vector3.create(0, 1.9, 0)), `-${damage}`, 'player')
   const yaw = fromYaw ?? pose.facing + Math.PI
+  if (killed) {
+    // The fall plays once and rests on its last frame until the world revives the hero.
+    setEquipmentMotion(characterRoot, 'death', true)
+    fxSound('death', 0.9)
+    kickCrawlerCamera(Vector3.create(Math.sin(yaw) * 0.4, -0.25, Math.cos(yaw) * 0.4))
+    hitStopPlayer(0.1)
+    return true
+  }
+  setEquipmentMotion(characterRoot, 'hit', true)
+  fxSound('hurt', 0.9)
   kickCrawlerCamera(Vector3.create(Math.sin(yaw) * 0.25, -0.1, Math.cos(yaw) * 0.25))
   hitStopPlayer(0.06)
   return true
@@ -250,12 +272,15 @@ const combatHooks: RoamingCombatHooks = {
     return Vector3.create(-Math.sin(yaw), 0, -Math.cos(yaw))
   },
   onAttackStart: (motion, context) => {
+    // The world's lock-on may size the step-in for this swing; otherwise the clip's own step is used.
+    stepIn = undefined
     attackStartHandler?.(motion, context)
     if (characterRoot !== undefined) fxSlash(characterRoot, motion)
     fxSound(motion === 'attack_heavy' ? 'swing_heavy' : 'swing_light', 0.7)
     const player = Transform.getOrNull(engine.PlayerEntity)
     publishSwing(motion, facingOverride ?? (player ? playerYaw(player.rotation) : 0))
   },
+  onAttackLunge: lungePlayer,
   onAttackContact: (motion, context) => attackContactHandler?.(motion, context),
   onAttackEnd: () => setPlayerFacingOverride(undefined),
   onDodgeStart: (direction) => {
@@ -263,9 +288,8 @@ const combatHooks: RoamingCombatHooks = {
     // Face the roll from its first frame; the renderer turns the native
     // controller the same way once the travel starts, so nothing snaps after.
     setPlayerFacingOverride(Math.atan2(direction.x, direction.z))
-    syncDodgeFreeze(true)
   },
-  onDodgeTravel: rollPlayer,
+  onDodgeTravel: glidePlayer,
   onExhausted: () => {
     if (exhaustedNotice > 0) return
     exhaustedNotice = 0.6
@@ -392,7 +416,7 @@ function updatePlayerCharacter(dt: number) {
   const player = Transform.getOrNull(engine.PlayerEntity)
   if (!player || !isInsideScene(player.position)) {
     resetRoamingCombat(roamingCombat)
-    syncDodgeFreeze(false)
+    syncInputFreeze(false)
     setCharacterVisible(false)
     removeNativeAvatarModifier()
     samplePosition = undefined
@@ -408,9 +432,10 @@ function updatePlayerCharacter(dt: number) {
     ? updateRoamingCombat(roamingCombat, characterRoot, player.position, dt,
       !!requestedLoadout?.weapon && requestedLoadout.weapon !== 'none-weapon', locomotion !== 'idle', combatHooks)
     : undefined
-  // The freeze goes up in the dodge hook and comes down here, so a reset (menu,
-  // death, teleport) that drops the dodge also hands the controls back.
-  syncDodgeFreeze(!!roamingCombat.dodge)
+  // Rooting follows the combat state every tick, so it is up before a roll's or
+  // swing's timed move starts (those are issued a beat after the pose) and a
+  // reset (menu, teleport) or a revive hands the controls straight back.
+  syncInputFreeze(isRoamingRooted(roamingCombat))
   // One owner chooses the final pose. Locomotion sampling cannot interrupt a swing.
   setEquipmentMotion(characterRoot, actionMotion ?? locomotion)
   exhaustedNotice = Math.max(0, exhaustedNotice - dt)

@@ -30,8 +30,8 @@ import {
   createEnemyHealthBar, destroyEnemyHealthBar, EnemyHealthBar, updateEnemyHealthBar
 } from './enemyHealthBar'
 import {
-  getPlayerCombatPose, hitStopPlayer, nudgePlayer, playerBlockedHit, receivePlayerCombatHit, restorePlayerCombatHealth,
-  setPlayerAttackContactHandler, setPlayerAttackStartHandler, setPlayerFacingOverride
+  getPlayerCombatPose, hitStopPlayer, playerBlockedHit, receivePlayerCombatHit, restorePlayerCombatHealth,
+  setPlayerAttackContactHandler, setPlayerAttackStartHandler, setPlayerFacingOverride, setPlayerStepIn
 } from './playerCharacter'
 import { movePlayerToSpawn } from './playerPlacement'
 import { dungeonCell, DungeonState, getDungeonState, isDungeonFloor, onDungeonLoaded } from './dungeon'
@@ -138,10 +138,8 @@ const BODY_RADIUS = 0.42
 /** Soft lock-on only engages once a target is just about in reach, within this half-angle. */
 const LOCK_MARGIN = 0.35
 const LOCK_COS = 0.1
-/** The step-in closes to this distance, moving at most STEP_MAX, and only from a near standstill. */
+/** The swing's lunge closes to this distance from a locked-on enemy. */
 const STEP_TO = 1.2
-const STEP_MAX = 0.5
-const STEP_MAX_SPEED = 1.2
 const BOSS_DROP = 'pride-sword-dusk'
 
 const state: WorldRivalState = {
@@ -736,12 +734,9 @@ function lockOn(motion: AttackMotion, _context: AttackContext) {
   const dz = best.position.z - attacker.position.z
   const distance = Math.sqrt(dx * dx + dz * dz)
   if (distance > 0.0001) setPlayerFacingOverride(Math.atan2(dx, dz))
-  // A small step closes the last gap, but only from a standstill; a moving player
-  // is already closing it and a teleport on top reads as a hitch.
-  if (attacker.speed <= STEP_MAX_SPEED && distance > STEP_TO && distance < reach + LOCK_MARGIN) {
-    const step = Math.min(STEP_MAX, distance - STEP_TO)
-    nudgePlayer(Vector3.create((dx / distance) * step, 0, (dz / distance) * step))
-  }
+  // The wind-up's lunge closes the last gap so the blow lands at sword reach;
+  // an enemy already that close gets a swing from a standstill.
+  setPlayerStepIn(distance - STEP_TO)
 }
 
 function hitEnemies(motion: AttackMotion, context: AttackContext) {

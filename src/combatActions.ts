@@ -84,6 +84,8 @@ export type Swing = {
   contacted: boolean
   /** Third light in a string: heavier hit, longer recovery. */
   finisher?: boolean
+  /** The wind-up's forward carry has been issued (roaming ground swings only). */
+  lunged?: boolean
 }
 
 /** Jumping changes the pose/height, not attack eligibility. */

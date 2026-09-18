@@ -30,6 +30,9 @@ export type AttackContext = { finisher: boolean }
 export type RoamingCombatHooks = {
   /** A swing has just been selected; a good moment to lock on and step in. */
   onAttackStart?: (motion: AttackMotion, context: AttackContext) => void
+  /** A ground swing's wind-up is under way: carry the body forward into the
+   *  hit over `seconds` (the step the swing clips are animated with). */
+  onAttackLunge?: (motion: AttackMotion, seconds: number) => void
   /** The swing reached its contact frame. */
   onAttackContact?: (motion: AttackMotion, context: AttackContext) => void
   /** The swing (and its recovery) is over, or was interrupted. */
@@ -58,6 +61,19 @@ export const DODGE = {
   distance: 2.8,
   travelStart: 0.08,
   travelEnd: ROLL_SECONDS * 0.86
+} as const
+
+/**
+ * Ground swings are a commitment, as in Diablo or Hades: the host roots the
+ * native controller for the swing, the wind-up carries the body forward instead
+ * of free steering, and once the blow has landed a movement input may cut the
+ * follow-through short. Swings started in the air are left alone.
+ */
+export const SWING = {
+  /** The lunge is issued a beat after the pose so the host's input freeze is up first. */
+  lungeDelay: 0.06,
+  /** Follow-through that must play after contact before movement may cancel the swing. */
+  cancelAfterContact: 0.08
 } as const
 
 export function createRoamingCombat() {
@@ -114,15 +130,30 @@ export function isRoamingBlocking(combat: RoamingCombat): boolean {
   return combat.blocking
 }
 
-export function hitRoamingCharacter(combat: RoamingCombat, damage: number, stagger: number) {
-  if (combat.health <= 0) return
+/** Returns true when this blow was the killing one. */
+export function hitRoamingCharacter(combat: RoamingCombat, damage: number, stagger: number): boolean {
+  if (combat.health <= 0) return false
   combat.health = Math.max(0, combat.health - damage)
   combat.stagger = Math.max(combat.stagger, stagger)
   combat.swing = undefined
   combat.buffered = undefined
   combat.comboStep = 0
   combat.comboWindow = 0
-  if (combat.jump) combat.jump.poseOverride = 'hit'
+  if (combat.health > 0) {
+    if (combat.jump) combat.jump.poseOverride = 'hit'
+    return false
+  }
+  // Dead: the body falls and stays down until the world restores it.
+  combat.stagger = 0
+  combat.recovery = 0
+  combat.dodge = undefined
+  combat.blocking = false
+  if (combat.jump) combat.jump.poseOverride = 'death'
+  return true
+}
+
+export function isRoamingDead(combat: RoamingCombat): boolean {
+  return combat.health <= 0
 }
 
 export function healRoamingCharacter(combat: RoamingCombat, amount: number): number {
@@ -295,9 +326,33 @@ export function updateRoamingCombat(
     // The string may continue for a moment after the recovery; a finisher ends it.
     combat.comboWindow = swing.motion === 'attack_heavy' || swing.finisher ? 0 : combat.recovery + COMBO_WINDOW
     if (swing.finisher || swing.motion === 'attack_heavy') combat.comboStep = 0
+  } else if (swing && !combat.jump) {
+    if (!swing.lunged && swing.elapsed >= SWING.lungeDelay) {
+      swing.lunged = true
+      // A swing that touched down late in its wind-up (started in the air) has no time left to travel.
+      if (!swing.contacted && swing.contact - swing.elapsed >= 0.1) {
+        hooks.onAttackLunge?.(swing.motion as AttackMotion, swing.contact - swing.elapsed)
+      }
+    }
+    // Move-cancel: once the blow has landed, WASD ends the follow-through and the
+    // hero is walking again. A buffered attack means the player wants the string
+    // to continue, so it is left to play out.
+    const wantsToMove = swing.contacted && swing.elapsed >= swing.contact + SWING.cancelAfterContact &&
+      !combat.buffered && !!hooks.moveDirection?.()
+    if (wantsToMove) {
+      combat.swing = undefined
+      combat.recovery = 0
+      combat.comboWindow = swing.motion === 'attack_heavy' || swing.finisher ? 0 : COMBO_WINDOW
+      if (swing.finisher || swing.motion === 'attack_heavy') combat.comboStep = 0
+    }
   }
   if (hadSwingOrRecovery && !combat.swing && combat.recovery === 0) hooks.onAttackEnd?.()
   return currentMotion(combat)
+}
+
+/** The native controller is held still: rolling, rooted in a ground swing, or dead. */
+export function isRoamingRooted(combat: RoamingCombat): boolean {
+  return combat.health <= 0 || !!combat.dodge || (!!combat.swing && !combat.jump)
 }
 
 function lightMotion(combat: RoamingCombat): AttackMotion {
@@ -305,6 +360,7 @@ function lightMotion(combat: RoamingCombat): AttackMotion {
 }
 
 function currentMotion(combat: RoamingCombat): EquipmentMotion | undefined {
+  if (combat.health <= 0) return 'death'
   if (combat.stagger > 0) return 'hit'
   if (combat.swing) return combat.swing.motion
   if (combat.blocking) return 'block'
