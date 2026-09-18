@@ -1,0 +1,18 @@
+{
+  "jump_male": {
+    "duration": 2.2,
+    "takeoff": 0.6333333333333333,
+    "landing": 1.3333333333333333,
+    "fps": 30,
+    "elevation": "runtime",
+    "timingBasis": "Takeoff is last fully planted-foot frame; landing is first replanted toe-ball/impact frame. Timings inferred from sampled native pose metadata."
+  },
+  "jump_female": {
+    "duration": 2.2,
+    "takeoff": 0.6333333333333333,
+    "landing": 1.3333333333333333,
+    "fps": 30,
+    "elevation": "runtime",
+    "timingBasis": "Takeoff is last fully planted-foot frame; landing is first replanted toe-ball/impact frame. Timings inferred from sampled native pose metadata."
+  }
+}

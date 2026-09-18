@@ -1,0 +1,126 @@
+{
+  "durations": {
+    "attack_light3": 0.7333,
+    "fencing": 1.2,
+    "flourish": 1.7667,
+    "flourish_heavy": 2.0333,
+    "heavy_combo_a": 2.0333,
+    "heavy_combo_b": 1.6667,
+    "heavy_combo_c": 1.6,
+    "leap": 1.5667,
+    "menace": 1.7667,
+    "menace_enter": 1.3333,
+    "roll": 1.1667,
+    "stun": 0.9
+  },
+  "per_target": {
+    "attack_light3": {
+      "models/roaming/customization/male/warm/core.glb": 0.7333,
+      "models/roaming/customization/male/warm/chest.glb": 0.7333,
+      "models/roaming/customization/male/warm/hands.glb": 0.7333,
+      "models/roaming/customization/male/warm/legs.glb": 0.7333,
+      "models/roaming/customization/male/warm/boots.glb": 0.7333,
+      "models/roaming/customization/male/hair/none-brown.glb": 0.7333,
+      "models/roaming/combat/equipment/brute-head-combat-v2.glb": 0.7333
+    },
+    "fencing": {
+      "models/roaming/customization/male/warm/core.glb": 1.2,
+      "models/roaming/customization/male/warm/chest.glb": 1.2,
+      "models/roaming/customization/male/warm/hands.glb": 1.2,
+      "models/roaming/customization/male/warm/legs.glb": 1.2,
+      "models/roaming/customization/male/warm/boots.glb": 1.2,
+      "models/roaming/customization/male/hair/none-brown.glb": 1.2,
+      "models/roaming/combat/equipment/brute-head-combat-v2.glb": 1.2
+    },
+    "flourish": {
+      "models/roaming/customization/male/warm/core.glb": 1.7667,
+      "models/roaming/customization/male/warm/chest.glb": 1.7667,
+      "models/roaming/customization/male/warm/hands.glb": 1.7667,
+      "models/roaming/customization/male/warm/legs.glb": 1.7667,
+      "models/roaming/customization/male/warm/boots.glb": 1.7667,
+      "models/roaming/customization/male/hair/none-brown.glb": 1.7667,
+      "models/roaming/combat/equipment/brute-head-combat-v2.glb": 1.7667
+    },
+    "flourish_heavy": {
+      "models/roaming/customization/male/warm/core.glb": 2.0333,
+      "models/roaming/customization/male/warm/chest.glb": 2.0333,
+      "models/roaming/customization/male/warm/hands.glb": 2.0333,
+      "models/roaming/customization/male/warm/legs.glb": 2.0333,
+      "models/roaming/customization/male/warm/boots.glb": 2.0333,
+      "models/roaming/customization/male/hair/none-brown.glb": 2.0333,
+      "models/roaming/combat/equipment/brute-head-combat-v2.glb": 2.0333
+    },
+    "heavy_combo_a": {
+      "models/roaming/customization/male/warm/core.glb": 2.0333,
+      "models/roaming/customization/male/warm/chest.glb": 2.0333,
+      "models/roaming/customization/male/warm/hands.glb": 2.0333,
+      "models/roaming/customization/male/warm/legs.glb": 2.0333,
+      "models/roaming/customization/male/warm/boots.glb": 2.0333,
+      "models/roaming/customization/male/hair/none-brown.glb": 2.0333,
+      "models/roaming/combat/equipment/brute-head-combat-v2.glb": 2.0333
+    },
+    "heavy_combo_b": {
+      "models/roaming/customization/male/warm/core.glb": 1.6667,
+      "models/roaming/customization/male/warm/chest.glb": 1.6667,
+      "models/roaming/customization/male/warm/hands.glb": 1.6667,
+      "models/roaming/customization/male/warm/legs.glb": 1.6667,
+      "models/roaming/customization/male/warm/boots.glb": 1.6667,
+      "models/roaming/customization/male/hair/none-brown.glb": 1.6667,
+      "models/roaming/combat/equipment/brute-head-combat-v2.glb": 1.6667
+    },
+    "heavy_combo_c": {
+      "models/roaming/customization/male/warm/core.glb": 1.6,
+      "models/roaming/customization/male/warm/chest.glb": 1.6,
+      "models/roaming/customization/male/warm/hands.glb": 1.6,
+      "models/roaming/customization/male/warm/legs.glb": 1.6,
+      "models/roaming/customization/male/warm/boots.glb": 1.6,
+      "models/roaming/customization/male/hair/none-brown.glb": 1.6,
+      "models/roaming/combat/equipment/brute-head-combat-v2.glb": 1.6
+    },
+    "leap": {
+      "models/roaming/customization/male/warm/core.glb": 1.5667,
+      "models/roaming/customization/male/warm/chest.glb": 1.5667,
+      "models/roaming/customization/male/warm/hands.glb": 1.5667,
+      "models/roaming/customization/male/warm/legs.glb": 1.5667,
+      "models/roaming/customization/male/warm/boots.glb": 1.5667,
+      "models/roaming/customization/male/hair/none-brown.glb": 1.5667,
+      "models/roaming/combat/equipment/brute-head-combat-v2.glb": 1.5667
+    },
+    "menace": {
+      "models/roaming/customization/male/warm/core.glb": 1.7667,
+      "models/roaming/customization/male/warm/chest.glb": 1.7667,
+      "models/roaming/customization/male/warm/hands.glb": 1.7667,
+      "models/roaming/customization/male/warm/legs.glb": 1.7667,
+      "models/roaming/customization/male/warm/boots.glb": 1.7667,
+      "models/roaming/customization/male/hair/none-brown.glb": 1.7667,
+      "models/roaming/combat/equipment/brute-head-combat-v2.glb": 1.7667
+    },
+    "menace_enter": {
+      "models/roaming/customization/male/warm/core.glb": 1.3333,
+      "models/roaming/customization/male/warm/chest.glb": 1.3333,
+      "models/roaming/customization/male/warm/hands.glb": 1.3333,
+      "models/roaming/customization/male/warm/legs.glb": 1.3333,
+      "models/roaming/customization/male/warm/boots.glb": 1.3333,
+      "models/roaming/customization/male/hair/none-brown.glb": 1.3333,
+      "models/roaming/combat/equipment/brute-head-combat-v2.glb": 1.3333
+    },
+    "roll": {
+      "models/roaming/customization/male/warm/core.glb": 1.1667,
+      "models/roaming/customization/male/warm/chest.glb": 1.1667,
+      "models/roaming/customization/male/warm/hands.glb": 1.1667,
+      "models/roaming/customization/male/warm/legs.glb": 1.1667,
+      "models/roaming/customization/male/warm/boots.glb": 1.1667,
+      "models/roaming/customization/male/hair/none-brown.glb": 1.1667,
+      "models/roaming/combat/equipment/brute-head-combat-v2.glb": 1.1667
+    },
+    "stun": {
+      "models/roaming/customization/male/warm/core.glb": 0.9,
+      "models/roaming/customization/male/warm/chest.glb": 0.9,
+      "models/roaming/customization/male/warm/hands.glb": 0.9,
+      "models/roaming/customization/male/warm/legs.glb": 0.9,
+      "models/roaming/customization/male/warm/boots.glb": 0.9,
+      "models/roaming/customization/male/hair/none-brown.glb": 0.9,
+      "models/roaming/combat/equipment/brute-head-combat-v2.glb": 0.9
+    }
+  }
+}

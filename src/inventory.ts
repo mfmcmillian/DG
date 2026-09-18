@@ -1,0 +1,364 @@
+import {
+  engine,
+  Entity,
+  Transform
+} from '@dcl/sdk/ecs'
+import { Quaternion } from '@dcl/sdk/math'
+import { openSceneCamera, closeSceneCamera, SceneCameraSession } from './sceneCamera'
+import {
+  createMenuPreviewStage, destroyMenuPreviewStage, MENU_CAMERA_POSITION, MENU_CAMERA_TARGET,
+  MENU_PREVIEW_FACING, MenuPreviewStage, updateMenuPreviewStage
+} from './menuPreviewStage'
+import {
+  CHARACTERS,
+  CharacterDefinition,
+  closePicker,
+  getPickerState,
+  openPicker,
+  getEquippedCharacter
+} from './characterPicker'
+import {
+  EQUIPMENT_ITEMS,
+  EQUIPMENT_SLOTS,
+  EquipmentItem,
+  EquipmentLoadout,
+  EquipmentSlot,
+  getUnequippedItem
+} from './equipmentCatalog'
+import {
+  destroyEquipmentAvatar,
+  getEquipmentLoading,
+  setEquipmentAvatar,
+  setEquipmentMotion,
+  setEquipmentPreviewWeapon,
+  setEquipmentVisible
+} from './equipmentAvatar'
+import {
+  getCommittedLoadout as readCommittedLoadout,
+  setCommittedLoadout
+} from './equipmentState'
+
+export type InventoryFilter = 'all' | 'other' | EquipmentSlot
+
+export interface InventoryState {
+  open: boolean
+  characterId: string
+  selectedSlot: EquipmentSlot
+  selectedItemId: string
+  filter: InventoryFilter
+  page: number
+  loading: 'loading' | 'ready' | 'error'
+}
+
+const state: InventoryState = {
+  open: false,
+  characterId: 'vanguard',
+  selectedSlot: 'chest',
+  selectedItemId: '',
+  filter: 'all',
+  page: 0,
+  loading: 'loading'
+}
+
+const PAGE_SIZE = 12
+
+let initialized = false
+let onApply: (character: CharacterDefinition) => void = () => {}
+let committedPreview: Entity | undefined
+let candidatePreview: Entity | undefined
+let previewLoadout: EquipmentLoadout | undefined
+let facing = MENU_PREVIEW_FACING
+let generation = 0
+let pendingUnequip: { generation: number; slot: EquipmentSlot; itemId: string } | undefined
+let equipmentWasApplied = false
+let cameraSession: SceneCameraSession | undefined
+let stage: MenuPreviewStage | undefined
+const previewVisibility = new Map<Entity, boolean>()
+
+export function initializeInventory(
+  applyEquipment: (character: CharacterDefinition) => void
+) {
+  onApply = applyEquipment
+  if (initialized) return
+  initialized = true
+  engine.addSystem(inventorySystem)
+}
+
+export function getInventoryState(): Readonly<InventoryState> {
+  return state
+}
+
+export function getInventoryCharacter(): CharacterDefinition {
+  return CHARACTERS.find((character) => character.id === state.characterId) ?? getEquippedCharacter()
+}
+
+export function getCommittedLoadout(characterId = state.characterId): EquipmentLoadout {
+  return readCommittedLoadout(characterId)
+}
+
+export function getPreviewLoadout(): EquipmentLoadout {
+  return { ...(previewLoadout ?? getCommittedLoadout()) }
+}
+
+export function getInventoryIsDirty(): boolean {
+  if (!state.open || !previewLoadout) return false
+  const committed = getCommittedLoadout()
+  return EQUIPMENT_SLOTS.some((slot) => previewLoadout![slot.id] !== committed[slot.id])
+}
+
+// Loot-gated gear: hidden from the inventory until the dungeon hands it over.
+const lockedItems = new Set<string>(['pride-sword-dusk'])
+
+export function isInventoryItemLocked(id: string): boolean {
+  return lockedItems.has(id)
+}
+
+/** Returns true when the item was locked and is now available. */
+export function unlockInventoryItem(id: string): boolean {
+  return lockedItems.delete(id)
+}
+
+export function getInventoryItems(): EquipmentItem[] {
+  const available = EQUIPMENT_ITEMS.filter((item) => !lockedItems.has(item.id))
+  if (state.filter === 'all') return available
+  if (state.filter === 'other') {
+    return available.filter((item) => item.slot !== 'head' && item.slot !== 'chest' && item.slot !== 'weapon')
+  }
+  return available.filter((item) => item.slot === state.filter)
+}
+
+export function openInventory() {
+  if (!initialized || state.open) return
+  if (!getPickerState().hasCreatedCharacter) {
+    openPicker()
+    return
+  }
+  closePicker()
+  const session = openSceneCamera('inventory', MENU_CAMERA_POSITION, MENU_CAMERA_TARGET)
+  if (!session) return
+  cameraSession = session
+  state.open = true
+  state.characterId = getEquippedCharacter().id
+  state.selectedSlot = 'chest'
+  state.filter = 'all'
+  state.page = 0
+  state.loading = 'loading'
+  previewLoadout = getCommittedLoadout()
+  state.selectedItemId = previewLoadout[state.selectedSlot]
+  equipmentWasApplied = false
+  pendingUnequip = undefined
+  facing = MENU_PREVIEW_FACING
+  generation++
+
+  stage = createMenuPreviewStage('inventory')
+  committedPreview = createPreview(getCommittedLoadout())
+}
+
+export function closeInventory() {
+  if (!state.open) return
+  state.open = false
+  pendingUnequip = undefined
+  generation++
+
+  closeSceneCamera(cameraSession)
+  cameraSession = undefined
+
+  // Apply the final committed outfit once when returning to the playable character.
+  if (equipmentWasApplied) onApply(getInventoryCharacter())
+
+  removePreview(candidatePreview)
+  removePreview(committedPreview)
+  candidatePreview = undefined
+  committedPreview = undefined
+  if (stage) destroyMenuPreviewStage(stage)
+  stage = undefined
+  previewVisibility.clear()
+  previewLoadout = undefined
+}
+
+export function selectInventorySlot(slot: EquipmentSlot) {
+  if (!state.open || !EQUIPMENT_SLOTS.some((entry) => entry.id === slot)) return
+  state.selectedSlot = slot
+  state.selectedItemId = getCommittedLoadout()[slot]
+  state.filter = slot
+  state.page = 0
+  revertInventoryPreview()
+}
+
+export function selectInventoryItem(id: string) {
+  if (!state.open) return
+  const item = EQUIPMENT_ITEMS.find((entry) => entry.id === id)
+  if (!item) return
+  state.selectedSlot = item.slot
+  state.selectedItemId = item.id
+  const next = getCommittedLoadout()
+  next[item.slot] = item.id
+  replaceCandidate(next)
+}
+
+export function setInventoryFilter(filter: InventoryFilter) {
+  if (!state.open) return
+  if (filter !== 'all' && filter !== 'other' && !EQUIPMENT_SLOTS.some((slot) => slot.id === filter)) return
+  state.filter = filter
+  state.page = 0
+}
+
+export function setInventoryPage(page: number) {
+  if (!state.open || !Number.isFinite(page)) return
+  const lastPage = Math.max(0, Math.ceil(getInventoryItems().length / PAGE_SIZE) - 1)
+  state.page = Math.max(0, Math.min(Math.floor(page), lastPage))
+}
+
+export function equipSelectedItem() {
+  if (!state.open || state.loading !== 'ready' || !getInventoryIsDirty()) return
+  const item = EQUIPMENT_ITEMS.find((entry) => entry.id === state.selectedItemId && entry.slot === state.selectedSlot)
+  if (!item || previewLoadout?.[item.slot] !== item.id) return
+  const readyPreview = candidatePreview ?? committedPreview
+  if (readyPreview === undefined || getEquipmentLoading(readyPreview) !== 'ready') return
+  if (candidatePreview === undefined && item.slot !== 'weapon') return
+
+  const committed = getCommittedLoadout()
+  committed[item.slot] = item.id
+  setCommittedLoadout(state.characterId, committed)
+  previewLoadout = getCommittedLoadout()
+  pendingUnequip = undefined
+  equipmentWasApplied = true
+
+  if (candidatePreview !== undefined) {
+    removePreview(committedPreview)
+    committedPreview = candidatePreview
+    candidatePreview = undefined
+  }
+  showPreview(committedPreview, true)
+}
+
+export function unequipSelectedSlot() {
+  if (!state.open) return
+  const item = getUnequippedItem(state.selectedSlot)
+  const next = getCommittedLoadout()
+  next[state.selectedSlot] = item.id
+  state.selectedItemId = item.id
+  replaceCandidate(next, true)
+}
+
+export function revertInventoryPreview() {
+  if (!state.open) return
+  pendingUnequip = undefined
+  generation++
+  removePreview(candidatePreview)
+  candidatePreview = undefined
+  previewLoadout = getCommittedLoadout()
+  state.selectedItemId = previewLoadout[state.selectedSlot]
+  if (committedPreview === undefined || getEquipmentLoading(committedPreview) === 'error') {
+    removePreview(committedPreview)
+    committedPreview = createPreview(previewLoadout)
+  } else {
+    setEquipmentPreviewWeapon(committedPreview, previewLoadout.weapon)
+  }
+  state.loading = getEquipmentLoading(committedPreview)
+  showPreview(committedPreview, state.loading === 'ready')
+}
+
+export function retryInventoryPreview() {
+  if (!state.open) return
+  if (!getInventoryIsDirty()) {
+    removePreview(committedPreview)
+    committedPreview = createPreview(getCommittedLoadout())
+    state.loading = 'loading'
+    return
+  }
+  const autoCommit = pendingUnequip?.generation === generation
+  replaceCandidate(getPreviewLoadout(), autoCommit)
+}
+
+export function rotateInventoryPreview(delta: number) {
+  if (!state.open || !Number.isFinite(delta)) return
+  facing = (facing + delta + 360) % 360
+  for (const root of [committedPreview, candidatePreview]) {
+    if (root !== undefined) Transform.getMutable(root).rotation = Quaternion.fromEulerDegrees(0, facing, 0)
+  }
+}
+
+function replaceCandidate(loadout: EquipmentLoadout, autoCommit = false) {
+  generation++
+  pendingUnequip = undefined
+  removePreview(candidatePreview)
+  candidatePreview = undefined
+  previewLoadout = { ...loadout }
+  if (!getInventoryIsDirty()) {
+    revertInventoryPreview()
+    return
+  }
+
+  const committed = getCommittedLoadout()
+  const weaponOnly = EQUIPMENT_SLOTS.every((slot) =>
+    slot.id === 'weapon' || previewLoadout![slot.id] === committed[slot.id]
+  )
+  if (weaponOnly) {
+    // Keep the character and its body animation alive while changing only the cached sword.
+    if (
+      committedPreview === undefined ||
+      getEquipmentLoading(committedPreview) === 'error' ||
+      !setEquipmentPreviewWeapon(committedPreview, previewLoadout.weapon)
+    ) {
+      removePreview(committedPreview)
+      committedPreview = createPreview(previewLoadout)
+    }
+    state.loading = getEquipmentLoading(committedPreview)
+    showPreview(committedPreview, state.loading === 'ready')
+  } else {
+    if (committedPreview !== undefined) setEquipmentPreviewWeapon(committedPreview, committed.weapon)
+    candidatePreview = createPreview(previewLoadout)
+    state.loading = 'loading'
+    showPreview(committedPreview, committedPreview !== undefined && getEquipmentLoading(committedPreview) === 'ready')
+  }
+  if (autoCommit) {
+    pendingUnequip = { generation, slot: state.selectedSlot, itemId: state.selectedItemId }
+  }
+}
+
+function createPreview(loadout: EquipmentLoadout): Entity {
+  const root = engine.addEntity()
+  Transform.create(root, {
+    parent: stage!.anchor,
+    rotation: Quaternion.fromEulerDegrees(0, facing, 0)
+  })
+  setEquipmentAvatar(root, state.characterId, loadout, false, { preloadWeapons: true, presentation: 'menu' })
+  // Show the outfit in a relaxed standing pose, including the matching sword clip.
+  setEquipmentMotion(root, 'idle')
+  showPreview(root, false)
+  return root
+}
+
+function showPreview(root: Entity | undefined, visible: boolean) {
+  if (root === undefined || previewVisibility.get(root) === visible) return
+  setEquipmentVisible(root, visible)
+  previewVisibility.set(root, visible)
+}
+
+function removePreview(root: Entity | undefined) {
+  if (root === undefined) return
+  destroyEquipmentAvatar(root)
+  engine.removeEntity(root)
+  previewVisibility.delete(root)
+}
+
+function inventorySystem() {
+  if (!state.open || committedPreview === undefined) return
+  if (stage) updateMenuPreviewStage(stage)
+  const committedReady = getEquipmentLoading(committedPreview) === 'ready'
+  if (candidatePreview === undefined) {
+    state.loading = getEquipmentLoading(committedPreview)
+    showPreview(committedPreview, committedReady)
+  } else {
+    state.loading = getEquipmentLoading(candidatePreview)
+    showPreview(candidatePreview, state.loading === 'ready')
+    showPreview(committedPreview, state.loading !== 'ready' && committedReady)
+  }
+  if (
+    state.loading === 'ready' &&
+    pendingUnequip?.generation === generation &&
+    pendingUnequip.slot === state.selectedSlot &&
+    pendingUnequip.itemId === state.selectedItemId
+  ) equipSelectedItem()
+}
