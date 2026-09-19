@@ -7,7 +7,7 @@
 import { engine } from '@dcl/sdk/ecs'
 import { MAX_COMBAT_HEALTH } from './combatActions'
 import { heroPosition } from './multiplayer'
-import { room } from './shared/messages'
+import { onNet, sendNet } from './net'
 
 /** Seconds a downed hero lies before the host stands them back up at the entrance. */
 export const RECOVER_SECONDS = 4
@@ -33,11 +33,11 @@ let initialized = false
 export function initializeHeroVitals() {
   if (initialized) return
   initialized = true
-  room.onMessage('pickup', (msg, context) => {
+  onNet('pickup', (msg, context) => {
     if (!context) return
     claimHeart(context.from.toLowerCase(), msg.x, msg.z)
   })
-  room.onMessage('respawn', (_msg, context) => {
+  onNet('respawn', (_msg, context) => {
     if (!context) return
     const id = context.from.toLowerCase()
     const v = vitals.get(id)
@@ -84,7 +84,7 @@ export function strikeHero(
   const dealt = blocked || dodged ? 0 : Math.max(0, Math.round(damage))
   v.health = Math.max(0, v.health - dealt)
   if (v.health === 0) v.deadFor = 0
-  void room.send('hitPlayer', { id, damage: dealt, stagger, yaw, health: v.health, blocked, dodged })
+  sendNet('hitPlayer', { id, damage: dealt, stagger, yaw, health: v.health, blocked, dodged })
 }
 
 /** Returns the amount actually restored (0 when dead or already full). */
@@ -94,7 +94,7 @@ export function healHero(id: string, amount: number): number {
   const before = v.health
   v.health = Math.min(MAX_COMBAT_HEALTH, v.health + Math.max(0, Math.round(amount)))
   const healed = v.health - before
-  if (healed > 0) void room.send('heal', { id, amount: healed, health: v.health })
+  if (healed > 0) sendNet('heal', { id, amount: healed, health: v.health })
   return healed
 }
 
@@ -103,7 +103,7 @@ export function reviveHero(id: string) {
   if (v.health > 0) return
   v.health = MAX_COMBAT_HEALTH
   v.deadFor = 0
-  void room.send('revive', { id, health: v.health })
+  sendNet('revive', { id, health: v.health })
 }
 
 /** Called alongside every `loot` broadcast so pickups can be checked against a real drop. */

@@ -6,8 +6,13 @@ import { openInventory } from './inventory'
 import { getPlayerCharacterState, getPlayerVitals, retryPlayerCharacter } from './playerCharacter'
 import { getWorldRivalState, retryWorldRival } from './dungeonEnemies'
 import { getLootState } from './loot'
-import { netStatus } from './multiplayer'
+import { isClientSynced, isSoloMode, netStatus } from './multiplayer'
 import { netDebugSummary, recentLogs } from './netDebug'
+
+/** The handshake log is for the wait; once the fight runs (server or solo) it goes. */
+function showNetLog() {
+  return !isSoloMode() && !isClientSynced()
+}
 import { DungeonDevPanel } from './dungeon/ui'
 
 const white = Color4.create(0.94, 0.96, 0.98, 1)
@@ -180,7 +185,7 @@ export function WorldHudUi() {
     {created && <StatusNotice width={width} bottom={bottom} scale={s} />}
     {created && <Label value={`${netStatus()} | ${netDebugSummary()}`} color={muted} font="sans-serif" fontSize={10 * s} textAlign="bottom-left" textWrap="nowrap"
       uiTransform={{ positionType: 'absolute', position: { left: 12 * s, bottom: 4 * s }, width: width - 140 * s, height: 16 * s, pointerFilter: 'none' }} />}
-    {created && <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 12 * s, top: height * 0.32 }, width: 520 * s,
+    {created && showNetLog() && <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 12 * s, top: height * 0.32 }, width: 520 * s,
       flexDirection: 'column', padding: 6 * s, pointerFilter: 'none' }} uiBackground={{ color: Color4.create(0, 0, 0, 0.55) }}>
       {recentLogs().map((line, i) => <Label key={i} value={line} color={white} font="sans-serif" fontSize={9 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={{ width: '100%', height: 12 * s, pointerFilter: 'none' }} />)}

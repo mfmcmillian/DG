@@ -5,9 +5,10 @@ import { CombatPose, MAX_COMBAT_HEALTH } from './combatActions'
 import { EquipmentMotion } from './combatAnimations'
 import { CharacterAppearance } from './appearance'
 import { EquipmentLoadout, EQUIPMENT_SLOTS } from './equipmentCatalog'
-import { dropHero, heroHealth, rememberHeartDrop, resetHero } from './heroVitals'
+import { dropHero, heroHealth, initializeHeroVitals, rememberHeartDrop, resetHero } from './heroVitals'
 import { HeroBody, HeroBodyValue } from './shared/heroBody'
 import { room } from './shared/messages'
+import { enterSolo, isSolo, onNet, sendNet } from './net'
 import { GAME_VERSION } from './version'
 
 export type NetFighter = CombatPose & {
@@ -45,7 +46,16 @@ export type ImpactNet = {
 export type HeroPublish = Omit<HeroBodyValue, 'id' | 'beat'>
 
 let initialized = false
+/** Running as the headless server. */
 let hostMode = false
+/** Seconds this client has waited for the server's state without an answer. */
+let unsyncedFor = 0
+/**
+ * A client that has waited this long for the server gives up on it and hosts
+ * its own fight: enemies, loot and hero health run here, messages loop back
+ * locally. Other players in the room are not shared with in that mode.
+ */
+const SOLO_AFTER_SECONDS = 12
 
 /**
  * `server` is resolved once by main() from the runtime; it is held here so the
@@ -59,9 +69,33 @@ export function initializeMultiplayer(server: boolean) {
   else bindClient()
 }
 
-/** The headless server is the only host. Clients never simulate enemies or loot. */
+/** Whoever runs the fight: the headless server, or a client that went solo. */
 export function isHost(): boolean {
+  return hostMode || isSolo()
+}
+
+/** The headless server runtime: no renderer, no bodies to load, no UI. */
+export function isHeadless(): boolean {
   return hostMode
+}
+
+/** The client fell back to hosting its own fight because the server never answered. */
+export function isSoloMode(): boolean {
+  return isSolo()
+}
+
+/** Client: count the wait for the server and, past the limit, go solo. */
+function watchForServer(dt: number) {
+  if (isSolo() || isStateSyncronized()) return
+  unsyncedFor += Number.isFinite(dt) && dt > 0 ? dt : 0
+  if (unsyncedFor < SOLO_AFTER_SECONDS) return
+  const id = localAddress()
+  if (!id) return
+  console.log(`[DG] no answer from the server after ${unsyncedFor.toFixed(0)}s; hosting the fight locally`)
+  enterSolo(id)
+  engine.removeSystem(watchForServer)
+  bindServer()
+  initializeHeroVitals()
 }
 
 export function localAddress(): string {
@@ -144,7 +178,7 @@ export function allFighters(local?: (CombatPose & { health: number; invulnerable
       position: heroPosition(id) ?? Vector3.create(hero.x, hero.y, hero.z),
       facing: hero.f,
       // Only the host keeps the ledger; clients use fighters for presence, not health.
-      health: hostMode ? heroHealth(id) : MAX_COMBAT_HEALTH,
+      health: isHost() ? heroHealth(id) : MAX_COMBAT_HEALTH,
       invulnerable: hero.dodge,
       blocking: hero.block,
       local: false
@@ -176,7 +210,7 @@ const BEAT_SECONDS = 1
 const POSE_INTERVAL = 0.12
 
 function clientReady() {
-  return !hostMode && isStateSyncronized()
+  return !hostMode && (isSolo() || isStateSyncronized())
 }
 
 // --- diagnostics: what the client sees of the room ------------------------------
@@ -195,6 +229,7 @@ export function netStatus(): string {
   const realm = RealmInfo.getOrNull(engine.RootEntity)
   const parts = [
     `v${GAME_VERSION}`,
+    isSolo() ? 'solo (server did not answer)' : `waited ${unsyncedFor.toFixed(0)}s`,
     `room ${realm ? (realm.isConnectedSceneRoom ? 'joined' : 'not joined') : 'unknown'}`,
     `state ${isStateSyncronized() ? 'synced' : 'waiting'}`,
     `send ${room.isReady() ? 'live' : 'queued'}`,
@@ -222,14 +257,17 @@ export function publishHero(hero: HeroPublish, dt: number): boolean {
     for (const [entity, body] of engine.getEntitiesWith(HeroBody)) if (body.id === id) stale.push(entity)
     for (const entity of stale) engine.removeEntity(entity)
     const entity = engine.addEntity()
-    try {
-      syncEntity(entity, [HeroBody.componentId])
-    } catch (error) {
-      // The sync profile is filled asynchronously; try again next tick.
-      engine.removeEntity(entity)
-      syncError = error instanceof Error ? error.message : String(error)
-      console.log('hero sync not ready', error)
-      return false
+    // Solo: the body stays local; the ledger here reads it like any other.
+    if (!isSolo()) {
+      try {
+        syncEntity(entity, [HeroBody.componentId])
+      } catch (error) {
+        // The sync profile is filled asynchronously; try again next tick.
+        engine.removeEntity(entity)
+        syncError = error instanceof Error ? error.message : String(error)
+        console.log('hero sync not ready', error)
+        return false
+      }
     }
     syncError = ''
     HeroBody.create(entity, { ...hero, id, beat })
@@ -272,26 +310,26 @@ export function withdrawHero() {
 export function publishHitEnemy(i: number, motion: string, finisher: boolean) {
   const id = localAddress()
   if (!clientReady() || !id) return
-  void room.send('hitEnemy', { id, i, motion, finisher })
+  sendNet('hitEnemy', { id, i, motion, finisher })
 }
 
 export function publishImpact(p: ImpactNet) {
   const id = localAddress()
   if (!clientReady() || !id) return
-  void room.send('impact', { ...p, id })
+  sendNet('impact', { ...p, id })
 }
 
 /** Client -> server: the hero stepped onto a heart it saw at (x, z). Healing comes back as `heal`. */
 export function publishPickup(x: number, z: number) {
   if (!clientReady()) return
-  void room.send('pickup', { x, z })
+  sendNet('pickup', { x, z })
 }
 
 /** Client -> server: the local recover countdown ended and no `revive` has arrived. */
 export function publishRespawn() {
   const id = localAddress()
   if (!clientReady() || !id) return
-  void room.send('respawn', { id })
+  sendNet('respawn', { id })
 }
 
 /**
@@ -300,8 +338,8 @@ export function publishRespawn() {
  * queues it until the connection is up).
  */
 export function publishDiag(note: string) {
-  if (hostMode) return
-  void room.send('diag', { note })
+  if (hostMode || isSolo()) return
+  sendNet('diag', { note })
 }
 
 /** Whether this client has received the server's state (its messages are sent, not queued). */
@@ -312,14 +350,15 @@ export function isClientSynced(): boolean {
 // --- server -> clients ---------------------------------------------------------------
 
 export function publishEnemies(list: EnemySnap[]) {
+  // Solo: the enemies already are the ones the snapshot describes.
   if (!hostMode) return
-  void room.send('enemies', { list })
+  sendNet('enemies', { list })
 }
 
 export function publishLoot(x: number, z: number, coin: number, heart: number, dusk: boolean) {
-  if (!hostMode) return
+  if (!isHost()) return
   rememberHeartDrop(x, z, heart)
-  void room.send('loot', { x, z, coin, heart, dusk })
+  sendNet('loot', { x, z, coin, heart, dusk })
 }
 
 export type HeroHit = {
@@ -361,21 +400,22 @@ export function setMultiplayerHandlers(handlers: {
 }
 
 function bindClient() {
-  room.onMessage('hitPlayer', (msg) => onHitPlayer?.(msg))
-  room.onMessage('heal', (msg) => onHeal?.(msg.id, msg.amount, msg.health))
-  room.onMessage('revive', (msg) => onRevive?.(msg.id, msg.health))
-  room.onMessage('vitals', (msg) => onVitals?.(msg.id, msg.health))
-  room.onMessage('impact', (msg) => {
+  onNet('hitPlayer', (msg) => onHitPlayer?.(msg))
+  onNet('heal', (msg) => onHeal?.(msg.id, msg.amount, msg.health))
+  onNet('revive', (msg) => onRevive?.(msg.id, msg.health))
+  onNet('vitals', (msg) => onVitals?.(msg.id, msg.health))
+  onNet('impact', (msg) => {
     if (msg.id === localAddress()) return
     onImpact?.(msg)
   })
-  room.onMessage('enemies', (msg) => {
+  onNet('enemies', (msg) => {
     snapshots++
     sinceSnapshot = 0
     onEnemies?.(msg.list.map((e) => ({ ...e, m: e.m as EquipmentMotion })))
   })
-  room.onMessage('loot', (msg) => onLoot?.(msg.x, msg.z, msg.coin, msg.heart, msg.dusk))
+  onNet('loot', (msg) => onLoot?.(msg.x, msg.z, msg.coin, msg.heart, msg.dusk))
   engine.addSystem(tickNetDiag)
+  engine.addSystem(watchForServer)
 }
 
 // --- server: who is in the room ---------------------------------------------------------
@@ -399,15 +439,16 @@ let heartbeatAge = 0
 let vitalsAge = 0
 
 function bindServer() {
-  room.onMessage('hitEnemy', (msg, context) => {
+  onNet('hitEnemy', (msg, context) => {
     if (!context) return
     onHitEnemy?.(context.from.toLowerCase(), msg.i, msg.motion, msg.finisher)
   })
-  room.onMessage('impact', (msg, context) => {
-    if (!context) return
-    void room.send('impact', { ...msg, id: context.from.toLowerCase() })
+  onNet('impact', (msg, context) => {
+    // Relay to the other clients; solo has none (and relaying would loop back here).
+    if (!context || isSolo()) return
+    sendNet('impact', { ...msg, id: context.from.toLowerCase() })
   })
-  room.onMessage('diag', (msg, context) => {
+  onNet('diag', (msg, context) => {
     if (!context) return
     console.log(`[Client ${context.from}] ${msg.note}`)
   })
@@ -473,7 +514,7 @@ function trackHeroes(dt: number) {
       t = { entity: primary.entity, cid: primary.hero.cid, missing: 0 }
       tracked.set(id, t)
       resetHero(id)
-      void room.send('vitals', { id, health: heroHealth(id) })
+      sendNet('vitals', { id, health: heroHealth(id) })
       console.log(`[Server] hero ${id} joined as ${primary.hero.cid}; player transform: ${present.has(id) ? 'yes' : 'no'}; heroes: ${tracked.size}`)
       onJoin?.(id)
       continue
@@ -483,7 +524,7 @@ function trackHeroes(dt: number) {
       // A different character is a fresh hero.
       t.cid = primary.hero.cid
       resetHero(id)
-      void room.send('vitals', { id, health: heroHealth(id) })
+      sendNet('vitals', { id, health: heroHealth(id) })
     }
     if (present.has(id)) {
       t.missing = 0
@@ -511,7 +552,7 @@ function trackHeroes(dt: number) {
   vitalsAge += span
   if (vitalsAge >= VITALS_SECONDS) {
     vitalsAge = 0
-    for (const id of tracked.keys()) void room.send('vitals', { id, health: heroHealth(id) })
+    for (const id of tracked.keys()) sendNet('vitals', { id, health: heroHealth(id) })
   }
   heartbeatAge += span
   if (heartbeatAge >= HEARTBEAT_SECONDS) {

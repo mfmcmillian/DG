@@ -48,7 +48,7 @@ import { clearLoot, spawnLoot } from './loot'
 import { unlockInventoryItem } from './inventory'
 import { AttackContext } from './roamingCombat'
 import {
-  allFighters, EnemySnap, HeroHit, ImpactNet, isHost, localAddress, NetFighter, publishEnemies, publishHitEnemy,
+  allFighters, EnemySnap, HeroHit, ImpactNet, isHeadless, isHost, localAddress, NetFighter, publishEnemies, publishHitEnemy,
   publishImpact, publishLoot, publishRespawn, remoteCount, setMultiplayerHandlers
 } from './multiplayer'
 
@@ -273,7 +273,7 @@ function spawnEnemy(home: CombatPose, archetype: Archetype, boss: boolean): Enem
     rotation: Quaternion.fromEulerDegrees(0, (home.facing * 180) / Math.PI, 0),
     scale: Vector3.create(archetype.scale, archetype.scale, archetype.scale)
   })
-  if (!isHost()) {
+  if (!isHeadless()) {
     setEquipmentAvatar(body, archetype.characterId, archetypeLoadout(archetype), false, boss ? { appearance: BOSS_APPEARANCE } : undefined)
     setEquipmentVisible(body, false)
     setEquipmentMotion(body, boss ? 'menace' : 'combat_idle', true)
@@ -284,7 +284,7 @@ function spawnEnemy(home: CombatPose, archetype: Archetype, boss: boolean): Enem
     root, body, archetype, boss, home, position: { ...home.position }, facing: home.facing, lastFacing: home.facing,
     health: archetype.health, recovery: 0, stagger: 0, blocking: false, visible: false,
     motion: 'combat_idle', healthBar: createEnemyHealthBar(body), brain: createRivalBrain(), slamming: false,
-    engaged: false, returningHome: false, dead: false, deadSeconds: 0, loading: isHost() ? 'ready' : 'loading', loadSeconds: 0,
+    engaged: false, returningHome: false, dead: false, deadSeconds: 0, loading: isHeadless() ? 'ready' : 'loading', loadSeconds: 0,
     ring: createDecal('ring'), ritual: boss ? createDecal('ritual') : undefined, hitStop: 0, announced: false, stillSeconds: 0,
     bossBrain: boss ? createBossBrain() : undefined, hyperArmor: false, rollSeconds: 0, rollDir: 1
   }
