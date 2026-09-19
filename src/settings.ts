@@ -5,6 +5,7 @@
 
 import { engine, InputModifier, PointerLock } from '@dcl/sdk/ecs'
 import { CameraChoice, getDungeonState, setCameraChoice } from './dungeon'
+import { parsePrefs, prefsOpenAll } from './shared/prefs'
 
 /** The two cameras a player picks between; `native` stays a developer option. */
 export type CameraPreference = 'crawler' | 'shoulder'
@@ -12,6 +13,8 @@ export type CameraPreference = 'crawler' | 'shoulder'
 export type Settings = {
   camera: CameraPreference
   devTools: boolean
+  /** Developer: every level of every realm selectable, whatever the progress says. The host honours it from the saved prefs. */
+  openAll: boolean
 }
 
 export const CAMERA_OPTIONS: Array<{ id: CameraPreference; name: string; blurb: string }> = [
@@ -19,7 +22,7 @@ export const CAMERA_OPTIONS: Array<{ id: CameraPreference; name: string; blurb: 
   { id: 'shoulder', name: 'Over the shoulder', blurb: 'A short boom behind the hero that turns with them.' }
 ]
 
-const DEFAULTS: Settings = { camera: 'crawler', devTools: false }
+const DEFAULTS: Settings = { camera: 'crawler', devTools: false, openAll: false }
 const settings: Settings = { ...DEFAULTS }
 let open = false
 
@@ -55,6 +58,10 @@ export function setDevTools(on: boolean) {
   if (!on) applyCameraSetting()
 }
 
+export function setOpenAll(on: boolean) {
+  settings.openAll = on
+}
+
 /** Put the saved camera on, unless a developer has switched to the native camera by hand. */
 export function applyCameraSetting() {
   const current: CameraChoice = getDungeonState().camera
@@ -65,18 +72,15 @@ export function applyCameraSetting() {
 // --- persistence (hero save) --------------------------------------------------------------
 
 export function serializeSettings(): string {
-  return JSON.stringify({ camera: settings.camera, dev: settings.devTools ? 1 : 0 })
+  return JSON.stringify({ camera: settings.camera, dev: settings.devTools ? 1 : 0, open: settings.openAll ? 1 : 0 })
 }
 
 export function loadSettings(json: string) {
   if (json) {
-    try {
-      const value = JSON.parse(json) as { camera?: unknown; dev?: unknown }
-      settings.camera = value.camera === 'shoulder' ? 'shoulder' : 'crawler'
-      settings.devTools = value.dev === 1 || value.dev === true
-    } catch {
-      Object.assign(settings, DEFAULTS)
-    }
+    const value = parsePrefs(json)
+    settings.camera = value.camera === 'shoulder' ? 'shoulder' : 'crawler'
+    settings.devTools = value.dev === 1 || value.dev === true
+    settings.openAll = prefsOpenAll(json)
   }
   applyCameraSetting()
 }

@@ -20,8 +20,9 @@ import { isHeadless, onHostStart, setMultiplayerHandlers } from './multiplayer'
 import { onNet, sendNet } from './net'
 import { HUB, setPartyLookup } from './partyLookup'
 import {
-  DIFFICULTIES, LEVELS, levelUnlocked, MAX_PARTY, nextLevel
+  DIFFICULTIES, LevelDefinition, LEVELS, levelUnlocked, MAX_PARTY, nextLevel, previousLevel
 } from './shared/levels'
+import { prefsOpenAll } from './shared/prefs'
 
 type PartyState = 'open' | 'running' | 'done'
 
@@ -171,9 +172,11 @@ function partyOfMember(id: string): Party | undefined {
 
 function clampLevel(id: string, level: number): number {
   const wanted = Math.max(0, Math.min(LEVELS.length - 1, Math.floor(level) || 0))
+  // The developer "every dungeon open" switch rides in the saved prefs.
+  if (prefsOpenAll(heroes.get(id)?.prefs)) return wanted
   const p = progress.get(id) ?? []
-  // Locked levels fall back to the highest one open to this leader.
-  for (let l = wanted; l > 0; l--) if (levelUnlocked(p, l)) return l
+  // A locked level falls back down its realm's ladder to the highest one open to this leader.
+  for (let l: LevelDefinition | undefined = LEVELS[wanted]; l; l = previousLevel(l.id)) if (levelUnlocked(p, l.id)) return l.id
   return 0
 }
 

@@ -16,7 +16,7 @@ import { HUB } from './partyLookup'
 import { getSettings, openSettings } from './settings'
 import { playerDisplayName } from './heroNameTag'
 import { formatTime, heroLabel, partyTitle } from './lobbyUi'
-import { DIFFICULTIES, LEVELS, MAX_PARTY, nextLevel } from './shared/levels'
+import { DIFFICULTIES, LEVELS, MAX_PARTY, nextLevel, realmOfLevel } from './shared/levels'
 
 /** The handshake log is for the wait; once the fight runs (server or solo) it goes. */
 function showNetLog() {
@@ -240,7 +240,7 @@ function ResultsOverlay({ width, height, scale: s }: { width: number; height: nu
       uiTransform={{ width: '100%', height: 24 * s, margin: { top: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />
     {next && <Label value={`${next.name} is open to you.`} color={gold} font="sans-serif" fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 22 * s, margin: { top: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
-    {result.won && !next && <Label value="Every fortress has fallen to you." color={gold} font="sans-serif" fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
+    {result.won && !next && <Label value={`All of ${realmOfLevel(result.level).name} has fallen to you.`} color={gold} font="sans-serif" fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 22 * s, margin: { top: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
     <UiEntity uiTransform={{ width: '100%', height: 40 * s, margin: { top: 16 * s }, flexDirection: 'row', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }}>
       {leader

@@ -14,7 +14,7 @@ import { movePlayerToSpawn } from './playerPlacement'
 import { applyCameraSetting } from './settings'
 import { getPickerState } from './characterPicker'
 import { getPlayerCharacterState } from './playerCharacter'
-import { difficultyById, HUB_LEVEL, levelById, LEVELS, nextLevel } from './shared/levels'
+import { difficultyById, HUB_LEVEL, levelById, LEVELS, nextLevel, realmOfLevel } from './shared/levels'
 
 export type PartyInfo = {
   id: string
@@ -299,7 +299,7 @@ function bannerFor(result: RunResult | undefined): string {
   const next = nextLevel(result.level)
   if (next) return `${level?.name ?? 'The fortress'} cleared. ${next.name} is open to you.`
   const diff = difficultyById(result.diff)
-  return `${level?.name ?? 'The last fortress'} cleared on ${diff.name}. Every fortress has fallen to you.`
+  return `${level?.name ?? 'The last fortress'} cleared on ${diff.name}. All of ${realmOfLevel(result.level).name} has fallen to you.`
 }
 
 export function levelName(id: number): string {
