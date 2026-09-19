@@ -1,6 +1,13 @@
 // Enemy rosters per dungeon style. Same combat kit everywhere; names, weapons,
 // leash and the one extra behaviour (posted guards, later traps) live here so
 // fortress levels stay as they were.
+//
+// Fortress enemies are Sidekick characters assembled from parts. Castle and forge
+// enemies are one-piece bodies (src/enemyBodies.json, built by
+// scripts/export-enemy-bodies.py): Knights-pack men-at-arms and Dungeon Realms
+// dwarves with the blade baked into the hand, so `weapon` there only drives
+// damage and drops, and `scale` is against ~1.9 m source meshes (the dwarves
+// are authored human-height and shrunk here).
 
 import { StyleId } from './config'
 import { RivalProfile } from '../rivalBrain'
@@ -54,23 +61,23 @@ const FORTRESS: Roster = {
 
 const CASTLE: Roster = {
   striker: {
-    name: 'Hall Knight', characterId: 'striker', weapon: 'fk-axe-06', health: 95, scale: 1, damageScale: 1.05,
+    name: 'Hall Knight', characterId: 'kn-knight', weapon: 'fk-axe-06', health: 95, scale: 1, damageScale: 1.05,
     aggro: 6.5, leash: 11, speed: 1.1, profile: { blockChance: 0.2, pace: 0.85 }, role: 'grunt'
   },
   scout: {
-    name: 'Hall Scout', characterId: 'scout', weapon: 'fk-dagger-03', health: 78, scale: 0.95, damageScale: 0.88,
+    name: 'Hall Scout', characterId: 'kn-soldier', weapon: 'fk-dagger-03', health: 78, scale: 0.95, damageScale: 0.88,
     aggro: 7.5, leash: 11, speed: 1.22, profile: { blockChance: 0.18, pace: 0.88 }, role: 'grunt'
   },
   guard: {
-    name: 'Cage Brute', characterId: 'vanguard', weapon: 'fk-hammer-04', health: 160, scale: 1.1, damageScale: 1.2,
+    name: 'Cage Brute', characterId: 'kn-soldier-b', weapon: 'fk-hammer-04', health: 160, scale: 1.1, damageScale: 1.2,
     aggro: 5, leash: 10, speed: 0.88, profile: { blockChance: 0.45, pace: 1.15 }, role: 'elite'
   },
   posted: {
-    name: 'Posted Knight', characterId: 'vanguard', weapon: 'fk-sword-08', health: 130, scale: 1.04, damageScale: 1.1,
+    name: 'Posted Knight', characterId: 'kn-knight-b', weapon: 'fk-sword-08', health: 130, scale: 1.04, damageScale: 1.1,
     aggro: 4.5, leash: 4.2, speed: 0.7, profile: { blockChance: 0.58, pace: 1.05 }, role: 'elite', posted: true
   },
   boss: {
-    name: 'Usurper', characterId: 'brute', weapon: 'fk-sword-18', health: 500, scale: 1.5,
+    name: 'Usurper', characterId: 'kn-knight-c', weapon: 'fk-sword-18', health: 500, scale: 1.4,
     damageScale: 1.75, aggro: 11, leash: 18, speed: 1.06,
     profile: { blockChance: 0.1, pace: 0.8, pattern: ['attack_light', 'attack_light2', 'attack_heavy', 'slam'], slamRange: 3.6 },
     role: 'boss'
@@ -79,19 +86,19 @@ const CASTLE: Roster = {
 
 const FORGE: Roster = {
   striker: {
-    name: 'Forge Hand', characterId: 'striker', weapon: 'dr-axe-small-01', health: 100, scale: 1, damageScale: 1.08,
+    name: 'Forge Hand', characterId: 'dr-dwarf-worker', weapon: 'dr-axe-small-01', health: 100, scale: 0.9, damageScale: 1.08,
     aggro: 6.2, leash: 11, speed: 1.05, profile: { blockChance: 0.18, pace: 0.85 }, role: 'grunt'
   },
   scout: {
-    name: 'Lava Scout', characterId: 'scout', weapon: 'dr-sword-medium-01', health: 80, scale: 0.95, damageScale: 0.9,
+    name: 'Lava Scout', characterId: 'dr-dwarf-miner', weapon: 'dr-sword-medium-01', health: 80, scale: 0.86, damageScale: 0.9,
     aggro: 7.6, leash: 11, speed: 1.24, profile: { blockChance: 0.16, pace: 0.86 }, role: 'grunt'
   },
   guard: {
-    name: 'Cog Bruiser', characterId: 'vanguard', weapon: 'dr-warhammer-large-01', health: 170, scale: 1.12, damageScale: 1.22,
+    name: 'Cog Bruiser', characterId: 'dr-dwarf-soldier', weapon: 'dr-warhammer-large-01', health: 170, scale: 1.0, damageScale: 1.22,
     aggro: 5, leash: 10, speed: 0.86, profile: { blockChance: 0.48, pace: 1.12 }, role: 'elite'
   },
   boss: {
-    name: 'Forge Lord', characterId: 'brute', weapon: 'dr-warhammer-large-04', health: 540, scale: 1.52,
+    name: 'Forge Lord', characterId: 'dr-dwarf-king', weapon: 'dr-warhammer-large-04', health: 540, scale: 1.3,
     damageScale: 1.8, aggro: 11, leash: 18, speed: 1.02,
     profile: { blockChance: 0.12, pace: 0.84, pattern: ['attack_light', 'attack_light2', 'attack_heavy', 'slam'], slamRange: 3.8 },
     role: 'boss'

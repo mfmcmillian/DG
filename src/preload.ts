@@ -26,11 +26,12 @@ export type PreloadState = {
 
 const NO_REPORT_GRACE_SECONDS = 12
 const TRAILING_GRACE_SECONDS = 6
-const MAX_WAIT_SECONDS = 150
+const MAX_WAIT_SECONDS = 90
 
 const state: PreloadState = { total: 0, done: 0, progress: 0, complete: false, elapsed: 0 }
 let loader: Entity | undefined
 let pending = new Set<string>()
+let later = new Set<string>()
 let firstReportAt: number | undefined
 let modelsDoneAt: number | undefined
 let systemAdded = false
@@ -44,6 +45,7 @@ export function preloadAssets(paths: string[]) {
   for (const path of paths) pending.add(path)
   if (!pending.size) {
     state.complete = true
+    startBackgroundWarm()
     return
   }
   const assets = [...pending]
@@ -55,6 +57,23 @@ export function preloadAssets(paths: string[]) {
     engine.addSystem(updatePreload)
     systemAdded = true
   }
+}
+
+/**
+ * Download these after the title unlocks. Later realms (castle, forge) go here
+ * so the hall is playable without waiting on kits the player has not entered.
+ */
+export function warmAssetsLater(paths: string[]) {
+  for (const path of paths) later.add(path)
+  if (state.complete) startBackgroundWarm()
+}
+
+function startBackgroundWarm() {
+  if (!later.size) return
+  for (const path of later) pending.add(path)
+  later.clear()
+  if (loader === undefined) loader = engine.addEntity()
+  AssetLoad.createOrReplace(loader, { assets: [...pending] })
 }
 
 function isSettled(s: LoadingState) {
@@ -106,5 +125,6 @@ function updatePreload(dt: number) {
     state.progress = 1
     engine.removeSystem(updatePreload)
     systemAdded = false
+    startBackgroundWarm()
   }
 }

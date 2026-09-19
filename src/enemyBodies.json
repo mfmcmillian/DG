@@ -1,0 +1,47 @@
+{
+  "kn-knight": {
+    "path": "models/enemies/castle/kn-knight.gltf",
+    "height": 1.926,
+    "tris": 3480
+  },
+  "kn-soldier": {
+    "path": "models/enemies/castle/kn-soldier.gltf",
+    "height": 1.879,
+    "tris": 2487
+  },
+  "kn-soldier-b": {
+    "path": "models/enemies/castle/kn-soldier-b.gltf",
+    "height": 1.837,
+    "tris": 3128
+  },
+  "kn-knight-b": {
+    "path": "models/enemies/castle/kn-knight-b.gltf",
+    "height": 1.845,
+    "tris": 2840
+  },
+  "kn-knight-c": {
+    "path": "models/enemies/castle/kn-knight-c.gltf",
+    "height": 1.884,
+    "tris": 2848
+  },
+  "dr-dwarf-worker": {
+    "path": "models/enemies/forge/dr-dwarf-worker.gltf",
+    "height": 1.87,
+    "tris": 3124
+  },
+  "dr-dwarf-miner": {
+    "path": "models/enemies/forge/dr-dwarf-miner.gltf",
+    "height": 1.87,
+    "tris": 2820
+  },
+  "dr-dwarf-soldier": {
+    "path": "models/enemies/forge/dr-dwarf-soldier.gltf",
+    "height": 1.868,
+    "tris": 3422
+  },
+  "dr-dwarf-king": {
+    "path": "models/enemies/forge/dr-dwarf-king.gltf",
+    "height": 1.87,
+    "tris": 3178
+  }
+}

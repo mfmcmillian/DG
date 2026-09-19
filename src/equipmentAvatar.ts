@@ -6,8 +6,17 @@ import { EQUIPMENT_SLOTS, EquipmentItem, EquipmentLoadout, getEquipmentItem } fr
 import { COMBAT_CLIPS, EQUIPMENT_CLIPS, EquipmentMotion, JumpMotion } from './combatAnimations'
 import { appearanceArmor, appearanceHair, appearancePart, BodyType, CharacterAppearance, getCommittedAppearance, normalizeAppearance } from './appearance'
 import roamingModels from './roamingModels.json'
+import enemyBodies from './enemyBodies.json'
 
 export { EquipmentMotion, EQUIPMENT_CLIPS } from './combatAnimations'
+
+/** One-piece characters (realm enemies): body, weapon and every combat clip in a single GLTF,
+ *  built by scripts/export-enemy-bodies.py. No hair, armor or weapon parts are assembled for them. */
+const SOLID_BODIES: Readonly<Record<string, { path: string; height: number; tris: number }>> = enemyBodies
+
+export function isSolidBody(characterId: string): boolean {
+  return characterId in SOLID_BODIES
+}
 export type EquipmentLoading = 'loading' | 'ready' | 'error'
 export type EquipmentAvatarOptions = {
   /** Weapon ids to keep loaded alongside the equipped one, so a menu preview can swap instantly. */
@@ -18,12 +27,18 @@ export type EquipmentAvatarOptions = {
 
 type Assembly = {
   bodyType: BodyType
+  /** Every part this outfit owns, including weapons kept loaded for instant swaps. */
   entities: Entity[]
   bodyEntities: Entity[]
   weapons: Map<string, Entity[]>
   weaponId: string
   preloadWeapons: boolean
   armed: boolean
+}
+
+/** What must be loaded and in step before the outfit counts as ready: the body and the weapon in hand. Spare menu weapons load behind it. */
+function requiredParts(assembly: Assembly): Entity[] {
+  return [...assembly.bodyEntities, ...(assembly.weapons.get(assembly.weaponId) || [])]
 }
 type CachedPart = { entity: Entity; lastUsed: number; pose?: EquipmentMotion; readyFrame: number }
 type EquipmentAvatar = {
@@ -40,6 +55,8 @@ type EquipmentAvatar = {
   stride: number
   /** Hit-stop multiplier over every clip (1 = normal). */
   timeScale: number
+  /** The ready outfit switched to a spare weapon that is still downloading or unplayed; show it once in step. */
+  weaponSync?: boolean
 }
 
 // Retain recently used alternatives, not every body/color combination in the pack.
@@ -90,11 +107,13 @@ export function setEquipmentAvatar(
     assembly.entities.push(...children)
   }
   avatar.pending = assembly
-  if (!assembly.entities.length) avatar.loading = 'error'
+  if (!requiredParts(assembly).length) avatar.loading = 'error'
   pruneParts(avatar)
 }
 
 function bodyPartPaths(characterId: string, loadout: EquipmentLoadout, appearance: CharacterAppearance): string[] {
+  const solid = SOLID_BODIES[characterId]
+  if (solid) return [solid.path]
   const paths = [appearancePart(appearance, 'core'), appearanceHair(appearance, loadout.head === 'none-head')]
   for (const slot of EQUIPMENT_SLOTS) {
     if (slot.id === 'weapon') continue
@@ -112,6 +131,7 @@ function bodyPartPaths(characterId: string, loadout: EquipmentLoadout, appearanc
 }
 
 function weaponPartPaths(characterId: string, weapon: EquipmentItem): string[] {
+  if (SOLID_BODIES[characterId]) return []
   return weapon.modelsByCharacter?.[characterId] || weapon.models
 }
 
@@ -143,11 +163,24 @@ export function setEquipmentPreviewWeapon(root: Entity, weaponId: string): boole
     for (const child of assembly.weapons.get(previousWeapon) || []) {
       VisibilityComponent.createOrReplace(child, { visible: false })
     }
-    for (const child of assembly.weapons.get(weaponId) || []) {
-      VisibilityComponent.createOrReplace(child, { visible: avatar.visible })
+    const incoming = assembly.weapons.get(weaponId) || []
+    if (incoming.every((child) => loadedPart(child) && partInPose(avatar, child, pose))) {
+      for (const child of incoming) VisibilityComponent.createOrReplace(child, { visible: avatar.visible })
+      avatar.weaponSync = false
+    } else {
+      // A spare weapon still downloading, or never played: the body stays up and
+      // the update system reveals the sword once it is in step with it.
+      avatar.weaponSync = true
     }
   }
   return true
+}
+
+function partInPose(avatar: EquipmentAvatar, entity: Entity, pose: EquipmentMotion): boolean {
+  for (const part of avatar.parts.values()) {
+    if (part.entity === entity) return part.pose === pose && part.readyFrame <= animationFrame
+  }
+  return false
 }
 
 export function setEquipmentMotion(root: Entity, motion: EquipmentMotion, reset = false) {
@@ -231,8 +264,9 @@ export function transferEquipmentAvatar(sourceRoot: Entity, targetRoot: Entity):
 
   const parts = Array.from(avatar.parts.values())
   const entities = new Set(parts.map((part) => part.entity))
-  if (!avatar.current.entities.length ||
-    avatar.current.entities.some((entity) => !entities.has(entity) || !loadedPart(entity)) ||
+  const required = requiredParts(avatar.current)
+  if (!required.length ||
+    required.some((entity) => !entities.has(entity) || !loadedPart(entity)) ||
     parts.some((part) => !Transform.has(part.entity) || owners.get(part.entity) !== sourceRoot)) return false
   if (sourceRoot === targetRoot) return true
 
@@ -389,15 +423,36 @@ function updateEquipmentAvatars(dt: number) {
       avatar.elapsed = clip.loop ? elapsed % clip.duration : Math.min(elapsed, clip.duration)
     }
     const pending = avatar.pending
-    if (!pending || avatar.loading === 'error') continue
-    if (pending.entities.some(failedPart)) {
+    if (avatar.loading === 'error') continue
+    if (!pending) {
+      // A ready outfit that switched to a spare weapon still on its way (menu swap).
+      const current = avatar.current
+      if (!current || !avatar.weaponSync || !avatar.pose) continue
+      const needed = requiredParts(current)
+      if (needed.some(failedPart)) {
+        avatar.loading = 'error'
+        avatar.weaponSync = false
+        continue
+      }
+      if (!needed.every(loadedPart)) continue
+      const neededSet = new Set(needed)
+      const parts = Array.from(avatar.parts.values()).filter((part) => neededSet.has(part.entity))
+      // Body and sword must start their clips together; a restart of the menu idle is the price of an instant swap.
+      if (parts.some((part) => part.pose !== avatar.pose)) playAll(avatar, avatar.pose, true)
+      if (parts.some((part) => part.readyFrame > animationFrame)) continue
+      avatar.weaponSync = false
+      showAssembly(current, avatar.visible)
+      continue
+    }
+    const needed = requiredParts(pending)
+    if (needed.some(failedPart)) {
       avatar.loading = 'error'
       continue
     }
-    if (!pending.entities.length || !pending.entities.every(loadedPart)) continue
+    if (!needed.length || !needed.every(loadedPart)) continue
 
     const pose = assemblyPose(avatar, pending)
-    const required = new Set(pending.entities)
+    const required = new Set(needed)
     const incoming = Array.from(avatar.parts.values()).filter((part) => required.has(part.entity))
     if (avatar.pose !== pose || (!avatar.current && incoming.some((part) => part.pose !== pose))) {
       startPose(avatar, pose)

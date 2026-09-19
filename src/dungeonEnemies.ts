@@ -38,10 +38,10 @@ import { presentRemoteHeal, presentRemoteHit, presentRemoteRevive } from './remo
 import { RECOVER_SECONDS, strikeHero } from './heroVitals'
 import { movePlayerToSpawn } from './playerPlacement'
 import { DungeonState, onDungeonLoaded } from './dungeon'
-import { cellCenter, DungeonStyle, gridOrigin, STYLES, styleGeneratorOptions } from './dungeon/config'
+import { cellCenter, DungeonStyle, gridOrigin, StyleId, STYLES, styleGeneratorOptions } from './dungeon/config'
 import { DOOR_OPENINGS } from './dungeon/kit'
 import { edgeMidpoint, sideInward, sideYaw } from './dungeon/layout'
-import { Archetype, allRosterArchetypes, Roster, rosterFor } from './dungeon/rosters'
+import { Archetype, Roster, rosterFor } from './dungeon/rosters'
 import { Dungeon, generateDungeon, RoomKind, Side } from './dungeon/generator'
 import {
   DifficultyDefinition, difficultyById, HUB_LEVEL, LevelDefinition, levelById
@@ -105,13 +105,17 @@ type Enemy = CombatPose & {
 const BOSS_APPEARANCE: CharacterAppearance = { bodyType: 'male', hairStyle: 'short', hairColor: 'brown', skinTone: 'warm' }
 
 function archetypeLoadout(archetype: Archetype): EquipmentLoadout {
-  return { ...DEFAULT_LOADOUTS[archetype.characterId], weapon: archetype.weapon }
+  // One-piece realm bodies have no Sidekick defaults; the armor slots are unused for them anyway.
+  return { ...(DEFAULT_LOADOUTS[archetype.characterId] ?? DEFAULT_LOADOUTS.vanguard), weapon: archetype.weapon }
 }
 
-/** Every GLB the dungeon's enemies and the Warlord will request when they spawn. */
-export function enemyPreloadAssets(): string[] {
+/** GLBs one realm's roster will request. Defaults to the fortress so the title does not wait on later realms. */
+export function enemyPreloadAssets(styleId: StyleId = 'open'): string[] {
+  const roster = rosterFor(styleId)
+  const archetypes = [roster.striker, roster.scout, roster.guard, roster.boss]
+  if (roster.posted) archetypes.push(roster.posted)
   const paths: string[] = []
-  for (const archetype of allRosterArchetypes()) {
+  for (const archetype of archetypes) {
     paths.push(...equipmentModelPaths(archetype.characterId, archetypeLoadout(archetype), archetype.role === 'boss' ? BOSS_APPEARANCE : undefined))
   }
   return paths

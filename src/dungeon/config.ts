@@ -1,4 +1,4 @@
-import { BRICK_TEXTURE, CASTLE_TEXTURES, FLOOR_TEXTURE, FORGE_TEXTURES, KitId } from './kit'
+import { BRICK_TEXTURE, CASTLE_TEXTURES, FLOOR_TEXTURE, FORGE_TEXTURES, KIT, KitId } from './kit'
 import { RoomKind } from './generator'
 
 /** Scene is 6 x 6 parcels = 96 m. Every style's grid is centred inside it. */
@@ -277,14 +277,28 @@ export function styleGeneratorOptions(style: DungeonStyle) {
   }
 }
 
-/** Every texture any style may ask the builder for, for preloading. */
-export function styleTextures(): string[] {
-  const out = new Set<string>()
-  for (const s of Object.values(STYLES)) {
-    out.add(s.floorTexture)
-    if (s.ceilingTexture) out.add(s.ceilingTexture)
+/** Floor (and ceiling) textures one style actually draws. */
+export function styleTexturesFor(style: DungeonStyle): string[] {
+  const out = [style.floorTexture]
+  if (style.ceilingTexture) out.push(style.ceilingTexture)
+  return out
+}
+
+/** Kit GLTFs a style can place — not every piece in every realm's zip. */
+export function kitSrcsForStyle(style: DungeonStyle): string[] {
+  const ids = new Set<KitId>([
+    ...style.walls,
+    style.door,
+    style.pillar,
+    style.torch
+  ])
+  if (style.bossCentrepiece) ids.add(style.bossCentrepiece)
+  if (style.cutawayWall) ids.add(style.cutawayWall)
+  if (style.trap) ids.add(style.trap)
+  for (const list of Object.values(style.props)) {
+    for (const id of list) ids.add(id)
   }
-  return Array.from(out)
+  return [...ids].map((id) => KIT[id].src)
 }
 
 export function gridOrigin(style: DungeonStyle): { x: number; z: number } {

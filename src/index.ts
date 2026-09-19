@@ -20,9 +20,8 @@ import { initializeMultiplayer } from './multiplayer'
 import { initializeRemotePlayers } from './remotePlayers'
 import { initializeAvatarHiding } from './avatarHiding'
 import { adoptPlayerCharacter, initializePlayerCharacter, setPlayerCharacter } from './playerCharacter'
-import { preloadAssets } from './preload'
-import { KIT } from './dungeon/kit'
-import { styleTextures } from './dungeon/config'
+import { preloadAssets, warmAssetsLater } from './preload'
+import { kitSrcsForStyle, styleTexturesFor, STYLES } from './dungeon/config'
 import { equipmentModelPaths } from './equipmentAvatar'
 import { enemyPreloadAssets } from './dungeonEnemies'
 import { CHARACTERS } from './characterPicker'
@@ -52,16 +51,25 @@ function initClient() {
   installNetDebug()
   // Deep night so the torches carry the lighting.
   SkyboxTime.create(engine.RootEntity, { fixedTime: 1800 })
-  // Ask the renderer for everything the first minute needs before the title
-  // screen lets anyone in; remote content servers otherwise stream bodies and
-  // floors in piecemeal while the player is already fighting.
+  // Title waits only on the hall: later realms (castle, forge) download after
+  // the player can enter, so adding a kit does not stall the loading screen.
   preloadAssets([
-    ...Object.values(KIT).map((piece) => piece.src),
-    ...styleTextures(),
+    ...kitSrcsForStyle(STYLES.hall),
+    ...kitSrcsForStyle(STYLES.open),
+    ...styleTexturesFor(STYLES.hall),
+    ...styleTexturesFor(STYLES.open),
     'models/loot/coin.glb', 'models/loot/heart.glb',
     ...fxSoundAssets(),
-    ...enemyPreloadAssets(),
+    ...enemyPreloadAssets('open'),
     ...CHARACTERS.flatMap((c) => equipmentModelPaths(c.id, getCommittedLoadout(c.id)))
+  ])
+  warmAssetsLater([
+    ...kitSrcsForStyle(STYLES.castle),
+    ...kitSrcsForStyle(STYLES.forge),
+    ...styleTexturesFor(STYLES.castle),
+    ...styleTexturesFor(STYLES.forge),
+    ...enemyPreloadAssets('castle'),
+    ...enemyPreloadAssets('forge')
   ])
   // The static spawn point in scene.json sits on the open style's entrance tile for this seed.
   loadDungeon(HUB_LEVEL.seed, HUB_LEVEL.style)

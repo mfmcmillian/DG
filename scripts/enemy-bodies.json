@@ -1,0 +1,20 @@
+{
+  "note": "Solid enemy bodies: one Synty POLYGON-rig character per roster slot with its weapon skinned into Hand_R and the sword-combat clips spliced in. Built by scripts/export-enemy-bodies.py into models/enemies/<realm>/; src/enemyBodies.json is regenerated from the result. Pack keys and weapon ids are those of scripts/weapons-manifest.json. `mesh` picks one character out of a pack-wide Characters.fbx.",
+  "characters": {
+    "kn": { "fbx": "Source_Files/Character_Files/FBX_Characters/{name}.fbx" },
+    "gb": { "fbx": "FBX/Characters/Characters.fbx" },
+    "df": { "fbx": "FBX/Characters.fbx" },
+    "dr": { "fbx": "FBX/Characters/{name}.fbx" }
+  },
+  "bodies": [
+    { "id": "kn-knight", "realm": "castle", "pack": "kn", "fbx": "Character_Knight_01", "weapon": "fk-axe-06" },
+    { "id": "kn-soldier", "realm": "castle", "pack": "kn", "fbx": "Character_Soldier_01", "weapon": "fk-dagger-03" },
+    { "id": "kn-soldier-b", "realm": "castle", "pack": "kn", "fbx": "Character_Soldier_02", "weapon": "fk-hammer-04" },
+    { "id": "kn-knight-b", "realm": "castle", "pack": "kn", "fbx": "Character_Knight_02", "weapon": "fk-sword-08" },
+    { "id": "kn-knight-c", "realm": "castle", "pack": "kn", "fbx": "Character_Knight_03", "weapon": "fk-sword-18" },
+    { "id": "dr-dwarf-worker", "realm": "forge", "pack": "dr", "fbx": "Chr_Dwarf_Worker_01", "weapon": "dr-axe-small-01" },
+    { "id": "dr-dwarf-miner", "realm": "forge", "pack": "dr", "fbx": "Chr_Dwarf_Miner_01", "weapon": "dr-sword-medium-01" },
+    { "id": "dr-dwarf-soldier", "realm": "forge", "pack": "dr", "fbx": "Chr_Dwarf_Soldier_Male_01", "weapon": "dr-warhammer-large-01" },
+    { "id": "dr-dwarf-king", "realm": "forge", "pack": "dr", "fbx": "Chr_Dwarf_King_01", "weapon": "dr-warhammer-large-04" }
+  ]
+}
