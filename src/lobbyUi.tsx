@@ -9,7 +9,7 @@ import { playerDisplayName } from './heroNameTag'
 import { isClientSynced, localAddress } from './multiplayer'
 import { menuColors, MenuAction as Action } from './menuUi'
 import {
-  closeLobby, createParty, getLobbyState, isLeader, joinParty, leaveParty, myParty, openParties, PartyInfo,
+  createParty, getLobbyState, isLeader, joinParty, leaveParty, myParty, openParties, PartyInfo,
   setPartyDifficulty, setPartyLevel, setReady, soloRun, startRun
 } from './party'
 import { DIFFICULTIES, LEVELS, levelUnlocked, MAX_PARTY } from './shared/levels'
@@ -215,7 +215,6 @@ export function LobbyUi() {
           <Label value="Choose a dungeon" font="serif" color={white} fontSize={32 * s} textAlign="middle-left" textWrap="nowrap"
             uiTransform={{ width: 600 * s, height: 42 * s, flexShrink: 0, pointerFilter: 'none' }} />
         </UiEntity>
-        <Action id="lobby-close" text="×" onClick={closeLobby} width={38} height={38} scale={s} fontSize={26} accent="gold" />
       </UiEntity>
       <UiEntity uiTransform={{ width: 200 * s, height: 2 * s, margin: { bottom: banner ? 8 * s : 16 * s }, flexShrink: 0, pointerFilter: 'none' }}
         uiBackground={{ color: gold }} />

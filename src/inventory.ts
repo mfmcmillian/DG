@@ -121,6 +121,25 @@ export function unlockInventoryItem(id: string): boolean {
   return lockedItems.delete(id)
 }
 
+/** Developer: hand over every loot weapon so they can be inspected on the hero. Saved with the hero like any unlock. */
+export function unlockAllWeapons(): number {
+  let granted = 0
+  for (const id of GATED_ITEMS) if (lockedItems.delete(id)) granted++
+  return granted
+}
+
+/** Developer: back to the starter saber only. Unequips a weapon that is no longer owned. */
+export function relockAllWeapons() {
+  for (const id of GATED_ITEMS) lockedItems.add(id)
+  const character = getEquippedCharacter()
+  const committed = readCommittedLoadout(character.id)
+  if (lockedItems.has(committed.weapon)) {
+    committed.weapon = STARTER_WEAPON
+    setCommittedLoadout(character.id, committed)
+    onApply(character)
+  }
+}
+
 /** Gated items the hero has earned; what a saved hero carries between sessions. */
 export function getUnlockedItems(): string[] {
   return GATED_ITEMS.filter((id) => !lockedItems.has(id))

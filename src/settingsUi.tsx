@@ -6,6 +6,7 @@ import { engine, UiCanvasInformation } from '@dcl/sdk/ecs'
 import { Color4 } from '@dcl/sdk/math'
 import { menuColors, MenuAction as Action } from './menuUi'
 import { CAMERA_OPTIONS, closeSettings, getSettings, setCameraPreference, setDevTools } from './settings'
+import { getUnlockedItems, relockAllWeapons, unlockAllWeapons } from './inventory'
 
 const { white, muted, gold, panel, card, line, goldLine } = menuColors
 const veil = Color4.create(0.01, 0.02, 0.03, 0.62)
@@ -13,7 +14,7 @@ const sheet = Color4.create(0.025, 0.045, 0.07, 0.97)
 const FRAME = { width: 520, height: 470 }
 let hovered = ''
 
-function layout() {
+function layout(extra = 0) {
   const canvas = UiCanvasInformation.getOrNull(engine.RootEntity)
   const screenWidth = canvas?.width || 1600
   const screenHeight = canvas?.height || 900
@@ -22,9 +23,10 @@ function layout() {
   const right = Math.max(0, inset?.right || 0) + 24
   const top = Math.max(0, inset?.top || 0) + 48
   const bottom = Math.max(0, inset?.bottom || 0) + 24
-  const scale = Math.min((screenWidth - left - right) / FRAME.width, (screenHeight - top - bottom) / FRAME.height, 1.1)
+  const frameHeight = FRAME.height + extra
+  const scale = Math.min((screenWidth - left - right) / FRAME.width, (screenHeight - top - bottom) / frameHeight, 1.1)
   const width = FRAME.width * scale
-  const height = FRAME.height * scale
+  const height = frameHeight * scale
   return { scale, width, height, x: left + (screenWidth - left - right - width) / 2, y: top + (screenHeight - top - bottom - height) / 2 }
 }
 
@@ -34,8 +36,9 @@ function Heading({ title, scale: s }: { title: string; scale: number }) {
 }
 
 export function SettingsUi() {
-  const { scale: s, width, height, x, y } = layout()
   const settings = getSettings()
+  // The armoury row only shows with the developer panel on.
+  const { scale: s, width, height, x, y } = layout(settings.devTools ? 50 : 0)
   const inner = FRAME.width - 80
   return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}
     uiBackground={{ color: veil }}>
@@ -86,6 +89,16 @@ export function SettingsUi() {
         <Action id="settings-dev" text={settings.devTools ? 'Shown' : 'Hidden'} onClick={() => setDevTools(!settings.devTools)}
           width={136} height={38} scale={s} fontSize={13} accent="gold" active={settings.devTools} />
       </UiEntity>
+
+      {settings.devTools && <UiEntity uiTransform={{ width: '100%', height: 44 * s, margin: { top: 6 * s }, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
+        <Label value={`Armoury: ${getUnlockedItems().length} loot weapon(s) owned.`} color={muted} fontSize={11.5 * s} textAlign="middle-left" textWrap="nowrap"
+          uiTransform={{ width: (inner - 290) * s, height: '100%', pointerFilter: 'none' }} />
+        <UiEntity uiTransform={{ flexDirection: 'row', pointerFilter: 'none' }}>
+          <Action id="settings-armoury-all" text="Grant all" onClick={unlockAllWeapons} width={136} height={38} scale={s} fontSize={13} accent="gold" />
+          <UiEntity uiTransform={{ width: 8 * s, pointerFilter: 'none' }} />
+          <Action id="settings-armoury-none" text="Starter only" onClick={relockAllWeapons} width={136} height={38} scale={s} fontSize={13} accent="gold" />
+        </UiEntity>
+      </UiEntity>}
 
       <Label value="Saved with your champion." color={muted} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={{ width: '100%', height: 20 * s, margin: { top: 18 * s }, flexShrink: 0, pointerFilter: 'none' }} />
