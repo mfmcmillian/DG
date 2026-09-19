@@ -66,6 +66,20 @@ export function setProjectileTargets(fn: () => ProjectileTarget[]) {
   targetsFn = fn
 }
 
+/**
+ * Build the first few of each projectile up front, hidden below the floor, so
+ * their meshes, halo planes and glow texture are resident before the first
+ * shot. A halo created on the fly draws as a white square until its sprite
+ * arrives; a pooled one just turns visible.
+ */
+export function initializeProjectiles() {
+  ensureSystem()
+  const want: Array<[ProjectileKind, number]> = [['arrow', 4], ['bolt', 3], ['orb', 2]]
+  for (const [kind, count] of want) {
+    while (pool.filter((p) => p.kind === kind).length < count) pool.push(create(kind))
+  }
+}
+
 /** Fire one shot: `count` projectiles fanned over `spread` degrees around the aim. */
 export function launchShot(shot: Shot) {
   ensureSystem()
@@ -285,5 +299,5 @@ function strike(p: Projectile, at: Vector3) {
 
 /** Assets the title-screen preloader should warm. */
 export function projectileAssets(): string[] {
-  return [ARROW_MODEL]
+  return [ARROW_MODEL, GLOW_TEXTURE]
 }

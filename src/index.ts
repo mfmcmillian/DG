@@ -14,8 +14,8 @@ import { initializeInventory } from './inventory'
 import { getCommittedLoadout } from './equipmentState'
 import { initializeCombat } from './combat'
 import { initializeDungeonEnemies } from './dungeonEnemies'
-import { fxSoundAssets, initializeCombatFx } from './combatFx'
-import { projectileAssets } from './projectiles'
+import { fxSoundAssets, fxTextureAssets, initializeCombatFx } from './combatFx'
+import { initializeProjectiles, projectileAssets } from './projectiles'
 import { initializeLoot } from './loot'
 import { initializeMultiplayer } from './multiplayer'
 import { initializeRemotePlayers } from './remotePlayers'
@@ -62,6 +62,7 @@ function initClient() {
     'models/loot/coin.glb', 'models/loot/heart.glb',
     ...projectileAssets(),
     ...fxSoundAssets(),
+    ...fxTextureAssets(),
     ...enemyPreloadAssets('open'),
     ...CHARACTERS.flatMap((c) => equipmentModelPaths(c.id, getCommittedLoadout(c.id)))
   ])
@@ -88,6 +89,7 @@ function initClient() {
     runSpeed: 6.5
   })
   initializeCombatFx()
+  initializeProjectiles()
   initializeLoot()
   initializeMultiplayer(false)
   initializeAvatarHiding()

@@ -33,6 +33,11 @@ export function fxSoundAssets(): string[] {
   return FX_SOUNDS.map((name) => `sounds/${name}.wav`)
 }
 
+/** Every sprite the bursts, swipes and decals draw, for the title-screen preloader. */
+export function fxTextureAssets(): string[] {
+  return Object.values(TEX)
+}
+
 type BurstKind = 'sparks' | 'flash' | 'puff' | 'dust' | 'glitter'
 type Emitter = { entity: Entity; until: number }
 type Slash = {
@@ -79,6 +84,26 @@ export function initializeCombatFx() {
     speakers.push(e)
   }
   engine.addSystem(update)
+  warmFx()
+}
+
+/**
+ * Fire every effect once out of sight (40 m under the floor) so the renderer
+ * builds the particle materials and sprite planes now. Otherwise the first
+ * real hit shows a plain white quad for the frames its texture is still on
+ * its way, and pays the material compile mid-fight.
+ */
+function warmFx() {
+  fxImpact(HIDDEN, false, false)
+  fxImpact(HIDDEN, true, false)
+  fxMagicBurst(HIDDEN, Color4.create(0.45, 0.7, 1, 1))
+  fxGlitter(HIDDEN, Color4.create(1, 0.9, 0.5, 1))
+  fxDeathPuff(HIDDEN)
+  fxSlam(HIDDEN, 1)
+  const anchor = engine.addEntity()
+  Transform.create(anchor, { position: Vector3.clone(HIDDEN) })
+  fxSlash(anchor, 'attack_light')
+  fxSlash(anchor, 'attack_heavy')
 }
 
 // --- bursts ------------------------------------------------------------------
