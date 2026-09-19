@@ -1,0 +1,56 @@
+{
+  "note": "Input for scripts/build-hero-outfits.py. One Sidekick preset per hero becomes a six-slot armor set; `set` prefixes the item ids and file names. Change `preset` to any of the pack's six (see .tmp-outfits/previews after --previews) and rebuild.",
+  "reference": "scripts/clips/hero-clips.glb",
+  "clips": [
+    "A_MOD_BL_Idle_Standing_Masc", "A_MOD_BL_Walk_F_Masc", "A_MOD_BL_Run_F_Masc",
+    "combat_idle", "attack_light", "attack_light2", "attack_heavy", "block", "hit", "death", "roll",
+    "jump_male", "jump_male_air", "jump_male_land", "jump_female", "jump_female_air", "jump_female_land",
+    "bow_shoot", "bow_volley", "bow_bash", "bow_block", "cast_bolt", "cast_nova"
+  ],
+  "heroes": {
+    "scout": {
+      "pack": "SIDEKICK_Elven_Warriors_Unity_2021_3_v1_0_5.unitypackage",
+      "preset": "ElvenWarriors_04",
+      "set": "elf",
+      "label": "Elven Warden",
+      "names": {
+        "head": "Warden Hood",
+        "chest": "Warden Jerkin",
+        "shoulders": "Warden Mantle",
+        "hands": "Warden Bracers",
+        "legs": "Warden Leggings",
+        "boots": "Warden Boots"
+      },
+      "descriptions": {
+        "head": "A deep hood cut for the forest paths; it keeps the rain and the archers' glare off.",
+        "chest": "Layered leather over a linen shirt, with a quiver strapped across the back.",
+        "shoulders": "Light leaf-plate mantles that never catch a bowstring.",
+        "hands": "Supple bracers worn smooth by the draw.",
+        "legs": "Leggings stitched for long marches and quiet steps.",
+        "boots": "Soft-soled boots for moving where nobody hears you."
+      }
+    },
+    "striker": {
+      "pack": "SIDEKICK_Fantasy_Sorcerers_Unity_2021_3_v1_0_0.unitypackage",
+      "preset": "FantasySorcerers_01",
+      "set": "sorc",
+      "label": "Sorcerer",
+      "names": {
+        "head": "Sorcerer's Hat",
+        "chest": "Sorcerer's Robe",
+        "shoulders": "Sorcerer's Pauldrons",
+        "hands": "Sorcerer's Gloves",
+        "legs": "Sorcerer's Skirts",
+        "boots": "Sorcerer's Boots"
+      },
+      "descriptions": {
+        "head": "A tall hat that has seen more storms than its wearer admits to.",
+        "chest": "A long robe worked with sigils, with a satchel of components slung behind.",
+        "shoulders": "Weighted pauldrons that keep the sleeves from the casting hand.",
+        "hands": "Gloves cut back at the fingers so nothing dulls the spell.",
+        "legs": "Split skirts over travelling breeches.",
+        "boots": "Sturdy boots; sorcerers still walk everywhere."
+      }
+    }
+  }
+}

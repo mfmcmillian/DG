@@ -19,8 +19,12 @@ Spreading a clip to the whole wardrobe (no Blender, no FBX needed): take the
 clips from a GLB that already carries them and splice into every
 full-skeleton GLB under models/roaming that lacks them, e.g. the hero's roll:
 
-  python scripts/splice-boss-clips.py --source models/roaming/customization/male/warm/core.glb \
+  python scripts/splice-boss-clips.py --source scripts/clips/hero-clips.glb \
       --only roll --targets roaming
+
+Use scripts/clips/hero-clips.glb (all 34 clips on all 137 joints) as the
+source: the shipped wardrobe files are joint-pruned by slim-roaming-clips.py,
+so a chest or hands file no longer carries tracks for the whole body.
 """
 import argparse
 import importlib.util

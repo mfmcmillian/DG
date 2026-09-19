@@ -1,4 +1,5 @@
 import weaponCatalog from './weaponCatalog.json'
+import outfitCatalog from './outfitCatalog.json'
 import { classAllowsWeapon } from './heroClasses'
 
 export type EquipmentSlot = 'head' | 'chest' | 'shoulders' | 'hands' | 'legs' | 'boots' | 'weapon'
@@ -464,10 +465,19 @@ const ASSETS = {
   }
 } as EquipmentAssets
 
-/** Armor and the empty slots from the Sidekick export, then every loot weapon. */
-export const EQUIPMENT_ITEMS: EquipmentItem[] = [...ASSETS.items, ...(weaponCatalog.items as EquipmentItem[])]
+/** Armor and the empty slots from the Sidekick export, the class outfit sets, then every loot weapon. */
+export const EQUIPMENT_ITEMS: EquipmentItem[] = [
+  ...ASSETS.items, ...(outfitCatalog.items as EquipmentItem[]), ...(weaponCatalog.items as EquipmentItem[])
+]
 export const EQUIPMENT_CORES: Record<string, string[]> = ASSETS.cores
-export const DEFAULT_LOADOUTS: Record<string, EquipmentLoadout> = ASSETS.defaults
+/** Sidekick defaults, with the armor slots of heroes that have an outfit set (scripts/build-hero-outfits.py) replaced. */
+export const DEFAULT_LOADOUTS: Record<string, EquipmentLoadout> = Object.fromEntries(
+  Object.entries(ASSETS.defaults).map(([id, loadout]) => [
+    id, { ...loadout, ...((outfitCatalog.defaults as Record<string, Partial<EquipmentLoadout>>)[id] ?? {}) }
+  ])
+)
+/** Outfit pieces with bare skin: a per-tone file exists under models/roaming/customization/armor/<tone>/. */
+export const SKIN_TONED_ARMOR = new Set<string>(outfitCatalog.skinVariants)
 
 /**
  * Where a loot weapon's GLB stands when nothing animates it: at the hero's

@@ -1,3 +1,5 @@
+import { SKIN_TONED_ARMOR } from './equipmentCatalog'
+
 export type BodyType = 'male' | 'female'
 export type CharacterAppearance = {
   bodyType: BodyType
@@ -59,10 +61,12 @@ export function appearanceHair(appearance: CharacterAppearance, showHair: boolea
   return `models/customization/${appearance.bodyType}/hair/${showHair ? appearance.hairStyle : 'none'}-${appearance.hairColor}.glb`
 }
 
+/** Starter pieces with exposed skin; their per-tone files predate the roaming remap, so they sit under models/. */
+const STARTER_SKIN_ARMOR = new Set(['scout-chest', 'scout-hands', 'striker-hands'])
+
 export function appearanceArmor(appearance: CharacterAppearance, itemId: string): string | undefined {
-  // These armor pieces contain exposed skin as well as fabric/metal.
-  if (itemId === 'scout-chest' || itemId === 'scout-hands' || itemId === 'striker-hands') {
-    return `models/customization/armor/${appearance.skinTone}/${itemId}.glb`
-  }
+  // Armor pieces that contain exposed skin as well as fabric/metal come in the four tones.
+  if (STARTER_SKIN_ARMOR.has(itemId)) return `models/customization/armor/${appearance.skinTone}/${itemId}.glb`
+  if (SKIN_TONED_ARMOR.has(itemId)) return `models/roaming/customization/armor/${appearance.skinTone}/${itemId}.glb`
   return undefined
 }
