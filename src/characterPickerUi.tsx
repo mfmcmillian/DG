@@ -192,16 +192,16 @@ function TitleScreen() {
         uiBackground={kitTexture(UI_KIT.flourish)} />
       {ready
         ? <UiEntity uiTransform={{ flexDirection: 'column', alignItems: 'flex-start', pointerFilter: 'none' }}>
-          {saved.found && !created && <UiEntity uiTransform={{ margin: { bottom: 14 * s }, pointerFilter: 'none' }}>
-            <KitButton id="title-resume" text={resuming ? 'Entering the hall…' : `Continue as ${savedHeroName()}`}
+          {saved.found && !created && <UiEntity uiTransform={{ margin: { bottom: 12 * s }, pointerFilter: 'none' }}>
+            <Action id="title-resume" text={resuming ? 'Entering the hall…' : `Continue as ${savedHeroName()}`}
               onClick={titleResumeSaved} disabled={resuming} primary
-              width={400} height={72} scale={s} fontSize={20} />
+              width={340} height={52} scale={s} fontSize={18} />
           </UiEntity>}
-          <KitButton id="title-enter" text={saved.found ? 'New champion' : 'New game'} onClick={titleBegin} disabled={resuming}
-            primary={!saved.found} width={400} height={72} scale={s} fontSize={20} />
-          {created && <UiEntity uiTransform={{ margin: { top: 14 * s }, pointerFilter: 'none' }}>
-            <KitButton id="title-continue" text="Continue" onClick={titleContinue} primary
-              width={400} height={72} scale={s} fontSize={20} />
+          <Action id="title-enter" text={saved.found ? 'New champion' : 'New game'} onClick={titleBegin} disabled={resuming}
+            primary={!saved.found} accent="gold" width={340} height={52} scale={s} fontSize={18} />
+          {created && <UiEntity uiTransform={{ margin: { top: 12 * s }, pointerFilter: 'none' }}>
+            <Action id="title-continue" text="Continue" onClick={titleContinue} primary
+              width={340} height={52} scale={s} fontSize={18} />
           </UiEntity>}
           {!saved.found && !created && isHeroSavePending() && <Label value="Looking for a saved champion…" color={muted} fontSize={13 * s}
             textAlign="middle-left" textWrap="nowrap"

@@ -8,8 +8,6 @@ import { CRAWLER_CAMERA, isCrawlerCameraOn } from './dungeon/crawlerCamera'
 /** Above the head: enough to clear hair and helmets, still readable from the crawler camera. */
 const HEIGHT = 2.22
 const GOLD = Color4.create(0.93, 0.82, 0.52, 1)
-/** Names the renderer hands out for a profile it has no name for. */
-const NO_NAME = new Set(['', 'undefined', 'null', 'guest'])
 
 /**
  * Far-away stand-in for the crawler camera. Under that camera the tag sits
@@ -48,14 +46,19 @@ export function createHeroNameTag(parent: Entity): Entity {
   return tag
 }
 
-/** Look up the Decentraland display name for this address. Empty until the renderer has it, or for a nameless guest. */
+/**
+ * Look up the Decentraland display name for this address. Empty until the
+ * renderer has it. The name is taken as given: "Undefined" is somebody's
+ * actual name, so nothing is second-guessed except an empty string or the
+ * wallet echoed back as the name.
+ */
 export function playerDisplayName(address: string): string {
   const want = address.toLowerCase()
   if (!want) return ''
   for (const [entity, identity] of engine.getEntitiesWith(PlayerIdentityData)) {
     if ((identity.address || '').toLowerCase() !== want) continue
     const name = (AvatarBase.getOrNull(entity)?.name || '').trim()
-    return NO_NAME.has(name.toLowerCase()) || name.toLowerCase() === want ? '' : name
+    return name.toLowerCase() === want ? '' : name
   }
   return ''
 }
