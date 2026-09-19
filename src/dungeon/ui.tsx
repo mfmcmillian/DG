@@ -1,14 +1,11 @@
 import ReactEcs, { Button, Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { Color4 } from '@dcl/sdk/math'
-import { STYLES } from './config'
 import {
   CameraChoice,
   crawlerCameraAvailable,
   getDungeonState,
-  regenerateDungeon,
   returnToEntrance,
   setCameraChoice,
-  switchStyle,
   toggleSpawnMarkers
 } from './index'
 
@@ -62,7 +59,7 @@ function DevPanel() {
       uiBackground={{ color: PANEL }}
     >
       <UiEntity uiTransform={{ flexDirection: 'row', justifyContent: 'space-between', height: 26 }}>
-        <Label value="Dark Fortress dungeon" fontSize={18} color={TEXT} uiTransform={{ height: 26 }} textAlign="middle-left" />
+        <Label value="Dungeon" fontSize={18} color={TEXT} uiTransform={{ height: 26 }} textAlign="middle-left" />
         <Button
           value="hide"
           fontSize={11}
@@ -99,26 +96,9 @@ function DevPanel() {
           textAlign="middle-left"
         />
       )}
+      {/* The layout is the party's level: no local reseed or style switch, which would
+          desync this client from the run its server simulates. */}
       <UiEntity uiTransform={{ flexDirection: 'row', margin: { top: 8 } }}>
-        {(Object.keys(STYLES) as Array<keyof typeof STYLES>).map((id) => (
-          <Button
-            key={id}
-            value={STYLES[id].label}
-            fontSize={12}
-            variant={state.style.id === id ? 'primary' : 'secondary'}
-            uiTransform={{ width: 144, height: 28, margin: { right: 8 } }}
-            onMouseDown={() => switchStyle(id)}
-          />
-        ))}
-      </UiEntity>
-      <UiEntity uiTransform={{ flexDirection: 'row', margin: { top: 6 } }}>
-        <Button
-          value="New dungeon"
-          fontSize={12}
-          variant="primary"
-          uiTransform={{ width: 96, height: 28, margin: { right: 6 } }}
-          onMouseDown={() => regenerateDungeon()}
-        />
         <Button
           value="To entrance"
           fontSize={12}

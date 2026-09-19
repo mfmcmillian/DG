@@ -69,6 +69,18 @@ export function initializeMultiplayer(server: boolean) {
   else bindClient()
 }
 
+const hostStartHooks: Array<() => void> = []
+
+/**
+ * Run `fn` once this runtime hosts the fight: at once on the headless server,
+ * or the moment a client gives up on the server and goes solo. Modules that own
+ * server-side state (parties, saved heroes) register their bindings this way.
+ */
+export function onHostStart(fn: () => void) {
+  hostStartHooks.push(fn)
+  if (isHost()) fn()
+}
+
 /** Whoever runs the fight: the headless server, or a client that went solo. */
 export function isHost(): boolean {
   return hostMode || isSolo()
@@ -96,6 +108,7 @@ function watchForServer(dt: number) {
   engine.removeSystem(watchForServer)
   bindServer()
   initializeHeroVitals()
+  for (const fn of hostStartHooks) fn()
 }
 
 export function localAddress(): string {
@@ -349,16 +362,16 @@ export function isClientSynced(): boolean {
 
 // --- server -> clients ---------------------------------------------------------------
 
-export function publishEnemies(list: EnemySnap[]) {
+export function publishEnemies(party: string, list: EnemySnap[]) {
   // Solo: the enemies already are the ones the snapshot describes.
   if (!hostMode) return
-  sendNet('enemies', { list })
+  sendNet('enemies', { party, list })
 }
 
-export function publishLoot(x: number, z: number, coin: number, heart: number, dusk: boolean) {
+export function publishLoot(party: string, x: number, z: number, coin: number, heart: number, dusk: boolean) {
   if (!isHost()) return
   rememberHeartDrop(x, z, heart)
-  sendNet('loot', { x, z, coin, heart, dusk })
+  sendNet('loot', { party, x, z, coin, heart, dusk })
 }
 
 export type HeroHit = {
@@ -371,9 +384,10 @@ let onHeal: ((id: string, amount: number, health: number) => void) | undefined
 let onRevive: ((id: string, health: number) => void) | undefined
 let onVitals: ((id: string, health: number) => void) | undefined
 let onImpact: ((p: ImpactNet) => void) | undefined
-let onEnemies: ((list: EnemySnap[]) => void) | undefined
-let onLoot: ((x: number, z: number, coin: number, heart: number, dusk: boolean) => void) | undefined
+let onEnemies: ((party: string, list: EnemySnap[]) => void) | undefined
+let onLoot: ((party: string, x: number, z: number, coin: number, heart: number, dusk: boolean) => void) | undefined
 let onJoin: ((id: string) => void) | undefined
+let onLeave: ((id: string) => void) | undefined
 
 export function setMultiplayerHandlers(handlers: {
   hitEnemy?: typeof onHitEnemy
@@ -387,7 +401,10 @@ export function setMultiplayerHandlers(handlers: {
   loot?: typeof onLoot
   /** Server only: a hero body has appeared in the room. */
   join?: typeof onJoin
+  /** Server only: a hero left the room or withdrew their body. */
+  leave?: typeof onLeave
 }) {
+  if (handlers.leave) onLeave = handlers.leave
   if (handlers.hitEnemy) onHitEnemy = handlers.hitEnemy
   if (handlers.hitPlayer) onHitPlayer = handlers.hitPlayer
   if (handlers.heal) onHeal = handlers.heal
@@ -411,9 +428,9 @@ function bindClient() {
   onNet('enemies', (msg) => {
     snapshots++
     sinceSnapshot = 0
-    onEnemies?.(msg.list.map((e) => ({ ...e, m: e.m as EquipmentMotion })))
+    onEnemies?.(msg.party, msg.list.map((e) => ({ ...e, m: e.m as EquipmentMotion })))
   })
-  onNet('loot', (msg) => onLoot?.(msg.x, msg.z, msg.coin, msg.heart, msg.dusk))
+  onNet('loot', (msg) => onLoot?.(msg.party, msg.x, msg.z, msg.coin, msg.heart, msg.dusk))
   engine.addSystem(tickNetDiag)
   engine.addSystem(watchForServer)
 }
@@ -539,6 +556,7 @@ function trackHeroes(dt: number) {
     tracked.delete(id)
     seenPlayers.delete(id)
     dropHero(id)
+    onLeave?.(id)
     console.log(`[Server] hero ${id} left; heroes: ${tracked.size}`)
   }
   for (const id of [...tracked.keys()]) {
@@ -546,6 +564,7 @@ function trackHeroes(dt: number) {
     // The body went away on its own (owner withdrew it: title screen, character dropped).
     tracked.delete(id)
     dropHero(id)
+    onLeave?.(id)
     console.log(`[Server] hero ${id} withdrew; heroes: ${tracked.size}`)
   }
 

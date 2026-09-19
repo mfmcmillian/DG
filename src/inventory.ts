@@ -107,7 +107,8 @@ export function getInventoryIsDirty(): boolean {
 }
 
 // Loot-gated gear: hidden from the inventory until the dungeon hands it over.
-const lockedItems = new Set<string>(['pride-sword-dusk'])
+const GATED_ITEMS = ['pride-sword-dusk']
+const lockedItems = new Set<string>(GATED_ITEMS)
 
 export function isInventoryItemLocked(id: string): boolean {
   return lockedItems.has(id)
@@ -116,6 +117,11 @@ export function isInventoryItemLocked(id: string): boolean {
 /** Returns true when the item was locked and is now available. */
 export function unlockInventoryItem(id: string): boolean {
   return lockedItems.delete(id)
+}
+
+/** Gated items the hero has earned; what a saved hero carries between sessions. */
+export function getUnlockedItems(): string[] {
+  return GATED_ITEMS.filter((id) => !lockedItems.has(id))
 }
 
 export function getInventoryItems(): EquipmentItem[] {

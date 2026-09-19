@@ -8,7 +8,7 @@
 
 import { EasingFunction, engine, Entity, Transform, Tween } from '@dcl/sdk/ecs'
 import { Color3, Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
-import { COURTYARD, isInCourtyard } from './courtyard'
+import { COURTYARD } from './courtyard'
 import { DEFAULT_LOADOUTS, EquipmentLoadout } from './equipmentCatalog'
 import { CharacterAppearance } from './appearance'
 import {
@@ -37,9 +37,14 @@ import {
 import { presentRemoteHeal, presentRemoteHit, presentRemoteRevive } from './remotePlayers'
 import { RECOVER_SECONDS, strikeHero } from './heroVitals'
 import { movePlayerToSpawn } from './playerPlacement'
-import { dungeonCell, DungeonState, getDungeonState, isDungeonFloor, onDungeonLoaded } from './dungeon'
+import { DungeonState, onDungeonLoaded } from './dungeon'
+import { cellCenter, DungeonStyle, gridOrigin, STYLES } from './dungeon/config'
 import { DOOR_OPENINGS } from './dungeon/kit'
-import { RoomKind, Side } from './dungeon/generator'
+import { Dungeon, generateDungeon, RoomKind, Side } from './dungeon/generator'
+import {
+  DifficultyDefinition, difficultyById, HUB_LEVEL, LevelDefinition, levelById
+} from './shared/levels'
+import { HUB, partyOf } from './partyLookup'
 import {
   createDecal, Decal, destroyDecal, fxDeathPuff, fxGlitter, fxImpact, fxNumber, fxSlam, fxSlash, fxSound, updateDecal
 } from './combatFx'
@@ -49,7 +54,7 @@ import { unlockInventoryItem } from './inventory'
 import { AttackContext } from './roamingCombat'
 import {
   allFighters, EnemySnap, HeroHit, ImpactNet, isHeadless, isHost, localAddress, NetFighter, publishEnemies, publishHitEnemy,
-  publishImpact, publishLoot, publishRespawn, remoteCount, setMultiplayerHandlers
+  publishImpact, publishLoot, publishRespawn, setMultiplayerHandlers
 } from './multiplayer'
 
 type WorldPhase = 'loading' | 'idle' | 'fighting' | 'victory' | 'defeat' | 'error'
@@ -76,6 +81,8 @@ type Enemy = CombatPose & {
   /** Child carrying rotation, scale, the outfit and the health bar. */
   body: Entity
   archetype: Archetype; boss: boolean
+  /** Full health for this run: the archetype's, scaled by level and difficulty. */
+  maxHealth: number
   home: CombatPose; health: number; recovery: number; stagger: number; blocking: boolean
   motion: EquipmentMotion; visible: boolean; healthBar: EnemyHealthBar; swing?: Swing
   /** The current swing is the boss's area slam rather than a sword strike. */
@@ -149,20 +156,51 @@ const state: WorldRivalState = {
   maxHealth: MAX_COMBAT_HEALTH, message: '', respawnSeconds: 0, telegraph: '',
   alive: 0, total: 0, bossAlive: false, party: 1, bossPhase: 0, bossLabel: ''
 }
+
+/**
+ * One party's fight: its layout (for the enemies' pathing), its enemies and
+ * the run's bookkeeping. The client has exactly one, for the party it is in
+ * (or the empty hub). The headless server has one per running party; they all
+ * occupy the same 96 m, each invisible to the others' members.
+ */
+type Sim = {
+  party: string
+  level: LevelDefinition
+  diff: DifficultyDefinition
+  dungeon: Dungeon
+  style: DungeonStyle
+  enemies: Enemy[]
+  /** Edges that block or gate movement between floor cells, keyed from both sides. */
+  blockedEdges: Set<string>
+  doorEdges: Set<string>
+  graceSeconds: number
+  paused: boolean
+  bossDropGiven: boolean
+  snapshotAge: number
+  damageScale: number
+  coinScale: number
+  slain: number
+  /** Verdict: the Warlord fell, or every hero was down at once. */
+  won: boolean
+  lost: boolean
+}
+
+export type RunStatus = { slain: number; total: number; won: boolean; lost: boolean }
+
 let initialized = false
-let enemies: Enemy[] = []
+/** The simulation the code below is working on; switched per party on the server. */
+let sim: Sim | undefined
+/** Client: the one simulation, for our party (or the hub). */
+let clientSim: Sim | undefined
+/** Client: the run our party is in; the next dungeon load populates for it (none = hub, no enemies). */
+let clientRun: { party: string; level: number; diff: number } | undefined
+/** Headless server: one simulation per running party. */
+const sims = new Map<string, Sim>()
 let elapsed = 0
-let graceSeconds = 1.2
 let noticeSeconds = 0
-let paused = true
 let defeated = false
 /** The local countdown ran out and a `respawn` was sent; cleared by the revive. */
 let respawnAsked = false
-let bossDropGiven = false
-let snapshotAge = 0
-/** Edges that block or gate movement between floor cells, keyed from both sides. */
-let blockedEdges = new Set<string>()
-let doorEdges = new Set<string>()
 
 export function initializeDungeonEnemies() {
   if (initialized) return
@@ -174,11 +212,11 @@ export function initializeDungeonEnemies() {
     hitPlayer: applyHeroHit,
     heal: (id, amount, health) => {
       if (id === localAddress()) healPlayer(amount, health)
-      else presentRemoteHeal(id, amount)
+      else if (samePhase(id)) presentRemoteHeal(id, amount)
     },
     revive: (id) => {
       if (id === localAddress()) recoverPlayer()
-      else presentRemoteRevive(id)
+      else if (samePhase(id)) presentRemoteRevive(id)
     },
     vitals: (id, health) => {
       if (id !== localAddress()) return
@@ -189,7 +227,12 @@ export function initializeDungeonEnemies() {
     impact: presentImpact,
     enemies: applyEnemySnapshots,
     loot: grantLoot,
-    join: () => publishEnemies(enemySnaps())
+    join: () => {
+      for (const s of sims.values()) {
+        sim = s
+        publishEnemies(s.party, enemySnaps())
+      }
+    }
   })
   engine.addSystem(updateEnemies)
   onDungeonLoaded(populate)
@@ -199,60 +242,146 @@ export function getWorldRivalState(): Readonly<WorldRivalState> {
   return state
 }
 
+/** Client: another hero is in our party (or with us in the hub), so their fight is ours to show. */
+function samePhase(id: string): boolean {
+  return partyOf(id) === (clientSim?.party ?? HUB)
+}
+
 /** Re-spawn any enemy whose avatar failed to load. */
 export function retryWorldRival() {
-  if (state.phase !== 'error') return
-  const failed = enemies.filter((e) => e.loading === 'error')
+  if (state.phase !== 'error' || !clientSim) return
+  sim = clientSim
+  const failed = sim.enemies.filter((e) => e.loading === 'error')
   for (const e of failed) {
     const fresh = spawnEnemy(e.home, e.archetype, e.boss)
     despawn(e)
-    enemies[enemies.indexOf(e)] = fresh
+    sim.enemies[sim.enemies.indexOf(e)] = fresh
   }
   state.phase = 'loading'
 }
 
+// --- runs (server) -------------------------------------------------------------
+
+/**
+ * Server: start simulating a party's run. The layout is generated here from the
+ * level's seed, the same way every member's client builds it. A client hosting
+ * its own fight (solo fallback) simulates through its one client sim instead.
+ */
+export function createRunSim(party: string, levelId: number, diffId: number) {
+  if (!isHeadless()) return
+  destroyRunSim(party)
+  const level = levelById(levelId)
+  const style = STYLES[level.style]
+  const dungeon = generateDungeon(level.seed, {
+    size: style.size, entranceSize: style.entranceSize, minLeaf: style.minLeaf, maxLeaf: style.maxLeaf,
+    minRoom: style.minRoom, torchEvery: style.torchEvery
+  })
+  const s = createSim(party, level, difficultyById(diffId), dungeon, style, true)
+  sims.set(party, s)
+  console.log(`[Server] run ${party}: level ${level.id + 1} "${level.name}" (${s.diff.name}), ${s.enemies.length} enemies`)
+}
+
+export function destroyRunSim(party: string) {
+  const s = sims.get(party)
+  if (!s) return
+  for (const e of s.enemies) despawn(e)
+  sims.delete(party)
+  if (sim === s) sim = undefined
+}
+
+/** Where a party's run stands; undefined when nothing is simulated for it here. */
+export function runStatus(party: string): RunStatus | undefined {
+  const s = sims.get(party) ?? (clientSim?.party === party ? clientSim : undefined)
+  if (!s) return undefined
+  return { slain: s.slain, total: s.enemies.length, won: s.won, lost: s.lost }
+}
+
+/** Client: the run the next dungeon load is for. Undefined means the hub: the layout, no enemies. */
+export function setClientRun(run: { party: string; level: number; diff: number } | undefined) {
+  clientRun = run
+}
+
+function simFor(party: string): Sim | undefined {
+  return sims.get(party) ?? (clientSim?.party === party ? clientSim : undefined)
+}
+
 // --- population --------------------------------------------------------------
 
-function archetypesFor(kind: RoomKind | undefined, index: number): Archetype[] {
+function archetypesFor(kind: RoomKind | undefined, index: number, extra: number): Archetype[] {
   switch (kind) {
     case 'boss': return [BOSS]
-    case 'combat': return index % 2 === 0 ? [STRIKER, SCOUT] : [SCOUT, STRIKER]
+    case 'combat': {
+      const pair = index % 2 === 0 ? [STRIKER, SCOUT] : [SCOUT, STRIKER]
+      for (let i = 0; i < extra; i++) pair.push(i % 2 === 0 ? GUARD : STRIKER)
+      return pair
+    }
     case 'treasure': return [GUARD]
     default: return [index % 2 === 0 ? SCOUT : STRIKER]
   }
 }
 
+/** Client: a dungeon was (re)built; the one client sim follows it. */
 function populate(dungeon: Readonly<DungeonState>) {
-  for (const e of enemies) despawn(e)
-  enemies = []
+  if (clientSim) {
+    for (const e of clientSim.enemies) despawn(e)
+    clientSim = undefined
+  }
   clearLoot()
   defeated = false
   respawnAsked = false
-  bossDropGiven = false
   state.respawnSeconds = 0
-  indexEdges(dungeon)
-  const spawns = dungeon.instance?.spawns ?? []
-  const rooms = dungeon.dungeon?.rooms ?? []
-  spawns.forEach((s, i) => {
-    const kind = s.boss ? 'boss' : rooms.find((r) => r.id === s.roomId)?.kind
-    archetypesFor(kind, i).forEach((archetype, j) => {
-      // Pairs stand a stride apart, still on floor; face the entrance (+Z) so patrols greet the player.
-      const offset = j === 0 ? 0 : 1.6
-      const x = isDungeonFloor(s.x + offset, s.z) ? s.x + offset : s.x
-      const home: CombatPose = { position: Vector3.create(x, COURTYARD.characterFloorY, s.z), facing: 0 }
-      enemies.push(spawnEnemy(home, archetype, s.boss))
-    })
-  })
-  state.total = enemies.length
-  state.phase = enemies.length ? 'loading' : 'idle'
+  if (!dungeon.dungeon) return
+  const run = clientRun
+  clientSim = run
+    ? createSim(run.party, levelById(run.level), difficultyById(run.diff), dungeon.dungeon, dungeon.style, true)
+    : createSim(HUB, HUB_LEVEL, difficultyById(0), dungeon.dungeon, dungeon.style, false)
+  sim = clientSim
+  state.total = sim.enemies.length
+  state.phase = sim.enemies.length ? 'loading' : 'idle'
   state.message = ''
 }
 
-function indexEdges(dungeon: Readonly<DungeonState>) {
-  blockedEdges = new Set()
-  doorEdges = new Set()
-  const d = dungeon.dungeon
-  if (!d) return
+function createSim(
+  party: string, level: LevelDefinition, diff: DifficultyDefinition, dungeon: Dungeon, style: DungeonStyle, withEnemies: boolean
+): Sim {
+  const s: Sim = {
+    party, level, diff, dungeon, style, enemies: [],
+    blockedEdges: new Set(), doorEdges: new Set(),
+    graceSeconds: 1.2, paused: true, bossDropGiven: false, snapshotAge: 0,
+    damageScale: level.damage * diff.damage, coinScale: level.coins * diff.coins,
+    slain: 0, won: false, lost: false
+  }
+  indexEdges(s)
+  if (!withEnemies) return s
+  const previous = sim
+  sim = s
+  const healthScale = level.health * diff.health
+  // Spawn points come straight from the rooms, so the server and every member
+  // enumerate the same enemies in the same order (the snapshot index).
+  let index = 0
+  for (const room of dungeon.rooms) {
+    for (const [ex, ey] of room.enemies) {
+      const c = cellCenter(style, ex, ey)
+      const boss = room.kind === 'boss'
+      archetypesFor(room.kind, index, diff.extra).forEach((archetype, j) => {
+        // Pairs stand a stride apart, still on floor; face the entrance (+Z) so patrols greet the player.
+        const offset = j === 0 ? 0 : j === 1 ? 1.6 : -1.6
+        const x = simFloor(c.x + offset, c.z) ? c.x + offset : c.x
+        const home: CombatPose = { position: Vector3.create(x, COURTYARD.characterFloorY, c.z), facing: 0 }
+        const e = spawnEnemy(home, archetype, boss)
+        e.maxHealth = Math.round(archetype.health * healthScale)
+        e.health = e.maxHealth
+        s.enemies.push(e)
+      })
+      index++
+    }
+  }
+  sim = previous ?? s
+  return s
+}
+
+function indexEdges(s: Sim) {
+  const d = s.dungeon
   const opposite: Record<Side, Side> = { n: 's', s: 'n', w: 'e', e: 'w' }
   const step: Record<Side, [number, number]> = { n: [0, -1], s: [0, 1], w: [-1, 0], e: [1, 0] }
   const both = (set: Set<string>, x: number, y: number, side: Side) => {
@@ -260,8 +389,25 @@ function indexEdges(dungeon: Readonly<DungeonState>) {
     const [dx, dy] = step[side]
     set.add(`${x + dx},${y + dy},${opposite[side]}`)
   }
-  for (const w of d.walls) both(blockedEdges, w.x, w.y, w.side)
-  for (const o of d.doors) both(doorEdges, o.x, o.y, o.side)
+  for (const w of d.walls) both(s.blockedEdges, w.x, w.y, w.side)
+  for (const o of d.doors) both(s.doorEdges, o.x, o.y, o.side)
+}
+
+/** Floor test against the current sim's layout (not the client's built dungeon, which may be another party's). */
+function simFloor(x: number, z: number): boolean {
+  if (!sim) return false
+  const d = sim.dungeon
+  const o = gridOrigin(sim.style)
+  const cx = Math.floor((x - o.x) / sim.style.tile)
+  const cy = Math.floor((z - o.z) / sim.style.tile)
+  if (cx < 0 || cy < 0 || cx >= d.size || cy >= d.size) return false
+  return d.cells[cy * d.size + cx] !== 0
+}
+
+function simCell(x: number, z: number): { cx: number; cy: number } {
+  const style = sim?.style ?? STYLES.open
+  const o = gridOrigin(style)
+  return { cx: Math.floor((x - o.x) / style.tile), cy: Math.floor((z - o.z) / style.tile) }
 }
 
 function spawnEnemy(home: CombatPose, archetype: Archetype, boss: boolean): Enemy {
@@ -281,7 +427,7 @@ function spawnEnemy(home: CombatPose, archetype: Archetype, boss: boolean): Enem
     setEquipmentStride(body, Math.min(1.35, Math.max(0.7, (COMBAT_RULES.rivalSpeed * archetype.speed) / 1.5)))
   }
   return {
-    root, body, archetype, boss, home, position: { ...home.position }, facing: home.facing, lastFacing: home.facing,
+    root, body, archetype, boss, maxHealth: archetype.health, home, position: { ...home.position }, facing: home.facing, lastFacing: home.facing,
     health: archetype.health, recovery: 0, stagger: 0, blocking: false, visible: false,
     motion: 'combat_idle', healthBar: createEnemyHealthBar(body), brain: createRivalBrain(), slamming: false,
     engaged: false, returningHome: false, dead: false, deadSeconds: 0, loading: isHeadless() ? 'ready' : 'loading', loadSeconds: 0,
@@ -303,14 +449,33 @@ function despawn(e: Enemy) {
 
 function updateEnemies(deltaTime: number) {
   const dt = Number.isFinite(deltaTime) ? Math.max(0, deltaTime) : 0
-  const local = getPlayerCombatPose()
-  const fighters = allFighters(local)
-  state.visible = !!local
-  state.party = 1 + remoteCount()
-  if (local) state.playerHealth = local.health
   elapsed += dt
-  graceSeconds = Math.max(0, graceSeconds - dt)
   noticeSeconds = Math.max(0, noticeSeconds - dt)
+  if (isHeadless()) {
+    // One pass per party; each sees only its own members.
+    const everyone = allFighters()
+    for (const s of [...sims.values()]) {
+      sim = s
+      stepSim(dt, everyone.filter((f) => partyOf(f.address) === s.party), undefined)
+    }
+    sim = undefined
+    return
+  }
+  if (!clientSim) return
+  sim = clientSim
+  const local = getPlayerCombatPose()
+  const fighters = allFighters(local).filter((f) => f.local || partyOf(f.address) === clientSim!.party)
+  state.visible = !!local
+  state.party = fighters.length
+  if (local) state.playerHealth = local.health
+  stepSim(dt, fighters, local)
+}
+
+/** Advance the current sim by one tick against the heroes in its party. */
+function stepSim(dt: number, fighters: NetFighter[], local: ReturnType<typeof getPlayerCombatPose>) {
+  if (!sim) return
+  const enemies = sim.enemies
+  sim.graceSeconds = Math.max(0, sim.graceSeconds - dt)
 
   if (defeated) {
     // The host stands us back up (`revive`); the countdown is for the HUD, and
@@ -323,7 +488,7 @@ function updateEnemies(deltaTime: number) {
   }
 
   if (fighters.length === 0) {
-    if (!paused && isHost()) {
+    if (!sim.paused && isHost()) {
       for (const e of enemies) {
         e.swing = undefined
         e.slamming = false
@@ -336,20 +501,20 @@ function updateEnemies(deltaTime: number) {
       }
     }
     state.telegraph = ''
-    if (!paused && isHost()) console.log('[Server] dungeon paused: no heroes in the fight')
-    paused = true
+    if (!sim.paused && isHost()) console.log(`[Server] run ${sim.party} paused: no heroes in the fight`)
+    sim.paused = true
     for (const e of enemies) {
       tickEnemyPresentation(e, dt)
       updateBar(e)
     }
     return
   }
-  if (paused) {
-    graceSeconds = 1.2
-    paused = false
+  if (sim.paused) {
+    sim.graceSeconds = 1.2
+    sim.paused = false
     if (isHost()) {
       const f = fighters[0]
-      console.log(`[Server] dungeon live: ${fighters.length} hero(es); first at ${f.position.x.toFixed(1)}, ${f.position.z.toFixed(1)} health ${f.health}`)
+      console.log(`[Server] run ${sim.party} live: ${fighters.length} hero(es); first at ${f.position.x.toFixed(1)}, ${f.position.z.toFixed(1)} health ${f.health}`)
     }
   }
 
@@ -402,7 +567,7 @@ function updateEnemies(deltaTime: number) {
           moveToward(e, e.home, stride, 0)
           if (combatDistance(e, e.home) < 0.05) {
             e.returningHome = false
-            e.health = e.archetype.health
+            e.health = e.maxHealth
             e.stagger = 0
             e.recovery = 0
             playMotion(e, e.boss ? 'menace' : 'combat_idle')
@@ -423,10 +588,15 @@ function updateEnemies(deltaTime: number) {
   }
 
   if (isHost()) {
-    snapshotAge += dt
-    if (snapshotAge >= 0.12) {
-      snapshotAge = 0
-      publishEnemies(enemySnaps())
+    sim.snapshotAge += dt
+    if (sim.snapshotAge >= 0.12) {
+      sim.snapshotAge = 0
+      publishEnemies(sim.party, enemySnaps())
+    }
+    // The verdict: the Warlord fell, or nobody in the party is left standing.
+    if (!sim.won && !sim.lost && enemies.length > 0) {
+      if (enemies.some((e) => e.boss && e.dead)) sim.won = true
+      else if (sim.party !== HUB && fighters.every((f) => f.health <= 0)) sim.lost = true
     }
   }
 
@@ -439,7 +609,7 @@ function updateEnemies(deltaTime: number) {
   if (engagedEnemy && !defeated) {
     state.name = engagedEnemy.archetype.name
     state.health = engagedEnemy.health
-    state.maxHealth = engagedEnemy.archetype.health
+    state.maxHealth = engagedEnemy.maxHealth
     if (engagedEnemy.boss && engagedEnemy.bossBrain) {
       state.bossPhase = engagedEnemy.bossBrain.phase
       state.bossLabel = bossPhaseLabel(engagedEnemy.bossBrain.phase)
@@ -471,7 +641,7 @@ function tickEnemyPresentation(e: Enemy, dt: number) {
 }
 
 function pickTarget(e: Enemy, fighters: NetFighter[]): NetFighter | undefined {
-  const living = fighters.filter((f) => f.health > 0 && isInCourtyard(f.position) &&
+  const living = fighters.filter((f) => f.health > 0 && simFloor(f.position.x, f.position.z) &&
     combatDistance(e.home, f) <= e.archetype.leash &&
     Math.abs(f.position.y - e.position.y) <= COMBAT_RULES.maximumVerticalReach + 1)
   if (living.length === 0) return undefined
@@ -497,7 +667,7 @@ function updateBoss(e: Enemy, dt: number, target: NetFighter, fighters: NetFight
   e.stagger = Math.max(0, e.stagger - dt)
   const movementDt = Math.min(dt, 0.05)
   const stride = COMBAT_RULES.rivalSpeed * e.archetype.speed * movementDt
-  const inTerritory = isInCourtyard(target.position) && combatDistance(e.home, target) <= e.archetype.leash &&
+  const inTerritory = simFloor(target.position.x, target.position.z) && combatDistance(e.home, target) <= e.archetype.leash &&
     Math.abs(target.position.y - e.position.y) <= COMBAT_RULES.maximumVerticalReach + 1
   if (!inTerritory && e.engaged) {
     e.engaged = false
@@ -513,7 +683,7 @@ function updateBoss(e: Enemy, dt: number, target: NetFighter, fighters: NetFight
     moveToward(e, e.home, stride, 0)
     if (combatDistance(e, e.home) < 0.05) {
       e.returningHome = false
-      e.health = e.archetype.health
+      e.health = e.maxHealth
       e.stagger = 0
       e.recovery = 0
       playMotion(e, 'menace')
@@ -521,13 +691,14 @@ function updateBoss(e: Enemy, dt: number, target: NetFighter, fighters: NetFight
     syncTransform(e, dt)
     return
   }
-  if (!e.engaged && inTerritory && combatDistance(e, target) <= e.archetype.aggro && graceSeconds === 0) {
+  const grace = sim?.graceSeconds ?? 0
+  if (!e.engaged && inTerritory && combatDistance(e, target) <= e.archetype.aggro && grace === 0) {
     e.engaged = true
     showNotice(`${e.archetype.name} answers`)
     fxSound('roar', 1)
     kickCrawlerCamera(Vector3.create(0, -0.35, 0.2))
   }
-  if (!e.engaged || graceSeconds > 0) {
+  if (!e.engaged || grace > 0) {
     if (!e.swing && e.stagger <= 0 && e.rollSeconds <= 0) playMotion(e, 'menace')
     hideDecals(e)
     syncTransform(e, dt)
@@ -544,7 +715,7 @@ function updateBoss(e: Enemy, dt: number, target: NetFighter, fighters: NetFight
     return
   }
 
-  const decision = updateBossBrain(brain, dt, combatDistance(e, target), canStartAttack(e) && e.rollSeconds <= 0, e.health, e.archetype.health)
+  const decision = updateBossBrain(brain, dt, combatDistance(e, target), canStartAttack(e) && e.rollSeconds <= 0, e.health, e.maxHealth)
   e.hyperArmor = decision.hyperArmor
   e.blocking = decision.block
   if (decision.notice) showNotice(decision.notice, 1.6)
@@ -636,7 +807,7 @@ function updateEnemy(e: Enemy, dt: number, target: NetFighter, fighters: NetFigh
   const movementDt = Math.min(dt, 0.05)
   const stride = COMBAT_RULES.rivalSpeed * e.archetype.speed * movementDt
 
-  const inTerritory = isInCourtyard(target.position) && combatDistance(e.home, target) <= e.archetype.leash &&
+  const inTerritory = simFloor(target.position.x, target.position.z) && combatDistance(e.home, target) <= e.archetype.leash &&
     Math.abs(target.position.y - e.position.y) <= COMBAT_RULES.maximumVerticalReach + 1
   if (!inTerritory && e.engaged) {
     e.engaged = false
@@ -652,7 +823,7 @@ function updateEnemy(e: Enemy, dt: number, target: NetFighter, fighters: NetFigh
     moveToward(e, e.home, stride, 0)
     if (combatDistance(e, e.home) < 0.05) {
       e.returningHome = false
-      e.health = e.archetype.health
+      e.health = e.maxHealth
       e.stagger = 0
       e.recovery = 0
       playMotion(e, 'combat_idle')
@@ -660,14 +831,15 @@ function updateEnemy(e: Enemy, dt: number, target: NetFighter, fighters: NetFigh
     syncTransform(e, dt)
     return
   }
-  if (!e.engaged && inTerritory && combatDistance(e, target) <= e.archetype.aggro && graceSeconds === 0) {
+  const grace = sim?.graceSeconds ?? 0
+  if (!e.engaged && inTerritory && combatDistance(e, target) <= e.archetype.aggro && grace === 0) {
     e.engaged = true
     if (e.boss) {
       showNotice(`${e.archetype.name} has noticed the party`)
       fxSound('roar', 0.9)
     }
   }
-  if (!e.engaged || graceSeconds > 0) {
+  if (!e.engaged || grace > 0) {
     if (!e.swing && e.stagger <= 0) playMotion(e, 'combat_idle')
     advanceSwing(e, dt, target, fighters)
     hideDecals(e)
@@ -732,14 +904,15 @@ function updateEnemy(e: Enemy, dt: number, target: NetFighter, fighters: NetFigh
 /** Soft lock-on: turn the body to the best enemy in front and step in if it is just out of reach. */
 function lockOn(motion: AttackMotion, _context: AttackContext) {
   const attacker = getPlayerCombatPose()
-  if (!attacker || attacker.health <= 0 || paused || defeated) return
+  if (!attacker || attacker.health <= 0 || !clientSim || clientSim.paused || defeated) return
+  sim = clientSim
   const reach = motion === 'attack_heavy' ? 2.15 : 1.9
   // Only when the enemy is actually there: swinging while running through a room
   // must not yank the body around or teleport the player toward distant targets.
   const range = reach + LOCK_MARGIN
   let best: Enemy | undefined
   let bestScore = Infinity
-  for (const e of enemies) {
+  for (const e of sim.enemies) {
     if (e.loading !== 'ready' || e.dead || e.returningHome) continue
     const d = combatDistance(attacker, e)
     if (d > range || !facesCombatant(attacker, e, LOCK_COS)) continue
@@ -766,11 +939,12 @@ function lockOn(motion: AttackMotion, _context: AttackContext) {
 
 function hitEnemies(motion: AttackMotion, context: AttackContext) {
   const attacker = getPlayerCombatPose()
-  if (!attacker || attacker.health <= 0 || paused || defeated) return
+  if (!attacker || attacker.health <= 0 || !clientSim || clientSim.paused || defeated) return
+  sim = clientSim
   let best: Enemy | undefined
   let bestIndex = -1
   let bestDistance = Infinity
-  enemies.forEach((e, i) => {
+  sim.enemies.forEach((e, i) => {
     if (e.loading !== 'ready' || e.dead || e.returningHome || !attackCanReach(attacker, e, motion)) return
     const d = combatDistance(attacker, e)
     if (d < bestDistance) {
@@ -787,8 +961,11 @@ function hitEnemies(motion: AttackMotion, context: AttackContext) {
 
 function applyRemoteHit(id: string, index: number, motion: string, finisher: boolean) {
   if (!isHost()) return
+  const s = simFor(partyOf(id))
+  if (!s) return
+  sim = s
   const attack = asAttack(motion)
-  const e = enemies[index]
+  const e = s.enemies[index]
   if (!attack || !e || e.dead || e.loading !== 'ready') return
   const attacker = allFighters().find((f) => f.address === id)
   // Reach is checked on the server pose with slack for the lunge the client
@@ -800,7 +977,7 @@ function applyRemoteHit(id: string, index: number, motion: string, finisher: boo
 }
 
 function enemySnaps(): EnemySnap[] {
-  return enemies.map((e, i) => ({
+  return (sim?.enemies ?? []).map((e, i) => ({
     i, x: e.position.x, z: e.position.z, f: e.facing, h: e.health, m: e.motion, dead: e.dead, engaged: e.engaged
   }))
 }
@@ -870,15 +1047,17 @@ function asAttack(motion: string): AttackMotion | undefined {
 
 function kill(e: Enemy) {
   presentDeath(e)
-  if (!isHost()) return
-  const coin = e.boss ? 10 : 2 + Math.floor(Math.random() * 3)
+  if (!isHost() || !sim) return
+  sim.slain++
+  const coin = Math.round((e.boss ? 10 : 2 + Math.floor(Math.random() * 3)) * sim.coinScale)
   const heart = e.boss ? 2 : Math.random() < 0.35 ? 1 : 0
-  const dusk = !!(e.boss && !bossDropGiven)
-  if (dusk) bossDropGiven = true
-  publishLoot(e.position.x, e.position.z, coin, heart, dusk)
+  const dusk = !!(e.boss && !sim.bossDropGiven)
+  if (dusk) sim.bossDropGiven = true
+  publishLoot(sim.party, e.position.x, e.position.z, coin, heart, dusk)
 }
 
-function grantLoot(x: number, z: number, coin: number, heart: number, dusk: boolean) {
+function grantLoot(party: string, x: number, z: number, coin: number, heart: number, dusk: boolean) {
+  if (!clientSim || party !== clientSim.party) return
   const origin = Vector3.create(x, COURTYARD.characterFloorY, z)
   if (coin > 0) spawnLoot(origin, 'coin', coin)
   if (heart > 0) spawnLoot(origin, 'heart', heart)
@@ -919,7 +1098,7 @@ function advanceSwing(e: Enemy, dt: number, target: NetFighter, fighters: NetFig
       blockFighter(target, e.facing)
       return
     }
-    const damage = Math.round(hit.damage * e.archetype.damageScale)
+    const damage = Math.round(hit.damage * e.archetype.damageScale * (sim?.damageScale ?? 1))
     strikeFighter(target, damage, hit.stagger, e.facing)
   })
   if (e.swing === swing && finished) {
@@ -931,7 +1110,7 @@ function advanceSwing(e: Enemy, dt: number, target: NetFighter, fighters: NetFig
 
 function slam(e: Enemy, fighters: NetFighter[]) {
   const radius = e.bossBrain?.phase === 3 ? 4.1 : SLAM_RADIUS
-  const damage = e.bossBrain?.phase === 3 ? 38 : SLAM_DAMAGE
+  const damage = Math.round((e.bossBrain?.phase === 3 ? 38 : SLAM_DAMAGE) * (sim?.damageScale ?? 1))
   hideDecals(e)
   fxSlam(e.position, radius)
   fxSound('slam', 1)
@@ -968,7 +1147,7 @@ function blockFighter(target: NetFighter, yaw: number) {
 /** Client: the host's verdict on an enemy blow against a hero, ours or another's. */
 function applyHeroHit(hit: HeroHit) {
   if (hit.id !== localAddress()) {
-    presentRemoteHit(hit.id, hit.damage, hit.health, hit.blocked, hit.dodged)
+    if (samePhase(hit.id)) presentRemoteHit(hit.id, hit.damage, hit.health, hit.blocked, hit.dodged)
     return
   }
   if (hit.blocked) {
@@ -1002,7 +1181,7 @@ function recoverPlayer() {
   defeated = false
   respawnAsked = false
   restorePlayerCombatHealth()
-  graceSeconds = 2
+  if (clientSim) clientSim.graceSeconds = 2
   state.phase = 'idle'
   state.respawnSeconds = 0
   state.playerHealth = MAX_COMBAT_HEALTH
@@ -1010,14 +1189,17 @@ function recoverPlayer() {
   movePlayerToSpawn()
 }
 
-function applyEnemySnapshots(list: EnemySnap[]) {
+function applyEnemySnapshots(party: string, list: EnemySnap[]) {
+  if (!clientSim || party !== clientSim.party) return
+  sim = clientSim
   for (const snap of list) {
-    const e = enemies[snap.i]
+    const e = clientSim.enemies[snap.i]
     if (!e) continue
     e.position = Vector3.create(snap.x, COURTYARD.characterFloorY, snap.z)
     e.facing = snap.f
     e.health = snap.h
     e.engaged = snap.engaged
+    if (snap.dead && !e.dead) clientSim.slain++
     if (snap.dead) presentDeath(e)
     else if (!e.dead) {
       const reset = snap.m !== e.motion && (
@@ -1075,21 +1257,22 @@ function move(e: Enemy, x: number, z: number) {
 
 function canStand(x: number, z: number): boolean {
   const r = BODY_RADIUS
-  return isDungeonFloor(x - r, z - r) && isDungeonFloor(x + r, z - r) &&
-    isDungeonFloor(x - r, z + r) && isDungeonFloor(x + r, z + r)
+  return simFloor(x - r, z - r) && simFloor(x + r, z - r) &&
+    simFloor(x - r, z + r) && simFloor(x + r, z + r)
 }
 
 /** Cell-to-cell crossings may not pass through a wall, and must go through the middle of a doorway. */
 function canCross(x0: number, z0: number, x1: number, z1: number): boolean {
-  const a = dungeonCell(x0, z0)
-  const b = dungeonCell(x1, z1)
+  if (!sim) return false
+  const a = simCell(x0, z0)
+  const b = simCell(x1, z1)
   if (a.cx === b.cx && a.cy === b.cy) return true
   const side: Side | undefined = b.cy < a.cy ? 'n' : b.cy > a.cy ? 's' : b.cx < a.cx ? 'w' : b.cx > a.cx ? 'e' : undefined
   if (!side) return true
   const key = `${a.cx},${a.cy},${side}`
-  if (blockedEdges.has(key)) return false
-  if (doorEdges.has(key)) {
-    const { style } = getDungeonState()
+  if (sim.blockedEdges.has(key)) return false
+  if (sim.doorEdges.has(key)) {
+    const style = sim.style
     const opening = DOOR_OPENINGS[style.door]
     const half = (opening?.width ?? style.tile) / 2 - BODY_RADIUS
     // Lateral offset from the door's centre line, which runs through the cell centre.
@@ -1111,7 +1294,7 @@ function separate(e: Enemy, target: CombatPose) {
         (distance > 0.0001 ? (e.position.z - target.position.z) / distance : Math.cos(e.facing + Math.PI)) * push)
     }
   }
-  for (const other of enemies) {
+  for (const other of sim?.enemies ?? []) {
     if (other === e || other.dead || other.loading !== 'ready') continue
     const distance = combatDistance(e, other)
     if (distance >= COMBAT_RULES.bodySeparation || distance < 0.0001) continue
@@ -1145,7 +1328,7 @@ function show(e: Enemy, visible: boolean) {
 }
 
 function updateBar(e: Enemy) {
-  updateEnemyHealthBar(e.healthBar, e.health, e.archetype.health,
+  updateEnemyHealthBar(e.healthBar, e.health, e.maxHealth,
     state.visible && e.visible && !e.dead && e.engaged && !e.returningHome)
 }
 

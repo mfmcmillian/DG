@@ -8,7 +8,10 @@ import { WorldHudUi } from './worldHudUi'
 import { getMenuLayout } from './menuLayout'
 import { menuColors, MenuAction as Action, KitButton } from './menuUi'
 import { kitTexture, UI_KIT } from './uiKit'
-import { isTitleOpen, isTitleReady, titleBegin, titleContinue } from './titleScreen'
+import { isTitleOpen, isTitleReady, isTitleResuming, titleBegin, titleContinue, titleResumeSaved } from './titleScreen'
+import { getHeroSaveState, isHeroSavePending, savedHeroName } from './heroSave'
+import { getLobbyState } from './party'
+import { LobbyUi } from './lobbyUi'
 import { GAME_VERSION } from './version'
 import { getPreloadState } from './preload'
 import { BODY_TYPES, HAIR_STYLES, HAIR_COLORS, SKIN_TONES } from './appearance'
@@ -174,6 +177,8 @@ function TitleScreen() {
   const { scale: s, x, screenHeight } = getMenuLayout('picker')
   const created = getPickerState().hasCreatedCharacter
   const ready = isTitleReady()
+  const saved = getHeroSaveState()
+  const resuming = isTitleResuming()
   const top = Math.max(80, screenHeight * 0.18)
   return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}
     uiBackground={kitTexture(UI_KIT.titleBg)}>
@@ -187,12 +192,20 @@ function TitleScreen() {
         uiBackground={kitTexture(UI_KIT.flourish)} />
       {ready
         ? <UiEntity uiTransform={{ flexDirection: 'column', alignItems: 'flex-start', pointerFilter: 'none' }}>
-          <KitButton id="title-enter" text="New game" onClick={titleBegin}
+          {saved.found && !created && <UiEntity uiTransform={{ margin: { bottom: 12 * s }, pointerFilter: 'none' }}>
+            <KitButton id="title-resume" text={resuming ? 'Entering the hall…' : `Continue as ${savedHeroName()}`}
+              onClick={titleResumeSaved} disabled={resuming}
+              width={400} height={76} scale={s} fontSize={20} />
+          </UiEntity>}
+          <KitButton id="title-enter" text={saved.found ? 'New champion' : 'New game'} onClick={titleBegin} disabled={resuming}
             width={400} height={76} scale={s} fontSize={20} variant="banner" />
           {created && <UiEntity uiTransform={{ margin: { top: 12 * s }, pointerFilter: 'none' }}>
             <KitButton id="title-continue" text="Continue" onClick={titleContinue}
               width={400} height={76} scale={s} fontSize={20} variant="banner" />
           </UiEntity>}
+          {!saved.found && !created && isHeroSavePending() && <Label value="Looking for a saved champion…" color={muted} fontSize={13 * s}
+            textAlign="middle-left" textWrap="nowrap"
+            uiTransform={{ width: 400 * s, height: 24 * s, margin: { top: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
         </UiEntity>
         : <TitleLoading scale={s} />}
     </UiEntity>
@@ -277,7 +290,8 @@ function Picker() {
 export function setupCharacterPickerUi() {
   ReactEcsRenderer.setUiRenderer(
     () => getCombatState().open ? <CombatUi /> : getInventoryState().open ? <InventoryUi />
-      : isTitleOpen() ? <TitleScreen /> : getPickerState().open ? <Picker /> : <WorldHudUi />,
+      : isTitleOpen() ? <TitleScreen /> : getPickerState().open ? <Picker />
+        : getLobbyState().open ? <LobbyUi /> : <WorldHudUi />,
     // Every scene UI already uses canvas-pixel layouts. Disable the SDK's second
     // virtual-screen scale and apply native/device insets once in those layouts.
     { virtualWidth: 0, virtualHeight: 0, screenInset: 'none' }

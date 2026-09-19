@@ -7,9 +7,11 @@ import {
   destroyEquipmentAvatar, getEquipmentLoading, setEquipmentAvatar, setEquipmentMotion, setEquipmentVisible
 } from './equipmentAvatar'
 import {
-  appearanceOf, fullLoadout, heroOwner, netStatus, playerAddressAsReported, playerEntityByAddress, publishDiag,
+  appearanceOf, fullLoadout, heroOwner, localAddress, netStatus, playerAddressAsReported, playerEntityByAddress, publishDiag,
   remoteHeroes
 } from './multiplayer'
+import { createHeroNameTag, destroyHeroNameTag, updateHeroNameTag } from './heroNameTag'
+import { partyOf } from './partyLookup'
 import { HeroBodyValue } from './shared/heroBody'
 
 /**
@@ -43,6 +45,8 @@ type Replica = {
   silence: number
   /** The body's yaw offset from the native avatar it rides (radians), eased toward its target. */
   turn: number
+  /** Billboard over the head: the owner's Decentraland display name. */
+  nameTag: Entity
 }
 
 /** How fast the lock-on offset eases in and out (1/s); fast enough to read as a turn, not a snap. */
@@ -86,7 +90,7 @@ function createReplica(id: string, hero: HeroBodyValue): Replica {
   Transform.create(root, { parent: anchor, position: Vector3.create(0, ATTACH_PIVOT_CORRECTION, 0) })
   return {
     id, anchor, root, attachedAs: '', look: '', motion: 'idle', netMotion: 'idle', seq: hero.seq, echoGrace: 0, retryIn: 0,
-    beat: hero.beat, silence: 0, turn: 0
+    beat: hero.beat, silence: 0, turn: 0, nameTag: createHeroNameTag(root)
   }
 }
 
@@ -107,6 +111,7 @@ function presentMotion(replica: Replica, motion: EquipmentMotion) {
 }
 
 function removeReplica(entity: Entity, replica: Replica) {
+  destroyHeroNameTag(replica.nameTag)
   destroyEquipmentAvatar(replica.root)
   engine.removeEntity(replica.root)
   engine.removeEntity(replica.anchor)
@@ -178,6 +183,7 @@ function updateRemotePlayers(dt: number) {
   const live = new Set<Entity>()
   let attached = 0
   let ready = 0
+  const myPhase = partyOf(localAddress())
   for (const [entity, hero] of remoteHeroes()) {
     live.add(entity)
     const id = heroOwner(entity, hero)
@@ -234,8 +240,11 @@ function updateRemotePlayers(dt: number) {
     const loaded = loading === 'ready'
     if (loaded) ready++
     // Only the owner's freshest body is shown; a leftover from their previous
-    // session is hidden until the server takes it down.
-    setEquipmentVisible(replica.root, loaded && !!reported && replicaByAddress(id) === replica)
+    // session is hidden until the server takes it down. Heroes in another
+    // party's run share these 96 m with us but are in their own phase: unseen.
+    const shown = loaded && !!reported && replicaByAddress(id) === replica && partyOf(id) === myPhase
+    setEquipmentVisible(replica.root, shown)
+    updateHeroNameTag(replica.nameTag, id, shown)
     // The anchor turns with the native avatar, which the renderer interpolates
     // smoothly; the body normally adds nothing, so a turn shows the instant the
     // avatar makes it. Only while the owner is locked on does the body take the

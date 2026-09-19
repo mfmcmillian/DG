@@ -27,9 +27,10 @@ import { enemyPreloadAssets } from './dungeonEnemies'
 import { CHARACTERS } from './characterPicker'
 import { GAME_VERSION } from './version'
 import { installNetDebug } from './netDebug'
-
-export const DUNGEON_SEED = 1337
-
+import { initializeParty } from './party'
+import { initializeHeroSave } from './heroSave'
+import { initializePartyServer } from './partyServer'
+import { HUB_LEVEL } from './shared/levels'
 export async function main() {
   // Ask the runtime directly rather than reading the SDK's isServer() atom: that
   // atom is filled by the same RPC asynchronously and may not have landed yet
@@ -40,7 +41,7 @@ export async function main() {
     // The SDK's network layer logs state requests and replies when this is set;
     // on the headless host that is the only view of the client handshake.
     ;(globalThis as { DEBUG_NETWORK_MESSAGES?: boolean }).DEBUG_NETWORK_MESSAGES = true
-    initServer(DUNGEON_SEED)
+    initServer()
     return
   }
   initClient()
@@ -62,7 +63,7 @@ function initClient() {
     ...CHARACTERS.flatMap((c) => equipmentModelPaths(c.id, getCommittedLoadout(c.id)))
   ])
   // The static spawn point in scene.json sits on the open style's entrance tile for this seed.
-  loadDungeon(DUNGEON_SEED, 'open')
+  loadDungeon(HUB_LEVEL.seed, HUB_LEVEL.style)
   initializePlayerPlacement()
   // No native jump in the dungeon (it would fight the walls and the Space guard),
   // and a slower pace than the Explorer's 8 / 10 m/s so the crawler camera can
@@ -86,6 +87,11 @@ function initClient() {
   initializeInventory(applyCharacter)
   initializeCombat()
   initializeDungeonEnemies()
+  // Lobby mirror and saved hero ride on the room; a client that goes solo also
+  // hosts the party registry itself (see partyServer's onHostStart binding).
+  initializeParty()
+  initializeHeroSave()
+  initializePartyServer()
   setupCharacterPickerUi()
   openTitle()
 }

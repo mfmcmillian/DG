@@ -96,7 +96,7 @@ const state: PickerState = {
 }
 
 let initialized = false
-let applySelection: (character: CharacterDefinition, previewRoot: Entity) => boolean = () => false
+let applySelection: (character: CharacterDefinition, previewRoot?: Entity) => boolean = () => false
 let preview: Entity | undefined
 let stage: MenuPreviewStage | undefined
 let facing = MENU_PREVIEW_FACING
@@ -129,12 +129,27 @@ export function getEquippedCharacter(): CharacterDefinition {
 }
 
 export function initializeCharacterPicker(
-  onConfirm: (character: CharacterDefinition, previewRoot: Entity) => boolean
+  onConfirm: (character: CharacterDefinition, previewRoot?: Entity) => boolean
 ) {
   applySelection = onConfirm
   if (initialized) return
   initialized = true
   engine.addSystem(pickerSystem)
+}
+
+/**
+ * Take up a hero that was saved earlier (appearance and loadout already
+ * committed for `id`): the body is loaded fresh, no creator preview involved.
+ */
+export function adoptSavedCharacter(id: string): boolean {
+  if (state.open || state.confirming) return false
+  const character = CHARACTERS.find((entry) => entry.id === id)
+  if (!character) return false
+  if (!applySelection(character)) return false
+  state.equippedId = character.id
+  state.selectedId = character.id
+  state.hasCreatedCharacter = true
+  return true
 }
 
 export function openPicker() {

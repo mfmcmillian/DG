@@ -8,6 +8,10 @@ import { getWorldRivalState, retryWorldRival } from './dungeonEnemies'
 import { getLootState } from './loot'
 import { isClientSynced, isSoloMode, netStatus } from './multiplayer'
 import { netDebugSummary, recentLogs } from './netDebug'
+import { getLobbyState, inRun, myParty, myPhase, openLobby } from './party'
+import { HUB } from './partyLookup'
+import { formatTime, heroLabel, partyTitle } from './lobbyUi'
+import { DIFFICULTIES, LEVELS, MAX_PARTY } from './shared/levels'
 
 /** The handshake log is for the wait; once the fight runs (server or solo) it goes. */
 function showNetLog() {
@@ -173,6 +177,63 @@ function StatusNotice({ width, bottom, scale: s }: { width: number; bottom: numb
   </UiEntity>
 }
 
+/** Under the vitals during a run: the fortress, the tally and who is in with us. */
+function RunPanel({ left, top, scale: s }: { left: number; top: number; scale: number }) {
+  const party = myParty()
+  if (!party || party.state !== 'running') return null
+  const level = LEVELS[party.level]
+  const diff = DIFFICULTIES[party.diff]
+  return <UiEntity uiTransform={{ positionType: 'absolute', position: { left, top }, width: 224 * s, flexDirection: 'column', pointerFilter: 'none' }}>
+    <Label value={`${level?.name ?? ''}  ·  ${diff?.name ?? ''}`} color={gold} font="sans-serif" fontSize={12 * s} textAlign="middle-left" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
+    <Label value={`Slain ${party.slain} / ${party.total}   ·   ${formatTime(party.time + getLobbyState().silence)}`} color={muted} font="sans-serif" fontSize={12 * s} textAlign="middle-left" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
+    {party.members.length > 1 && party.members.map((m) => <Label key={m} value={`${m === party.leader ? '♛ ' : '· '}${heroLabel(m)}`}
+      color={white} font="sans-serif" fontSize={12 * s} textAlign="middle-left" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 17 * s, flexShrink: 0, pointerFilter: 'none' }} />)}
+  </UiEntity>
+}
+
+/** The verdict, up while the host holds the party in `done` before the hall. */
+function ResultsOverlay({ width, height, scale: s }: { width: number; height: number; scale: number }) {
+  const party = myParty()
+  const result = getLobbyState().result
+  if (!party || party.state !== 'done' || !result) return null
+  const level = LEVELS[result.level]
+  const diff = DIFFICULTIES[result.diff]
+  const next = result.won && result.level < LEVELS.length - 1 ? LEVELS[result.level + 1] : undefined
+  const cardWidth = Math.min(520 * s, width * 0.7)
+  return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - cardWidth) / 2, top: height * 0.22 },
+    width: cardWidth, padding: 28 * s, borderRadius: 8 * s, borderWidth: s, borderColor: result.won ? gold : line,
+    flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }} uiBackground={{ color: panel }}>
+    <Label value={result.won ? 'FORTRESS CLEARED' : 'THE PARTY HAS FALLEN'} font="serif" color={result.won ? gold : red} fontSize={30 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 40 * s, flexShrink: 0, pointerFilter: 'none' }} />
+    <Label value={`${level?.name ?? ''}  ·  ${diff?.name ?? ''}`} color={white} font="sans-serif" fontSize={15 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 26 * s, margin: { top: 4 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+    <Label value={`Time ${formatTime(result.time)}   ·   Slain ${result.slain} / ${result.total}   ·   Coins +${Math.max(0, result.coins)}`}
+      color={muted} font="sans-serif" fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 24 * s, margin: { top: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+    {next && <Label value={`${next.name} is open to you.`} color={gold} font="sans-serif" fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 22 * s, margin: { top: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
+    <Label value="Returning to the hall…" color={muted} font="sans-serif" fontSize={12 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 20 * s, margin: { top: 14 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+  </UiEntity>
+}
+
+/** In the hall: the way to the dungeons, and where the party stands. */
+function HubPrompt({ width, bottom, scale: s }: { width: number; bottom: number; scale: number }) {
+  if (myPhase() !== HUB || getLobbyState().open) return null
+  const party = myParty()
+  const caption = party ? `${partyTitle(party)}  ·  ${party.members.length}/${MAX_PARTY}  ·  ${LEVELS[party.level]?.name ?? ''}`
+    : 'Choose a fortress to enter.'
+  return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - 300 * s) / 2, bottom },
+    width: 300 * s, flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
+    <Label value={caption} color={party ? gold : muted} font="sans-serif" fontSize={12 * s} textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 24 * s, margin: { bottom: 6 * s }, pointerFilter: 'none' }} />
+    <TextAction id="open-lobby" text={party ? 'Party' : 'Dungeons'} onClick={openLobby} scale={s} width={200} />
+  </UiEntity>
+}
+
 export function WorldHudUi() {
   const { width, height, scale: s, right, bottom, vitalsLeft, vitalsTop } = hudLayout()
   const created = getPickerState().hasCreatedCharacter
@@ -180,6 +241,9 @@ export function WorldHudUi() {
   const ready = created && player.active && player.loading === 'ready'
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width, height, pointerFilter: 'none' }}>
     {ready && <PlayerVitals left={vitalsLeft} top={vitalsTop} scale={s} />}
+    {ready && inRun() && <RunPanel left={vitalsLeft} top={vitalsTop + 100 * s} scale={s} />}
+    {ready && <ResultsOverlay width={width} height={height} scale={s} />}
+    {ready && <HubPrompt width={width} bottom={bottom} scale={s} />}
     {ready && <BossBar width={width} scale={s} />}
     {ready && <DungeonDevPanel />}
     {created && <StatusNotice width={width} bottom={bottom} scale={s} />}

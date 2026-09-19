@@ -15,6 +15,22 @@ const EnemySnap = Schemas.Map({
   engaged: Schemas.Boolean
 })
 
+const PartySnap = Schemas.Map({
+  id: Schemas.String,
+  leader: Schemas.String,
+  level: Schemas.Int,
+  diff: Schemas.Int,
+  /** open (in the hub), running, done. */
+  state: Schemas.String,
+  members: Schemas.Array(Schemas.String),
+  ready: Schemas.Array(Schemas.String),
+  /** Run bookkeeping: seconds since the start, enemies slain / total, and the verdict once done. */
+  time: Schemas.Number,
+  slain: Schemas.Int,
+  total: Schemas.Int,
+  won: Schemas.Boolean
+})
+
 export const Messages = {
   hitEnemy: Schemas.Map({ id: Schemas.String, i: Schemas.Int, motion: Schemas.String, finisher: Schemas.Boolean }),
   /**
@@ -57,8 +73,10 @@ export const Messages = {
     sound: Schemas.String,
     vol: Schemas.Number
   }),
-  enemies: Schemas.Map({ list: Schemas.Array(EnemySnap) }),
+  /** Server -> all: one party's enemies. Clients apply only the snapshot for the party they are in. */
+  enemies: Schemas.Map({ party: Schemas.String, list: Schemas.Array(EnemySnap) }),
   loot: Schemas.Map({
+    party: Schemas.String,
     x: Schemas.Number,
     z: Schemas.Number,
     coin: Schemas.Int,
@@ -66,7 +84,48 @@ export const Messages = {
     dusk: Schemas.Boolean
   }),
   /** Client -> server: a one-line status the server prints, so client state shows in `server-logs`. */
-  diag: Schemas.Map({ note: Schemas.String })
+  diag: Schemas.Map({ note: Schemas.String }),
+
+  // --- parties and runs -------------------------------------------------------
+  /**
+   * Client -> server: a lobby action. `action` is one of create, join, leave,
+   * ready, unready, set (level/diff, leader only), start (leader only).
+   */
+  party: Schemas.Map({ action: Schemas.String, party: Schemas.String, level: Schemas.Int, diff: Schemas.Int }),
+  /** Server -> all: every party in the room. Sent on each change and every few seconds. */
+  parties: Schemas.Map({ list: Schemas.Array(PartySnap) }),
+
+  // --- saved heroes -------------------------------------------------------------
+  /** Client -> server: persist this hero (appearance, gear, coins, unlocks) under the sender's wallet. */
+  saveHero: Schemas.Map({
+    cid: Schemas.String,
+    body: Schemas.String,
+    hair: Schemas.String,
+    hc: Schemas.String,
+    skin: Schemas.String,
+    /** The loadout as JSON, so new slots never need a schema change. */
+    loadout: Schemas.String,
+    coins: Schemas.Int,
+    unlocks: Schemas.Array(Schemas.String)
+  }),
+  /** Client -> server: send me what you have saved for my wallet. */
+  loadHero: Schemas.Map({ v: Schemas.Int }),
+  /** Server -> one client: the saved hero, or `found: false`. */
+  savedHero: Schemas.Map({
+    id: Schemas.String,
+    found: Schemas.Boolean,
+    cid: Schemas.String,
+    body: Schemas.String,
+    hair: Schemas.String,
+    hc: Schemas.String,
+    skin: Schemas.String,
+    loadout: Schemas.String,
+    coins: Schemas.Int,
+    unlocks: Schemas.Array(Schemas.String),
+    progress: Schemas.Array(Schemas.Int)
+  }),
+  /** Server -> all: a hero's level progress changed (a run was cleared). */
+  progress: Schemas.Map({ id: Schemas.String, progress: Schemas.Array(Schemas.Int) })
 }
 
 /** Register before `main()` so both the headless server and every client share one room. */

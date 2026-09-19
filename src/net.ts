@@ -35,9 +35,10 @@ export function onNet<K extends Name>(type: K, handler: Handler<K>) {
   local.set(type, list)
 }
 
-export function sendNet<K extends Name>(type: K, msg: Payload<K>) {
+/** `to` (server only) narrows the recipients to those addresses; solo has only ourselves anyway. */
+export function sendNet<K extends Name>(type: K, msg: Payload<K>, options?: { to?: string[] }) {
   if (!solo) {
-    void room.send(type, msg)
+    void room.send(type, msg, options)
     return
   }
   const handlers = local.get(type)

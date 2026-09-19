@@ -37,6 +37,11 @@ export function getLootState(): Readonly<{ coins: number }> {
   return state
 }
 
+/** A saved hero brings its purse back. */
+export function setCoins(coins: number) {
+  state.coins = Math.max(0, Math.floor(coins) || 0)
+}
+
 export function clearLoot() {
   for (const d of drops) engine.removeEntity(d.entity)
   drops.length = 0
