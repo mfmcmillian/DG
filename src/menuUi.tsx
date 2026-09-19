@@ -1,6 +1,6 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { Color4 } from '@dcl/sdk/math'
-import { kitTexture, UI_KIT } from './uiKit'
+import { kitSliced, UI_KIT } from './uiKit'
 
 export const menuColors = {
   white: Color4.create(0.96, 0.955, 0.91, 1),
@@ -58,16 +58,22 @@ export function MenuAction({ id, text, onClick, width, height = 42, scale: s,
   </UiEntity>
 }
 
-/** Ornate Synty menu button: fill + gold frame, label in the middle. */
-export function KitButton({ id, text, onClick, width, height = 72, scale: s,
-  disabled, fontSize = 22, variant = 'hex' }: {
+/**
+ * Ornate Synty menu button: the gold-framed hex, nine-sliced so its arrow ends
+ * keep their shape at any width. `primary` lights the fill gold; otherwise the
+ * fill is dark and lights up on hover.
+ */
+export function KitButton({ id, text, onClick, width, height = 64, scale: s,
+  disabled, fontSize = 20, primary }: {
   id: string; text: string; onClick: () => void; width: number; height?: number
-  scale: number; disabled?: boolean; fontSize?: number; variant?: 'hex' | 'banner'
+  scale: number; disabled?: boolean; fontSize?: number; primary?: boolean
 }) {
   const hover = hoveredAction === id && !disabled
   const { white, ink } = menuColors
-  const fill = variant === 'banner' ? UI_KIT.btnFill : UI_KIT.btnGoldFill
-  const frame = variant === 'banner' ? UI_KIT.btnFrame : UI_KIT.btnGoldFrame
+  const lit = primary || hover
+  const fillColor = primary
+    ? (hover ? Color4.create(1, 0.96, 0.8, 1) : Color4.create(0.96, 0.84, 0.55, 1))
+    : (hover ? Color4.create(1, 0.94, 0.72, 1) : Color4.create(0.2, 0.18, 0.15, 0.94))
   return <UiEntity key={id}
     uiTransform={{ width: width * s, minWidth: width * s, height: height * s, flexShrink: 0,
       alignItems: 'center', justifyContent: 'center', opacity: disabled ? 0.45 : 1,
@@ -76,10 +82,10 @@ export function KitButton({ id, text, onClick, width, height = 72, scale: s,
     onMouseLeave={() => { if (hoveredAction === id) hoveredAction = '' }}
     onMouseDown={disabled ? undefined : onClick}>
     <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width: '100%', height: '100%', pointerFilter: 'none' }}
-      uiBackground={{ ...kitTexture(fill), color: hover ? Color4.create(1, 0.94, 0.72, 1) : Color4.create(0.22, 0.2, 0.16, 0.92) }} />
+      uiBackground={{ ...kitSliced(UI_KIT.btnGoldFill), color: fillColor }} />
     <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width: '100%', height: '100%', pointerFilter: 'none' }}
-      uiBackground={kitTexture(frame)} />
-    <Label value={`<b>${text}</b>`} color={hover ? ink : white} fontSize={fontSize * s} textWrap="nowrap"
-      uiTransform={{ width: '100%', height: '100%', flexShrink: 0, pointerFilter: 'none' }} />
+      uiBackground={kitSliced(UI_KIT.btnGoldFrame)} />
+    <Label value={`<b>${text}</b>`} color={lit ? ink : white} fontSize={fontSize * s} textWrap="nowrap"
+      uiTransform={{ width: '76%', height: '100%', flexShrink: 0, pointerFilter: 'none' }} />
   </UiEntity>
 }

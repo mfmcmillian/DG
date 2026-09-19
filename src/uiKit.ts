@@ -17,3 +17,16 @@ export const UI_KIT = {
 export function kitTexture(src: string) {
   return { textureMode: 'stretch' as const, texture: { src } }
 }
+
+/**
+ * The 768x192 button sprites, nine-sliced: the arrow ends (about a fifth of
+ * the width each) and the bars' thickness stay as drawn, only the middle
+ * stretches, so a button reads the same at 240 or 440 wide.
+ */
+export function kitSliced(src: string) {
+  return {
+    textureMode: 'nine-slices' as const,
+    texture: { src },
+    textureSlices: { top: 0.16, bottom: 0.16, left: 0.2, right: 0.22 }
+  }
+}

@@ -60,8 +60,15 @@ export function playerDisplayName(address: string): string {
   return ''
 }
 
-export function updateHeroNameTag(tag: Entity, address: string, visible: boolean) {
+/** What the tag shows: the display name, or a short wallet when the renderer has none worth showing. */
+export function heroTagText(address: string): string {
   const name = playerDisplayName(address)
+  if (name) return name
+  return address.length > 10 ? `${address.slice(0, 6)}…${address.slice(-4)}` : address
+}
+
+export function updateHeroNameTag(tag: Entity, address: string, visible: boolean) {
+  const name = heroTagText(address)
   const show = visible && !!name
   const shape = TextShape.getMutable(tag)
   if (shape.text !== name) shape.text = name
