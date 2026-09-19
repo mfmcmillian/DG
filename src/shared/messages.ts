@@ -1,33 +1,8 @@
 import { Schemas } from '@dcl/sdk/ecs'
 import { registerMessages } from '@dcl/sdk/network'
-
-const Loadout = Schemas.Map({
-  head: Schemas.String,
-  chest: Schemas.String,
-  shoulders: Schemas.String,
-  hands: Schemas.String,
-  legs: Schemas.String,
-  boots: Schemas.String,
-  weapon: Schemas.String
-})
-
-const Player = Schemas.Map({
-  id: Schemas.String,
-  x: Schemas.Number,
-  y: Schemas.Number,
-  z: Schemas.Number,
-  f: Schemas.Number,
-  motion: Schemas.String,
-  cid: Schemas.String,
-  body: Schemas.String,
-  hair: Schemas.String,
-  hc: Schemas.String,
-  skin: Schemas.String,
-  loadout: Loadout,
-  block: Schemas.Boolean,
-  dodge: Schemas.Boolean,
-  health: Schemas.Number
-})
+// The hero bodies travel as a synced component, not as messages; defining it
+// here keeps every runtime (server and clients) registering it before main().
+import './heroBody'
 
 const EnemySnap = Schemas.Map({
   i: Schemas.Int,
@@ -41,8 +16,6 @@ const EnemySnap = Schemas.Map({
 })
 
 export const Messages = {
-  player: Player,
-  swing: Schemas.Map({ id: Schemas.String, motion: Schemas.String, facing: Schemas.Number }),
   hitEnemy: Schemas.Map({ id: Schemas.String, i: Schemas.Int, motion: Schemas.String, finisher: Schemas.Boolean }),
   /**
    * Server -> all: an enemy blow resolved against a hero. `health` is the
@@ -62,6 +35,12 @@ export const Messages = {
   heal: Schemas.Map({ id: Schemas.String, amount: Schemas.Number, health: Schemas.Number }),
   /** Server -> all: a downed hero is back on their feet at full health. */
   revive: Schemas.Map({ id: Schemas.String, health: Schemas.Number }),
+  /**
+   * Server -> all: the ledger's current health for one hero. Sent when the
+   * server first meets a hero and every couple of seconds after, so a client
+   * that missed a `hitPlayer`, `heal` or `revive` pulls back in line.
+   */
+  vitals: Schemas.Map({ id: Schemas.String, health: Schemas.Number }),
   /** Client -> server: the hero walked over a heart it saw at (x, z). */
   pickup: Schemas.Map({ x: Schemas.Number, z: Schemas.Number }),
   /** Client -> server: the local recover countdown ran out without a revive. */
@@ -86,7 +65,6 @@ export const Messages = {
     heart: Schemas.Int,
     dusk: Schemas.Boolean
   }),
-  leave: Schemas.Map({ id: Schemas.String }),
   /** Client -> server: a one-line status the server prints, so client state shows in `server-logs`. */
   diag: Schemas.Map({ note: Schemas.String })
 }

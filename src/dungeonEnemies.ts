@@ -180,7 +180,8 @@ export function initializeDungeonEnemies() {
       if (id === localAddress()) recoverPlayer()
       else presentRemoteRevive(id)
     },
-    self: (health) => {
+    vitals: (id, health) => {
+      if (id !== localAddress()) return
       const change = reconcilePlayerHealth(health)
       if (change === 'died') onLocalDefeated()
       else if (change === 'revived') recoverPlayer()

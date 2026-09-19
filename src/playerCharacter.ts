@@ -3,7 +3,6 @@ import {
 } from '@dcl/sdk/ecs'
 import { Quaternion, Vector3 } from '@dcl/sdk/math'
 import { movePlayerTo } from '~system/RestrictedActions'
-import { setNativeAvatarHidden } from './avatarHiding'
 import { COURTYARD, isInCourtyard } from './courtyard'
 import { EquipmentLoadout } from './equipmentCatalog'
 import {
@@ -13,12 +12,12 @@ import {
 import { AttackMotion, CombatPose, MAX_COMBAT_HEALTH, STAMINA } from './combatActions'
 import { getCommittedAppearance } from './appearance'
 import {
-  destroyEquipmentAvatar, EquipmentAvatarOptions, EquipmentLoading,
+  destroyEquipmentAvatar, EquipmentAvatarOptions, EquipmentLoading, EquipmentMotion,
   getEquipmentLoading, getEquipmentMotion, setEquipmentAvatar, setEquipmentMotion, setEquipmentStride, setEquipmentTimeScale, setEquipmentVisible,
   transferEquipmentAvatar
 } from './equipmentAvatar'
 import { fxNumber, fxSlash, fxSound } from './combatFx'
-import { localAddress, publishPlayer, publishSwing } from './multiplayer'
+import { localAddress, publishHero, withdrawHero } from './multiplayer'
 import { CRAWLER_CAMERA, isCrawlerCameraOn, kickCrawlerCamera } from './dungeon/crawlerCamera'
 
 type Locomotion = 'idle' | 'walk' | 'run'
@@ -66,9 +65,15 @@ let attackStartHandler: ((motion: AttackMotion, context: AttackContext) => void)
 let facingOverride: number | undefined
 let hitStopSeconds = 0
 let exhaustedNotice = 0
-let publishAge = 0
-let lastPublishKey = ''
 let echoMismatches = 0
+/** Restart counter written into our HeroBody: bumps when a one-shot clip begins. */
+let motionSeq = 0
+let lastPublishedMotion: EquipmentMotion | undefined
+/** A one-shot began this tick (set by the combat hooks) even if the clip name is unchanged. */
+let motionEvent = false
+const ONE_SHOT_MOTIONS = new Set<EquipmentMotion>([
+  'attack_light', 'attack_light2', 'attack_heavy', 'hit', 'death', 'block', 'dodge_roll'
+])
 
 export type PlayerVitals = {
   health: number; maxHealth: number; stamina: number; maxStamina: number
@@ -221,6 +226,7 @@ export function receivePlayerCombatHit(damage: number, stagger: number, health: 
   const pose = getPlayerCombatPose()
   const killed = hitRoamingCharacter(roamingCombat, health, stagger)
   setPlayerFacingOverride(undefined)
+  motionEvent = true
   if (pose && damage > 0) fxNumber(Vector3.add(pose.position, Vector3.create(0, 1.9, 0)), `-${damage}`, 'player')
   const yaw = fromYaw ?? (pose ? pose.facing + Math.PI : 0)
   if (killed) {
@@ -266,6 +272,7 @@ export function reconcilePlayerHealth(health: number): 'died' | 'revived' | unde
   if (before > 0 && after <= 0) {
     hitRoamingCharacter(roamingCombat, 0, 0)
     setPlayerFacingOverride(undefined)
+    motionEvent = true
     setEquipmentMotion(characterRoot, 'death', true)
     fxSound('death', 0.9)
     return 'died'
@@ -317,14 +324,14 @@ const combatHooks: RoamingCombatHooks = {
     attackStartHandler?.(motion, context)
     if (characterRoot !== undefined) fxSlash(characterRoot, motion)
     fxSound(motion === 'attack_heavy' ? 'swing_heavy' : 'swing_light', 0.7)
-    const player = Transform.getOrNull(engine.PlayerEntity)
-    publishSwing(motion, facingOverride ?? (player ? playerYaw(player.rotation) : 0))
+    motionEvent = true
   },
   onAttackLunge: lungePlayer,
   onAttackContact: (motion, context) => attackContactHandler?.(motion, context),
   onAttackEnd: () => setPlayerFacingOverride(undefined),
   onDodgeStart: (direction) => {
     fxSound('dodge', 0.8)
+    motionEvent = true
     // Face the roll from its first frame; the renderer turns the native
     // controller the same way once the travel starts, so nothing snaps after.
     setPlayerFacingOverride(Math.atan2(direction.x, direction.z))
@@ -431,7 +438,7 @@ export function disposePlayerCharacter() {
   samplePosition = undefined
   sampleElapsed = 0
   locomotion = 'idle'
-  hideNativeAvatar(false)
+  withdrawHero()
   if (characterRoot !== undefined) {
     destroyEquipmentAvatar(characterRoot)
     engine.removeEntity(characterRoot)
@@ -458,7 +465,6 @@ function updatePlayerCharacter(dt: number) {
     resetRoamingCombat(roamingCombat)
     syncInputFreeze(false)
     setCharacterVisible(false)
-    hideNativeAvatar(false)
     samplePosition = undefined
     sampleElapsed = 0
     return
@@ -496,35 +502,28 @@ function updatePlayerCharacter(dt: number) {
   }
 
   const canReplace = hasReadyCharacter && !!localAddress()
-  hideNativeAvatar(canReplace)
 
   const firstPerson = CameraMode.getOrNull(engine.CameraEntity)?.mode === CameraType.CT_FIRST_PERSON
   setCharacterVisible(canReplace && !suspended && !firstPerson)
   publishLocalPlayer(player, dt)
 }
 
+/** Our HeroBody: what everyone else needs to show this hero. */
 function publishLocalPlayer(player: { position: Vector3; rotation: Quaternion }, dt: number) {
   if (!characterId || !requestedLoadout || characterRoot === undefined) return
-  const id = localAddress()
-  if (!id) return
   const appearance = requestedOptions.appearance ?? getCommittedAppearance(characterId)
   const motion = getEquipmentMotion(characterRoot)
-  // The host reads `dodge` as "blows pass through right now", so publish the
-  // roll's invulnerable window rather than the whole roll.
-  const invulnerable = isRoamingInvulnerable(roamingCombat)
-  const key = [
-    characterId, motion, roamingCombat.health, roamingCombat.blocking ? 1 : 0,
-    invulnerable ? 1 : 0, facingOverride ?? playerYaw(player.rotation)
-  ].join('|')
-  publishAge += dt
-  if (key === lastPublishKey && publishAge < 0.12) return
-  if (!publishPlayer({
-    id,
+  // A one-shot that begins (or begins again) bumps the counter so watchers restart it.
+  if (motionEvent || (motion !== lastPublishedMotion && ONE_SHOT_MOTIONS.has(motion))) motionSeq++
+  motionEvent = false
+  lastPublishedMotion = motion
+  publishHero({
     x: player.position.x,
     y: player.position.y,
     z: player.position.z,
     f: facingOverride ?? playerYaw(player.rotation),
     motion,
+    seq: motionSeq,
     cid: characterId,
     body: appearance.bodyType,
     hair: appearance.hairStyle,
@@ -532,12 +531,10 @@ function publishLocalPlayer(player: { position: Vector3; rotation: Quaternion },
     skin: appearance.skinTone,
     loadout: { ...requestedLoadout },
     block: roamingCombat.blocking,
-    dodge: invulnerable,
-    // Informational only: the host keeps the real number and echoes it back.
-    health: roamingCombat.health
-  })) return
-  publishAge = 0
-  lastPublishKey = key
+    // The host reads `dodge` as "blows pass through right now": the roll's
+    // invulnerable window, not the whole roll.
+    dodge: isRoamingInvulnerable(roamingCombat)
+  }, dt)
 }
 
 function updateLocomotion(position: Vector3, dt: number) {
@@ -599,10 +596,4 @@ function updateLocomotion(position: Vector3, dt: number) {
     strideRate += (wanted - strideRate) * (1 - Math.exp(-span * 6))
     setEquipmentStride(characterRoot, strideRate)
   }
-}
-
-/** The native avatar is hidden only while a ready custom body stands in for it. */
-function hideNativeAvatar(hide: boolean) {
-  const id = localAddress()
-  if (id) setNativeAvatarHidden(id, hide)
 }

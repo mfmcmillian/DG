@@ -3,9 +3,10 @@
 A co-op dungeon crawler for Decentraland (SDK7). A procedurally generated
 Synty *Dark Fortress* dungeon, explored with a top-down crawler camera:
 build a hero, fight roaming enemies with a light/heavy/block/roll combat
-kit, collect loot, and take down the Warlord boss. Multiplayer over
-MessageBus with host-elected enemy AI; other players appear as their
-custom heroes.
+kit, collect loot, and take down the Warlord boss. Multiplayer runs on the
+SDK's authoritative server: the headless host owns enemies, loot and hero
+health; each hero is a synced `HeroBody` entity, and every client builds the
+other players' custom bodies from it (native avatars are hidden scene-wide).
 
 Live at **SpaceMatt.dcl.eth** (6×6 parcels).
 
@@ -41,8 +42,10 @@ npm run deploy -- --target-content https://worlds-content-server.decentraland.or
 - `src/` — game code. `dungeon/` holds the generator, kit placement and the
   crawler camera; `roamingCombat.ts` / `combatActions.ts` the combat kit;
   `dungeonEnemies.ts` / `bossBrain.ts` enemy and boss AI;
-  `multiplayer.ts` / `remotePlayers.ts` sync and replicas; `preload.ts`
-  the loading screen.
+  `shared/heroBody.ts` the synced hero component, `multiplayer.ts` the room
+  (server hero ledger, messages), `remotePlayers.ts` the other players'
+  bodies, `avatarHiding.ts` the scene-wide hide area; `server.ts` the
+  headless host entry; `preload.ts` the loading screen.
 - `models/roaming/` — hero bodies, armor, hair and weapons with the roaming,
   combat and roll clips baked in (loaded in place of the originals via
   `src/roamingModels.json`). `models/dungeon/`, `models/loot/`,

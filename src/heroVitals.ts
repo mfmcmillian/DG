@@ -4,8 +4,9 @@
 // the same death at the same moment. Clients keep a mirror that only follows
 // these messages. Cross-player effects (heals, shields) plug in the same way.
 
-import { engine, PlayerIdentityData, Transform } from '@dcl/sdk/ecs'
+import { engine } from '@dcl/sdk/ecs'
 import { MAX_COMBAT_HEALTH } from './combatActions'
+import { heroPosition } from './multiplayer'
 import { room } from './shared/messages'
 
 /** Seconds a downed hero lies before the host stands them back up at the entrance. */
@@ -114,7 +115,7 @@ export function rememberHeartDrop(x: number, z: number, hearts: number) {
 function claimHeart(id: string, x: number, z: number) {
   const v = record(id)
   if (v.health <= 0 || v.health >= MAX_COMBAT_HEALTH) return
-  const here = serverPlayerPosition(id)
+  const here = heroPosition(id)
   let best: HeartDrop | undefined
   let bestDistance = Infinity
   for (const d of heartDrops) {
@@ -130,15 +131,6 @@ function claimHeart(id: string, x: number, z: number) {
   if (!best) return
   best.taken.set(id, (best.taken.get(id) ?? 0) + 1)
   healHero(id, HEART_HEAL)
-}
-
-function serverPlayerPosition(id: string): { x: number; z: number } | undefined {
-  for (const [entity, identity] of engine.getEntitiesWith(PlayerIdentityData)) {
-    if (identity.address?.toLowerCase() !== id) continue
-    const p = Transform.getOrNull(entity)?.position
-    return p ? { x: p.x, z: p.z } : undefined
-  }
-  return undefined
 }
 
 function update(deltaTime: number) {

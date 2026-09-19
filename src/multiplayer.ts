@@ -1,11 +1,12 @@
-import { engine, PlayerIdentityData, Transform } from '@dcl/sdk/ecs'
+import { CreatedBy, engine, Entity, EntityState, PlayerIdentityData, Transform } from '@dcl/sdk/ecs'
 import { Vector3 } from '@dcl/sdk/math'
-import { isStateSyncronized } from '@dcl/sdk/network'
-import { CombatPose } from './combatActions'
+import { isStateSyncronized, syncEntity } from '@dcl/sdk/network'
+import { CombatPose, MAX_COMBAT_HEALTH } from './combatActions'
 import { EquipmentMotion } from './combatAnimations'
 import { CharacterAppearance } from './appearance'
 import { EquipmentLoadout, EQUIPMENT_SLOTS } from './equipmentCatalog'
 import { dropHero, heroHealth, rememberHeartDrop, resetHero } from './heroVitals'
+import { HeroBody, HeroBodyValue } from './shared/heroBody'
 import { room } from './shared/messages'
 
 export type NetFighter = CombatPose & {
@@ -14,24 +15,6 @@ export type NetFighter = CombatPose & {
   invulnerable: boolean
   blocking: boolean
   local: boolean
-}
-
-export type PlayerNet = {
-  id: string
-  x: number
-  y: number
-  z: number
-  f: number
-  motion: EquipmentMotion
-  cid: string
-  body: string
-  hair: string
-  hc: string
-  skin: string
-  loadout: EquipmentLoadout
-  block: boolean
-  dodge: boolean
-  health: number
 }
 
 export type EnemySnap = {
@@ -57,35 +40,11 @@ export type ImpactNet = {
   vol: number
 }
 
-const remotes = new Map<string, PlayerNet>()
-const seenPlayers = new Set<string>()
-const missingSince = new Map<string, number>()
-/** Seconds since the last `player` packet from each remote. */
-const silentFor = new Map<string, number>()
-/** How long a player entity may be missing before the server announces a leave. */
-const LEAVE_GRACE = 1.5
-/**
- * Clients publish at ~8 Hz even when idle, so this much silence means the
- * peer is gone and a leave was lost or never produced.
- */
-const SILENCE_LIMIT = 20
-/** A hero silent this long and back again (title screen, reconnect) restarts at full health. */
-const FRESH_HERO_SILENCE = 3
+/** What the owner writes into its HeroBody each time something changed. */
+export type HeroPublish = Omit<HeroBodyValue, 'id' | 'beat'>
+
 let initialized = false
 let hostMode = false
-
-function asPlayer(p: PlayerNet): PlayerNet {
-  return {
-    ...p,
-    id: p.id.toLowerCase(),
-    motion: p.motion as EquipmentMotion,
-    loadout: emptyLoadout(p)
-  }
-}
-
-function clientReady() {
-  return !hostMode && isStateSyncronized()
-}
 
 /**
  * `server` is resolved once by main() from the runtime; it is held here so the
@@ -109,15 +68,7 @@ export function localAddress(): string {
   return id ? id.toLowerCase() : ''
 }
 
-export function remotePlayers(): Iterable<PlayerNet> {
-  return remotes.values()
-}
-
-export function remoteCount(): number {
-  return remotes.size
-}
-
-export function playerEntityByAddress(address: string): ReturnType<typeof engine.addEntity> | undefined {
+export function playerEntityByAddress(address: string): Entity | undefined {
   const want = address.toLowerCase()
   for (const [entity, identity] of engine.getEntitiesWith(PlayerIdentityData)) {
     if (identity.address && identity.address.toLowerCase() === want) return entity
@@ -126,9 +77,9 @@ export function playerEntityByAddress(address: string): ReturnType<typeof engine
 }
 
 /**
- * The address exactly as the renderer spells it. AvatarAttach and the hide
- * area's exclusions are matched case-sensitively against that spelling, so
- * the normalised lower-case id must not be used for them.
+ * The address exactly as the renderer spells it. AvatarAttach matches it
+ * case-sensitively against the avatar's profile id, so the normalised
+ * lower-case id must not be used there.
  */
 export function playerAddressAsReported(address: string): string | undefined {
   const want = address.toLowerCase()
@@ -138,16 +89,154 @@ export function playerAddressAsReported(address: string): string | undefined {
   return undefined
 }
 
-export function publishPlayer(p: PlayerNet): boolean {
-  if (!clientReady() || !p.id) return false
-  void room.send('player', asPlayer(p))
+// --- heroes: the synced HeroBody entities --------------------------------------
+
+/**
+ * On the server the owner of a hero is whoever's connection created the entity,
+ * not the id they wrote into it.
+ */
+export function heroOwner(entity: Entity, hero: HeroBodyValue): string {
+  const created = hostMode ? CreatedBy.getOrNull(entity)?.address : undefined
+  return (created || hero.id).toLowerCase()
+}
+
+/** Every hero body in the room but our own. */
+export function* remoteHeroes(): Iterable<[Entity, HeroBodyValue]> {
+  const me = localAddress()
+  for (const [entity, hero] of engine.getEntitiesWith(HeroBody)) {
+    if (!hero.id || heroOwner(entity, hero) === me) continue
+    yield [entity, hero]
+  }
+}
+
+export function remoteCount(): number {
+  let n = 0
+  for (const _ of remoteHeroes()) n++
+  return n
+}
+
+/**
+ * Where a hero stands: the runtime's avatar transform when it has one, else
+ * the position the hero last wrote (the headless host is not always handed
+ * player transforms).
+ */
+export function heroPosition(id: string): Vector3 | undefined {
+  const entity = playerEntityByAddress(id)
+  const tracked = entity !== undefined ? Transform.getOrNull(entity)?.position : undefined
+  if (tracked) return tracked
+  for (const [e, hero] of engine.getEntitiesWith(HeroBody)) {
+    if (heroOwner(e, hero) === id) return Vector3.create(hero.x, hero.y, hero.z)
+  }
+  return undefined
+}
+
+export function allFighters(local?: (CombatPose & { health: number; invulnerable: boolean; blocking: boolean })): NetFighter[] {
+  const list: NetFighter[] = []
+  const me = localAddress()
+  if (local && me) {
+    list.push({ ...local, address: me, local: true })
+  }
+  for (const [entity, hero] of remoteHeroes()) {
+    const id = heroOwner(entity, hero)
+    list.push({
+      address: id,
+      position: heroPosition(id) ?? Vector3.create(hero.x, hero.y, hero.z),
+      facing: hero.f,
+      // Only the host keeps the ledger; clients use fighters for presence, not health.
+      health: hostMode ? heroHealth(id) : MAX_COMBAT_HEALTH,
+      invulnerable: hero.dodge,
+      blocking: hero.block,
+      local: false
+    })
+  }
+  return list
+}
+
+export function appearanceOf(hero: HeroBodyValue): CharacterAppearance {
+  return { bodyType: hero.body === 'female' ? 'female' : 'male', hairStyle: hero.hair, hairColor: hero.hc, skinTone: hero.skin }
+}
+
+export function fullLoadout(hero: HeroBodyValue): EquipmentLoadout {
+  const loadout = { ...hero.loadout } as EquipmentLoadout
+  for (const slot of EQUIPMENT_SLOTS) {
+    if (!loadout[slot.id]) loadout[slot.id] = slot.id === 'weapon' ? 'none-weapon' : `none-${slot.id}`
+  }
+  return loadout
+}
+
+// --- client: owning our hero -------------------------------------------------------
+
+let heroEntity: Entity | undefined
+let beat = 0
+let beatAge = 0
+let sinceSent = 0
+const BEAT_SECONDS = 1
+/** Position and facing alone are sent at most this often; clips and looks go out at once. */
+const POSE_INTERVAL = 0.12
+
+function clientReady() {
+  return !hostMode && isStateSyncronized()
+}
+
+/**
+ * Write our hero. The entity is created on first use (once the room state is
+ * in, so the profile the sync needs is there) and again if the server dropped
+ * it while we were away. Returns false when nothing could be sent yet.
+ */
+export function publishHero(hero: HeroPublish, dt: number): boolean {
+  if (!clientReady()) return false
+  const id = localAddress()
+  if (!id) return false
+  if (heroEntity === undefined || engine.getEntityState(heroEntity) !== EntityState.UsedEntity || !HeroBody.has(heroEntity)) {
+    // A body of ours from an earlier session (scene reload) may have arrived in
+    // the state dump; as its owner we can take it down for everyone.
+    const stale: Entity[] = []
+    for (const [entity, body] of engine.getEntitiesWith(HeroBody)) if (body.id === id) stale.push(entity)
+    for (const entity of stale) engine.removeEntity(entity)
+    const entity = engine.addEntity()
+    try {
+      syncEntity(entity, [HeroBody.componentId])
+    } catch (error) {
+      // The sync profile is filled asynchronously; try again next tick.
+      engine.removeEntity(entity)
+      console.log('hero sync not ready', error)
+      return false
+    }
+    HeroBody.create(entity, { ...hero, id, beat })
+    heroEntity = entity
+    sinceSent = 0
+    return true
+  }
+  beatAge += dt
+  sinceSent += dt
+  if (beatAge >= BEAT_SECONDS) {
+    beatAge = 0
+    beat++
+  }
+  const current = HeroBody.get(heroEntity)
+  const stateChanged = current.beat !== beat || !sameState(current, hero)
+  const poseChanged = !samePose(current, hero)
+  if (!stateChanged && (!poseChanged || sinceSent < POSE_INTERVAL)) return true
+  HeroBody.createOrReplace(heroEntity, { ...hero, id, beat })
+  sinceSent = 0
   return true
 }
 
-export function publishSwing(motion: string, facing: number) {
-  const id = localAddress()
-  if (!clientReady() || !id) return
-  void room.send('swing', { id, motion, facing })
+function sameState(a: HeroBodyValue, b: HeroPublish): boolean {
+  return a.motion === b.motion && a.seq === b.seq && a.cid === b.cid && a.body === b.body && a.hair === b.hair &&
+    a.hc === b.hc && a.skin === b.skin && a.block === b.block && a.dodge === b.dodge &&
+    EQUIPMENT_SLOTS.every((slot) => a.loadout[slot.id] === b.loadout[slot.id])
+}
+
+function samePose(a: HeroBodyValue, b: HeroPublish): boolean {
+  return Math.abs(a.x - b.x) < 0.1 && Math.abs(a.y - b.y) < 0.1 && Math.abs(a.z - b.z) < 0.1 && Math.abs(a.f - b.f) < 0.03
+}
+
+/** Take our hero out of the room (title screen, character dropped). */
+export function withdrawHero() {
+  if (heroEntity === undefined) return
+  if (engine.getEntityState(heroEntity) === EntityState.UsedEntity) engine.removeEntity(heroEntity)
+  heroEntity = undefined
 }
 
 export function publishHitEnemy(i: number, motion: string, finisher: boolean) {
@@ -190,6 +279,8 @@ export function isClientSynced(): boolean {
   return clientReady()
 }
 
+// --- server -> clients ---------------------------------------------------------------
+
 export function publishEnemies(list: EnemySnap[]) {
   if (!hostMode) return
   void room.send('enemies', { list })
@@ -205,125 +296,76 @@ export type HeroHit = {
   id: string; damage: number; stagger: number; yaw: number; health: number; blocked: boolean; dodged: boolean
 }
 
-let onSwing: ((id: string, motion: string, facing: number) => void) | undefined
 let onHitEnemy: ((id: string, i: number, motion: string, finisher: boolean) => void) | undefined
 let onHitPlayer: ((hit: HeroHit) => void) | undefined
 let onHeal: ((id: string, amount: number, health: number) => void) | undefined
 let onRevive: ((id: string, health: number) => void) | undefined
-let onSelf: ((health: number) => void) | undefined
+let onVitals: ((id: string, health: number) => void) | undefined
 let onImpact: ((p: ImpactNet) => void) | undefined
 let onEnemies: ((list: EnemySnap[]) => void) | undefined
 let onLoot: ((x: number, z: number, coin: number, heart: number, dusk: boolean) => void) | undefined
-let onRemote: ((p: PlayerNet) => void) | undefined
-let onGone: ((id: string) => void) | undefined
 let onJoin: ((id: string) => void) | undefined
 
 export function setMultiplayerHandlers(handlers: {
-  swing?: typeof onSwing
   hitEnemy?: typeof onHitEnemy
   hitPlayer?: typeof onHitPlayer
   heal?: typeof onHeal
   revive?: typeof onRevive
-  /** The server's echo of our own `player` packet, carrying its idea of our health. */
-  self?: typeof onSelf
+  /** The server's periodic statement of a hero's health. */
+  vitals?: typeof onVitals
   impact?: typeof onImpact
   enemies?: typeof onEnemies
   loot?: typeof onLoot
-  remote?: typeof onRemote
-  gone?: typeof onGone
+  /** Server only: a hero body has appeared in the room. */
   join?: typeof onJoin
 }) {
-  if (handlers.swing) onSwing = handlers.swing
   if (handlers.hitEnemy) onHitEnemy = handlers.hitEnemy
   if (handlers.hitPlayer) onHitPlayer = handlers.hitPlayer
   if (handlers.heal) onHeal = handlers.heal
   if (handlers.revive) onRevive = handlers.revive
-  if (handlers.self) onSelf = handlers.self
+  if (handlers.vitals) onVitals = handlers.vitals
   if (handlers.impact) onImpact = handlers.impact
   if (handlers.enemies) onEnemies = handlers.enemies
   if (handlers.loot) onLoot = handlers.loot
-  if (handlers.remote) onRemote = handlers.remote
-  if (handlers.gone) onGone = handlers.gone
   if (handlers.join) onJoin = handlers.join
 }
 
-export function allFighters(local?: (CombatPose & { health: number; invulnerable: boolean; blocking: boolean }) ): NetFighter[] {
-  const list: NetFighter[] = []
-  const me = localAddress()
-  if (local && me) {
-    list.push({ ...local, address: me, local: true })
-  }
-  for (const p of remotes.values()) {
-    const entity = playerEntityByAddress(p.id)
-    const transform = entity !== undefined ? Transform.getOrNull(entity) : undefined
-    // Prefer the position the runtime reports for the avatar; fall back to the
-    // hero's own packet when the runtime has none for them (the host does not
-    // always surface player transforms), so the dungeon never stalls.
-    const position = transform?.position ?? Vector3.create(p.x, p.y, p.z)
-    list.push({
-      address: p.id,
-      position,
-      facing: p.f,
-      // The host reads its own ledger; clients get that ledger relayed inside `player`.
-      health: hostMode ? heroHealth(p.id) : p.health,
-      invulnerable: p.dodge,
-      blocking: p.block,
-      local: false
-    })
-  }
-  return list
+function bindClient() {
+  room.onMessage('hitPlayer', (msg) => onHitPlayer?.(msg))
+  room.onMessage('heal', (msg) => onHeal?.(msg.id, msg.amount, msg.health))
+  room.onMessage('revive', (msg) => onRevive?.(msg.id, msg.health))
+  room.onMessage('vitals', (msg) => onVitals?.(msg.id, msg.health))
+  room.onMessage('impact', (msg) => {
+    if (msg.id === localAddress()) return
+    onImpact?.(msg)
+  })
+  room.onMessage('enemies', (msg) => {
+    onEnemies?.(msg.list.map((e) => ({ ...e, m: e.m as EquipmentMotion })))
+  })
+  room.onMessage('loot', (msg) => onLoot?.(msg.x, msg.z, msg.coin, msg.heart, msg.dusk))
 }
 
-export function appearanceOf(p: PlayerNet): CharacterAppearance {
-  return { bodyType: p.body === 'female' ? 'female' : 'male', hairStyle: p.hair, hairColor: p.hc, skinTone: p.skin }
-}
+// --- server: who is in the room ---------------------------------------------------------
 
-export function emptyLoadout(p: PlayerNet): EquipmentLoadout {
-  const loadout = { ...(p.loadout ?? {}) } as EquipmentLoadout
-  for (const slot of EQUIPMENT_SLOTS) {
-    if (!loadout[slot.id]) loadout[slot.id] = slot.id === 'weapon' ? 'none-weapon' : `none-${slot.id}`
-  }
-  return loadout
-}
-
-function remember(p: PlayerNet) {
-  remotes.set(p.id, p)
-  silentFor.set(p.id, 0)
-}
-
-function forget(id: string) {
-  remotes.delete(id)
-  silentFor.delete(id)
-  onGone?.(id)
-}
+/** One synced HeroBody entity as the server sees it. */
+type Body = { owner: string; beat: number; silence: number }
+/** The ledger's hero: which body speaks for the owner right now. */
+type Tracked = { entity: Entity; cid: string; missing: number }
+const bodies = new Map<Entity, Body>()
+const tracked = new Map<string, Tracked>()
+const seenPlayers = new Set<string>()
+/** How long a player entity may be missing before the hero is dropped. */
+const LEAVE_GRACE = 1.5
+/** A hero whose beat has stopped this long, with no player entity to show for it, is gone. */
+const SILENCE_LIMIT = 20
+/** A second body for the same owner whose beat has stopped this long is a leftover (scene reload). */
+const STALE_BODY_SILENCE = 3
+const HEARTBEAT_SECONDS = 15
+const VITALS_SECONDS = 2
+let heartbeatAge = 0
+let vitalsAge = 0
 
 function bindServer() {
-  room.onMessage('player', (p, context) => {
-    if (!context) return
-    const id = context.from.toLowerCase()
-    const previous = remotes.get(id)
-    const isNew = previous === undefined
-    // Health is never taken from the client: a new hero, a different character
-    // or a return after silence starts full; otherwise the ledger stands.
-    if (isNew || previous.cid !== p.cid || (silentFor.get(id) ?? 0) > FRESH_HERO_SILENCE) resetHero(id)
-    const net = asPlayer({ ...p, id, motion: p.motion as EquipmentMotion, health: heroHealth(id) })
-    remember(net)
-    missingSince.delete(id)
-    void room.send('player', net)
-    if (!isNew) return
-    const entity = playerEntityByAddress(id)
-    const tracked = entity !== undefined && Transform.has(entity)
-    console.log(`[Server] hero ${id} joined as ${p.cid}; runtime transform: ${tracked ? 'yes' : 'no'}; heroes: ${remotes.size}`)
-    // A joiner otherwise waits until every other hero happens to move.
-    for (const other of remotes.values()) {
-      if (other.id !== id) void room.send('player', other)
-    }
-    onJoin?.(id)
-  })
-  room.onMessage('swing', (msg, context) => {
-    if (!context) return
-    void room.send('swing', { id: context.from.toLowerCase(), motion: msg.motion, facing: msg.facing })
-  })
   room.onMessage('hitEnemy', (msg, context) => {
     if (!context) return
     onHitEnemy?.(context.from.toLowerCase(), msg.i, msg.motion, msg.finisher)
@@ -336,104 +378,111 @@ function bindServer() {
     if (!context) return
     console.log(`[Client ${context.from}] ${msg.note}`)
   })
-  engine.addSystem(pruneGonePlayers)
+  engine.addSystem(trackHeroes)
   console.log('[Server] multiplayer room ready')
 }
 
-function bindClient() {
-  room.onMessage('player', (p) => {
-    if (!p.id) return
-    if (p.id === localAddress()) {
-      onSelf?.(p.health)
-      return
-    }
-    const net = asPlayer({ ...p, motion: p.motion as EquipmentMotion })
-    remember(net)
-    onRemote?.(net)
-  })
-  room.onMessage('leave', (msg) => {
-    forget(msg.id)
-  })
-  room.onMessage('swing', (msg) => {
-    if (msg.id === localAddress()) return
-    onSwing?.(msg.id, msg.motion, msg.facing)
-  })
-  room.onMessage('hitPlayer', (msg) => {
-    onHitPlayer?.(msg)
-  })
-  room.onMessage('heal', (msg) => {
-    onHeal?.(msg.id, msg.amount, msg.health)
-  })
-  room.onMessage('revive', (msg) => {
-    onRevive?.(msg.id, msg.health)
-  })
-  room.onMessage('impact', (msg) => {
-    if (msg.id === localAddress()) return
-    onImpact?.(msg)
-  })
-  room.onMessage('enemies', (msg) => {
-    onEnemies?.(msg.list.map((e) => ({ ...e, m: e.m as EquipmentMotion })))
-  })
-  room.onMessage('loot', (msg) => {
-    onLoot?.(msg.x, msg.z, msg.coin, msg.heart, msg.dusk)
-  })
-  engine.addSystem(pruneSilentRemotes)
+/** Delete a body; the deletion travels through the sync to every client. */
+function removeBody(entity: Entity) {
+  bodies.delete(entity)
+  if (engine.getEntityState(entity) === EntityState.UsedEntity) engine.removeEntity(entity)
 }
 
-/** Client fallback for a lost `leave`: drop a hero whose owner is silent and no longer in the scene. */
-function pruneSilentRemotes(dt: number) {
+/**
+ * The hero entities arrive through the sync; this is the ledger's view of them:
+ * a new body resets its health, and a body whose owner has gone is deleted
+ * (the deletion reaches every client through the same sync).
+ */
+function trackHeroes(dt: number) {
   const span = Number.isFinite(dt) && dt > 0 ? dt : 0
-  for (const id of [...remotes.keys()]) {
-    const silence = (silentFor.get(id) ?? 0) + span
-    silentFor.set(id, silence)
-    if (silence < SILENCE_LIMIT) continue
-    if (playerEntityByAddress(id) !== undefined) continue
-    forget(id)
-  }
-}
-
-let heartbeatAge = 0
-const HEARTBEAT_SECONDS = 15
-
-function pruneGonePlayers(dt: number) {
   const present = new Set<string>()
-  let tracked = 0
+  let withTransform = 0
   for (const [entity, identity] of engine.getEntitiesWith(PlayerIdentityData)) {
     if (!identity.address) continue
-    const id = identity.address.toLowerCase()
-    present.add(id)
-    seenPlayers.add(id)
-    missingSince.delete(id)
-    if (Transform.has(entity)) tracked++
+    present.add(identity.address.toLowerCase())
+    if (Transform.has(entity)) withTransform++
   }
-  const span = Number.isFinite(dt) && dt > 0 ? dt : 0
+  for (const id of present) seenPlayers.add(id)
+
+  // Every body in the room, grouped by owner; the freshest beat speaks for them.
+  const byOwner = new Map<string, { entity: Entity; hero: HeroBodyValue; body: Body }[]>()
+  const liveEntities = new Set<Entity>()
+  for (const [entity, hero] of engine.getEntitiesWith(HeroBody)) {
+    if (!hero.id) continue
+    liveEntities.add(entity)
+    const owner = heroOwner(entity, hero)
+    let body = bodies.get(entity)
+    if (!body) {
+      body = { owner, beat: hero.beat, silence: 0 }
+      bodies.set(entity, body)
+    } else if (hero.beat !== body.beat) {
+      body.beat = hero.beat
+      body.silence = 0
+    } else {
+      body.silence += span
+    }
+    const list = byOwner.get(owner) ?? []
+    list.push({ entity, hero, body })
+    byOwner.set(owner, list)
+  }
+  for (const entity of [...bodies.keys()]) if (!liveEntities.has(entity)) bodies.delete(entity)
+
+  for (const [id, list] of byOwner) {
+    list.sort((a, b) => a.body.silence - b.body.silence)
+    const primary = list[0]
+    // A reload leaves the previous session's body behind until the owner takes
+    // it down; if they did not, it stops beating and goes here.
+    for (const extra of list.slice(1)) {
+      if (extra.body.silence >= STALE_BODY_SILENCE) removeBody(extra.entity)
+    }
+    let t = tracked.get(id)
+    if (!t) {
+      t = { entity: primary.entity, cid: primary.hero.cid, missing: 0 }
+      tracked.set(id, t)
+      resetHero(id)
+      void room.send('vitals', { id, health: heroHealth(id) })
+      console.log(`[Server] hero ${id} joined as ${primary.hero.cid}; player transform: ${present.has(id) ? 'yes' : 'no'}; heroes: ${tracked.size}`)
+      onJoin?.(id)
+      continue
+    }
+    t.entity = primary.entity
+    if (primary.hero.cid !== t.cid) {
+      // A different character is a fresh hero.
+      t.cid = primary.hero.cid
+      resetHero(id)
+      void room.send('vitals', { id, health: heroHealth(id) })
+    }
+    if (present.has(id)) {
+      t.missing = 0
+      continue
+    }
+    // Known player whose entity vanished: a short grace for comms hiccups. One
+    // that never surfaced as a player entity here is judged by its beat alone.
+    t.missing += span
+    const gone = seenPlayers.has(id) ? t.missing >= LEAVE_GRACE : primary.body.silence >= SILENCE_LIMIT
+    if (!gone) continue
+    for (const { entity } of list) removeBody(entity)
+    tracked.delete(id)
+    seenPlayers.delete(id)
+    dropHero(id)
+    console.log(`[Server] hero ${id} left; heroes: ${tracked.size}`)
+  }
+  for (const id of [...tracked.keys()]) {
+    if (byOwner.has(id)) continue
+    // The body went away on its own (owner withdrew it: title screen, character dropped).
+    tracked.delete(id)
+    dropHero(id)
+    console.log(`[Server] hero ${id} withdrew; heroes: ${tracked.size}`)
+  }
+
+  vitalsAge += span
+  if (vitalsAge >= VITALS_SECONDS) {
+    vitalsAge = 0
+    for (const id of tracked.keys()) void room.send('vitals', { id, health: heroHealth(id) })
+  }
   heartbeatAge += span
   if (heartbeatAge >= HEARTBEAT_SECONDS) {
     heartbeatAge = 0
-    console.log(`[Server] heartbeat: ${present.size} player entit(ies), ${tracked} with transform, ${remotes.size} hero(es) publishing`)
-  }
-  for (const id of [...remotes.keys()]) {
-    // Packet silence runs for everyone (it also tells a returning hero apart).
-    const silence = (silentFor.get(id) ?? 0) + span
-    silentFor.set(id, silence)
-    if (present.has(id)) continue
-    let gone: boolean
-    if (seenPlayers.has(id)) {
-      // Known player whose entity vanished: short grace for comms hiccups.
-      const missing = (missingSince.get(id) ?? 0) + span
-      missingSince.set(id, missing)
-      gone = missing >= LEAVE_GRACE
-    } else {
-      // Never surfaced as a player entity here; fall back to packet silence.
-      gone = silence >= SILENCE_LIMIT
-    }
-    if (!gone) continue
-    remotes.delete(id)
-    seenPlayers.delete(id)
-    missingSince.delete(id)
-    silentFor.delete(id)
-    dropHero(id)
-    console.log(`[Server] hero ${id} left; heroes: ${remotes.size}`)
-    void room.send('leave', { id })
+    console.log(`[Server] heartbeat: ${present.size} player entit(ies), ${withTransform} with transform, ${tracked.size} hero(es)`)
   }
 }
