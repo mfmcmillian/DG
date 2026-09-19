@@ -34,17 +34,25 @@ export function isSettingsOpen(): boolean {
   return open
 }
 
-export function openSettings() {
-  if (open) return
+/** Runs once when the panel closes (the lobby uses it to come back). */
+let onCloseOnce: (() => void) | undefined
+
+export function openSettings(options: { onClose?: () => void } = {}): boolean {
+  if (open) return false
   open = true
+  onCloseOnce = options.onClose
   InputModifier.createOrReplace(engine.PlayerEntity, { mode: InputModifier.Mode.Standard({ disableAll: true }) })
   PointerLock.createOrReplace(engine.CameraEntity, { isPointerLocked: false })
+  return true
 }
 
 export function closeSettings() {
   if (!open) return
   open = false
   InputModifier.deleteFrom(engine.PlayerEntity)
+  const after = onCloseOnce
+  onCloseOnce = undefined
+  after?.()
 }
 
 /** Click = switch now and remember it. The walls swap in place, so this is safe mid-fight. */

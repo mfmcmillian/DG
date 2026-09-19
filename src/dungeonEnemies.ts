@@ -18,9 +18,11 @@ import {
 import { EquipmentMotion } from './combatAnimations'
 import {
   advanceAttack, attackCanReach, attackRange, attackRecovery, AttackMotion, canStartAttack,
-  combatDistance, CombatPose, COMBAT_RULES, createSwing, facesCombatant, isHeavyMotion,
+  combatDistance, CombatPose, COMBAT_RULES, createSwing, facesCombatant, HeroAttackMotion, isHeavyMotion, isRangedAttack,
   MAX_COMBAT_HEALTH, resolveCombatHit, Swing, WeaponModifiers, WeaponMotion
 } from './combatActions'
+import { heroClassOf, shotProfile, weaponPoolFor } from './heroClasses'
+import { clearProjectiles, launchShot, ProjectileTarget, setProjectileTargets, SHOT_HEIGHT } from './projectiles'
 import { createRivalBrain, resetRivalBrain, RivalBrain, updateRivalBrain } from './rivalBrain'
 import {
   BossAttack, BossBrain, bossPhaseLabel, createBossBrain, resetBossBrain, updateBossBrain
@@ -30,11 +32,11 @@ import {
   createEnemyHealthBar, destroyEnemyHealthBar, EnemyHealthBar, updateEnemyHealthBar
 } from './enemyHealthBar'
 import {
-  getPlayerCombatPose, getPlayerWeapon, healPlayer, hitStopPlayer, isPlayerDown, playerBlockedHit, playerDodgedHit,
+  getPlayerCharacterState, getPlayerCombatPose, getPlayerWeapon, healPlayer, hitStopPlayer, isPlayerDown, playerBlockedHit, playerDodgedHit,
   receivePlayerCombatHit, reconcilePlayerHealth, restorePlayerCombatHealth,
-  setPlayerAttackContactHandler, setPlayerAttackStartHandler, setPlayerFacingOverride, setPlayerStepIn
+  setPlayerAttackContactHandler, setPlayerAttackStartHandler, setPlayerEnemyWithinHandler, setPlayerFacingOverride, setPlayerStepIn
 } from './playerCharacter'
-import { presentRemoteHeal, presentRemoteHit, presentRemoteRevive } from './remotePlayers'
+import { presentRemoteHeal, presentRemoteHit, presentRemoteRevive, presentRemoteShot } from './remotePlayers'
 import { RECOVER_SECONDS, strikeHero } from './heroVitals'
 import { movePlayerToSpawn } from './playerPlacement'
 import { DungeonState, onDungeonLoaded } from './dungeon'
@@ -55,8 +57,8 @@ import { clearLoot, setLootNoticeHandler, spawnLoot } from './loot'
 import { rollWeaponDrop, weaponStats } from './weapons'
 import { AttackContext } from './roamingCombat'
 import {
-  allFighters, EnemySnap, HeroHit, heroWeapon, ImpactNet, isHeadless, isHost, localAddress, NetFighter, publishEnemies, publishHitEnemy,
-  publishImpact, publishLoot, publishRespawn, setMultiplayerHandlers
+  allFighters, EnemySnap, heroCharacters, HeroHit, heroWeapon, ImpactNet, isHeadless, isHost, localAddress, NetFighter, publishEnemies, publishHitEnemy,
+  publishImpact, publishLoot, publishRespawn, publishShot, setMultiplayerHandlers
 } from './multiplayer'
 
 type WorldPhase = 'loading' | 'idle' | 'fighting' | 'victory' | 'defeat' | 'error'
@@ -189,8 +191,13 @@ export function initializeDungeonEnemies() {
   initialized = true
   setPlayerAttackStartHandler(lockOn)
   setPlayerAttackContactHandler(hitEnemies)
+  setPlayerEnemyWithinHandler(enemyWithin)
+  setProjectileTargets(projectileTargets)
   setMultiplayerHandlers({
     hitEnemy: applyRemoteHit,
+    shot: (p) => {
+      if (samePhase(p.id)) presentRemoteShot(p)
+    },
     hitPlayer: applyHeroHit,
     heal: (id, amount, health) => {
       if (id === localAddress()) healPlayer(amount, health)
@@ -320,6 +327,7 @@ function populate(dungeon: Readonly<DungeonState>) {
     clientSim = undefined
   }
   clearLoot()
+  clearProjectiles()
   defeated = false
   respawnAsked = false
   state.respawnSeconds = 0
@@ -922,22 +930,16 @@ function updateEnemy(e: Enemy, dt: number, target: NetFighter, fighters: NetFigh
 
 // --- player attacks ----------------------------------------------------------
 
-/** Soft lock-on: turn the body to the best enemy in front and step in if it is just out of reach. */
-function lockOn(motion: AttackMotion, _context: AttackContext) {
-  const attacker = getPlayerCombatPose()
-  if (!attacker || attacker.health <= 0 || !clientSim || clientSim.paused || defeated) return
-  sim = clientSim
-  const reach = motion === 'attack_heavy' ? 2.15 : 1.9
-  // Only when the enemy is actually there: swinging while running through a room
-  // must not yank the body around or teleport the player toward distant targets.
-  const range = reach + LOCK_MARGIN
-  let best: Enemy | undefined
+/** The best enemy in front within `range` and the cone `minDot`: near and centred wins. */
+function pickHeroTarget(attacker: CombatPose, range: number, minDot: number, verticalSlack = 0): { e: Enemy; index: number } | undefined {
+  if (!sim) return undefined
+  let best: { e: Enemy; index: number } | undefined
   let bestScore = Infinity
-  for (const e of sim.enemies) {
-    if (e.loading !== 'ready' || e.dead || e.returningHome) continue
+  sim.enemies.forEach((e, index) => {
+    if (e.loading !== 'ready' || e.dead || e.returningHome) return
     const d = combatDistance(attacker, e)
-    if (d > range || !facesCombatant(attacker, e, LOCK_COS)) continue
-    if (Math.abs(attacker.position.y - e.position.y) > COMBAT_RULES.maximumVerticalReach) continue
+    if (d > range || !facesCombatant(attacker, e, minDot)) return
+    if (Math.abs(attacker.position.y - e.position.y) > COMBAT_RULES.maximumVerticalReach + verticalSlack) return
     // Prefer near and centred targets.
     const dx = e.position.x - attacker.position.x
     const dz = e.position.z - attacker.position.z
@@ -945,23 +947,68 @@ function lockOn(motion: AttackMotion, _context: AttackContext) {
     const score = d + (1 - dot) * 1.5
     if (score < bestScore) {
       bestScore = score
-      best = e
+      best = { e, index }
     }
-  }
+  })
+  return best
+}
+
+/** Half-angle of the ranged classes' soft lock, as the dot product `facesCombatant` wants. */
+function aimCos(): number {
+  return Math.cos((heroClassOf(getPlayerCharacterState().characterId).aimCone * Math.PI) / 180)
+}
+
+/**
+ * Soft lock-on: turn the body to the best enemy in front and step in if it is
+ * just out of reach. A shot locks over the class's range and cone and never
+ * steps: the archer stands and looses.
+ */
+function lockOn(motion: HeroAttackMotion, _context: AttackContext) {
+  const attacker = getPlayerCombatPose()
+  if (!attacker || attacker.health <= 0 || !clientSim || clientSim.paused || defeated) return
+  sim = clientSim
+  const shot = shotProfile(getPlayerCharacterState().characterId, motion)
+  const reach = shot ? shot.range : isHeavyMotion(motion) ? 2.15 : 1.9
+  // Only when the enemy is actually there: swinging while running through a room
+  // must not yank the body around or teleport the player toward distant targets.
+  const best = pickHeroTarget(attacker, reach + LOCK_MARGIN, shot ? aimCos() : LOCK_COS, shot ? 1.5 : 0)
   if (!best) return
-  const dx = best.position.x - attacker.position.x
-  const dz = best.position.z - attacker.position.z
+  const dx = best.e.position.x - attacker.position.x
+  const dz = best.e.position.z - attacker.position.z
   const distance = Math.sqrt(dx * dx + dz * dz)
   if (distance > 0.0001) setPlayerFacingOverride(Math.atan2(dx, dz))
   // The wind-up's lunge closes the last gap so the blow lands at sword reach;
   // an enemy already that close gets a swing from a standstill.
-  setPlayerStepIn(distance - STEP_TO)
+  setPlayerStepIn(shot ? 0 : distance - STEP_TO)
 }
 
-function hitEnemies(motion: AttackMotion, context: AttackContext) {
+/** roamingCombat asks before a ranged light: is someone at arm's length in front? */
+function enemyWithin(range: number): boolean {
+  const attacker = getPlayerCombatPose()
+  if (!attacker || !clientSim || clientSim.paused || defeated) return false
+  sim = clientSim
+  return !!pickHeroTarget(attacker, range, LOCK_COS)
+}
+
+/** The enemies a projectile can reach right now, as bodies. */
+function projectileTargets(): ProjectileTarget[] {
+  const out: ProjectileTarget[] = []
+  if (!clientSim || clientSim.paused) return out
+  clientSim.enemies.forEach((e, index) => {
+    if (e.loading !== 'ready' || e.dead || e.returningHome) return
+    out.push({ index, position: e.position, height: 1.85 * e.archetype.scale, radius: 0.45 * e.archetype.scale })
+  })
+  return out
+}
+
+function hitEnemies(motion: HeroAttackMotion, context: AttackContext) {
   const attacker = getPlayerCombatPose()
   if (!attacker || attacker.health <= 0 || !clientSim || clientSim.paused || defeated) return
   sim = clientSim
+  if (isRangedAttack(motion)) {
+    shootEnemies(attacker, motion, context)
+    return
+  }
   let best: Enemy | undefined
   let bestIndex = -1
   let bestDistance = Infinity
@@ -980,20 +1027,69 @@ function hitEnemies(motion: AttackMotion, context: AttackContext) {
   else publishHitEnemy(bestIndex, motion, context.finisher)
 }
 
+/**
+ * The contact frame of a shot: the projectile leaves toward the soft-lock
+ * target (or straight ahead) and lands its blow on whatever body it reaches,
+ * through the same host/client path as a sword.
+ */
+function shootEnemies(attacker: CombatPose, motion: HeroAttackMotion, context: AttackContext) {
+  const profile = shotProfile(getPlayerCharacterState().characterId, motion)
+  if (!profile || !sim) return
+  const target = pickHeroTarget(attacker, profile.range + LOCK_MARGIN, aimCos(), 1.5)
+  const origin = Vector3.create(
+    attacker.position.x + Math.sin(attacker.facing) * 0.35, attacker.position.y + SHOT_HEIGHT, attacker.position.z + Math.cos(attacker.facing) * 0.35)
+  let yaw = attacker.facing
+  let pitch = 0
+  if (target) {
+    const aimAt = Vector3.create(target.e.position.x, target.e.position.y + 1.1 * target.e.archetype.scale, target.e.position.z)
+    const dx = aimAt.x - origin.x
+    const dz = aimAt.z - origin.z
+    const flat = Math.sqrt(dx * dx + dz * dz)
+    if (flat > 0.0001) yaw = Math.atan2(dx, dz)
+    pitch = Math.atan2(aimAt.y - origin.y, Math.max(0.5, flat))
+  }
+  const simAtLaunch = sim
+  launchShot({
+    origin, yaw, pitch, profile, motion, finisher: context.finisher,
+    // Each arrow of a volley lands its own blow; a projectile stops at the first body it meets.
+    onHit: (t, at) => {
+      // The sim may have been rebuilt while the arrow flew; the index means nothing then.
+      if (simAtLaunch !== clientSim || !clientSim || clientSim.paused || defeated) return
+      sim = clientSim
+      const e = sim.enemies[t.index]
+      if (!e || e.dead || e.loading !== 'ready') return
+      const shooter = getPlayerCombatPose() ?? attacker
+      // Knockback goes the way the shot went, not the way the body has turned since.
+      const dx = e.position.x - shooter.position.x
+      const dz = e.position.z - shooter.position.z
+      const from: CombatPose = { position: shooter.position, facing: dx * dx + dz * dz > 0.0001 ? Math.atan2(dx, dz) : shooter.facing }
+      presentPlayerStrike(from, e, motion, context, at)
+      if (isHost()) applyPlayerHit(from, e, motion, { finisher: context.finisher, weapon: localWeapon() })
+      else publishHitEnemy(t.index, motion, context.finisher)
+    }
+  })
+  publishShot({ motion, x: origin.x, y: origin.y, z: origin.z, yaw, pitch })
+}
+
 function applyRemoteHit(id: string, index: number, motion: string, finisher: boolean) {
   if (!isHost()) return
   const s = simFor(partyOf(id))
   if (!s) return
   sim = s
-  const attack = asAttack(motion)
+  const attack = asHeroAttack(motion)
   const e = s.enemies[index]
   if (!attack || !e || e.dead || e.loading !== 'ready') return
   const attacker = allFighters().find((f) => f.address === id)
   // Reach is checked on the server pose with slack for the lunge the client
   // already played; facing is not, because the body yaw is still client-owned.
+  // A shot's reach is its range (attackRange knows), with the same slack.
   if (!attacker) return
-  if (Math.abs(attacker.position.y - e.position.y) > COMBAT_RULES.maximumVerticalReach + 0.5) return
+  // A ranged blow was decided where the projectile landed; the hero may stand a step up from there.
+  const shot = isRangedAttack(attack)
+  if (Math.abs(attacker.position.y - e.position.y) > COMBAT_RULES.maximumVerticalReach + (shot ? 2 : 0.5)) return
   if (combatDistance(attacker, e) > attackRange(attack) + 1.5) return
+  // Only the class that owns the motion may claim it: a blade cannot report a volley.
+  if (!heroClassMotionAllowed(id, attack)) return
   // The weapon is read off the hero's synced body: the client never states its own damage.
   applyPlayerHit(attacker, e, attack, { finisher, weapon: weaponStats(heroWeapon(id)) })
 }
@@ -1009,16 +1105,24 @@ function enemySnaps(): EnemySnap[] {
   }))
 }
 
+/** Whether the hero's class fights with this motion (the host trusts no client's word for it). */
+function heroClassMotionAllowed(id: string, motion: HeroAttackMotion): boolean {
+  const cid = heroCharacters((owner) => owner === id)[0]
+  const cls = heroClassOf(cid)
+  return cls.light.includes(motion) || cls.heavy === motion || cls.pointBlank?.motion === motion
+}
+
 function applyPlayerHit(
-  attacker: CombatPose, e: Enemy, motion: AttackMotion, context: { finisher: boolean; weapon: WeaponModifiers }
+  attacker: CombatPose, e: Enemy, motion: HeroAttackMotion, context: { finisher: boolean; weapon: WeaponModifiers }
 ) {
   e.engaged = true
+  const heavy = isHeavyMotion(motion)
   const guarded = e.blocking && facesCombatant(e, attacker, 0.1)
   const hit = resolveCombatHit(motion, guarded, context.finisher, context.weapon)
-  const armored = e.hyperArmor && !context.finisher && motion !== 'attack_heavy'
+  const armored = e.hyperArmor && !context.finisher && !heavy
   const damage = armored ? Math.max(1, Math.round(hit.damage * 0.55)) : hit.damage
   e.health = Math.max(0, e.health - damage)
-  const freeze = motion === 'attack_heavy' || context.finisher ? 0.09 : 0.06
+  const freeze = heavy || context.finisher ? 0.09 : 0.06
   e.hitStop = freeze
   setEquipmentTimeScale(e.body, 0.02)
   if (!hit.interrupt || armored) return
@@ -1038,12 +1142,13 @@ function applyPlayerHit(
 }
 
 function presentPlayerStrike(
-  attacker: CombatPose, e: Enemy, motion: AttackMotion, context: { finisher: boolean }
+  attacker: CombatPose, e: Enemy, motion: HeroAttackMotion, context: { finisher: boolean }, at?: Vector3
 ) {
-  const heavy = motion === 'attack_heavy'
+  const heavy = isHeavyMotion(motion)
   const guarded = e.blocking && facesCombatant(e, attacker, 0.1)
   const hit = resolveCombatHit(motion, guarded, context.finisher, localWeapon())
-  const contact = Vector3.create(
+  // A sword meets the body between the two; a projectile where it landed.
+  const contact = at ? Vector3.clone(at) : Vector3.create(
     (attacker.position.x + e.position.x) / 2, e.position.y + 1.15 * e.archetype.scale, (attacker.position.z + e.position.z) / 2)
   fxImpact(contact, heavy || context.finisher, hit.damage === 0)
   const kind = hit.damage === 0 ? 'blocked' : context.finisher ? 'finisher' : heavy ? 'heavy' : guarded ? 'blocked' : 'damage'
@@ -1072,6 +1177,12 @@ function asAttack(motion: string): AttackMotion | undefined {
   if (motion === 'attack_light' || motion === 'attack_light2' || motion === 'attack_heavy') return motion
 }
 
+/** A hero's blow as reported over the wire: the sword set or one of the class actions. */
+function asHeroAttack(motion: string): HeroAttackMotion | undefined {
+  if (asAttack(motion)) return motion as AttackMotion
+  if (motion === 'bow_shoot' || motion === 'bow_volley' || motion === 'bow_bash' || motion === 'cast_bolt' || motion === 'cast_nova') return motion
+}
+
 function kill(e: Enemy) {
   presentDeath(e)
   if (!isHost() || !sim) return
@@ -1081,7 +1192,15 @@ function kill(e: Enemy) {
   // The Warlord always drops a weapon, once; guards often, the rest rarely.
   let item = ''
   if (!e.boss || !sim.bossDropGiven) {
-    item = rollWeaponDrop(e.boss ? 'boss' : e.archetype.role === 'elite' ? 'elite' : 'grunt', sim.level.id, sim.diff.id)
+    // Drawn from what the party can wield: an all-archer party never sees a mace.
+    const party = sim.party
+    const characters = heroCharacters((id) => partyOf(id) === party)
+    if (!isHeadless() && partyOf(localAddress()) === party) {
+      const mine = getPlayerCharacterState().characterId
+      if (mine) characters.push(mine)
+    }
+    item = rollWeaponDrop(
+      e.boss ? 'boss' : e.archetype.role === 'elite' ? 'elite' : 'grunt', sim.level.id, sim.diff.id, Math.random, weaponPoolFor(characters))
   }
   if (e.boss && item) sim.bossDropGiven = true
   publishLoot(sim.party, e.position.x, e.position.z, coin, heart, item)

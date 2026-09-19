@@ -25,6 +25,12 @@ For each weapon:
 The hand_r node also carries its bind pose as rest TRS, so the same GLB shown
 without an Animator (a drop on the dungeon floor) renders at the stored
 T-pose position; loot.ts undoes that with DROP_OFFSET from weaponCatalog.json.
+
+Bows (manifest `hand: "l"`) go through the same steps against the left hand:
+BOW_HAND_L_FROM_FBX, a `hand_l` joint with the core's inverse bind matrix, and
+`dropOffsetLeft` in the catalog. `objects` picks the mesh objects out of an
+FBX that holds several weapons (the bow pack's files). `props` are plain
+unskinned GLBs for things that fly on their own (the arrow).
 """
 import bpy
 import importlib.util
@@ -67,6 +73,21 @@ INVERSE_BIND = Matrix((
     (29.487, 82.2989, -48.5532, -89.1958),
     (0.0, 0.0, 0.0, 1.0)))
 
+# Bows ride the left hand (manifest `hand: "l"`). Same FBX frame (limbs along Z,
+# string toward +Y, grip at the origin) -> the hero's T-pose left hand. Solved
+# from the drawn frame of `bow_shoot` in core.glb: the fist point is the sword
+# grip mirrored, the limbs stand vertical and the string faces the draw hand.
+BOW_HAND_L_FROM_FBX = Matrix((
+    (-0.15567, -0.97844, 0.13561, 0.81071),
+    (0.92195, -0.09463, 0.37556, 1.32897),
+    (-0.35463, 0.18349, 0.91682, -0.05549),
+    (0.0, 0.0, 0.0, 1.0)))
+
+HANDS = {
+    'r': {'joint': 'hand_r', 'from_fbx': HAND_FROM_FBX},
+    'l': {'joint': 'hand_l', 'from_fbx': BOW_HAND_L_FROM_FBX},
+}
+
 # Blender Z-up -> glTF Y-up, for the floor-drop offset.
 YUP = Matrix(((1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, 0, 0, 1)))
 
@@ -105,11 +126,28 @@ def reset_scene():
     bpy.ops.wm.read_factory_settings(use_empty=True)
 
 
-def import_weapon(fbx):
+def import_weapon(fbx, objects=None):
+    """Import the FBX; `objects` names the mesh objects to keep when the file holds several weapons."""
     bpy.ops.import_scene.fbx(filepath=fbx)
     meshes = [o for o in bpy.context.scene.objects if o.type == 'MESH']
+    if objects:
+        wanted = {n.lower() for n in objects}
+        keep = [o for o in meshes if o.name.lower() in wanted or o.name.lower().rsplit('.', 1)[0] in wanted]
+        missing = wanted - {o.name.lower() for o in keep} - {o.name.lower().rsplit('.', 1)[0] for o in keep}
+        if missing:
+            raise RuntimeError(f'{fbx}: objects not found {sorted(missing)}; has {[o.name for o in meshes]}')
+        for o in meshes:
+            if o not in keep:
+                bpy.data.objects.remove(o, do_unlink=True)
+        meshes = keep
     if not meshes:
         raise RuntimeError(f'no mesh in {fbx}')
+    # Keep the world placement when the parents (empties, a rig) go below.
+    for o in meshes:
+        if o.parent is not None:
+            world = o.matrix_world.copy()
+            o.parent = None
+            o.matrix_world = world
     for o in list(bpy.context.scene.objects):
         if o.type != 'MESH':
             bpy.data.objects.remove(o, do_unlink=True)
@@ -135,9 +173,19 @@ def make_material(base_png, emission_png):
     bsdf.inputs['Roughness'].default_value = 0.5
 
     def load(path):
-        img = bpy.data.images.load(path)
-        if max(img.size) > TEXTURE_SIZE:
-            img.scale(TEXTURE_SIZE, TEXTURE_SIZE)
+        # Scale once to a file of our own: the glTF exporter copies an image's
+        # source file as-is, so an in-memory scale of the 2K/4K palette is lost.
+        scaled = os.path.join(WORK, 'textures', f'{os.path.splitext(os.path.basename(path))[0]}-{TEXTURE_SIZE}.png')
+        if not os.path.exists(scaled):
+            os.makedirs(os.path.dirname(scaled), exist_ok=True)
+            src = bpy.data.images.load(path)
+            if max(src.size) > TEXTURE_SIZE:
+                src.scale(TEXTURE_SIZE, TEXTURE_SIZE)
+            src.filepath_raw = scaled
+            src.file_format = 'PNG'
+            src.save()
+            bpy.data.images.remove(src)
+        img = bpy.data.images.load(scaled)
         # Synty palettes keep an emission mask in the alpha channel; it is not transparency.
         img.alpha_mode = 'NONE'
         img.pack()
@@ -208,10 +256,10 @@ def render_icon(obj, path):
     bpy.data.cameras.remove(cam_d)
 
 
-def place_in_hand(obj, grip):
+def place_in_hand(obj, grip, hand='r'):
     """Grip point to the origin, then the whole mesh into the hero's hand."""
     shift = Matrix.Translation(Vector((0, 0, -grip))) if grip else Matrix.Identity(4)
-    obj.matrix_world = HAND_FROM_FBX @ shift @ obj.matrix_world
+    obj.matrix_world = HANDS[hand]['from_fbx'] @ shift @ obj.matrix_world
     bpy.ops.object.select_all(action='DESELECT')
     obj.select_set(True)
     bpy.context.view_layer.objects.active = obj
@@ -237,7 +285,24 @@ def to_gltf_matrix(m):
     return [m[r][c] for c in range(4) for r in range(4)]
 
 
-def rewrite_as_weapon(path, weapon_id, name):
+_core_inverse_binds = {}
+
+
+def core_inverse_bind(joint):
+    """A joint's inverse bind matrix (row-major, metres with the rig's 0.01 scale) from the hero core."""
+    if joint not in _core_inverse_binds:
+        gltf, bin_ = bake.load_glb(CORE_GLB)
+        skin = gltf['skins'][0]
+        names = [gltf['nodes'][j].get('name') for j in skin['joints']]
+        flat = bake.read_accessor(gltf, bin_, skin['inverseBindMatrices'])[names.index(joint)]
+        _core_inverse_binds[joint] = Matrix([[flat[c * 4 + r] for c in range(4)] for r in range(4)])
+    return _core_inverse_binds[joint]
+
+
+def rewrite_as_weapon(path, weapon_id, name, hand='r'):
+    joint = HANDS[hand]['joint']
+    # The right hand keeps the matrix the original Pride sword was authored with.
+    inverse_bind = INVERSE_BIND if hand == 'r' else core_inverse_bind(joint)
     gltf, bin_ = bake.load_glb(path)
     mesh_nodes = [i for i, n in enumerate(gltf['nodes']) if 'mesh' in n]
     if len(mesh_nodes) != 1:
@@ -260,30 +325,30 @@ def rewrite_as_weapon(path, weapon_id, name):
         prim['attributes']['WEIGHTS_0'] = bake.append_accessor(gltf, bin_, [(1.0, 0.0, 0.0, 0.0)] * count, 'VEC4')
     mesh['name'] = 'Mesh'
 
-    bind = INVERSE_BIND.inverted()
+    bind = inverse_bind.inverted()
     t, r, s = bind.decompose()
     gltf['nodes'].append({
-        'name': 'hand_r',
+        'name': joint,
         'translation': [t.x, t.y, t.z],
         'rotation': [r.x, r.y, r.z, r.w],
         'scale': [s.x, s.y, s.z]
     })
-    ibm_acc = bake.append_accessor(gltf, bin_, [tuple(to_gltf_matrix(INVERSE_BIND))], 'MAT4')
-    gltf['skins'] = [{'name': f'{weapon_id} right hand', 'inverseBindMatrices': ibm_acc, 'skeleton': 1, 'joints': [1]}]
+    ibm_acc = bake.append_accessor(gltf, bin_, [tuple(to_gltf_matrix(inverse_bind))], 'MAT4')
+    gltf['skins'] = [{'name': f'{weapon_id} {"left" if hand == "l" else "right"} hand', 'inverseBindMatrices': ibm_acc, 'skeleton': 1, 'joints': [1]}]
     mesh_node['skin'] = 0
     gltf['scenes'] = [{'name': 'Sidekick weapon attachment', 'nodes': [0, 1]}]
     gltf['scene'] = 0
     for mat in gltf.get('materials', []):
         mat['doubleSided'] = True
         mat['name'] = name
-    gltf['asset'] = {'version': '2.0', 'generator': 'DG build-weapons; Sidekick single-joint weapon; hand_r rest = bind pose'}
+    gltf['asset'] = {'version': '2.0', 'generator': f'DG build-weapons; Sidekick single-joint weapon; {joint} rest = bind pose'}
     gltf.pop('animations', None)
     bake.save_glb(path, gltf, bin_)
 
 
-def drop_offset():
+def drop_offset(hand='r'):
     """Entity transform that stands a stored (T-pose hand) weapon upright at the origin."""
-    m = YUP @ HAND_FROM_FBX.inverted()
+    m = YUP @ HANDS[hand]['from_fbx'].inverted()
     t, r, s = m.decompose()
     return {'position': [t.x, t.y, t.z], 'rotation': [r.x, r.y, r.z, r.w]}
 
@@ -296,9 +361,10 @@ def build(weapon, packs, want_models, want_icons):
     base = extract(pack['zip'], pack['palettes'][weapon['palette']])
     em_member = pack.get('emission', {}).get(weapon['palette'])
     emission = extract(pack['zip'], em_member) if em_member else None
+    hand = weapon.get('hand', 'r')
 
     reset_scene()
-    obj = import_weapon(fbx)
+    obj = import_weapon(fbx, weapon.get('objects'))
     mat = make_material(base, emission)
     obj.data.materials.clear()
     obj.data.materials.append(mat)
@@ -312,24 +378,59 @@ def build(weapon, packs, want_models, want_icons):
         render_icon(obj, icon)
 
     if want_models:
-        place_in_hand(obj, weapon.get('grip', 0))
+        place_in_hand(obj, weapon.get('grip', 0), hand)
         out = os.path.join(MODELS_DIR, f"{weapon['id']}.glb")
         export_plain_glb(out)
-        rewrite_as_weapon(out, weapon['id'], weapon['name'])
-        bake.run(CORE_GLB, out, 'hand_r', False, None)
+        rewrite_as_weapon(out, weapon['id'], weapon['name'], hand)
+        bake.run(CORE_GLB, out, HANDS[hand]['joint'], False, None)
         info['bytes'] = os.path.getsize(out)
     return info
+
+
+def build_prop(prop, packs):
+    """
+    A plain (unskinned) GLB for things that fly on their own: the arrow. The
+    mesh is centred on its length, which runs along +Z, so an entity pointing
+    down its forward axis carries it tip first.
+    """
+    pack = packs[prop['pack']]
+    fbx = extract(pack['zip'], pack['fbx'].format(name=prop['mesh']))
+    base = extract(pack['zip'], pack['palettes'][prop['palette']])
+    reset_scene()
+    obj = import_weapon(fbx, prop.get('objects'))
+    mat = make_material(base, None)
+    obj.data.materials.clear()
+    obj.data.materials.append(mat)
+    obj.name = prop['id']
+    lo, hi = bounds(obj)
+    obj.matrix_world = Matrix.Translation(Vector((0, 0, -(lo.z + hi.z) / 2))) @ obj.matrix_world
+    bpy.ops.object.select_all(action='DESELECT')
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    out = os.path.join(ROOT, prop['out'])
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    export_plain_glb(out)
+    gltf, bin_ = bake.load_glb(out)
+    for m in gltf.get('materials', []):
+        m['doubleSided'] = True
+    bake.save_glb(out, gltf, bin_)
+    return {'tris': sum(len(p.vertices) - 2 for p in obj.data.polygons), 'length': round(hi.z - lo.z, 3), 'bytes': os.path.getsize(out)}
 
 
 def write_catalog(manifest):
     items = []
     for w in manifest['weapons']:
+        info = {'class': w['class'], 'rarity': w['rarity'], 'pack': manifest['packs'][w['pack']]['label']}
+        if w.get('hand', 'r') != 'r':
+            info['hand'] = w['hand']
         items.append({
             'id': w['id'], 'name': w['name'], 'slot': 'weapon', 'description': w['description'],
             'icon': f"images/weapons/{w['id']}.png", 'models': [f"models/roaming/weapons/{w['id']}.glb"],
-            'weapon': {'class': w['class'], 'rarity': w['rarity'], 'pack': manifest['packs'][w['pack']]['label']}
+            'weapon': info
         })
-    json.dump({'schemaVersion': 1, 'dropOffset': drop_offset(), 'items': items}, open(CATALOG, 'w'), indent=1)
+    json.dump({'schemaVersion': 1, 'dropOffset': drop_offset('r'), 'dropOffsetLeft': drop_offset('l'), 'items': items},
+              open(CATALOG, 'w'), indent=1)
     print(f'catalog: {len(items)} weapons -> {os.path.relpath(CATALOG, ROOT)}')
 
 
@@ -356,6 +457,13 @@ def main():
         info = build(weapon, manifest['packs'], want_models, want_icons)
         built += 1
         print(f"[weapon] {weapon['id']}: {info}")
+    if want_models:
+        for prop in manifest.get('props', []):
+            if only and prop['id'] not in only:
+                continue
+            if skip_existing and os.path.exists(os.path.join(ROOT, prop['out'])):
+                continue
+            print(f"[prop] {prop['id']}: {build_prop(prop, manifest['packs'])}")
     write_catalog(manifest)
     print(f'BUILT {built}')
 

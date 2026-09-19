@@ -15,6 +15,7 @@ import { getCommittedLoadout } from './equipmentState'
 import { initializeCombat } from './combat'
 import { initializeDungeonEnemies } from './dungeonEnemies'
 import { fxSoundAssets, initializeCombatFx } from './combatFx'
+import { projectileAssets } from './projectiles'
 import { initializeLoot } from './loot'
 import { initializeMultiplayer } from './multiplayer'
 import { initializeRemotePlayers } from './remotePlayers'
@@ -59,6 +60,7 @@ function initClient() {
     ...styleTexturesFor(STYLES.hall),
     ...styleTexturesFor(STYLES.open),
     'models/loot/coin.glb', 'models/loot/heart.glb',
+    ...projectileAssets(),
     ...fxSoundAssets(),
     ...enemyPreloadAssets('open'),
     ...CHARACTERS.flatMap((c) => equipmentModelPaths(c.id, getCommittedLoadout(c.id)))

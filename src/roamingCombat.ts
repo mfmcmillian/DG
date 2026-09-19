@@ -1,12 +1,13 @@
 import { Entity } from '@dcl/sdk/ecs'
 import { Vector3 } from '@dcl/sdk/math'
 import {
-  advanceAttack, attackRecovery, AttackMotion, canStartAttack, COMBO_WINDOW, createSwing,
-  INPUT_BUFFER, MAX_COMBAT_HEALTH, STAMINA, Swing
+  advanceAttack, attackRecovery, canStartAttack, COMBO_WINDOW, createSwing, HeroAttackMotion,
+  INPUT_BUFFER, isHeavyMotion, MAX_COMBAT_HEALTH, STAMINA, Swing
 } from './combatActions'
 import { COMBAT_CLIPS, EquipmentMotion, JumpMotion, NATIVE_JUMP_CLIPS } from './combatAnimations'
 import { CombatControlAction, createCombatControls, readCombatControls, resetCombatControls } from './combatControls'
 import { getEquipmentJumpMotion, setEquipmentMotion } from './equipmentAvatar'
+import { HERO_CLASSES, heroClassOf, HeroClassDefinition } from './heroClasses'
 
 type NativeJump = {
   motion: JumpMotion
@@ -29,12 +30,14 @@ export type AttackContext = { finisher: boolean }
 
 export type RoamingCombatHooks = {
   /** A swing has just been selected; a good moment to lock on and step in. */
-  onAttackStart?: (motion: AttackMotion, context: AttackContext) => void
+  onAttackStart?: (motion: HeroAttackMotion, context: AttackContext) => void
   /** A ground swing's wind-up is under way: carry the body forward into the
    *  hit over `seconds` (the step the swing clips are animated with). */
-  onAttackLunge?: (motion: AttackMotion, seconds: number) => void
+  onAttackLunge?: (motion: HeroAttackMotion, seconds: number) => void
   /** The swing reached its contact frame. */
-  onAttackContact?: (motion: AttackMotion, context: AttackContext) => void
+  onAttackContact?: (motion: HeroAttackMotion, context: AttackContext) => void
+  /** An enemy stands within `range` metres in front: a ranged class strikes instead of shooting. */
+  enemyWithin?: (range: number) => boolean
   /** The swing (and its recovery) is over, or was interrupted. */
   onAttackEnd?: () => void
   /** The roll's tuck has begun: carry the body along `direction` for `distance`
@@ -79,6 +82,8 @@ export const SWING = {
 export function createRoamingCombat() {
   return {
     controls: createCombatControls(),
+    /** The move set: what light/heavy/guard come out as (src/heroClasses.ts). */
+    cls: HERO_CLASSES.blade as HeroClassDefinition,
     health: MAX_COMBAT_HEALTH, stagger: 0,
     stamina: STAMINA.max as number, staminaDelay: 0,
     elapsed: 0, recovery: 0,
@@ -97,6 +102,11 @@ export function createRoamingCombat() {
 }
 
 type RoamingCombat = ReturnType<typeof createRoamingCombat>
+
+/** The character changed: fight with its class's move set from now on. */
+export function setRoamingClass(combat: RoamingCombat, characterId: string | undefined) {
+  combat.cls = heroClassOf(characterId)
+}
 
 export function resetRoamingCombat(combat: RoamingCombat) {
   resetCombatControls(combat.controls)
@@ -301,25 +311,26 @@ export function updateRoamingCombat(
     const chosen = wantedAction ?? combat.buffered?.action
     if (chosen) {
       combat.buffered = undefined
-      let motion: AttackMotion | undefined
+      let motion: HeroAttackMotion | undefined
       let finisher = false
+      const steps = combat.cls.light.length
       if (chosen === 'heavy') {
         if (combat.stamina >= STAMINA.heavyCost) {
           combat.stamina -= STAMINA.heavyCost
           combat.staminaDelay = STAMINA.regenDelay
-          motion = 'attack_heavy'
+          motion = combat.cls.heavy
           combat.comboStep = 0
         } else {
           hooks.onExhausted?.()
           // Fall back to a light so a held F never leaves the player standing still.
-          motion = lightMotion(combat)
-          finisher = combat.comboStep === 2
-          combat.comboStep = (combat.comboStep + 1) % 3
+          motion = lightMotion(combat, hooks)
+          finisher = combat.comboStep === steps - 1
+          combat.comboStep = (combat.comboStep + 1) % steps
         }
       } else {
-        motion = lightMotion(combat)
-        finisher = combat.comboStep === 2
-        combat.comboStep = (combat.comboStep + 1) % 3
+        motion = lightMotion(combat, hooks)
+        finisher = combat.comboStep === steps - 1
+        combat.comboStep = (combat.comboStep + 1) % steps
       }
       combat.comboWindow = 0
       combat.swing = createSwing(motion, combat.elapsed, finisher)
@@ -329,18 +340,19 @@ export function updateRoamingCombat(
     }
   }
   const swing = combat.swing
-  if (swing && advanceAttack(swing, combat.elapsed, dt, () => hooks.onAttackContact?.(swing.motion as AttackMotion, { finisher: !!swing.finisher }))) {
+  if (swing && advanceAttack(swing, combat.elapsed, dt, () => hooks.onAttackContact?.(swing.motion as HeroAttackMotion, { finisher: !!swing.finisher }))) {
     combat.swing = undefined
     combat.recovery = attackRecovery(swing.motion, !!swing.finisher)
     // The string may continue for a moment after the recovery; a finisher ends it.
-    combat.comboWindow = swing.motion === 'attack_heavy' || swing.finisher ? 0 : combat.recovery + COMBO_WINDOW
-    if (swing.finisher || swing.motion === 'attack_heavy') combat.comboStep = 0
+    const ender = isHeavyMotion(swing.motion) || !!swing.finisher
+    combat.comboWindow = ender ? 0 : combat.recovery + COMBO_WINDOW
+    if (ender) combat.comboStep = 0
   } else if (swing && !combat.jump) {
     if (!swing.lunged && swing.elapsed >= SWING.lungeDelay) {
       swing.lunged = true
       // A swing that touched down late in its wind-up (started in the air) has no time left to travel.
       if (!swing.contacted && swing.contact - swing.elapsed >= 0.1) {
-        hooks.onAttackLunge?.(swing.motion as AttackMotion, swing.contact - swing.elapsed)
+        hooks.onAttackLunge?.(swing.motion as HeroAttackMotion, swing.contact - swing.elapsed)
       }
     }
     // Move-cancel: once the blow has landed, WASD ends the follow-through and the
@@ -351,8 +363,9 @@ export function updateRoamingCombat(
     if (wantsToMove) {
       combat.swing = undefined
       combat.recovery = 0
-      combat.comboWindow = swing.motion === 'attack_heavy' || swing.finisher ? 0 : COMBO_WINDOW
-      if (swing.finisher || swing.motion === 'attack_heavy') combat.comboStep = 0
+      const ender = isHeavyMotion(swing.motion) || !!swing.finisher
+      combat.comboWindow = ender ? 0 : COMBO_WINDOW
+      if (ender) combat.comboStep = 0
     }
   }
   if (hadSwingOrRecovery && !combat.swing && combat.recovery === 0) hooks.onAttackEnd?.()
@@ -364,15 +377,18 @@ export function isRoamingRooted(combat: RoamingCombat): boolean {
   return combat.health <= 0 || !!combat.dodge || (!!combat.swing && !combat.jump)
 }
 
-function lightMotion(combat: RoamingCombat): AttackMotion {
-  return combat.comboStep === 1 ? 'attack_light2' : 'attack_light'
+/** The next light of the string; a ranged class with an enemy at arm's length strikes with the weapon instead. */
+function lightMotion(combat: RoamingCombat, hooks: RoamingCombatHooks): HeroAttackMotion {
+  const pointBlank = combat.cls.pointBlank
+  if (pointBlank && hooks.enemyWithin?.(pointBlank.range)) return pointBlank.motion
+  return combat.cls.light[Math.min(combat.comboStep, combat.cls.light.length - 1)]
 }
 
 function currentMotion(combat: RoamingCombat): EquipmentMotion | undefined {
   if (combat.health <= 0) return 'death'
   if (combat.stagger > 0) return 'hit'
   if (combat.swing) return combat.swing.motion
-  if (combat.blocking) return 'block'
+  if (combat.blocking) return combat.cls.block
   if (combat.dodge) return combat.dodge.pose
   // If a swing ends in the air, hold its final pose until landing. Re-selecting
   // the jump clip here would rewind the body to takeoff partway through flight.

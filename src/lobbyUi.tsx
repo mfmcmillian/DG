@@ -12,7 +12,10 @@ import {
   createParty, getLobbyPick, getLobbyState, isLeader, joinParty, leaveParty, myParty, openParties, PartyInfo,
   setLobbyPickDiff, setLobbyPickLevel, setReady, soloRun, startRun
 } from './party'
-import { getSettings } from './settings'
+import { getSettings, openSettings } from './settings'
+import { openInventory } from './inventory'
+import { IconButton } from './hudButtons'
+import { closeLobby, openLobby } from './party'
 import {
   DIFFICULTIES, LEVELS, levelUnlocked, MAX_PARTY, previousLevel
 } from './shared/levels'
@@ -203,6 +206,25 @@ function NoParty({ scale: s }: { scale: number }) {
   </UiEntity>
 }
 
+/**
+ * Inventory and Settings from the lobby: the panel steps aside for them and
+ * comes back the moment they close, so gearing up never means leaving the hall.
+ */
+function LobbyTools({ scale: s }: { scale: number }) {
+  const swapTo = (open: (options: { onClose: () => void }) => boolean) => {
+    closeLobby()
+    if (!open({ onClose: openLobby })) openLobby()
+  }
+  return <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'flex-start', flexShrink: 0, pointerFilter: 'none' }}>
+    <UiEntity uiTransform={{ margin: { right: 10 * s }, pointerFilter: 'none' }}>
+      <IconButton id="lobby-inventory" label="Inventory" icon="images/hud/inventory.png" scale={s} tooltip="below"
+        onClick={() => swapTo(openInventory)} />
+    </UiEntity>
+    <IconButton id="lobby-settings" label="Settings" icon="images/hud/settings.png" scale={s} tooltip="below"
+      onClick={() => swapTo(openSettings)} />
+  </UiEntity>
+}
+
 export function LobbyUi() {
   const { scale: s, width, height, x, y } = layout()
   const party = myParty()
@@ -221,6 +243,7 @@ export function LobbyUi() {
           <Label value="Choose a dungeon" font="serif" color={white} fontSize={32 * s} textAlign="middle-left" textWrap="nowrap"
             uiTransform={{ width: 600 * s, height: 42 * s, flexShrink: 0, pointerFilter: 'none' }} />
         </UiEntity>
+        <LobbyTools scale={s} />
       </UiEntity>
       <UiEntity uiTransform={{ width: 200 * s, height: 2 * s, margin: { bottom: banner ? 8 * s : 16 * s }, flexShrink: 0, pointerFilter: 'none' }}
         uiBackground={{ color: gold }} />

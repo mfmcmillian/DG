@@ -8,7 +8,7 @@ import { engine, Entity, GltfContainer, Transform } from '@dcl/sdk/ecs'
 import { Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
 import { fxGlitter, fxNumber, fxSound } from './combatFx'
 import { isInCourtyard } from './courtyard'
-import { getEquipmentItemOrNull, WEAPON_DROP_OFFSET } from './equipmentCatalog'
+import { getEquipmentItemOrNull, WEAPON_DROP_OFFSET, WEAPON_DROP_OFFSET_LEFT } from './equipmentCatalog'
 import { unlockInventoryItem } from './inventory'
 import { publishPickup } from './multiplayer'
 import { getPlayerCombatPose, getPlayerVitals } from './playerCharacter'
@@ -80,10 +80,11 @@ export function spawnLoot(origin: Vector3, kind: LootKind, count: number, item?:
     if (weapon) {
       // The weapon GLB is authored in the hero's hand; a child carries the offset that stands it up here.
       const model = engine.addEntity()
+      const offset = weapon.weapon?.hand === 'l' ? WEAPON_DROP_OFFSET_LEFT : WEAPON_DROP_OFFSET
       Transform.create(model, {
         parent: entity,
-        position: Vector3.create(WEAPON_DROP_OFFSET.position[0], WEAPON_DROP_OFFSET.position[1], WEAPON_DROP_OFFSET.position[2]),
-        rotation: Quaternion.create(WEAPON_DROP_OFFSET.rotation[0], WEAPON_DROP_OFFSET.rotation[1], WEAPON_DROP_OFFSET.rotation[2], WEAPON_DROP_OFFSET.rotation[3])
+        position: Vector3.create(offset.position[0], offset.position[1], offset.position[2]),
+        rotation: Quaternion.create(offset.rotation[0], offset.rotation[1], offset.rotation[2], offset.rotation[3])
       })
       GltfContainer.create(model, { src: weapon.models[0], visibleMeshesCollisionMask: 0, invisibleMeshesCollisionMask: 0 })
       fxGlitter(Vector3.add(to, Vector3.create(0, 0.5, 0)), RARITIES[rarityOf(weapon.id)].color)

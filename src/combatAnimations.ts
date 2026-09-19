@@ -2,7 +2,9 @@ import jumpProfiles from './jumpProfiles.json'
 
 export type JumpMotion = 'jump_male' | 'jump_female'
 export type NativeJumpMotion = 'jump_male_air' | 'jump_male_land' | 'jump_female_air' | 'jump_female_land'
-export type EquipmentMotion = 'idle' | 'walk' | 'run' | 'combat_idle' | 'attack_light' | 'attack_light2' | 'attack_heavy' | 'attack_light3' | 'flourish_heavy' | 'stab' | 'heavy_combo_a' | 'heavy_combo_b' | 'heavy_combo_c' | 'leap' | 'fencing' | 'flourish' | 'menace' | 'menace_enter' | 'roll' | 'dodge_roll' | 'stun' | 'block' | 'hit' | 'death' | JumpMotion | NativeJumpMotion
+/** Archer and spellblade actions (src/heroClasses.ts); spliced into the wardrobe next to the sword set. */
+export type ClassMotion = 'bow_shoot' | 'bow_volley' | 'bow_bash' | 'bow_block' | 'cast_bolt' | 'cast_nova'
+export type EquipmentMotion = 'idle' | 'walk' | 'run' | 'combat_idle' | 'attack_light' | 'attack_light2' | 'attack_heavy' | 'attack_light3' | 'flourish_heavy' | 'stab' | 'heavy_combo_a' | 'heavy_combo_b' | 'heavy_combo_c' | 'leap' | 'fencing' | 'flourish' | 'menace' | 'menace_enter' | 'roll' | 'dodge_roll' | 'stun' | 'block' | 'hit' | 'death' | ClassMotion | JumpMotion | NativeJumpMotion
 
 // Native Space skips the arena clip's anticipation. These matching phases keep
 // every outfit part together while Explorer supplies the actual vertical motion.
@@ -45,6 +47,16 @@ export const COMBAT_CLIPS: Record<EquipmentMotion, CombatClip> = {
   block: { duration: 1.766667, loop: true },
   hit: { duration: 0.833333, loop: false },
   death: { duration: 1.466667, loop: false },
+  // Class sets, assembled by scripts/splice-boss-clips.py CLASS_COMPOSITES from
+  // the bow / idle / emote packs. `contact` is the arrow's release or the bolt
+  // leaving the hand, measured on the joined clip; `rate` hurries the authored
+  // pacing to fighting speed.
+  bow_shoot: { duration: 2.366667, loop: false, contact: 1.33, rate: 1.6 },
+  bow_volley: { duration: 1.773333, loop: false, contact: 1.1, rate: 1.2 },
+  bow_bash: { duration: 1.2, loop: false, contact: 0.38, rate: 1.3 },
+  bow_block: { duration: 1.766667, loop: true },
+  cast_bolt: { duration: 1.5, loop: false, contact: 0.55, rate: 1.2 },
+  cast_nova: { duration: 2.4, loop: false, contact: 1.1, rate: 1.2 },
   jump_male: { duration: JUMP_PROFILES.jump_male.duration, loop: false },
   jump_female: { duration: JUMP_PROFILES.jump_female.duration, loop: false },
   jump_male_air: { duration: 20 / 30, loop: false },
@@ -80,6 +92,12 @@ export const EQUIPMENT_CLIPS: Record<EquipmentMotion, string> = {
   block: 'block',
   hit: 'hit',
   death: 'death',
+  bow_shoot: 'bow_shoot',
+  bow_volley: 'bow_volley',
+  bow_bash: 'bow_bash',
+  bow_block: 'bow_block',
+  cast_bolt: 'cast_bolt',
+  cast_nova: 'cast_nova',
   jump_male: 'jump_male',
   jump_female: 'jump_female',
   jump_male_air: 'jump_male_air',

@@ -3,6 +3,7 @@ import { engine, UiCanvasInformation } from '@dcl/sdk/ecs'
 import { Color4 } from '@dcl/sdk/math'
 import { getEquippedCharacter, getPickerState, openPicker } from './characterPicker'
 import { openInventory } from './inventory'
+import { IconButton } from './hudButtons'
 import { getPlayerCharacterState, getPlayerVitals, retryPlayerCharacter } from './playerCharacter'
 import { getWorldRivalState, retryWorldRival } from './dungeonEnemies'
 import { getLootState } from './loot'
@@ -50,30 +51,6 @@ function hudLayout() {
   // column, under the minimap / top-right controls.
   const vitalsTop = Math.max(0, inset?.top || 0) + Math.max(150, height * 0.19)
   return { width, height, scale, left, right, bottom, vitalsTop }
-}
-
-type IconButtonProps = {
-  id: string; label: string; icon: string; onClick: () => void; scale: number; disabled?: boolean
-}
-
-function IconButton({ id, label, icon, onClick, scale: s, disabled = false }: IconButtonProps) {
-  const hover = hovered === id
-  return <UiEntity uiTransform={{ width: 48 * s, height: 48 * s, flexShrink: 0, pointerFilter: 'none' }}>
-    <UiEntity uiTransform={{ width: '100%', height: '100%', borderRadius: 8 * s,
-      borderWidth: s, borderColor: hover && !disabled ? white : line,
-      justifyContent: 'center', alignItems: 'center', opacity: disabled ? 0.4 : 1, pointerFilter: 'block' }}
-      uiBackground={{ color: hover && !disabled ? hoverPanel : panel }}
-      onMouseEnter={() => { hovered = id }} onMouseLeave={() => { if (hovered === id) hovered = '' }}
-      onMouseDown={disabled ? undefined : () => { hovered = ''; onClick() }}>
-      <UiEntity uiTransform={{ width: 26 * s, height: 26 * s, pointerFilter: 'none' }}
-        uiBackground={{ textureMode: 'stretch', texture: { src: icon } }} />
-    </UiEntity>
-    {hover && <UiEntity uiTransform={{ positionType: 'absolute', position: { right: 0, bottom: 57 * s },
-      width: 142 * s, height: 30 * s, borderRadius: 5 * s, pointerFilter: 'none' }} uiBackground={{ color: panel }}>
-      <Label value={label} color={white} font="sans-serif" fontSize={12 * s} textWrap="nowrap"
-        uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} />
-    </UiEntity>}
-  </UiEntity>
 }
 
 /** "Ada · Vanguard": the display name (no tag over our own head) with the class dimmed after it. */

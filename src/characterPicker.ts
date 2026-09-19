@@ -36,8 +36,8 @@ export const CHARACTERS: CharacterDefinition[] = [
   {
     id: 'vanguard',
     name: 'Vanguard',
-    role: 'Armored',
-    description: 'Heavy plate. A steady presence. Meet the original Sidekick knight.',
+    role: 'Blade',
+    description: 'Heavy plate and a sword. A steady presence. Meet the original Sidekick knight.',
     model: 'models/knight.glb',
     portrait: 'images/characters/vanguard-idle.png',
     clips: SIDEKICK_CLIPS
@@ -45,8 +45,8 @@ export const CHARACTERS: CharacterDefinition[] = [
   {
     id: 'scout',
     name: 'Scout',
-    role: 'Utility',
-    description: 'A fox mask, bright armor and an adventurous spirit. Always ready to explore.',
+    role: 'Bow',
+    description: 'A fox mask, a longbow and an adventurous spirit. Arrows from range; a leaping volley when it counts.',
     model: 'models/characters/scout-animated.glb',
     portrait: 'images/characters/scout-idle.png',
     clips: SIDEKICK_CLIPS
@@ -54,8 +54,8 @@ export const CHARACTERS: CharacterDefinition[] = [
   {
     id: 'striker',
     name: 'Striker',
-    role: 'Hybrid',
-    description: 'A bold mix of armor and utility pieces. A little of everything, with attitude.',
+    role: 'Magic',
+    description: 'A bold mix of armor and utility pieces, and a staff that throws bolts. A slow orb bursts for the heavy.',
     model: 'models/characters/striker-animated.glb',
     portrait: 'images/characters/striker-idle.png',
     clips: SIDEKICK_CLIPS
@@ -63,8 +63,8 @@ export const CHARACTERS: CharacterDefinition[] = [
   {
     id: 'brute',
     name: 'Brute',
-    role: 'Wildcard',
-    description: 'A grinning pumpkin mask and a playful, stripped-back outfit. Impossible to miss.',
+    role: 'Blade',
+    description: 'A grinning pumpkin mask, a playful, stripped-back outfit and a sword. Impossible to miss.',
     model: 'models/characters/brute-animated.glb',
     portrait: 'images/characters/brute-idle.png',
     clips: SIDEKICK_CLIPS

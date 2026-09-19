@@ -323,6 +323,42 @@ export function fxSlam(position: Vector3, radius: number) {
   }, 0.8)
 }
 
+/**
+ * A spell landing: a cold flash and a ring of embers in the bolt's colour. The
+ * nova's burst is the same at `radius` metres, wide enough to read as an area.
+ */
+export function fxMagicBurst(position: Vector3, color: Color4, radius = 0.4) {
+  const big = radius > 1
+  burst('sparks', position, {
+    texture: { src: TEX.sparkle },
+    blendMode: BLEND_ADD,
+    lifetime: big ? 0.6 : 0.4,
+    maxParticles: 40,
+    gravity: big ? -2 : 1.5,
+    initialSize: { start: 0.12, end: big ? 0.36 : 0.22 },
+    sizeOverTime: { start: 1, end: 0 },
+    initialColor: { start: color, end: Color4.create(1, 1, 1, 1) },
+    colorOverTime: { start: Color4.create(1, 1, 1, 1), end: Color4.create(color.r, color.g, color.b, 0) },
+    initialVelocitySpeed: { start: radius * 2.5, end: radius * 5 },
+    shape: ParticleSystem.Shape.Sphere({ radius: Math.min(0.3, radius * 0.3) }),
+    bursts: { values: [{ time: 0, count: big ? 36 : 18 }] }
+  }, big ? 0.8 : 0.5)
+  burst('flash', position, {
+    texture: { src: TEX.soft },
+    blendMode: BLEND_ADD,
+    lifetime: big ? 0.28 : 0.14,
+    maxParticles: 2,
+    gravity: 0,
+    initialSize: { start: radius * 2.2, end: radius * 2.2 },
+    sizeOverTime: { start: 0.6, end: 1.4 },
+    initialColor: { start: color, end: color },
+    colorOverTime: { start: Color4.create(1, 1, 1, 1), end: Color4.create(1, 1, 1, 0) },
+    initialVelocitySpeed: { start: 0, end: 0 },
+    shape: ParticleSystem.Shape.Point(),
+    bursts: { values: [{ time: 0, count: 1 }] }
+  }, big ? 0.4 : 0.2)
+}
+
 /** Sparkle on pickups, heals and unlocks. */
 export function fxGlitter(position: Vector3, color: Color4) {
   burst('glitter', position, {

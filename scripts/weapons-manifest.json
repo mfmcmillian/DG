@@ -1,6 +1,6 @@
 {
  "schemaVersion": 1,
- "note": "Source packs live in the Downloads folder; scripts/build-weapons.py extracts what it needs. grip: metres to raise the weapon along its length before placing it in the hand (for meshes whose origin is at the pommel).",
+ "note": "Source packs live in the Downloads folder; scripts/build-weapons.py extracts what it needs. grip: metres to raise the weapon along its length before placing it in the hand (for meshes whose origin is at the pommel). hand: \"l\" holds the weapon in the left hand (bows). objects: mesh objects to keep from an FBX that holds several weapons. props: plain GLBs (the arrow projectile).",
  "packs": {
   "df": {
    "zip": "POLYGON_Dark_Fortress_SourceFiles_v4.zip",
@@ -94,6 +94,24 @@
    },
    "emission": {},
    "label": "Vikings"
+  },
+  "bw": {
+   "zip": "ANIMATION_Bow_Combat_SourceFiles_v1.zip",
+   "fbx": "SourceFiles/Models/Bows/Unrigged/{name}.fbx",
+   "palettes": {
+    "a": "SourceFiles/Textures/AnimationBowCombat_Texture_01_A.png",
+    "b": "SourceFiles/Textures/AnimationBowCombat_Texture_01_B.png",
+    "c": "SourceFiles/Textures/AnimationBowCombat_Texture_01_C.png"
+   },
+   "label": "Bow Combat"
+  },
+  "bwa": {
+   "zip": "ANIMATION_Bow_Combat_SourceFiles_v1.zip",
+   "fbx": "SourceFiles/Models/Arrows/{name}.fbx",
+   "palettes": {
+    "a": "SourceFiles/Textures/AnimationBowCombat_Texture_01_A.png"
+   },
+   "label": "Bow Combat"
   }
  },
  "weapons": [
@@ -1751,6 +1769,349 @@
    "class": "sword",
    "rarity": "legendary",
    "description": "The prism saber in forest greens."
+  },
+  {
+   "id": "bw-longbow-01",
+   "name": "Yew Longbow",
+   "pack": "bw",
+   "mesh": "Wep_LongBow_01_Unrigged",
+   "palette": "a",
+   "class": "bow",
+   "rarity": "common",
+   "description": "A plain stave of yew, waxed string. Every archer starts here.",
+   "objects": [
+    "Wep_Longbow_01",
+    "Wep_Longbow_String_01"
+   ],
+   "hand": "l"
+  },
+  {
+   "id": "bw-longbow-02",
+   "name": "Ranger Longbow",
+   "pack": "bw",
+   "mesh": "Wep_LongBow_01_Unrigged",
+   "palette": "b",
+   "class": "bow",
+   "rarity": "uncommon",
+   "description": "Bound grip and horn nocks. Made for long days in the treeline.",
+   "objects": [
+    "Wep_Longbow_02",
+    "Wep_Longbow_String_01"
+   ],
+   "hand": "l"
+  },
+  {
+   "id": "bw-longbow-03",
+   "name": "Warden Longbow",
+   "pack": "bw",
+   "mesh": "Wep_LongBow_01_Unrigged",
+   "palette": "c",
+   "class": "bow",
+   "rarity": "rare",
+   "description": "Carved limbs and a reinforced riser. It draws heavy and hits like it.",
+   "objects": [
+    "Wep_Longbow_03",
+    "Wep_Longbow_String_01"
+   ],
+   "hand": "l"
+  },
+  {
+   "id": "bw-recurve-01",
+   "name": "Horn Recurve",
+   "pack": "bw",
+   "mesh": "Wep_RecurveBow_01_Unrigged",
+   "palette": "a",
+   "class": "bow",
+   "rarity": "uncommon",
+   "description": "Short, curled limbs that snap back fast. Quick to draw in a corridor.",
+   "objects": [
+    "Wep_RecurveBow_01",
+    "Wep_RecurveBow_String_01"
+   ],
+   "hand": "l"
+  },
+  {
+   "id": "bw-recurve-03",
+   "name": "Steppe Recurve",
+   "pack": "bw",
+   "mesh": "Wep_RecurveBow_01_Unrigged",
+   "palette": "b",
+   "class": "bow",
+   "rarity": "rare",
+   "description": "Laminated horn and sinew. A rider's bow that never left the saddle.",
+   "objects": [
+    "Wep_RecurveBow_03",
+    "Wep_RecurveBow_String_01"
+   ],
+   "hand": "l"
+  },
+  {
+   "id": "bw-recurve-05",
+   "name": "Gilded Recurve",
+   "pack": "bw",
+   "mesh": "Wep_RecurveBow_01_Unrigged",
+   "palette": "c",
+   "class": "bow",
+   "rarity": "epic",
+   "description": "Gold inlay along both limbs. A noble's hunting bow, taken off a wall.",
+   "objects": [
+    "Wep_RecurveBow_05",
+    "Wep_RecurveBow_String_01"
+   ],
+   "hand": "l"
+  },
+  {
+   "id": "bw-recurve-06",
+   "name": "Ashen Recurve",
+   "pack": "bw",
+   "mesh": "Wep_RecurveBow_01_Unrigged",
+   "palette": "a",
+   "class": "bow",
+   "rarity": "epic",
+   "description": "Blackened limbs, silver tips. Strung the night the fortress fell.",
+   "objects": [
+    "Wep_RecurveBow_06",
+    "Wep_RecurveBow_String_01"
+   ],
+   "hand": "l"
+  },
+  {
+   "id": "gb-bow-01",
+   "name": "Camp Shortbow",
+   "pack": "gb",
+   "mesh": "SM_Wep_Bow_01",
+   "palette": "base",
+   "class": "bow",
+   "rarity": "common",
+   "description": "Goblin work: crooked, knotted and somehow accurate.",
+   "hand": "l"
+  },
+  {
+   "id": "gb-bow-02",
+   "name": "Warcamp Bow",
+   "pack": "gb",
+   "mesh": "SM_Wep_Bow_02",
+   "palette": "base",
+   "class": "bow",
+   "rarity": "uncommon",
+   "description": "Bone tips and a string of something you would rather not ask about.",
+   "hand": "l"
+  },
+  {
+   "id": "pr-bow-01",
+   "name": "Pride Bow",
+   "pack": "pr",
+   "mesh": "SM_Wep_Bow_01",
+   "palette": "alt01",
+   "class": "bow",
+   "rarity": "rare",
+   "description": "Bright limbs and a proud draw. Carried with the head up.",
+   "hand": "l"
+  },
+  {
+   "id": "fk-bow-01",
+   "name": "Kingdom Hunting Bow",
+   "pack": "fk",
+   "mesh": "SM_Prop_Bow_01",
+   "palette": "base",
+   "class": "bow",
+   "rarity": "epic",
+   "description": "From the royal hunt. Every stag in the forest knew this string.",
+   "hand": "l"
+  },
+  {
+   "id": "fk-bow-02",
+   "name": "Royal Warbow",
+   "pack": "fk",
+   "mesh": "SM_Prop_Bow_02",
+   "palette": "base",
+   "class": "bow",
+   "rarity": "legendary",
+   "description": "The crown's own bow. Its arrows opened the siege and closed the war.",
+   "hand": "l"
+  },
+  {
+   "id": "dr-staff-01",
+   "name": "Deep Walking Staff",
+   "pack": "dr",
+   "mesh": "SM_Wep_Staff_01",
+   "palette": "base",
+   "class": "staff",
+   "rarity": "common",
+   "description": "A miner's staff with a stone that hums when the tunnel is wrong."
+  },
+  {
+   "id": "dr-staff-02",
+   "name": "Tunnel Rod",
+   "pack": "dr",
+   "mesh": "SM_Wep_Staff_02",
+   "palette": "base",
+   "class": "staff",
+   "rarity": "common",
+   "description": "Iron-shod and plain. The bolt it throws is anything but."
+  },
+  {
+   "id": "dr-staff-03",
+   "name": "Lantern Staff",
+   "pack": "dr",
+   "mesh": "SM_Wep_Staff_03",
+   "palette": "base",
+   "class": "staff",
+   "rarity": "uncommon",
+   "description": "A caged glow at the head. Lights the way and burns what stands in it.",
+   "grip": -0.48
+  },
+  {
+   "id": "dr-staff-04",
+   "name": "Cog Staff",
+   "pack": "dr",
+   "mesh": "SM_Wep_Staff_04",
+   "palette": "base",
+   "class": "staff",
+   "rarity": "rare",
+   "description": "Dwarven gearwork wound tight around a crystal core.",
+   "grip": -0.43
+  },
+  {
+   "id": "dr-staff-05",
+   "name": "Forge Staff",
+   "pack": "dr",
+   "mesh": "SM_Wep_Staff_05",
+   "palette": "base",
+   "class": "staff",
+   "rarity": "epic",
+   "description": "Still warm from the anvil it was quenched beside.",
+   "grip": -0.21
+  },
+  {
+   "id": "dr-staff-06",
+   "name": "Deep King's Staff",
+   "pack": "dr",
+   "mesh": "SM_Wep_Staff_06",
+   "palette": "base",
+   "class": "staff",
+   "rarity": "legendary",
+   "description": "The Forge Lord's sceptre. The mountain answers when it strikes the floor.",
+   "grip": -0.78
+  },
+  {
+   "id": "df-staff-01",
+   "name": "Rune Staff",
+   "pack": "df",
+   "mesh": "SM_Wep_Staff_01",
+   "palette": "rune",
+   "class": "staff",
+   "rarity": "uncommon",
+   "description": "Fortress runes cut into black iron. They glow before the bolt leaves."
+  },
+  {
+   "id": "df-staff-02",
+   "name": "Ember Staff",
+   "pack": "df",
+   "mesh": "SM_Wep_Staff_02",
+   "palette": "ember",
+   "class": "staff",
+   "rarity": "rare",
+   "description": "A coal that never went out, set in a shaft of scorched oak."
+  },
+  {
+   "id": "df-staff-03",
+   "name": "Frost Staff",
+   "pack": "df",
+   "mesh": "SM_Wep_Staff_03",
+   "palette": "frost",
+   "class": "staff",
+   "rarity": "epic",
+   "description": "Rimed even in the forge. The bolt arrives before the cold does."
+  },
+  {
+   "id": "gb-staff-01",
+   "name": "Shaman Stick",
+   "pack": "gb",
+   "mesh": "SM_Wep_Staff_01",
+   "palette": "base",
+   "class": "staff",
+   "rarity": "common",
+   "description": "Feathers, teeth and a skull. Goblin magic, such as it is."
+  },
+  {
+   "id": "gb-staff-02",
+   "name": "Totem Staff",
+   "pack": "gb",
+   "mesh": "SM_Wep_Staff_02",
+   "palette": "base",
+   "class": "staff",
+   "rarity": "uncommon",
+   "description": "A war totem on a pole. The camp followed it into every fight."
+  },
+  {
+   "id": "fk-staff-01",
+   "name": "Hedge Wizard's Staff",
+   "pack": "fk",
+   "mesh": "SM_Wep_Staff_01",
+   "palette": "base",
+   "class": "staff",
+   "rarity": "common",
+   "description": "Gnarled wood and a cheap crystal. It works, mostly."
+  },
+  {
+   "id": "fk-staff-02",
+   "name": "Acolyte Staff",
+   "pack": "fk",
+   "mesh": "SM_Wep_Staff_02",
+   "palette": "base",
+   "class": "staff",
+   "rarity": "uncommon",
+   "description": "Given to every student of the tower. Few keep it this long."
+  },
+  {
+   "id": "fk-staff-03",
+   "name": "Court Mage Staff",
+   "pack": "fk",
+   "mesh": "SM_Wep_Staff_03",
+   "palette": "base",
+   "class": "staff",
+   "rarity": "rare",
+   "description": "Polished for the throne room. Sharp enough for the dungeon under it."
+  },
+  {
+   "id": "fk-staff-04",
+   "name": "Sunstone Staff",
+   "pack": "fk",
+   "mesh": "SM_Wep_Staff_04",
+   "palette": "base",
+   "class": "staff",
+   "rarity": "rare",
+   "description": "A stone that holds the noon. The orb it casts bursts bright."
+  },
+  {
+   "id": "fk-staff-05",
+   "name": "Archmage Staff",
+   "pack": "fk",
+   "mesh": "SM_Wep_Staff_05",
+   "palette": "base",
+   "class": "staff",
+   "rarity": "epic",
+   "description": "Three crystals in a crown of gold. It does not miss."
+  },
+  {
+   "id": "fk-staff-06",
+   "name": "Kingdom Crown Staff",
+   "pack": "fk",
+   "mesh": "SM_Wep_Staff_06",
+   "palette": "base",
+   "class": "staff",
+   "rarity": "legendary",
+   "description": "The staff the old king's wizard carried into the vault, and never carried out."
+  }
+ ],
+ "props": [
+  {
+   "id": "arrow",
+   "pack": "bwa",
+   "mesh": "Wep_Arrow_Medieval_01",
+   "palette": "a",
+   "out": "models/roaming/projectiles/arrow.glb"
   }
  ]
 }

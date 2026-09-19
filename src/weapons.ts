@@ -8,7 +8,7 @@
 import { Color4 } from '@dcl/sdk/math'
 import { EQUIPMENT_ITEMS, EquipmentItem, getEquipmentItemOrNull } from './equipmentCatalog'
 
-export type WeaponClass = 'sword' | 'dagger' | 'axe' | 'mace' | 'hammer' | 'club' | 'great'
+export type WeaponClass = 'sword' | 'dagger' | 'axe' | 'mace' | 'hammer' | 'club' | 'great' | 'bow' | 'staff'
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
 
 export type WeaponStats = {
@@ -29,7 +29,10 @@ export const WEAPON_CLASSES: Record<WeaponClass, { label: string; blurb: string 
   mace: { label: 'Mace', blurb: 'Blunt weight. Reels the target and breaks stances.', damage: 1.05, stagger: 1.4, knockback: 1.3 },
   hammer: { label: 'Hammer', blurb: 'Slow iron. Long stagger, long shove.', damage: 1.1, stagger: 1.5, knockback: 1.5 },
   club: { label: 'Club', blurb: 'Crude and heavy. More shove than cut.', damage: 0.9, stagger: 1.2, knockback: 1.3 },
-  great: { label: 'Greatweapon', blurb: 'Two hands\' worth of steel swung with one. Everything hits harder.', damage: 1.35, stagger: 1.25, knockback: 1.35 }
+  great: { label: 'Greatweapon', blurb: 'Two hands\' worth of steel swung with one. Everything hits harder.', damage: 1.35, stagger: 1.25, knockback: 1.35 },
+  // Class weapons: the archer's and the spellblade's. Their reach is in the motion, not the class.
+  bow: { label: 'Bow', blurb: 'Arrows from range. Light shafts reel less; a volley makes up for it.', damage: 1, stagger: 0.8, knockback: 0.7 },
+  staff: { label: 'Staff', blurb: 'Bolts and bursts. Hits stagger more than they shove.', damage: 1, stagger: 1.2, knockback: 0.8 }
 }
 
 export const RARITIES: Record<Rarity, { label: string; rank: number; bonus: number; color: Color4; coins: number }> = {
@@ -117,9 +120,13 @@ export function allWeapons(): EquipmentItem[] {
 
 /**
  * Roll a weapon drop for a slain enemy: the item id, or '' for nothing.
- * `level` and `diff` are the run's indices (0-based); `rng` is 0..1.
+ * `level` and `diff` are the run's indices (0-based); `rng` is 0..1. `pool`
+ * restricts the draw to weapon classes somebody in the party can use
+ * (src/heroClasses.ts weaponPoolFor); undefined means every class.
  */
-export function rollWeaponDrop(source: DropSource, level: number, diff: number, rng: () => number = Math.random): string {
+export function rollWeaponDrop(
+  source: DropSource, level: number, diff: number, rng: () => number = Math.random, pool?: WeaponClass[]
+): string {
   if (rng() >= DROP_CHANCE[source]) return ''
   const steps = level + diff + (source === 'boss' ? 2 : source === 'elite' ? 1 : 0)
   const weights = rarityWeights(steps)
@@ -139,7 +146,12 @@ export function rollWeaponDrop(source: DropSource, level: number, diff: number, 
       break
     }
   }
-  const pool = allWeapons().filter((item) => item.weapon!.rarity === rarity)
-  if (!pool.length) return ''
-  return pool[Math.min(pool.length - 1, Math.floor(rng() * pool.length))].id
+  const usable = pool ? allWeapons().filter((item) => pool.includes(item.weapon!.class)) : allWeapons()
+  // A class with no weapon at the rolled rarity takes the nearest rarity below it.
+  let candidates: EquipmentItem[] = []
+  for (let rank = RARITIES[rarity].rank; rank >= 0 && !candidates.length; rank--) {
+    candidates = usable.filter((item) => item.weapon!.rarity === RARITY_ORDER[rank])
+  }
+  if (!candidates.length) return ''
+  return candidates[Math.min(candidates.length - 1, Math.floor(rng() * candidates.length))].id
 }

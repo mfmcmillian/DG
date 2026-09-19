@@ -77,6 +77,20 @@ export const Messages = {
     sound: Schemas.String,
     vol: Schemas.Number
   }),
+  /**
+   * Client -> server -> other clients: a hero fired a shot (archer arrow,
+   * spellblade bolt). Visual only: the hit it lands travels as `hitEnemy` and
+   * the host's enemy snapshot. `yaw`/`pitch` are the flight direction in radians.
+   */
+  shot: Schemas.Map({
+    id: Schemas.String,
+    motion: Schemas.String,
+    x: Schemas.Number,
+    y: Schemas.Number,
+    z: Schemas.Number,
+    yaw: Schemas.Number,
+    pitch: Schemas.Number
+  }),
   /** Server -> all: one party's enemies. Clients apply only the snapshot for the party they are in. */
   enemies: Schemas.Map({ party: Schemas.String, list: Schemas.Array(EnemySnap) }),
   loot: Schemas.Map({

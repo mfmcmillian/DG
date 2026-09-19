@@ -1,14 +1,17 @@
 import weaponCatalog from './weaponCatalog.json'
+import { classAllowsWeapon } from './heroClasses'
 
 export type EquipmentSlot = 'head' | 'chest' | 'shoulders' | 'hands' | 'legs' | 'boots' | 'weapon'
 export type EquipmentLoadout = Record<EquipmentSlot, string>
 
 /** Loot weapons (scripts/build-weapons.py writes src/weaponCatalog.json from the manifest). */
 export type WeaponInfo = {
-  class: 'sword' | 'dagger' | 'axe' | 'mace' | 'hammer' | 'club' | 'great'
+  class: 'sword' | 'dagger' | 'axe' | 'mace' | 'hammer' | 'club' | 'great' | 'bow' | 'staff'
   rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
   /** Which Synty pack the mesh came from, for the inventory line. */
   pack: string
+  /** Held in the left hand (bows); the GLB's joint is `hand_l`. Default right. */
+  hand?: 'l' | 'r'
 }
 
 export interface EquipmentItem {
@@ -404,7 +407,7 @@ const ASSETS = {
       "hands": "scout-hands",
       "legs": "scout-legs",
       "boots": "scout-boots",
-      "weapon": "pride-sword"
+      "weapon": "bw-longbow-01"
     },
     "striker": {
       "head": "striker-head",
@@ -413,7 +416,7 @@ const ASSETS = {
       "hands": "striker-hands",
       "legs": "striker-legs",
       "boots": "striker-boots",
-      "weapon": "pride-sword"
+      "weapon": "dr-staff-01"
     },
     "brute": {
       "head": "brute-head",
@@ -472,6 +475,8 @@ export const DEFAULT_LOADOUTS: Record<string, EquipmentLoadout> = ASSETS.default
  * transform to show it upright at the drop's origin.
  */
 export const WEAPON_DROP_OFFSET: { position: number[]; rotation: number[] } = weaponCatalog.dropOffset
+/** The same for left-hand weapons (bows), whose stored pose is the T-pose left hand. */
+export const WEAPON_DROP_OFFSET_LEFT: { position: number[]; rotation: number[] } = weaponCatalog.dropOffsetLeft
 
 const byId = new Map<string, EquipmentItem>(EQUIPMENT_ITEMS.map((item) => [item.id, item]))
 
@@ -497,6 +502,9 @@ export function sanitizeLoadout(loadout: EquipmentLoadout, characterId: string):
     const item = byId.get(out[slot.id])
     if (!item || item.slot !== slot.id) out[slot.id] = defaults[slot.id]
   }
+  // A weapon of another class (a save from before the archer had a bow) becomes the class starter.
+  const weapon = byId.get(out.weapon)
+  if (weapon?.weapon && !classAllowsWeapon(characterId, weapon.weapon.class)) out.weapon = defaults.weapon
   return out
 }
 

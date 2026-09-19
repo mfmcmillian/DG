@@ -7,9 +7,9 @@ import { COURTYARD, isInCourtyard } from './courtyard'
 import { EquipmentLoadout } from './equipmentCatalog'
 import {
   AttackContext, createRoamingCombat, healRoamingCharacter, hitRoamingCharacter, isRoamingBlocking, isRoamingInvulnerable,
-  isRoamingRooted, resetRoamingCombat, restoreRoamingHealth, RoamingCombatHooks, setRoamingHealth, updateRoamingCombat
+  isRoamingRooted, resetRoamingCombat, restoreRoamingHealth, RoamingCombatHooks, setRoamingClass, setRoamingHealth, updateRoamingCombat
 } from './roamingCombat'
-import { AttackMotion, CombatPose, MAX_COMBAT_HEALTH, STAMINA } from './combatActions'
+import { CombatPose, HeroAttackMotion, isRangedAttack, MAX_COMBAT_HEALTH, STAMINA } from './combatActions'
 import { getCommittedAppearance } from './appearance'
 import {
   destroyEquipmentAvatar, EquipmentAvatarOptions, EquipmentLoading, EquipmentMotion,
@@ -60,8 +60,10 @@ let strideRate = 1
 let walkBandSeconds = 0
 let poseAge = 0
 const roamingCombat = createRoamingCombat()
-let attackContactHandler: ((motion: AttackMotion, context: AttackContext) => void) | undefined
-let attackStartHandler: ((motion: AttackMotion, context: AttackContext) => void) | undefined
+let attackContactHandler: ((motion: HeroAttackMotion, context: AttackContext) => void) | undefined
+let attackStartHandler: ((motion: HeroAttackMotion, context: AttackContext) => void) | undefined
+/** Whether an enemy stands within reach in front (the world answers); a ranged class strikes instead of shooting. */
+let enemyWithinHandler: ((range: number) => boolean) | undefined
 /** World yaw the body is turned to while locked on (soft lock-on); undefined = native yaw. */
 let facingOverride: number | undefined
 let hitStopSeconds = 0
@@ -73,7 +75,8 @@ let lastPublishedMotion: EquipmentMotion | undefined
 /** A one-shot began this tick (set by the combat hooks) even if the clip name is unchanged. */
 let motionEvent = false
 const ONE_SHOT_MOTIONS = new Set<EquipmentMotion>([
-  'attack_light', 'attack_light2', 'attack_heavy', 'hit', 'death', 'block', 'dodge_roll'
+  'attack_light', 'attack_light2', 'attack_heavy', 'hit', 'death', 'block', 'dodge_roll',
+  'bow_shoot', 'bow_volley', 'bow_bash', 'bow_block', 'cast_bolt', 'cast_nova'
 ])
 
 export type PlayerVitals = {
@@ -104,13 +107,18 @@ export function getPlayerVitals(): PlayerVitals {
   }
 }
 
-export function setPlayerAttackContactHandler(handler: (motion: AttackMotion, context: AttackContext) => void) {
+export function setPlayerAttackContactHandler(handler: (motion: HeroAttackMotion, context: AttackContext) => void) {
   attackContactHandler = handler
 }
 
 /** Fired when a swing is selected, before its first frame; used for lock-on and the step-in. */
-export function setPlayerAttackStartHandler(handler: (motion: AttackMotion, context: AttackContext) => void) {
+export function setPlayerAttackStartHandler(handler: (motion: HeroAttackMotion, context: AttackContext) => void) {
   attackStartHandler = handler
+}
+
+/** The world tells the archer/spellblade when a foe is at arm's length (point-blank strike instead of a shot). */
+export function setPlayerEnemyWithinHandler(handler: (range: number) => boolean) {
+  enemyWithinHandler = handler
 }
 
 /** Turn the visible body to this world yaw (radians) until the swing ends. */
@@ -156,7 +164,11 @@ function glidePlayer(direction: Vector3, distance: number, seconds: number) {
  * Ground the swing clips are animated to cover when nothing is locked on. With a
  * target, `lockOn` sizes the step to land at sword reach instead.
  */
-const LUNGE_DISTANCE: Record<AttackMotion, number> = { attack_light: 0.45, attack_light2: 0.4, attack_heavy: 0.7 }
+const LUNGE_DISTANCE: Record<HeroAttackMotion, number> = {
+  attack_light: 0.45, attack_light2: 0.4, attack_heavy: 0.7,
+  // Shots are fired from a standstill; the bow bash is a short shove forward.
+  bow_shoot: 0, bow_volley: 0, bow_bash: 0.35, cast_bolt: 0, cast_nova: 0
+}
 const LUNGE_MAX = 1.3
 let stepIn: number | undefined
 
@@ -166,8 +178,8 @@ export function setPlayerStepIn(distance: number) {
 }
 
 /** The wind-up carries the body toward where it faces, arriving as the blow lands. */
-function lungePlayer(motion: AttackMotion, seconds: number) {
-  const distance = stepIn ?? LUNGE_DISTANCE[motion]
+function lungePlayer(motion: HeroAttackMotion, seconds: number) {
+  const distance = isRangedAttack(motion) ? 0 : stepIn ?? LUNGE_DISTANCE[motion]
   stepIn = undefined
   const player = Transform.getOrNull(engine.PlayerEntity)
   if (!player || distance < 0.05) return
@@ -328,12 +340,18 @@ const combatHooks: RoamingCombatHooks = {
     // The world's lock-on may size the step-in for this swing; otherwise the clip's own step is used.
     stepIn = undefined
     attackStartHandler?.(motion, context)
-    if (characterRoot !== undefined) fxSlash(characterRoot, motion)
-    fxSound(motion === 'attack_heavy' ? 'swing_heavy' : 'swing_light', 0.7)
+    // Swings announce themselves; a shot's sound is the projectile leaving at the contact frame.
+    if (!isRangedAttack(motion)) {
+      if (characterRoot !== undefined && (motion === 'attack_light' || motion === 'attack_light2' || motion === 'attack_heavy')) {
+        fxSlash(characterRoot, motion)
+      }
+      fxSound(motion === 'attack_heavy' ? 'swing_heavy' : 'swing_light', 0.7)
+    }
     motionEvent = true
   },
   onAttackLunge: lungePlayer,
   onAttackContact: (motion, context) => attackContactHandler?.(motion, context),
+  enemyWithin: (range) => enemyWithinHandler?.(range) ?? false,
   onAttackEnd: () => setPlayerFacingOverride(undefined),
   onDodgeStart: (direction) => {
     fxSound('dodge', 0.8)
@@ -373,6 +391,7 @@ export function setPlayerCharacter(
 ) {
   const root = initializePlayerCharacter()
   resetRoamingCombat(roamingCombat)
+  setRoamingClass(roamingCombat, nextCharacterId)
   characterId = nextCharacterId
   requestedLoadout = { ...loadout }
   requestedOptions = { ...options }
@@ -393,6 +412,7 @@ export function adoptPlayerCharacter(
   if (!transferEquipmentAvatar(previewRoot, root)) return false
 
   resetRoamingCombat(roamingCombat)
+  setRoamingClass(roamingCombat, nextCharacterId)
   characterId = nextCharacterId
   requestedLoadout = { ...loadout }
   requestedOptions = { ...options }

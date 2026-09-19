@@ -1,7 +1,9 @@
 import { AvatarAnchorPointType, AvatarAttach, engine, Entity, PlayerIdentityData, Transform } from '@dcl/sdk/ecs'
 import { Quaternion, Vector3 } from '@dcl/sdk/math'
 import { rearmAvatarHiding } from './avatarHiding'
-import { AttackMotion } from './combatActions'
+import { AttackMotion, HeroAttackMotion, isRangedAttack } from './combatActions'
+import { shotProfile, shotProfileForMotion } from './heroClasses'
+import { launchShot } from './projectiles'
 import { EquipmentMotion } from './combatAnimations'
 import { fxImpact, fxNumber, fxSlash, fxSound } from './combatFx'
 import {
@@ -65,8 +67,10 @@ const RETRY_SECONDS = 3
 const DIAG_SECONDS = 10
 
 const RESET_MOTIONS = new Set<EquipmentMotion>([
-  'attack_light', 'attack_light2', 'attack_heavy', 'hit', 'death', 'block', 'dodge_roll'
+  'attack_light', 'attack_light2', 'attack_heavy', 'hit', 'death', 'block', 'dodge_roll',
+  'bow_shoot', 'bow_volley', 'bow_bash', 'bow_block', 'cast_bolt', 'cast_nova'
 ])
+const MELEE_MOTIONS = new Set<EquipmentMotion>(['attack_light', 'attack_light2', 'attack_heavy'])
 
 /** Keyed by the synced hero entity. */
 const replicas = new Map<Entity, Replica>()
@@ -182,6 +186,25 @@ export function presentRemoteRevive(id: string) {
   if (replica && replica.motion === 'death') presentMotion(replica, 'idle')
 }
 
+/**
+ * Another hero fired. The projectile flies here for show only; whatever it
+ * hits is settled by the host and arrives through the enemy snapshot.
+ */
+export function presentRemoteShot(p: { id: string; motion: string; x: number; y: number; z: number; yaw: number; pitch: number }) {
+  const motion = p.motion as HeroAttackMotion
+  if (!isRangedAttack(motion)) return
+  const replica = replicaByAddress(p.id)
+  const cid = replica ? heroCidOf(replica) : undefined
+  const profile = shotProfile(cid, motion) ?? shotProfileForMotion(motion)
+  if (!profile) return
+  launchShot({ origin: Vector3.create(p.x, p.y, p.z), yaw: p.yaw, pitch: p.pitch, profile, motion, finisher: false })
+}
+
+/** The character the replica's look key was built from. */
+function heroCidOf(replica: Replica): string | undefined {
+  return replica.look.split('|')[0] || undefined
+}
+
 function updateRemotePlayers(dt: number) {
   const live = new Set<Entity>()
   let attached = 0
@@ -228,9 +251,11 @@ function updateRemotePlayers(dt: number) {
       replica.seq = hero.seq
       if (!(replica.echoGrace > 0 && motion === replica.motion)) {
         applyMotion(replica, motion, restart && RESET_MOTIONS.has(motion))
-        if (restart && (motion === 'attack_light' || motion === 'attack_light2' || motion === 'attack_heavy')) {
+        if (restart && MELEE_MOTIONS.has(motion)) {
           fxSlash(replica.root, motion as AttackMotion)
           fxSound(motion === 'attack_heavy' ? 'swing_heavy' : 'swing_light', 0.55)
+        } else if (restart && motion === 'bow_bash') {
+          fxSound('swing_light', 0.55)
         }
       }
     }

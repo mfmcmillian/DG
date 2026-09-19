@@ -10,15 +10,37 @@ raw per-bone local TRS tracks in the FBX's own frame rate. Stage 2
 (scripts/splice-boss-clips.py, plain Python) copies those tracks into the
 untouched roaming GLBs by bone name.
 
-Run scripts/extract-boss-anims.py first to unpack the FBX sources.
+Run scripts/extract-boss-anims.py first to unpack the FBX sources, or leave
+the Synty ANIMATION_*_SourceFiles_*.zip packs in Downloads: a clip whose FBX
+is not under .tmp-boss-anims is pulled out of the first zip that has its
+Sidekick variant.
+
+Hero class clips (bow, casts) live in CLASS_CLIPS. A list of FBX names is a
+composite: each file is exported on its own as <clip>__<n>.glb and
+scripts/splice-boss-clips.py joins them end to end into one clip.
 """
 import os
 import sys
+import zipfile
 import bpy
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 FBX_DIR = os.path.join(ROOT, '.tmp-boss-anims')
 OUT_DIR = os.path.join(FBX_DIR, 'clips')
+DOWNLOADS = os.path.join(os.path.expanduser('~'), 'Downloads')
+
+# Archer and spellblade motions (src/combatAnimations.ts ClassMotion). The bow
+# pack's clips are `_Neut`; the idle/emote packs come in Masc/Femn and the
+# hero core is the masculine rig.
+CLASS_CLIPS = {
+    # Raise the bow with an arrow nocked, draw, release and lower it again.
+    'bow_shoot': ['A_MOD_BOW_Stand_Idle_BowDown_ToAiming_Neut.fbx', 'A_MOD_BOW_Stand_Aiming_ToDrawn_Neut.fbx', 'A_MOD_BOW_Stand_Shoot_ToBowDown_Neut.fbx'],
+    'bow_volley': 'A_MOD_BOW_Stand_Shoot_Leaping_Neut.fbx',
+    'bow_bash': 'A_MOD_BOW_Blocking_Attack_01_Neut.fbx',
+    'bow_block': 'A_MOD_BOW_Blocking_Neut.fbx',
+    'cast_bolt': 'A_MOD_IDL_PointHand_Index_F_Masc.fbx',
+    'cast_nova': 'A_MOD_EMOT_Aggressive_Roar_High_Masc.fbx',
+}
 
 CLIPS = {
     'menace_enter': 'A_MOD_SWD_Idle_Menacing01_Enter_Neut.fbx',
@@ -41,6 +63,20 @@ def find_fbx(name):
     for root, _dirs, files in os.walk(FBX_DIR):
         if name in files and 'Sidekick' in root.replace('\\', '/'):
             return os.path.join(root, name)
+    # Not unpacked yet: take it from whichever animation pack in Downloads has it.
+    for zip_name in sorted(os.listdir(DOWNLOADS)):
+        if not (zip_name.startswith('ANIMATION_') and zip_name.endswith('.zip')):
+            continue
+        with zipfile.ZipFile(os.path.join(DOWNLOADS, zip_name)) as z:
+            for member in z.namelist():
+                m = member.replace('\\', '/')
+                if m.endswith('/' + name) and '/Sidekick/' in m:
+                    out = os.path.join(FBX_DIR, m.replace('/', os.sep))
+                    os.makedirs(os.path.dirname(out), exist_ok=True)
+                    with z.open(member) as src, open(out, 'wb') as dst:
+                        dst.write(src.read())
+                    print(f'EXTRACT {name} <- {zip_name}', flush=True)
+                    return out
     raise FileNotFoundError(name)
 
 
@@ -114,10 +150,14 @@ def main():
     only = [a for a in sys.argv[sys.argv.index('--') + 1:] if a] if '--' in sys.argv else []
     extra = dict(a.split('=', 1) for a in only if '=' in a)
     only = [a for a in only if '=' not in a]
-    for clip, fbx_name in {**CLIPS, **extra}.items():
+    for clip, fbx_name in {**CLIPS, **CLASS_CLIPS, **extra}.items():
         if (only or extra) and clip not in only and clip not in extra:
             continue
-        export_clip(clip, fbx_name)
+        if isinstance(fbx_name, list):
+            for i, part in enumerate(fbx_name):
+                export_clip(f'{clip}__{i}', part)
+        else:
+            export_clip(clip, fbx_name)
     print('DONE', flush=True)
 
 

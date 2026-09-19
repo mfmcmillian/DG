@@ -37,6 +37,7 @@ import {
   getCommittedLoadout as readCommittedLoadout,
   setCommittedLoadout
 } from './equipmentState'
+import { classAllowsWeapon, HERO_CLASSES, heroClassOf } from './heroClasses'
 
 export type InventoryFilter = 'all' | 'other' | EquipmentSlot
 
@@ -107,10 +108,16 @@ export function getInventoryIsDirty(): boolean {
 }
 
 // Loot-gated gear: hidden from the inventory until the dungeon hands it over.
-// Every loot weapon but the starter saber is earned.
-export const STARTER_WEAPON = 'pride-sword'
-const GATED_ITEMS = EQUIPMENT_ITEMS.filter((item) => !!item.weapon && item.id !== STARTER_WEAPON).map((item) => item.id)
+// Every loot weapon but the class starters (sword, bow, staff) is earned.
+export const STARTER_WEAPON = HERO_CLASSES.blade.starterWeapon
+const STARTER_WEAPONS = new Set<string>(Object.values(HERO_CLASSES).map((c) => c.starterWeapon))
+const GATED_ITEMS = EQUIPMENT_ITEMS.filter((item) => !!item.weapon && !STARTER_WEAPONS.has(item.id)).map((item) => item.id)
 const lockedItems = new Set<string>(GATED_ITEMS)
+
+/** A weapon the hero's class can carry (armor and empty slots always pass). */
+function usableByHero(item: EquipmentItem, characterId: string = getEquippedCharacter().id): boolean {
+  return classAllowsWeapon(characterId, item.weapon?.class)
+}
 
 export function isInventoryItemLocked(id: string): boolean {
   return lockedItems.has(id)
@@ -134,7 +141,7 @@ export function relockAllWeapons() {
   const character = getEquippedCharacter()
   const committed = readCommittedLoadout(character.id)
   if (lockedItems.has(committed.weapon)) {
-    committed.weapon = STARTER_WEAPON
+    committed.weapon = heroClassOf(character.id).starterWeapon
     setCommittedLoadout(character.id, committed)
     onApply(character)
   }
@@ -145,13 +152,14 @@ export function getUnlockedItems(): string[] {
   return GATED_ITEMS.filter((id) => !lockedItems.has(id))
 }
 
-/** Weapons this hero can equip right now: the starter plus everything looted. */
-export function ownedWeaponIds(): string[] {
-  return EQUIPMENT_ITEMS.filter((item) => item.slot === 'weapon' && !lockedItems.has(item.id)).map((item) => item.id)
+/** Weapons this hero can equip right now: the class starter plus everything looted for the class. */
+export function ownedWeaponIds(characterId: string = getEquippedCharacter().id): string[] {
+  return EQUIPMENT_ITEMS.filter((item) => item.slot === 'weapon' && !lockedItems.has(item.id) && usableByHero(item, characterId)).map((item) => item.id)
 }
 
 export function getInventoryItems(): EquipmentItem[] {
-  const available = EQUIPMENT_ITEMS.filter((item) => !lockedItems.has(item.id))
+  const characterId = getInventoryCharacter().id
+  const available = EQUIPMENT_ITEMS.filter((item) => !lockedItems.has(item.id) && usableByHero(item, characterId))
   if (state.filter === 'all') return available
   if (state.filter === 'other') {
     return available.filter((item) => item.slot !== 'head' && item.slot !== 'chest' && item.slot !== 'weapon')
@@ -159,16 +167,21 @@ export function getInventoryItems(): EquipmentItem[] {
   return available.filter((item) => item.slot === state.filter)
 }
 
-export function openInventory() {
-  if (!initialized || state.open) return
+/** Runs once when the inventory closes (the lobby uses it to come back). */
+let onCloseOnce: (() => void) | undefined
+
+/** Returns true when the inventory is now open (the character creator may take over instead). */
+export function openInventory(options: { onClose?: () => void } = {}): boolean {
+  if (!initialized || state.open) return false
   if (!getPickerState().hasCreatedCharacter) {
     openPicker()
-    return
+    return false
   }
   closePicker()
   const session = openSceneCamera('inventory', MENU_CAMERA_POSITION, MENU_CAMERA_TARGET)
-  if (!session) return
+  if (!session) return false
   cameraSession = session
+  onCloseOnce = options.onClose
   state.open = true
   state.characterId = getEquippedCharacter().id
   state.selectedSlot = 'chest'
@@ -184,11 +197,14 @@ export function openInventory() {
 
   stage = createMenuPreviewStage('inventory')
   committedPreview = createPreview(getCommittedLoadout())
+  return true
 }
 
 export function closeInventory() {
   if (!state.open) return
   state.open = false
+  const after = onCloseOnce
+  onCloseOnce = undefined
   pendingUnequip = undefined
   generation++
 
@@ -206,6 +222,7 @@ export function closeInventory() {
   stage = undefined
   previewVisibility.clear()
   previewLoadout = undefined
+  after?.()
 }
 
 export function selectInventorySlot(slot: EquipmentSlot) {
@@ -355,7 +372,7 @@ function createPreview(loadout: EquipmentLoadout): Entity {
     parent: stage!.anchor,
     rotation: Quaternion.fromEulerDegrees(0, facing, 0)
   })
-  setEquipmentAvatar(root, state.characterId, loadout, false, { preloadWeapons: ownedWeaponIds(), presentation: 'menu' })
+  setEquipmentAvatar(root, state.characterId, loadout, false, { preloadWeapons: ownedWeaponIds(state.characterId), presentation: 'menu' })
   // Show the outfit in a relaxed standing pose, including the matching sword clip.
   setEquipmentMotion(root, 'idle')
   showPreview(root, false)

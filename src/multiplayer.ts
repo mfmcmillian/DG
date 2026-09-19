@@ -42,6 +42,17 @@ export type ImpactNet = {
   vol: number
 }
 
+/** A hero's shot as the room sees it: who fired what, from where, which way. */
+export type ShotNet = {
+  id: string
+  motion: string
+  x: number
+  y: number
+  z: number
+  yaw: number
+  pitch: number
+}
+
 /** What the owner writes into its HeroBody each time something changed. */
 export type HeroPublish = Omit<HeroBodyValue, 'id' | 'beat'>
 
@@ -211,6 +222,16 @@ export function heroWeapon(id: string): string {
   return 'none-weapon'
 }
 
+/** The character (`cid`) of every hero body whose owner passes `member`, ours included. */
+export function heroCharacters(member: (id: string) => boolean): string[] {
+  const out: string[] = []
+  for (const [entity, hero] of engine.getEntitiesWith(HeroBody)) {
+    const id = heroOwner(entity, hero)
+    if (member(id) && hero.cid) out.push(hero.cid)
+  }
+  return out
+}
+
 export function appearanceOf(hero: HeroBodyValue): CharacterAppearance {
   return { bodyType: hero.body === 'female' ? 'female' : 'male', hairStyle: hero.hair, hairColor: hero.hc, skinTone: hero.skin }
 }
@@ -344,6 +365,13 @@ export function publishImpact(p: ImpactNet) {
   sendNet('impact', { ...p, id })
 }
 
+/** Our hero fired: the other clients fly the same projectile for show. */
+export function publishShot(p: Omit<ShotNet, 'id'>) {
+  const id = localAddress()
+  if (!clientReady() || !id) return
+  sendNet('shot', { ...p, id })
+}
+
 /** Client -> server: the hero stepped onto a heart it saw at (x, z). Healing comes back as `heal`. */
 export function publishPickup(x: number, z: number) {
   if (!clientReady()) return
@@ -397,6 +425,7 @@ let onHeal: ((id: string, amount: number, health: number) => void) | undefined
 let onRevive: ((id: string, health: number) => void) | undefined
 let onVitals: ((id: string, health: number) => void) | undefined
 let onImpact: ((p: ImpactNet) => void) | undefined
+let onShot: ((p: ShotNet) => void) | undefined
 let onEnemies: ((party: string, list: EnemySnap[]) => void) | undefined
 let onLoot: ((party: string, x: number, z: number, coin: number, heart: number, item: string) => void) | undefined
 let onJoin: ((id: string) => void) | undefined
@@ -410,6 +439,8 @@ export function setMultiplayerHandlers(handlers: {
   /** The server's periodic statement of a hero's health. */
   vitals?: typeof onVitals
   impact?: typeof onImpact
+  /** Another hero's shot, for its flight only. */
+  shot?: typeof onShot
   enemies?: typeof onEnemies
   loot?: typeof onLoot
   /** Server only: a hero body has appeared in the room. */
@@ -424,6 +455,7 @@ export function setMultiplayerHandlers(handlers: {
   if (handlers.revive) onRevive = handlers.revive
   if (handlers.vitals) onVitals = handlers.vitals
   if (handlers.impact) onImpact = handlers.impact
+  if (handlers.shot) onShot = handlers.shot
   if (handlers.enemies) onEnemies = handlers.enemies
   if (handlers.loot) onLoot = handlers.loot
   if (handlers.join) onJoin = handlers.join
@@ -437,6 +469,10 @@ function bindClient() {
   onNet('impact', (msg) => {
     if (msg.id === localAddress()) return
     onImpact?.(msg)
+  })
+  onNet('shot', (msg) => {
+    if (msg.id === localAddress()) return
+    onShot?.(msg)
   })
   onNet('enemies', (msg) => {
     snapshots++
@@ -477,6 +513,10 @@ function bindServer() {
     // Relay to the other clients; solo has none (and relaying would loop back here).
     if (!context || isSolo()) return
     sendNet('impact', { ...msg, id: context.from.toLowerCase() })
+  })
+  onNet('shot', (msg, context) => {
+    if (!context || isSolo()) return
+    sendNet('shot', { ...msg, id: context.from.toLowerCase() })
   })
   onNet('diag', (msg, context) => {
     if (!context) return

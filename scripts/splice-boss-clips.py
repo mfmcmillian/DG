@@ -153,12 +153,93 @@ def clip_channels(clip_gltf, clip_bin, anim_index=0):
     return per_node, (0.0 if t0 is math.inf else t0)
 
 
-def splice_clip(name, clip_gltf, clip_bin, target, target_bin, anim_index=0):
+FRAME = 1 / 30
+
+# Hero class clips assembled from the raw exports (src/combatAnimations.ts
+# ClassMotion). Each part: (export name, start, end, blend) in the export's own
+# seconds; start/end None = whole clip; `blend` is how long the pose takes to
+# cross from the previous part's last frame into this one (one frame where the
+# clips were authored to chain, longer where they were not).
+CLASS_COMPOSITES = {
+    # Raise the bow with an arrow nocked, draw, release and lower it again.
+    'bow_shoot': [('bow_shoot__0', None, None, FRAME), ('bow_shoot__1', None, None, FRAME), ('bow_shoot__2', None, None, FRAME)],
+    # Leaping shoot: aim, draw and release, then the plain shot's lowering instead of the kneel it lands in.
+    'bow_volley': [('bow_volley', 0.9, 2.05, FRAME), ('bow_shoot__2', 0.55, None, 0.14)],
+    # Blocking attack: the bash itself, from and back to the guard.
+    'bow_bash': [('bow_bash', 0.2, 1.4, FRAME)],
+    'bow_block': [('bow_block', None, None, FRAME)],
+    # Point: raise the hand, hold a beat, lower it (the long hold in the middle is cut).
+    'cast_bolt': [('cast_bolt', 0.15, 0.95, FRAME), ('cast_bolt', 1.75, 2.35, 0.1)],
+    # Roar: crouch, throw the arms up, hold a beat, come down (the long hold is cut).
+    'cast_nova': [('cast_nova', 0.3, 1.7, FRAME), ('cast_nova', 2.6, 3.5, 0.1)],
+}
+PATH_INDEX = {'translation': 0, 'rotation': 1, 'scale': 2}
+
+
+def concat_clips(parts):
+    """
+    Join (trimmed) clip exports end to end into one clip. All parts share the
+    rig, so tracks are joined per bone; a bone a part does not animate holds
+    its rest pose (or its last value) for that stretch. `parts` are
+    (gltf, bin, anim_index, start, end, blend). Returns (per_node, t0=0) in
+    clip_channels' shape, plus the seam times (where each later part begins).
+    """
+    per_node = {}
+    seams = []
+    offset = 0.0
+    first = True
+    for gltf, bin_, ai, start, end, blend in parts:
+        nodes, t0 = clip_channels(gltf, bin_, ai)
+        clip_end = 0.0
+        for paths in nodes.values():
+            for times, _values in paths.values():
+                clip_end = max(clip_end, times[-1][0] - t0)
+        lo = 0.0 if start is None else start
+        hi = clip_end if end is None else min(end, clip_end)
+        # This part starts after its blend; the linear key interpolation
+        # across the gap is the crossfade from the previous part's last frame.
+        gap = 0.0 if first else blend
+        offset += gap
+        for node, paths in nodes.items():
+            for path, (times, values) in paths.items():
+                track = sb.Track(times, values, path == 'rotation')
+                # Keys inside the trim window, re-zeroed to its start and shifted to this part's slot.
+                keys = [(offset,)]
+                vals = [track.sample(lo + t0)]
+                for t, v in zip(times, values):
+                    tt = t[0] - t0
+                    if lo < tt < hi:
+                        keys.append((tt - lo + offset,))
+                        vals.append(v)
+                keys.append((hi - lo + offset,))
+                vals.append(track.sample(hi + t0))
+                slot = per_node.setdefault(node, {}).setdefault(path, ([], []))
+                if not first and not slot[0]:
+                    # First appearance: hold the rest pose through the earlier parts.
+                    rest = sb.node_rest(gltf['nodes'][node])[PATH_INDEX[path]]
+                    slot[0].extend([(0.0,), (offset - gap,)])
+                    slot[1].extend([rest, rest])
+                slot[0].extend(keys)
+                slot[1].extend(vals)
+        length = hi - lo
+        # Bones animated earlier but not in this part: hold their last value.
+        for node, paths in per_node.items():
+            for path, (times, values) in paths.items():
+                if node not in nodes or path not in nodes[node]:
+                    times.append((offset + length,))
+                    values.append(values[-1])
+        offset += length
+        seams.append(round(offset, 4))
+        first = False
+    return per_node, 0.0, seams[:-1]
+
+
+def splice_clip(name, clip_gltf, clip_bin, target, target_bin, anim_index=0, channels=None):
     cp = parents_of(clip_gltf)
     cnames = name_map(clip_gltf)
     tnames = name_map(target)
     tp = parents_of(target)
-    per_node, t0 = clip_channels(clip_gltf, clip_bin, anim_index)
+    per_node, t0 = channels if channels else clip_channels(clip_gltf, clip_bin, anim_index)
 
     # Frame correction for the top bone: its parent differs between files
     # (Blender armature object vs SidekickCustomizationSharedRig).
@@ -256,11 +337,25 @@ def main():
         if not clips:
             raise SystemExit(f'{source} has none of the requested clips')
     else:
+        raw_names = {part[0] for parts in CLASS_COMPOSITES.values() for part in parts}
+        raw = {}
         for p in sorted(CLIP_DIR.glob('*.glb')):
+            if p.stem in raw_names or '__' in p.stem:
+                raw[p.stem] = sb.load_glb(p)  # assembled below, never spliced as-is
+                continue
             if only and p.stem not in only:
                 continue
             cg, cb = sb.load_glb(p)
             clips[p.stem] = (cg, cb, 0)
+        for name, parts in CLASS_COMPOSITES.items():
+            if only and name not in only:
+                continue
+            if not all(part[0] in raw for part in parts):
+                continue
+            per_node, t0, seams = concat_clips([(*raw[export], 0, start, end, blend) for export, start, end, blend in parts])
+            cg, cb = raw[parts[0][0]]
+            clips[name] = (cg, cb, 0, (per_node, t0))
+            print(f'composite {name}: {len(parts)} part(s), seams at {seams}')
         if not clips:
             raise SystemExit(f'no clip GLBs in {CLIP_DIR}; run export-boss-clips.py in Blender first')
 
@@ -280,10 +375,11 @@ def main():
         if args.check:
             continue
         added = 0
-        for name, (cg, cb, ai) in clips.items():
+        for name, entry in clips.items():
             if name in existing:
                 continue
-            duration, matched, skipped, corr = splice_clip(name, cg, cb, target, target_bin, ai)
+            cg, cb, ai = entry[:3]
+            duration, matched, skipped, corr = splice_clip(name, cg, cb, target, target_bin, ai, entry[3] if len(entry) > 3 else None)
             report.setdefault(name, {})[rel] = round(duration, 4)
             added += 1
             print(f'  + {name}: {duration:.3f}s bones={matched} unmatched={len(skipped)}')

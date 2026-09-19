@@ -13,6 +13,19 @@
    0.2671229839324951
   ]
  },
+ "dropOffsetLeft": {
+  "position": [
+   -1.118728756904602,
+   -0.5581729412078857,
+   -0.9292023777961731
+  ],
+  "rotation": [
+   -0.4038139581680298,
+   -0.6547366380691528,
+   -0.3862064778804779,
+   0.5090188384056091
+  ]
+ },
  "items": [
   {
    "id": "gb-club-01",
@@ -2472,6 +2485,453 @@
     "class": "sword",
     "rarity": "legendary",
     "pack": "Pride Weapons"
+   }
+  },
+  {
+   "id": "bw-longbow-01",
+   "name": "Yew Longbow",
+   "slot": "weapon",
+   "description": "A plain stave of yew, waxed string. Every archer starts here.",
+   "icon": "images/weapons/bw-longbow-01.png",
+   "models": [
+    "models/roaming/weapons/bw-longbow-01.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "common",
+    "pack": "Bow Combat",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "bw-longbow-02",
+   "name": "Ranger Longbow",
+   "slot": "weapon",
+   "description": "Bound grip and horn nocks. Made for long days in the treeline.",
+   "icon": "images/weapons/bw-longbow-02.png",
+   "models": [
+    "models/roaming/weapons/bw-longbow-02.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "uncommon",
+    "pack": "Bow Combat",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "bw-longbow-03",
+   "name": "Warden Longbow",
+   "slot": "weapon",
+   "description": "Carved limbs and a reinforced riser. It draws heavy and hits like it.",
+   "icon": "images/weapons/bw-longbow-03.png",
+   "models": [
+    "models/roaming/weapons/bw-longbow-03.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "rare",
+    "pack": "Bow Combat",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "bw-recurve-01",
+   "name": "Horn Recurve",
+   "slot": "weapon",
+   "description": "Short, curled limbs that snap back fast. Quick to draw in a corridor.",
+   "icon": "images/weapons/bw-recurve-01.png",
+   "models": [
+    "models/roaming/weapons/bw-recurve-01.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "uncommon",
+    "pack": "Bow Combat",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "bw-recurve-03",
+   "name": "Steppe Recurve",
+   "slot": "weapon",
+   "description": "Laminated horn and sinew. A rider's bow that never left the saddle.",
+   "icon": "images/weapons/bw-recurve-03.png",
+   "models": [
+    "models/roaming/weapons/bw-recurve-03.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "rare",
+    "pack": "Bow Combat",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "bw-recurve-05",
+   "name": "Gilded Recurve",
+   "slot": "weapon",
+   "description": "Gold inlay along both limbs. A noble's hunting bow, taken off a wall.",
+   "icon": "images/weapons/bw-recurve-05.png",
+   "models": [
+    "models/roaming/weapons/bw-recurve-05.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "epic",
+    "pack": "Bow Combat",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "bw-recurve-06",
+   "name": "Ashen Recurve",
+   "slot": "weapon",
+   "description": "Blackened limbs, silver tips. Strung the night the fortress fell.",
+   "icon": "images/weapons/bw-recurve-06.png",
+   "models": [
+    "models/roaming/weapons/bw-recurve-06.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "epic",
+    "pack": "Bow Combat",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "gb-bow-01",
+   "name": "Camp Shortbow",
+   "slot": "weapon",
+   "description": "Goblin work: crooked, knotted and somehow accurate.",
+   "icon": "images/weapons/gb-bow-01.png",
+   "models": [
+    "models/roaming/weapons/gb-bow-01.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "common",
+    "pack": "Goblin War Camp",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "gb-bow-02",
+   "name": "Warcamp Bow",
+   "slot": "weapon",
+   "description": "Bone tips and a string of something you would rather not ask about.",
+   "icon": "images/weapons/gb-bow-02.png",
+   "models": [
+    "models/roaming/weapons/gb-bow-02.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "uncommon",
+    "pack": "Goblin War Camp",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "pr-bow-01",
+   "name": "Pride Bow",
+   "slot": "weapon",
+   "description": "Bright limbs and a proud draw. Carried with the head up.",
+   "icon": "images/weapons/pr-bow-01.png",
+   "models": [
+    "models/roaming/weapons/pr-bow-01.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "rare",
+    "pack": "Pride Weapons",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "fk-bow-01",
+   "name": "Kingdom Hunting Bow",
+   "slot": "weapon",
+   "description": "From the royal hunt. Every stag in the forest knew this string.",
+   "icon": "images/weapons/fk-bow-01.png",
+   "models": [
+    "models/roaming/weapons/fk-bow-01.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "epic",
+    "pack": "Fantasy Kingdom",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "fk-bow-02",
+   "name": "Royal Warbow",
+   "slot": "weapon",
+   "description": "The crown's own bow. Its arrows opened the siege and closed the war.",
+   "icon": "images/weapons/fk-bow-02.png",
+   "models": [
+    "models/roaming/weapons/fk-bow-02.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "legendary",
+    "pack": "Fantasy Kingdom",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "dr-staff-01",
+   "name": "Deep Walking Staff",
+   "slot": "weapon",
+   "description": "A miner's staff with a stone that hums when the tunnel is wrong.",
+   "icon": "images/weapons/dr-staff-01.png",
+   "models": [
+    "models/roaming/weapons/dr-staff-01.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "common",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-staff-02",
+   "name": "Tunnel Rod",
+   "slot": "weapon",
+   "description": "Iron-shod and plain. The bolt it throws is anything but.",
+   "icon": "images/weapons/dr-staff-02.png",
+   "models": [
+    "models/roaming/weapons/dr-staff-02.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "common",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-staff-03",
+   "name": "Lantern Staff",
+   "slot": "weapon",
+   "description": "A caged glow at the head. Lights the way and burns what stands in it.",
+   "icon": "images/weapons/dr-staff-03.png",
+   "models": [
+    "models/roaming/weapons/dr-staff-03.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "uncommon",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-staff-04",
+   "name": "Cog Staff",
+   "slot": "weapon",
+   "description": "Dwarven gearwork wound tight around a crystal core.",
+   "icon": "images/weapons/dr-staff-04.png",
+   "models": [
+    "models/roaming/weapons/dr-staff-04.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "rare",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-staff-05",
+   "name": "Forge Staff",
+   "slot": "weapon",
+   "description": "Still warm from the anvil it was quenched beside.",
+   "icon": "images/weapons/dr-staff-05.png",
+   "models": [
+    "models/roaming/weapons/dr-staff-05.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "epic",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-staff-06",
+   "name": "Deep King's Staff",
+   "slot": "weapon",
+   "description": "The Forge Lord's sceptre. The mountain answers when it strikes the floor.",
+   "icon": "images/weapons/dr-staff-06.png",
+   "models": [
+    "models/roaming/weapons/dr-staff-06.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "legendary",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "df-staff-01",
+   "name": "Rune Staff",
+   "slot": "weapon",
+   "description": "Fortress runes cut into black iron. They glow before the bolt leaves.",
+   "icon": "images/weapons/df-staff-01.png",
+   "models": [
+    "models/roaming/weapons/df-staff-01.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "uncommon",
+    "pack": "Dark Fortress"
+   }
+  },
+  {
+   "id": "df-staff-02",
+   "name": "Ember Staff",
+   "slot": "weapon",
+   "description": "A coal that never went out, set in a shaft of scorched oak.",
+   "icon": "images/weapons/df-staff-02.png",
+   "models": [
+    "models/roaming/weapons/df-staff-02.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "rare",
+    "pack": "Dark Fortress"
+   }
+  },
+  {
+   "id": "df-staff-03",
+   "name": "Frost Staff",
+   "slot": "weapon",
+   "description": "Rimed even in the forge. The bolt arrives before the cold does.",
+   "icon": "images/weapons/df-staff-03.png",
+   "models": [
+    "models/roaming/weapons/df-staff-03.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "epic",
+    "pack": "Dark Fortress"
+   }
+  },
+  {
+   "id": "gb-staff-01",
+   "name": "Shaman Stick",
+   "slot": "weapon",
+   "description": "Feathers, teeth and a skull. Goblin magic, such as it is.",
+   "icon": "images/weapons/gb-staff-01.png",
+   "models": [
+    "models/roaming/weapons/gb-staff-01.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "common",
+    "pack": "Goblin War Camp"
+   }
+  },
+  {
+   "id": "gb-staff-02",
+   "name": "Totem Staff",
+   "slot": "weapon",
+   "description": "A war totem on a pole. The camp followed it into every fight.",
+   "icon": "images/weapons/gb-staff-02.png",
+   "models": [
+    "models/roaming/weapons/gb-staff-02.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "uncommon",
+    "pack": "Goblin War Camp"
+   }
+  },
+  {
+   "id": "fk-staff-01",
+   "name": "Hedge Wizard's Staff",
+   "slot": "weapon",
+   "description": "Gnarled wood and a cheap crystal. It works, mostly.",
+   "icon": "images/weapons/fk-staff-01.png",
+   "models": [
+    "models/roaming/weapons/fk-staff-01.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "common",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-staff-02",
+   "name": "Acolyte Staff",
+   "slot": "weapon",
+   "description": "Given to every student of the tower. Few keep it this long.",
+   "icon": "images/weapons/fk-staff-02.png",
+   "models": [
+    "models/roaming/weapons/fk-staff-02.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-staff-03",
+   "name": "Court Mage Staff",
+   "slot": "weapon",
+   "description": "Polished for the throne room. Sharp enough for the dungeon under it.",
+   "icon": "images/weapons/fk-staff-03.png",
+   "models": [
+    "models/roaming/weapons/fk-staff-03.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "rare",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-staff-04",
+   "name": "Sunstone Staff",
+   "slot": "weapon",
+   "description": "A stone that holds the noon. The orb it casts bursts bright.",
+   "icon": "images/weapons/fk-staff-04.png",
+   "models": [
+    "models/roaming/weapons/fk-staff-04.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "rare",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-staff-05",
+   "name": "Archmage Staff",
+   "slot": "weapon",
+   "description": "Three crystals in a crown of gold. It does not miss.",
+   "icon": "images/weapons/fk-staff-05.png",
+   "models": [
+    "models/roaming/weapons/fk-staff-05.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "epic",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-staff-06",
+   "name": "Kingdom Crown Staff",
+   "slot": "weapon",
+   "description": "The staff the old king's wizard carried into the vault, and never carried out.",
+   "icon": "images/weapons/fk-staff-06.png",
+   "models": [
+    "models/roaming/weapons/fk-staff-06.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "legendary",
+    "pack": "Fantasy Kingdom"
    }
   }
  ]
