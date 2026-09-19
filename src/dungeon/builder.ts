@@ -64,8 +64,8 @@ function ceilingMaterial(style: DungeonStyle): PBMaterial_PbrMaterial {
 }
 
 /** Plane UVs (both faces) repeating the texture `r` times per side. */
-function planeUvs(r: number): number[] {
-  const face = [0, 0, 0, r, r, r, r, 0]
+function planeUvs(u: number, v = u): number[] {
+  const face = [0, 0, 0, v, u, v, u, 0]
   return [...face, ...face]
 }
 
@@ -85,7 +85,8 @@ export function buildDungeon(dungeon: Dungeon, style: DungeonStyle, options?: La
   // see it; door jambs and lintels deliberately do not, so the boom glides through
   // doorways instead of pulling in at every threshold.
   const solid = ColliderLayer.CL_PHYSICS | ColliderLayer.CL_POINTER | CAMERA_LAYER
-  const floorUvs = planeUvs(Math.max(1, Math.round(T / (style.floorMetres ?? 2.5))))
+  // Texture repeats per cell; a rectangle plane repeats it per cell it covers.
+  const floorRepeat = Math.max(1, Math.round(T / (style.floorMetres ?? 2.5)))
   const floorMat = floorMaterial(style)
   const ceilingMat = ceilingMaterial(style)
 
@@ -104,10 +105,10 @@ export function buildDungeon(dungeon: Dungeon, style: DungeonStyle, options?: La
         Transform.create(e, {
           position: Vector3.create(p.x, p.y, p.z),
           rotation: Quaternion.fromEulerDegrees(p.kind === 'floor' ? 90 : -90, 0, 0),
-          scale: Vector3.create(T, T, 1),
+          scale: Vector3.create(T * p.w, T * p.d, 1),
           parent: root
         })
-        MeshRenderer.setPlane(e, floorUvs)
+        MeshRenderer.setPlane(e, planeUvs(floorRepeat * p.w, floorRepeat * p.d))
         Material.setPbrMaterial(e, p.kind === 'floor' ? floorMat : ceilingMat)
         break
       case 'box':

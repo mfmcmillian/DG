@@ -28,6 +28,8 @@ cursorignore
 # --- deploy trimming (generated) ---
 # Unused variants and source/preview-only assets
 scripts/
+# Fantasy Menus pack example screenshots (14.7 MB); the UI never references them
+images/ui/kit/SPR_FantasyMenus_Example_Image_*.png
 models/jump/
 models/equipment/
 models/yard_*.glb

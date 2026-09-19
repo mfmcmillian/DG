@@ -10,13 +10,23 @@ scale is (1,1,1) in all 34 clips, a finger's translation is its rest offset in
 all of them. Each such track still costs its keyframe bytes plus ~250 bytes of
 accessor/bufferView/channel JSON, and there are ~6,600 of them per part.
 
-Two lossless passes:
-  1. A (joint, path) track that is constant in every clip, at the same value in
+Lossless passes:
+  1. Joints a part never skins: every part carries the whole rig, but a hair
+     piece only deforms with the head chain and a boot with a leg. Channels for
+     joints outside the weighted joints and their ancestors are dropped; those
+     joints still exist (the skin's joint list is untouched) but nothing looks
+     at their pose. Nothing at runtime reads a bone out of a part either:
+     weapons are separate GLBs with their own baked hand joint.
+  2. Clips a part can never be asked to play: bodies and hair under
+     customization/male/ never play the female jump set and vice versa
+     (getEquipmentJumpMotion picks by body type). Armor and combat pieces are
+     worn by both, so they keep both sets.
+  3. A (joint, path) track that is constant in every clip, at the same value in
      all of them, is removed from all clips and that value written as the
      joint's rest transform. Every clip then poses that joint identically to
      before (nothing ever changed it), and there is no clip in the file that
      could leave a different value behind for another clip to inherit.
-  2. Within a clip, channels whose key times are byte-identical share one
+  4. Within a clip, channels whose key times are byte-identical share one
      input accessor.
 The binary buffer is then repacked with only the referenced bufferViews.
 
@@ -110,6 +120,80 @@ def repair_inputs(gltf, bin_):
             s['input'], s['output'] = new_in, new_out
             repaired += 1
     return repaired
+
+
+GENDER_CLIPS = {'male': 'jump_female', 'female': 'jump_male'}
+
+
+def drop_other_gender_clips(gltf, path):
+    """On a gendered body/hair part, remove the other body type's jump clips. Returns names dropped."""
+    parts = Path(path).as_posix().split('/')
+    if 'customization' not in parts:
+        return []
+    gender = next((g for g in ('male', 'female') if g in parts), None)
+    if gender is None:
+        return []
+    prefix = GENDER_CLIPS[gender]
+    dropped = [a['name'] for a in gltf['animations'] if a['name'].startswith(prefix)]
+    gltf['animations'] = [a for a in gltf['animations'] if not a['name'].startswith(prefix)]
+    return dropped
+
+
+def posed_nodes(gltf, bin_):
+    """
+    Nodes whose transform can move a vertex: joints with a non-zero weight in
+    any skinned primitive, plus all their ancestors, plus the mesh nodes and
+    their ancestors. None if the file has no skin (leave it alone).
+    """
+    if not gltf.get('skins'):
+        return None
+    parent = {}
+    for i, n in enumerate(gltf['nodes']):
+        for c in n.get('children', []):
+            parent[c] = i
+    needed = set()
+    for i, n in enumerate(gltf['nodes']):
+        if 'mesh' not in n:
+            continue
+        needed.add(i)
+        mesh = gltf['meshes'][n['mesh']]
+        skin = gltf['skins'][n['skin']] if 'skin' in n else None
+        for prim in mesh['primitives']:
+            attrs = prim['attributes']
+            if skin is None or 'JOINTS_0' not in attrs:
+                continue
+            joints = accessor_values(gltf, bin_, attrs['JOINTS_0'])
+            weights = accessor_values(gltf, bin_, attrs['WEIGHTS_0'])
+            used = set()
+            for js, ws in zip(joints, weights):
+                for j, w in zip(js, ws):
+                    if w > 0:
+                        used.add(j)
+            for j in used:
+                needed.add(skin['joints'][j])
+    closed = set()
+    for n in needed:
+        while n is not None and n not in closed:
+            closed.add(n)
+            n = parent.get(n)
+    return closed
+
+
+def prune_unposed(gltf, bin_):
+    """Drop channels that target nodes no skinned vertex follows. Returns the count."""
+    keep = posed_nodes(gltf, bin_)
+    if keep is None:
+        return 0
+    dropped = 0
+    for an in gltf['animations']:
+        kept = []
+        for ch in an['channels']:
+            if ch['target']['node'] in keep:
+                kept.append(ch)
+            else:
+                dropped += 1
+        an['channels'] = kept
+    return dropped
 
 
 def slim(gltf, bin_):
@@ -236,9 +320,18 @@ def process(path, check):
         return None
     bin_ = bytearray(bin_)
     repaired = repair_inputs(gltf, bin_)
-    dropped = slim(gltf, bin_)
+    clips = drop_other_gender_clips(gltf, path)
+    unposed = prune_unposed(gltf, bin_)
+    dropped = slim(gltf, bin_) + unposed
+    notes = []
     if repaired:
-        print(f'  repaired {repaired} sampler(s) with duplicate key times')
+        notes.append(f'repaired {repaired} sampler(s) with duplicate key times')
+    if clips:
+        notes.append(f'dropped clips {", ".join(clips)}')
+    if unposed:
+        notes.append(f'{unposed} channels on unposed joints')
+    for n in notes:
+        print(f'  {n}')
     bin_ = repack(gltf, bin_)
     js = json.dumps(gltf, separators=(',', ':')).encode('utf-8')
     after = 12 + 8 + len(js) + (-len(js) % 4) + 8 + len(bin_) + (-len(bin_) % 4)

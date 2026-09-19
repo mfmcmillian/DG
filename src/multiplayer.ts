@@ -6,7 +6,7 @@ import { EquipmentMotion } from './combatAnimations'
 import { CharacterAppearance } from './appearance'
 import { EquipmentLoadout, EQUIPMENT_SLOTS, sanitizeLoadout } from './equipmentCatalog'
 import { dropHero, heroHealth, initializeHeroVitals, rememberHeartDrop, resetHero } from './heroVitals'
-import { HeroBody, HeroBodyValue } from './shared/heroBody'
+import { HeroBody, HeroLook, HeroView } from './shared/heroBody'
 import { room } from './shared/messages'
 import { enterSolo, isSolo, onNet, sendNet } from './net'
 import { GAME_VERSION } from './version'
@@ -53,8 +53,16 @@ export type ShotNet = {
   pitch: number
 }
 
-/** What the owner writes into its HeroBody each time something changed. */
-export type HeroPublish = Omit<HeroBodyValue, 'id' | 'beat'>
+/** What the owner writes into its HeroBody and HeroLook each time something changed. */
+export type HeroPublish = Omit<HeroView, 'id' | 'beat'>
+const LOOK_KEYS = ['cid', 'body', 'hair', 'hc', 'skin', 'loadout'] as const
+type LookKey = (typeof LOOK_KEYS)[number]
+type BodyKey = Exclude<keyof HeroPublish, LookKey>
+
+function splitPublish(hero: HeroPublish): { body: Pick<HeroPublish, BodyKey>; look: Pick<HeroPublish, LookKey> } {
+  const { cid, body, hair, hc, skin, loadout, ...pose } = hero
+  return { body: pose, look: { cid, body, hair, hc, skin, loadout } }
+}
 
 let initialized = false
 /** Running as the headless server. */
@@ -154,17 +162,24 @@ export function playerAddressAsReported(address: string): string | undefined {
  * On the server the owner of a hero is whoever's connection created the entity,
  * not the id they wrote into it.
  */
-export function heroOwner(entity: Entity, hero: HeroBodyValue): string {
+export function heroOwner(entity: Entity, hero: { id: string }): string {
   const created = hostMode ? CreatedBy.getOrNull(entity)?.address : undefined
   return (created || hero.id).toLowerCase()
 }
 
+/** Every hero in the room whose body and look have both arrived, ours included. */
+export function* heroes(): Iterable<[Entity, HeroView]> {
+  for (const [entity, body, look] of engine.getEntitiesWith(HeroBody, HeroLook)) {
+    if (!body.id) continue
+    yield [entity, { ...body, ...look }]
+  }
+}
+
 /** Every hero body in the room but our own. */
-export function* remoteHeroes(): Iterable<[Entity, HeroBodyValue]> {
+export function* remoteHeroes(): Iterable<[Entity, HeroView]> {
   const me = localAddress()
-  for (const [entity, hero] of engine.getEntitiesWith(HeroBody)) {
-    if (!hero.id || heroOwner(entity, hero) === me) continue
-    yield [entity, hero]
+  for (const [entity, hero] of heroes()) {
+    if (heroOwner(entity, hero) !== me) yield [entity, hero]
   }
 }
 
@@ -216,7 +231,7 @@ export function allFighters(local?: (CombatPose & { health: number; invulnerable
  * so a client cannot claim a better blade than the one everybody can see.
  */
 export function heroWeapon(id: string): string {
-  for (const [entity, hero] of engine.getEntitiesWith(HeroBody)) {
+  for (const [entity, hero] of heroes()) {
     if (heroOwner(entity, hero) === id) return hero.loadout.weapon || 'none-weapon'
   }
   return 'none-weapon'
@@ -225,18 +240,18 @@ export function heroWeapon(id: string): string {
 /** The character (`cid`) of every hero body whose owner passes `member`, ours included. */
 export function heroCharacters(member: (id: string) => boolean): string[] {
   const out: string[] = []
-  for (const [entity, hero] of engine.getEntitiesWith(HeroBody)) {
+  for (const [entity, hero] of heroes()) {
     const id = heroOwner(entity, hero)
     if (member(id) && hero.cid) out.push(hero.cid)
   }
   return out
 }
 
-export function appearanceOf(hero: HeroBodyValue): CharacterAppearance {
+export function appearanceOf(hero: HeroView): CharacterAppearance {
   return { bodyType: hero.body === 'female' ? 'female' : 'male', hairStyle: hero.hair, hairColor: hero.hc, skinTone: hero.skin }
 }
 
-export function fullLoadout(hero: HeroBodyValue): EquipmentLoadout {
+export function fullLoadout(hero: HeroView): EquipmentLoadout {
   const loadout = { ...hero.loadout } as EquipmentLoadout
   for (const slot of EQUIPMENT_SLOTS) {
     if (!loadout[slot.id]) loadout[slot.id] = slot.id === 'weapon' ? 'none-weapon' : `none-${slot.id}`
@@ -306,7 +321,7 @@ export function publishHero(hero: HeroPublish, dt: number): boolean {
     // Solo: the body stays local; the ledger here reads it like any other.
     if (!isSolo()) {
       try {
-        syncEntity(entity, [HeroBody.componentId])
+        syncEntity(entity, [HeroBody.componentId, HeroLook.componentId])
       } catch (error) {
         // The sync profile is filled asynchronously; try again next tick.
         engine.removeEntity(entity)
@@ -316,7 +331,9 @@ export function publishHero(hero: HeroPublish, dt: number): boolean {
       }
     }
     syncError = ''
-    HeroBody.create(entity, { ...hero, id, beat })
+    const parts = splitPublish(hero)
+    HeroBody.create(entity, { ...parts.body, id, beat })
+    HeroLook.create(entity, parts.look)
     heroEntity = entity
     sinceSent = 0
     return true
@@ -327,22 +344,28 @@ export function publishHero(hero: HeroPublish, dt: number): boolean {
     beatAge = 0
     beat++
   }
+  const parts = splitPublish(hero)
+  const look = HeroLook.getOrNull(heroEntity)
+  if (!look || !sameLook(look, hero)) HeroLook.createOrReplace(heroEntity, parts.look)
   const current = HeroBody.get(heroEntity)
   const stateChanged = current.beat !== beat || !sameState(current, hero)
   const poseChanged = !samePose(current, hero)
   if (!stateChanged && (!poseChanged || sinceSent < POSE_INTERVAL)) return true
-  HeroBody.createOrReplace(heroEntity, { ...hero, id, beat })
+  HeroBody.createOrReplace(heroEntity, { ...parts.body, id, beat })
   sinceSent = 0
   return true
 }
 
-function sameState(a: HeroBodyValue, b: HeroPublish): boolean {
-  return a.motion === b.motion && a.seq === b.seq && a.cid === b.cid && a.body === b.body && a.hair === b.hair &&
-    a.hc === b.hc && a.skin === b.skin && a.block === b.block && a.dodge === b.dodge && a.lock === b.lock &&
+function sameLook(a: Pick<HeroView, LookKey>, b: HeroPublish): boolean {
+  return a.cid === b.cid && a.body === b.body && a.hair === b.hair && a.hc === b.hc && a.skin === b.skin &&
     EQUIPMENT_SLOTS.every((slot) => a.loadout[slot.id] === b.loadout[slot.id])
 }
 
-function samePose(a: HeroBodyValue, b: HeroPublish): boolean {
+function sameState(a: Pick<HeroView, BodyKey>, b: HeroPublish): boolean {
+  return a.motion === b.motion && a.seq === b.seq && a.block === b.block && a.dodge === b.dodge && a.lock === b.lock
+}
+
+function samePose(a: Pick<HeroView, BodyKey>, b: HeroPublish): boolean {
   return Math.abs(a.x - b.x) < 0.1 && Math.abs(a.y - b.y) < 0.1 && Math.abs(a.z - b.z) < 0.1 && Math.abs(a.f - b.f) < 0.03
 }
 
@@ -549,10 +572,9 @@ function trackHeroes(dt: number) {
   for (const id of present) seenPlayers.add(id)
 
   // Every body in the room, grouped by owner; the freshest beat speaks for them.
-  const byOwner = new Map<string, { entity: Entity; hero: HeroBodyValue; body: Body }[]>()
+  const byOwner = new Map<string, { entity: Entity; hero: HeroView; body: Body }[]>()
   const liveEntities = new Set<Entity>()
-  for (const [entity, hero] of engine.getEntitiesWith(HeroBody)) {
-    if (!hero.id) continue
+  for (const [entity, hero] of heroes()) {
     liveEntities.add(entity)
     const owner = heroOwner(entity, hero)
     let body = bodies.get(entity)

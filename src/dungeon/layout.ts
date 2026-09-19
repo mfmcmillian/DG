@@ -17,7 +17,8 @@ export type PieceMode = 'full' | 'cutaway'
 
 export type Placement =
   | { kind: 'ground'; x: number; y: number; z: number; sx: number; sy: number; sz: number }
-  | { kind: 'floor' | 'ceiling'; x: number; y: number; z: number }
+  /** One plane over a `w` x `d` cell rectangle (texture repeats per cell), centred on x/z. */
+  | { kind: 'floor' | 'ceiling'; x: number; y: number; z: number; w: number; d: number }
   /** `lowId`: the cutaway wall this camera-facing wall becomes for the overhead camera. */
   | { kind: 'kit'; id: KitId; x: number; y: number; z: number; yaw: number; collide: boolean; lowId?: KitId; only?: PieceMode }
   /** Invisible box collider (door jambs and lintels). */
@@ -42,6 +43,34 @@ export interface Layout {
   torchIndices: number[]
   /** World-space enemy spawn points; the boss room contributes exactly one with `boss: true`. */
   spawns: SpawnPoint[]
+}
+
+/**
+ * Greedy cover of the open cells with axis-aligned rectangles (in cell units):
+ * from each uncovered open cell, run east as far as the row stays open, then
+ * south while every row of that span is still open and uncovered. Rooms come
+ * out as one rectangle each, corridors as a few.
+ */
+export function floorRectangles(dungeon: Dungeon): { x: number; y: number; w: number; d: number }[] {
+  const n = dungeon.size
+  const open = (x: number, y: number) => x < n && y < n && dungeon.cells[y * n + x] !== 0
+  const covered = new Uint8Array(n * n)
+  const rects: { x: number; y: number; w: number; d: number }[] = []
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      if (!open(x, y) || covered[y * n + x]) continue
+      let w = 1
+      while (open(x + w, y) && !covered[y * n + x + w]) w++
+      let d = 1
+      rows: while (y + d < n) {
+        for (let i = 0; i < w; i++) if (!open(x + i, y + d) || covered[(y + d) * n + x + i]) break rows
+        d++
+      }
+      for (let yy = y; yy < y + d; yy++) for (let xx = x; xx < x + w; xx++) covered[yy * n + xx] = 1
+      rects.push({ x, y, w, d })
+    }
+  }
+  return rects
 }
 
 /** Yaw that turns a module's +Z face towards the cell that owns the edge. */
@@ -110,13 +139,16 @@ export function layoutDungeon(dungeon: Dungeon, style: DungeonStyle, options: La
   // around the rooms, the way top-down dungeons fill their negative space black.
   push({ kind: 'ground', x: SCENE_SPAN / 2, y: -0.5, z: SCENE_SPAN / 2, sx: SCENE_SPAN, sy: 1, sz: SCENE_SPAN }, PRIMITIVE_TRIS.box)
 
-  for (let y = 0; y < dungeon.size; y++) {
-    for (let x = 0; x < dungeon.size; x++) {
-      if (dungeon.cells[y * dungeon.size + x] === 0) continue
-      const c = cellCenter(style, x, y)
-      push({ kind: 'floor', x: c.x, y: 0.005, z: c.z }, PRIMITIVE_TRIS.plane)
-      if (style.ceiling) push({ kind: 'ceiling', x: c.x, y: H, z: c.z }, PRIMITIVE_TRIS.plane)
-    }
+  // Floors and ceilings are one plane per rectangle of open cells rather than
+  // one per cell: the texture repeats per cell either way, and a 30-room
+  // dungeon is ~400 fewer entities and draw calls.
+  for (const r of floorRectangles(dungeon)) {
+    const a = cellCenter(style, r.x, r.y)
+    const b = cellCenter(style, r.x + r.w - 1, r.y + r.d - 1)
+    const x = (a.x + b.x) / 2
+    const z = (a.z + b.z) / 2
+    push({ kind: 'floor', x, y: 0.005, z, w: r.w, d: r.d }, PRIMITIVE_TRIS.plane)
+    if (style.ceiling) push({ kind: 'ceiling', x, y: H, z, w: r.w, d: r.d }, PRIMITIVE_TRIS.plane)
   }
 
   for (const w of dungeon.walls) {

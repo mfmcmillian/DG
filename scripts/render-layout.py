@@ -74,6 +74,7 @@ for p in data["placements"]:
     if k == "floor":
         bpy.ops.mesh.primitive_plane_add(size=tile)
         o = bpy.context.active_object; place(o, p); o.data.materials.append(floor_mat)
+        o.scale = (p.get("w", 1), p.get("d", 1), 1)
     elif k == "kit":
         t = template(p["id"], p.get("src"))
         o = bpy.data.objects.new(p["id"], t.data)

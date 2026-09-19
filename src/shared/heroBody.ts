@@ -7,6 +7,11 @@ import { engine, Schemas } from '@dcl/sdk/ecs'
  * the rest: the server relays it, a joiner receives every hero in the initial
  * state dump, and a change reaches all clients as a component update.
  *
+ * It is two components on that entity, because a component update carries the
+ * whole component: `HeroBody` is the pose and clip that change many times a
+ * second, `HeroLook` the character, appearance and loadout strings that change
+ * when the player visits the inventory. Readers see them merged (`HeroView`).
+ *
  * The position is for the headless server only (enemy targeting when the
  * runtime hands it no transform for the player). Clients never place bodies
  * from it: they ride the renderer's avatar through AvatarAttach.
@@ -32,6 +37,15 @@ export const HeroBody = engine.defineComponent('dg::HeroBody', {
   motion: Schemas.String,
   /** Bumped when a one-shot clip (swing, roll, hit, fall) starts, so watchers restart it. */
   seq: Schemas.Int,
+  block: Schemas.Boolean,
+  /** The roll's invulnerable window is open: blows pass through. */
+  dodge: Schemas.Boolean,
+  /** Ticks about once a second while the owner is alive, so a stale hero can be told apart. */
+  beat: Schemas.Int
+})
+
+/** Who the hero is and what they wear; on the same entity as its HeroBody. */
+export const HeroLook = engine.defineComponent('dg::HeroLook', {
   cid: Schemas.String,
   body: Schemas.String,
   hair: Schemas.String,
@@ -45,12 +59,10 @@ export const HeroBody = engine.defineComponent('dg::HeroBody', {
     legs: Schemas.String,
     boots: Schemas.String,
     weapon: Schemas.String
-  }),
-  block: Schemas.Boolean,
-  /** The roll's invulnerable window is open: blows pass through. */
-  dodge: Schemas.Boolean,
-  /** Ticks about once a second while the owner is alive, so a stale hero can be told apart. */
-  beat: Schemas.Int
+  })
 })
 
 export type HeroBodyValue = ReturnType<typeof HeroBody.get>
+export type HeroLookValue = ReturnType<typeof HeroLook.get>
+/** Both components of a hero entity, as readers see them. */
+export type HeroView = HeroBodyValue & HeroLookValue

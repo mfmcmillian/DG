@@ -15,7 +15,7 @@ import {
 } from './multiplayer'
 import { createHeroNameTag, destroyHeroNameTag, updateHeroNameTag } from './heroNameTag'
 import { partyOf } from './partyLookup'
-import { HeroBodyValue } from './shared/heroBody'
+import { HeroView } from './shared/heroBody'
 
 /**
  * Another hero's body. The synced HeroBody entity says who and what to show;
@@ -83,12 +83,12 @@ export function initializeRemotePlayers() {
   engine.addSystem(updateRemotePlayers)
 }
 
-function lookKey(hero: HeroBodyValue) {
+function lookKey(hero: HeroView) {
   const l = hero.loadout
   return [hero.cid, hero.body, hero.hair, hero.hc, hero.skin, l.head, l.chest, l.shoulders, l.hands, l.legs, l.boots, l.weapon].join('|')
 }
 
-function createReplica(id: string, hero: HeroBodyValue): Replica {
+function createReplica(id: string, hero: HeroView): Replica {
   const anchor = engine.addEntity()
   Transform.create(anchor)
   const root = engine.addEntity()
@@ -101,7 +101,7 @@ function createReplica(id: string, hero: HeroBodyValue): Replica {
   }
 }
 
-function loadOutfit(replica: Replica, hero: HeroBodyValue) {
+function loadOutfit(replica: Replica, hero: HeroView) {
   setEquipmentAvatar(replica.root, hero.cid, fullLoadout(hero), false, { appearance: appearanceOf(hero) })
   replica.retryIn = RETRY_SECONDS
 }
