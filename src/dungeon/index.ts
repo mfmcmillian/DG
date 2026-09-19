@@ -1,7 +1,7 @@
 import { executeTask } from '@dcl/sdk/ecs'
 import { Vector3 } from '@dcl/sdk/math'
 import { movePlayerTo } from '~system/RestrictedActions'
-import { buildDungeon, destroyDungeon, DungeonInstance, setSpawnMarkers, setTorchLightTarget } from './builder'
+import { buildDungeon, destroyDungeon, DungeonInstance, setDungeonCutaway, setSpawnMarkers, setTorchLightTarget } from './builder'
 import { cellCenter, DungeonStyle, gridOrigin, StyleId, STYLES } from './config'
 import { setCrawlerCamera } from './crawlerCamera'
 import { setShoulderCamera } from './shoulderCamera'
@@ -140,15 +140,16 @@ function applyCamera() {
   setCrawlerCamera(crawler)
 }
 
-/** Pick a camera. Entering or leaving the crawler camera rebuilds the same seed so camera-facing walls swap to parapets. */
-export function setCameraChoice(choice: CameraChoice, rebuild = true) {
+/**
+ * Pick a camera. Entering or leaving the crawler camera swaps the camera-facing
+ * walls between parapets and full walls in place; nothing is rebuilt, so it is
+ * safe mid-fight and loot stays on the floor.
+ */
+export function setCameraChoice(choice: CameraChoice) {
   if (choice === state.camera) return
-  const wasCrawler = state.camera === 'crawler' && crawlerCameraAvailable()
   state.camera = choice
-  const isCrawler = choice === 'crawler' && crawlerCameraAvailable()
-  // `rebuild: false` when a fresh loadDungeon follows anyway; it reads state.camera.
-  if (wasCrawler !== isCrawler && rebuild) loadDungeon(state.seed, state.style.id)
-  else applyCamera()
+  if (state.instance) setDungeonCutaway(state.instance, choice === 'crawler' && crawlerCameraAvailable())
+  applyCamera()
 }
 
 export function toggleSpawnMarkers() {

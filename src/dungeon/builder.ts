@@ -11,14 +11,15 @@ import {
   MeshRenderer,
   PBMaterial_PbrMaterial,
   TextureWrapMode,
-  Transform
+  Transform,
+  VisibilityComponent
 } from '@dcl/sdk/ecs'
 import { Color3, Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
 import { DungeonStyle, gridOrigin } from './config'
 import { CAMERA_LAYER } from './shoulderCamera'
 import { Dungeon } from './generator'
-import { BRICK_TEXTURE, FLOOR_TEXTURE, KIT } from './kit'
-import { Layout, layoutDungeon, LayoutOptions, SpawnPoint } from './layout'
+import { BRICK_TEXTURE, FLOOR_TEXTURE, KIT, KitId } from './kit'
+import { Layout, layoutDungeon, LayoutOptions, PieceMode, Placement, SpawnPoint } from './layout'
 
 export interface DungeonInstance {
   style: DungeonStyle
@@ -28,6 +29,12 @@ export interface DungeonInstance {
   spawns: SpawnPoint[]
   markers: Entity[]
   stats: Layout['stats']
+  /** Camera-facing walls are low (overhead camera) rather than full height. */
+  cutaway: boolean
+  /** Camera-facing walls: the entity and its two models. */
+  swapWalls: Array<{ entity: Entity; full: KitId; low: KitId }>
+  /** Pieces that exist in one mode only, with what they are so they can be switched on and off. */
+  modal: Array<{ entity: Entity; placement: Placement; only: PieceMode }>
 }
 
 const FLOOR_MATERIAL: PBMaterial_PbrMaterial = {
@@ -66,6 +73,9 @@ export function buildDungeon(dungeon: Dungeon, style: DungeonStyle, options?: La
   Transform.create(root, {})
   const entities: Entity[] = []
   const torches: DungeonInstance['torches'] = []
+  const swapWalls: DungeonInstance['swapWalls'] = []
+  const modal: DungeonInstance['modal'] = []
+  const cutaway = !!options?.cutaway && style.cutawayWall !== undefined
   const torchSet = new Set(layout.torchIndices)
   // Real geometry also sits on CAMERA_LAYER so the shoulder camera's boom ray can
   // see it; door jambs and lintels deliberately do not, so the boom glides through
@@ -102,18 +112,24 @@ export function buildDungeon(dungeon: Dungeon, style: DungeonStyle, options?: La
           parent: root
         })
         MeshCollider.setBox(e, ColliderLayer.CL_PHYSICS | ColliderLayer.CL_POINTER)
+        if (p.only) modal.push({ entity: e, placement: p, only: p.only })
         break
-      case 'kit':
+      case 'kit': {
         Transform.create(e, { position: Vector3.create(p.x, p.y, p.z), rotation: Quaternion.fromEulerDegrees(0, p.yaw, 0), parent: root })
+        const id = p.lowId && cutaway ? p.lowId : p.id
         GltfContainer.create(e, {
-          src: KIT[p.id].src,
+          src: KIT[id].src,
           visibleMeshesCollisionMask: p.collide ? solid : ColliderLayer.CL_NONE,
           invisibleMeshesCollisionMask: ColliderLayer.CL_NONE
         })
+        if (p.lowId) swapWalls.push({ entity: e, full: p.id, low: p.lowId })
+        if (p.only) modal.push({ entity: e, placement: p, only: p.only })
         if (torchSet.has(index)) torches.push({ entity: e, position: Vector3.create(p.x, p.y + 0.5, p.z) })
         break
+      }
     }
   })
+  for (const m of modal) setPieceEnabled(m, (m.only === 'cutaway') === cutaway, solid)
 
   // Roofed styles have no room for the third-person boom, which the Explorer
   // does not collide with geometry, so the whole grid becomes a first-person zone.
@@ -126,7 +142,36 @@ export function buildDungeon(dungeon: Dungeon, style: DungeonStyle, options?: La
     CameraModeArea.create(zone, { area: Vector3.create(span + 4, H + 2, span + 4), mode: CameraType.CT_FIRST_PERSON })
   }
 
-  return { style, root, entities, torches, spawns: layout.spawns, markers: [], stats: layout.stats }
+  return { style, root, entities, torches, spawns: layout.spawns, markers: [], stats: layout.stats, cutaway, swapWalls, modal }
+}
+
+/**
+ * Switch the camera-facing edges between full walls with doorways (shoulder
+ * camera) and low parapets with open gaps (overhead camera), in place. No
+ * rebuild, so loot, enemies and the player stay exactly where they are.
+ */
+export function setDungeonCutaway(instance: DungeonInstance, cutaway: boolean) {
+  if (instance.cutaway === cutaway || instance.style.cutawayWall === undefined) return
+  instance.cutaway = cutaway
+  const solid = ColliderLayer.CL_PHYSICS | ColliderLayer.CL_POINTER | CAMERA_LAYER
+  for (const w of instance.swapWalls) {
+    const gltf = GltfContainer.getMutableOrNull(w.entity)
+    if (gltf) gltf.src = KIT[cutaway ? w.low : w.full].src
+  }
+  for (const m of instance.modal) setPieceEnabled(m, (m.only === 'cutaway') === cutaway, solid)
+}
+
+/** A mode-only piece is kept as an entity and toggled: colliders off and model hidden when out of mode. */
+function setPieceEnabled(m: { entity: Entity; placement: Placement }, enabled: boolean, solid: number) {
+  const p = m.placement
+  if (p.kind === 'box') {
+    if (enabled) MeshCollider.setBox(m.entity, ColliderLayer.CL_PHYSICS | ColliderLayer.CL_POINTER)
+    else if (MeshCollider.has(m.entity)) MeshCollider.deleteFrom(m.entity)
+  } else if (p.kind === 'kit') {
+    VisibilityComponent.createOrReplace(m.entity, { visible: enabled })
+    const gltf = GltfContainer.getMutableOrNull(m.entity)
+    if (gltf) gltf.visibleMeshesCollisionMask = enabled && p.collide ? solid : ColliderLayer.CL_NONE
+  }
 }
 
 /** Debug visualisation of enemy spawn points: red discs, gold for the boss. */

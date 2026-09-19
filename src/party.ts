@@ -266,7 +266,7 @@ function enterRun(party: PartyInfo) {
   state.levelId = level.id
   closeLobby()
   setClientRun({ party: party.id, level: party.level, diff: party.diff })
-  applyCameraSetting(false)
+  applyCameraSetting()
   loadDungeon(level.seed, level.style)
   movePlayerToSpawn()
   console.log(`[DG] entering ${level.name} (${difficultyById(party.diff).name}) with party ${party.id}, run ${party.run}`)
@@ -278,7 +278,7 @@ function enterHub() {
   appliedRun = -1
   state.levelId = HUB_LEVEL.id
   setClientRun(undefined)
-  applyCameraSetting(false)
+  applyCameraSetting()
   loadDungeon(HUB_LEVEL.seed, HUB_LEVEL.style)
   movePlayerToSpawn()
   if (fromRun) {

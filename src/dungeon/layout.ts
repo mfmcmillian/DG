@@ -7,15 +7,24 @@ import { cellCenter, DungeonStyle, gridOrigin } from './config'
 import { Dungeon, Edge, Room, Side, tileHash } from './generator'
 import { DOOR_OPENINGS, KIT, KitId, PRIMITIVE_TRIS } from './kit'
 
+/**
+ * Pieces that exist in only one camera mode. The layout always describes both
+ * modes so the builder can switch between them in place, without a rebuild:
+ * `only: 'cutaway'` pieces are the invisible full-height colliders behind the
+ * low walls, `only: 'full'` pieces are the camera-facing doorways.
+ */
+export type PieceMode = 'full' | 'cutaway'
+
 export type Placement =
   | { kind: 'ground'; x: number; y: number; z: number; sx: number; sy: number; sz: number }
   | { kind: 'floor' | 'ceiling'; x: number; y: number; z: number }
-  | { kind: 'kit'; id: KitId; x: number; y: number; z: number; yaw: number; collide: boolean }
+  /** `lowId`: the cutaway wall this camera-facing wall becomes for the overhead camera. */
+  | { kind: 'kit'; id: KitId; x: number; y: number; z: number; yaw: number; collide: boolean; lowId?: KitId; only?: PieceMode }
   /** Invisible box collider (door jambs and lintels). */
-  | { kind: 'box'; x: number; y: number; z: number; yaw: number; sx: number; sy: number; sz: number }
+  | { kind: 'box'; x: number; y: number; z: number; yaw: number; sx: number; sy: number; sz: number; only?: PieceMode }
 
 export interface LayoutOptions {
-  /** Replace camera-facing (+Z side) walls with the style's low cutaway wall and leave +Z doorways open. */
+  /** Start with camera-facing (+Z side) walls as the style's low cutaway wall and +Z doorways open. */
   cutaway: boolean
 }
 
@@ -88,7 +97,9 @@ export function layoutDungeon(dungeon: Dungeon, style: DungeonStyle, options: La
   }
   const kit = (id: KitId, x: number, y: number, z: number, yaw: number, collide = true) =>
     push({ kind: 'kit', id, x, y, z, yaw, collide }, KIT[id].tris)
-  const cutaway = options.cutaway && style.cutawayWall !== undefined
+  // Styles with a cutaway wall get both variants laid out on camera-facing
+  // edges; the builder shows one. Styles without never cut away.
+  const cutaway = style.cutawayWall !== undefined
   // Camera-facing edges: the crawler camera sits at +Z looking towards -Z, so
   // a wall on a cell's south side stands between the camera and that cell.
   const facesCamera = (side: Side) => side === 's'
@@ -112,28 +123,31 @@ export function layoutDungeon(dungeon: Dungeon, style: DungeonStyle, options: La
     const m = edgeMidpoint(style, w)
     const roll = tileHash(w.x, w.y, w.side.charCodeAt(0))
     const lowered = cutaway && facesCamera(w.side)
-    const id = lowered ? style.cutawayWall! : style.walls[Math.floor(roll * style.walls.length)]
-    kit(id, m.x, 0, m.z, sideYaw(w.side))
-    stats.walls++
-    // The camera sees over the low wall, but the player must not: an invisible
-    // full-height collider stands where the tall wall would have been.
+    const id = style.walls[Math.floor(roll * style.walls.length)]
     if (lowered) {
-      push({ kind: 'box', x: m.x, y: H / 2, z: m.z, yaw: sideYaw(w.side), sx: T, sy: H, sz: Math.max(0.5, KIT[id].size[2]) }, 0)
+      push({ kind: 'kit', id, lowId: style.cutawayWall!, x: m.x, y: 0, z: m.z, yaw: sideYaw(w.side), collide: true }, KIT[id].tris)
+      // The camera sees over the low wall, but the player must not: an invisible
+      // full-height collider stands where the tall wall would have been.
+      push({ kind: 'box', only: 'cutaway', x: m.x, y: H / 2, z: m.z, yaw: sideYaw(w.side), sx: T, sy: H, sz: Math.max(0.5, KIT[style.cutawayWall!].size[2]) }, 0)
+    } else {
+      kit(id, m.x, 0, m.z, sideYaw(w.side))
     }
+    stats.walls++
   }
 
   for (const d of dungeon.doors) {
-    if (cutaway && facesCamera(d.side)) continue // open gap; the pillar rule still frames it
+    // Camera-facing doorways are an open gap for the overhead camera; the pillar rule still frames it.
+    const only: PieceMode | undefined = cutaway && facesCamera(d.side) ? 'full' : undefined
     const m = edgeMidpoint(style, d)
     const yaw = sideYaw(d.side)
     const opening = DOOR_OPENINGS[style.door]
     if (!opening) {
-      kit(style.door, m.x, 0, m.z, yaw)
+      push({ kind: 'kit', id: style.door, only, x: m.x, y: 0, z: m.z, yaw, collide: true }, KIT[style.door].tris)
       continue
     }
     // Visual frame without a collider, plus tight boxes on the solid parts so
     // the camera de-occluder only reacts to the wall, not the trim.
-    kit(style.door, m.x, 0, m.z, yaw, false)
+    push({ kind: 'kit', id: style.door, only, x: m.x, y: 0, z: m.z, yaw, collide: false }, KIT[style.door].tris)
     const piece = KIT[style.door]
     const thick = piece.size[2]
     const jamb = (T - opening.width) / 2
@@ -141,10 +155,10 @@ export function layoutDungeon(dungeon: Dungeon, style: DungeonStyle, options: La
     const local = (lx: number) => ({ x: m.x + lx * Math.cos(rad), z: m.z - lx * Math.sin(rad) })
     for (const sign of [-1, 1]) {
       const p = local(sign * (T / 2 - jamb / 2))
-      push({ kind: 'box', x: p.x, y: H / 2, z: p.z, yaw, sx: jamb, sy: H, sz: thick }, 0)
+      push({ kind: 'box', only, x: p.x, y: H / 2, z: p.z, yaw, sx: jamb, sy: H, sz: thick }, 0)
     }
     if (opening.height < H) {
-      push({ kind: 'box', x: m.x, y: (H + opening.height) / 2, z: m.z, yaw, sx: opening.width, sy: H - opening.height, sz: thick }, 0)
+      push({ kind: 'box', only, x: m.x, y: (H + opening.height) / 2, z: m.z, yaw, sx: opening.width, sy: H - opening.height, sz: thick }, 0)
     }
   }
 

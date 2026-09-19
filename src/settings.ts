@@ -5,7 +5,6 @@
 
 import { engine, InputModifier, PointerLock } from '@dcl/sdk/ecs'
 import { CameraChoice, getDungeonState, setCameraChoice } from './dungeon'
-import { inRun } from './party'
 
 /** The two cameras a player picks between; `native` stays a developer option. */
 export type CameraPreference = 'crawler' | 'shoulder'
@@ -45,18 +44,10 @@ export function closeSettings() {
   InputModifier.deleteFrom(engine.PlayerEntity)
 }
 
+/** Click = switch now and remember it. The walls swap in place, so this is safe mid-fight. */
 export function setCameraPreference(camera: CameraPreference) {
   settings.camera = camera
-  // Switching overhead <-> shoulder rebuilds the walls (parapets face the
-  // overhead camera), which would also sweep the loot off the floor mid-run.
-  // In a fortress the choice waits for the next dungeon load; in the hall it is instant.
-  if (!inRun()) applyCameraSetting()
-}
-
-/** True while the saved camera is not the one in use (waiting for the next dungeon load). */
-export function cameraChangePending(): boolean {
-  const current = getDungeonState().camera
-  return current !== 'native' && current !== settings.camera
+  applyCameraSetting()
 }
 
 export function setDevTools(on: boolean) {
@@ -64,14 +55,11 @@ export function setDevTools(on: boolean) {
   if (!on) applyCameraSetting()
 }
 
-/**
- * Put the saved camera on, unless a developer has switched to the native camera
- * by hand. `rebuild: false` when a loadDungeon follows anyway.
- */
-export function applyCameraSetting(rebuild = true) {
+/** Put the saved camera on, unless a developer has switched to the native camera by hand. */
+export function applyCameraSetting() {
   const current: CameraChoice = getDungeonState().camera
   if (current === 'native' && settings.devTools) return
-  if (current !== settings.camera) setCameraChoice(settings.camera, rebuild)
+  if (current !== settings.camera) setCameraChoice(settings.camera)
 }
 
 // --- persistence (hero save) --------------------------------------------------------------

@@ -16,7 +16,12 @@ const dungeon = generateDungeon(seed, {
   minRoom: style.minRoom,
   torchEvery: style.torchEvery
 })
-const layout = layoutDungeon(dungeon, style, { cutaway: process.argv[5] === 'cutaway' })
+const cutaway = process.argv[5] === 'cutaway' && style.cutawayWall !== undefined
+const layout = layoutDungeon(dungeon, style, { cutaway })
+// The layout carries both camera modes; resolve to the one asked for, as the builder does.
+const placements = layout.placements
+  .filter((p) => !('only' in p && p.only) || (p.only === 'cutaway') === cutaway)
+  .map((p) => (p.kind === 'kit' && p.lowId && cutaway ? { ...p, id: p.lowId } : p))
 writeFileSync(
   out,
   JSON.stringify({
@@ -26,7 +31,7 @@ writeFileSync(
     entrance: dungeon.entrance,
     boss: dungeon.boss,
     spawns: layout.spawns,
-    placements: layout.placements
+    placements
   })
 )
 console.log(

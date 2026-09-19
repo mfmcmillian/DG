@@ -60,9 +60,17 @@ export function setShoulderCamera(on: boolean) {
     engine.addSystem(updateShoulderCamera)
   }
   if (on) {
-    // Start from where the player is already looking so there is no snap.
+    // Coming from the Explorer's own camera, start from where the player is
+    // already looking so there is no snap. Coming from another scene camera
+    // (the overhead one is pitched 58 degrees down and points north whatever
+    // the hero faces), settle behind the hero at a comfortable pitch instead.
     const cam = Transform.getOrNull(engine.CameraEntity)
-    if (cam) {
+    const fromScene = MainCamera.getOrNull(engine.CameraEntity)?.virtualCameraEntity !== undefined
+    if (fromScene) {
+      const hero = Transform.getOrNull(engine.PlayerEntity)
+      yaw = hero ? Quaternion.toEulerAngles(hero.rotation).y : 0
+      pitch = 12
+    } else if (cam) {
       const e = Quaternion.toEulerAngles(cam.rotation)
       yaw = e.y
       pitch = clamp(normalizePitch(e.x), SHOULDER_CAMERA.pitchMin, SHOULDER_CAMERA.pitchMax)

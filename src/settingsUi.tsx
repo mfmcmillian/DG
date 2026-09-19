@@ -5,7 +5,7 @@ import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { engine, UiCanvasInformation } from '@dcl/sdk/ecs'
 import { Color4 } from '@dcl/sdk/math'
 import { menuColors, MenuAction as Action } from './menuUi'
-import { CAMERA_OPTIONS, cameraChangePending, closeSettings, getSettings, setCameraPreference, setDevTools } from './settings'
+import { CAMERA_OPTIONS, closeSettings, getSettings, setCameraPreference, setDevTools } from './settings'
 
 const { white, muted, gold, panel, card, line, goldLine } = menuColors
 const veil = Color4.create(0.01, 0.02, 0.03, 0.62)
@@ -77,8 +77,6 @@ export function SettingsUi() {
         </UiEntity>
       })}
 
-      <Label value={cameraChangePending() ? 'Takes effect when you next enter the hall or a fortress.' : ''} color={muted} fontSize={11 * s}
-        textAlign="middle-left" textWrap="nowrap" uiTransform={{ width: '100%', height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
       <UiEntity uiTransform={{ width: '100%', height: 20 * s, margin: { top: 10 * s }, flexShrink: 0, pointerFilter: 'none' }}>
         <Heading title="DEVELOPER" scale={s} />
       </UiEntity>
