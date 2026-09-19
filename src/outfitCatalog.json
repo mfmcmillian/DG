@@ -51,6 +51,36 @@
       ]
     },
     {
+      "id": "elf-head-warhelm",
+      "name": "Antlered War Helm",
+      "slot": "head",
+      "description": "A closed helm crowned with gilded antlers. The forest's answer to plate.",
+      "icon": "images/equipment/elf-head-warhelm.png",
+      "models": [
+        "models/roaming/combat/equipment/elf-head-warhelm.glb"
+      ]
+    },
+    {
+      "id": "elf-head-bramble",
+      "name": "Bramble Circlet",
+      "slot": "head",
+      "description": "Living briar twisted into a crown; the leaves are still green.",
+      "icon": "images/equipment/elf-head-bramble.png",
+      "models": [
+        "models/roaming/combat/equipment/elf-head-bramble.glb"
+      ]
+    },
+    {
+      "id": "elf-head-stag",
+      "name": "Stag Mask",
+      "slot": "head",
+      "description": "A stag's face carved in dark wood, antlers and all. The hunt looks back.",
+      "icon": "images/equipment/elf-head-stag.png",
+      "models": [
+        "models/roaming/combat/equipment/elf-head-stag.glb"
+      ]
+    },
+    {
       "id": "sorc-head",
       "name": "Sorcerer's Hat",
       "slot": "head",
@@ -99,6 +129,46 @@
       "models": [
         "models/roaming/combat/equipment/sorc-boots.glb"
       ]
+    },
+    {
+      "id": "sorc-shoulders",
+      "name": "Sorcerer's Pauldrons",
+      "slot": "shoulders",
+      "description": "Weighted pauldrons that keep the sleeves from the casting hand.",
+      "icon": "images/equipment/sorc-shoulders.png",
+      "models": [
+        "models/roaming/combat/equipment/sorc-shoulders.glb"
+      ]
+    },
+    {
+      "id": "sorc-shoulders-familiars",
+      "name": "Familiar Perches",
+      "slot": "shoulders",
+      "description": "Two carved familiars ride the shoulders and watch what the caster cannot.",
+      "icon": "images/equipment/sorc-shoulders-familiars.png",
+      "models": [
+        "models/roaming/combat/equipment/sorc-shoulders-familiars.glb"
+      ]
+    },
+    {
+      "id": "sorc-shoulders-spectral",
+      "name": "Spectral Grasp",
+      "slot": "shoulders",
+      "description": "Conjured hands that never quite let go of the shoulders.",
+      "icon": "images/equipment/sorc-shoulders-spectral.png",
+      "models": [
+        "models/roaming/combat/equipment/sorc-shoulders-spectral.glb"
+      ]
+    },
+    {
+      "id": "sorc-shoulders-toad",
+      "name": "Toad Familiar",
+      "slot": "shoulders",
+      "description": "A toad in a very small hat, riding the off shoulder. It has opinions about your spells.",
+      "icon": "images/equipment/sorc-shoulders-toad.png",
+      "models": [
+        "models/roaming/combat/equipment/sorc-shoulders-toad.glb"
+      ]
     }
   ],
   "skinVariants": [
@@ -119,7 +189,7 @@
     "striker": {
       "head": "sorc-head",
       "chest": "sorc-chest",
-      "shoulders": "none-shoulders",
+      "shoulders": "sorc-shoulders",
       "hands": "sorc-hands",
       "legs": "sorc-legs",
       "boots": "sorc-boots"

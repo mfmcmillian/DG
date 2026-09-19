@@ -18,6 +18,10 @@ modular hero (same rig, same bind frame, same clips):
 
 Head, hair, eyes, ears, teeth and the like stay the player's own body parts.
 
+A hero's `extras` list adds more items from the same pack (parts named
+explicitly, usually lifted from the pack's other presets, with that preset's
+palette), so a class has several heads or shoulders to pick from.
+
 How the GLB is made (no Blender exporter involved, so nothing can drift):
 every Sidekick part is skinned to the one shared bind pose, and every
 wardrobe GLB carries the same joints and inverse bind matrices for it. So
@@ -333,6 +337,7 @@ def append_accessor(gltf, bin_, values, ctype, atype, fmt, target=None, minmax=F
 
 
 def build_glb(reference, clips, vertices, tex_tris, skin_tris, palette_png, set_id, slot, tone, out_path):
+    item = out_path.stem
     gltf = json.loads(json.dumps(reference[0]))
     bin_ = bytearray(reference[1])
     gltf['animations'] = [a for a in gltf.get('animations', []) if a['name'] in clips]
@@ -375,10 +380,10 @@ def build_glb(reference, clips, vertices, tex_tris, skin_tris, palette_png, set_
         })
         idx = append_accessor(gltf, bin_, [i for t in skin_tris for i in t], itype, 'SCALAR', ifmt, ELEMENT_ARRAY_BUFFER)
         primitives.append({'attributes': attributes, 'indices': idx, 'material': 1})
-    gltf['meshes'] = [{'name': f'{set_id}-{slot}', 'primitives': primitives}]
+    gltf['meshes'] = [{'name': item, 'primitives': primitives}]
     mesh_node = next(n for n in gltf['nodes'] if 'mesh' in n)
     mesh_node['mesh'] = 0
-    mesh_node['name'] = f'{set_id}-{slot}'
+    mesh_node['name'] = item
 
     slim.repair_inputs(gltf, bin_)
     slim.prune_unposed(gltf, bin_)
@@ -405,47 +410,60 @@ def build_hero(hero_id, hero, config, reference, joint_index):
         if not names:
             print(f'   {slot}: preset has no parts for this slot')
             continue
-        reset_scene()
-        meshes = []
-        mesh_names = []
-        for name in names:
-            imported = import_part(pack.extract(name + '.fbx'))
-            meshes += imported
-            mesh_names += [name] * len(imported)
-        vertices, tex_tris, skin_tris = [], [], []
-        for obj in meshes:
-            v, t, s = read_mesh(obj, joint_index)
-            base = len(vertices)
-            vertices += v
-            tex_tris += [tuple(i + base for i in tri) for tri in t]
-            skin_tris += [tuple(i + base for i in tri) for tri in s]
-        item_id = f'{set_id}-{slot}'
-        line = f'   {slot}: {", ".join(names)}: {len(vertices)} verts, {len(tex_tris)} tris'
-        if skin_tris:
-            # Bare skin: one file per tone; the catalog's default is the warm one (the
-            # game always resolves these through appearanceArmor, so no extra copy).
-            for tone in SKIN_TONES:
-                size = build_glb(reference, config['clips'], vertices, tex_tris, skin_tris, palette, set_id, slot, tone,
-                                 ROOT / f'models/roaming/customization/armor/{tone}/{item_id}.glb')
-            default_path = ROOT / f'models/roaming/customization/armor/{DEFAULT_TONE}/{item_id}.glb'
-            skin_variants.append(item_id)
-            line += f' + {len(skin_tris)} skin tris (4 tones)'
-        else:
-            default_path = ROOT / f'models/roaming/combat/equipment/{item_id}.glb'
-            size = build_glb(reference, config['clips'], vertices, tex_tris, skin_tris, palette, set_id, slot, DEFAULT_TONE, default_path)
-        print(f'{line}; {size / 1e6:.2f} MB')
-        apply_material(meshes, palette_material(palette))
-        ICON_DIR.mkdir(parents=True, exist_ok=True)
-        render(icon_subject(meshes, mesh_names), ICON_DIR / f'{item_id}.png', (256, 256), (0.35, -1.0, 0.2), transparent=True, margin=1.1)
-        items.append({
-            'id': item_id,
-            'name': hero['names'][slot],
-            'slot': slot,
-            'description': hero['descriptions'][slot],
-            'icon': f'images/equipment/{item_id}.png',
-            'models': [default_path.relative_to(ROOT).as_posix()],
-        })
+        build_item(pack, f'{set_id}-{slot}', slot, names, palette, hero['names'][slot], hero['descriptions'][slot],
+                   set_id, config, reference, joint_index, items, skin_variants)
+    # Extra pieces from the pack's other presets, so a class has a pool to
+    # collect from rather than one fixed look. An extra whose id is exactly
+    # `<set>-<slot>` fills a slot the main preset left empty and becomes the
+    # hero's default for it.
+    for extra in hero.get('extras', []):
+        pal = pack.palette(extra['palette']) if extra.get('palette') else palette
+        build_item(pack, extra['id'], extra['slot'], extra['parts'], pal, extra['name'], extra['description'],
+                   set_id, config, reference, joint_index, items, skin_variants)
     return items, skin_variants
+
+
+def build_item(pack, item_id, slot, names, palette, name, description, set_id, config, reference, joint_index, items, skin_variants):
+    """One inventory item: the named Sidekick parts merged into one GLB per tone (if it shows skin) plus its icon."""
+    reset_scene()
+    meshes = []
+    mesh_names = []
+    for part in names:
+        imported = import_part(pack.extract(part + '.fbx'))
+        meshes += imported
+        mesh_names += [part] * len(imported)
+    vertices, tex_tris, skin_tris = [], [], []
+    for obj in meshes:
+        v, t, s = read_mesh(obj, joint_index)
+        base = len(vertices)
+        vertices += v
+        tex_tris += [tuple(i + base for i in tri) for tri in t]
+        skin_tris += [tuple(i + base for i in tri) for tri in s]
+    line = f'   {item_id}: {", ".join(names)}: {len(vertices)} verts, {len(tex_tris)} tris'
+    if skin_tris:
+        # Bare skin: one file per tone; the catalog's default is the warm one (the
+        # game always resolves these through appearanceArmor, so no extra copy).
+        for tone in SKIN_TONES:
+            size = build_glb(reference, config['clips'], vertices, tex_tris, skin_tris, palette, set_id, slot, tone,
+                             ROOT / f'models/roaming/customization/armor/{tone}/{item_id}.glb')
+        default_path = ROOT / f'models/roaming/customization/armor/{DEFAULT_TONE}/{item_id}.glb'
+        skin_variants.append(item_id)
+        line += f' + {len(skin_tris)} skin tris (4 tones)'
+    else:
+        default_path = ROOT / f'models/roaming/combat/equipment/{item_id}.glb'
+        size = build_glb(reference, config['clips'], vertices, tex_tris, skin_tris, palette, set_id, slot, DEFAULT_TONE, default_path)
+    print(f'{line}; {size / 1e6:.2f} MB')
+    apply_material(meshes, palette_material(palette))
+    ICON_DIR.mkdir(parents=True, exist_ok=True)
+    render(icon_subject(meshes, mesh_names), ICON_DIR / f'{item_id}.png', (256, 256), (0.35, -1.0, 0.2), transparent=True, margin=1.1)
+    items.append({
+        'id': item_id,
+        'name': name,
+        'slot': slot,
+        'description': description,
+        'icon': f'images/equipment/{item_id}.png',
+        'models': [default_path.relative_to(ROOT).as_posix()],
+    })
 
 
 def render_previews(config, only):
