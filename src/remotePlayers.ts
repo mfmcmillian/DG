@@ -41,7 +41,12 @@ type Replica = {
   /** Owner's heartbeat and how long since it last ticked (a reload can leave two bodies for one owner). */
   beat: number
   silence: number
+  /** The body's yaw offset from the native avatar it rides (radians), eased toward its target. */
+  turn: number
 }
+
+/** How fast the lock-on offset eases in and out (1/s); fast enough to read as a turn, not a snap. */
+const TURN_RATE = 14
 
 /**
  * Other players' entities cannot be used as Transform parents (the renderer
@@ -81,7 +86,7 @@ function createReplica(id: string, hero: HeroBodyValue): Replica {
   Transform.create(root, { parent: anchor, position: Vector3.create(0, ATTACH_PIVOT_CORRECTION, 0) })
   return {
     id, anchor, root, attachedAs: '', look: '', motion: 'idle', netMotion: 'idle', seq: hero.seq, echoGrace: 0, retryIn: 0,
-    beat: hero.beat, silence: 0
+    beat: hero.beat, silence: 0, turn: 0
   }
 }
 
@@ -115,6 +120,11 @@ function replicaByAddress(id: string): Replica | undefined {
     if (replica.id === id && (!best || replica.silence < best.silence)) best = replica
   }
   return best
+}
+
+/** Into (-PI, PI], so easing between yaws takes the short way round. */
+function wrapAngle(a: number) {
+  return a - 2 * Math.PI * Math.floor((a + Math.PI) / (2 * Math.PI))
 }
 
 function playerYaw(entity: Entity) {
@@ -226,9 +236,16 @@ function updateRemotePlayers(dt: number) {
     // Only the owner's freshest body is shown; a leftover from their previous
     // session is hidden until the server takes it down.
     setEquipmentVisible(replica.root, loaded && !!reported && replicaByAddress(id) === replica)
-    // The anchor turns with the native avatar; the body adds the published facing on top.
+    // The anchor turns with the native avatar, which the renderer interpolates
+    // smoothly; the body normally adds nothing, so a turn shows the instant the
+    // avatar makes it. Only while the owner is locked on does the body take the
+    // published facing instead, eased in and out: that yaw is relayed and lags a
+    // turn by a round trip, which read as a jitter when it was applied always.
     const baseYaw = avatar !== undefined && reported ? playerYaw(avatar) : 0
-    Transform.getMutable(replica.root).rotation = Quaternion.fromEulerDegrees(0, ((hero.f - baseYaw) * 180) / Math.PI, 0)
+    const target = hero.lock ? wrapAngle(hero.f - baseYaw) : 0
+    const ease = 1 - Math.exp(-(Number.isFinite(dt) && dt > 0 ? dt : 0) * TURN_RATE)
+    replica.turn = wrapAngle(replica.turn + wrapAngle(target - replica.turn) * ease)
+    Transform.getMutable(replica.root).rotation = Quaternion.fromEulerDegrees(0, (replica.turn * 180) / Math.PI, 0)
   }
   for (const [entity, replica] of [...replicas]) {
     if (!live.has(entity)) removeReplica(entity, replica)

@@ -292,7 +292,7 @@ export function publishHero(hero: HeroPublish, dt: number): boolean {
 
 function sameState(a: HeroBodyValue, b: HeroPublish): boolean {
   return a.motion === b.motion && a.seq === b.seq && a.cid === b.cid && a.body === b.body && a.hair === b.hair &&
-    a.hc === b.hc && a.skin === b.skin && a.block === b.block && a.dodge === b.dodge &&
+    a.hc === b.hc && a.skin === b.skin && a.block === b.block && a.dodge === b.dodge && a.lock === b.lock &&
     EQUIPMENT_SLOTS.every((slot) => a.loadout[slot.id] === b.loadout[slot.id])
 }
 

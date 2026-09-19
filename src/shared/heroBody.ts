@@ -22,6 +22,13 @@ export const HeroBody = engine.defineComponent('dg::HeroBody', {
   z: Schemas.Float,
   /** World yaw of the body (radians); may differ from the native controller during lock-on. */
   f: Schemas.Float,
+  /**
+   * The owner is turning the body away from their native controller (soft lock-on
+   * during a swing, roll or recovery). Watchers only apply `f` while this is set;
+   * otherwise the body follows the avatar the renderer already drives, which is
+   * smooth where a relayed yaw would lag every turn.
+   */
+  lock: Schemas.Boolean,
   motion: Schemas.String,
   /** Bumped when a one-shot clip (swing, roll, hit, fall) starts, so watchers restart it. */
   seq: Schemas.Int,
