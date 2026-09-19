@@ -11,6 +11,7 @@ import { isClientSynced, localAddress } from './multiplayer'
 import { onNet, sendNet } from './net'
 import { HUB, setPartyLookup } from './partyLookup'
 import { movePlayerToSpawn } from './playerPlacement'
+import { applyCameraSetting } from './settings'
 import { getPickerState } from './characterPicker'
 import { getPlayerCharacterState } from './playerCharacter'
 import { difficultyById, HUB_LEVEL, levelById, LEVELS, nextLevel } from './shared/levels'
@@ -265,6 +266,7 @@ function enterRun(party: PartyInfo) {
   state.levelId = level.id
   closeLobby()
   setClientRun({ party: party.id, level: party.level, diff: party.diff })
+  applyCameraSetting(false)
   loadDungeon(level.seed, level.style)
   movePlayerToSpawn()
   console.log(`[DG] entering ${level.name} (${difficultyById(party.diff).name}) with party ${party.id}, run ${party.run}`)
@@ -276,6 +278,7 @@ function enterHub() {
   appliedRun = -1
   state.levelId = HUB_LEVEL.id
   setClientRun(undefined)
+  applyCameraSetting(false)
   loadDungeon(HUB_LEVEL.seed, HUB_LEVEL.style)
   movePlayerToSpawn()
   if (fromRun) {

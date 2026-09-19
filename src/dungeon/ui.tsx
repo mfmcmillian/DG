@@ -26,7 +26,7 @@ let panelOpen = false
 export function DungeonDevPanel() {
   if (!panelOpen) {
     return (
-      <UiEntity uiTransform={{ position: { top: 200, right: 24 }, positionType: 'absolute' }}>
+      <UiEntity uiTransform={{ position: { top: 330, right: 24 }, positionType: 'absolute' }}>
         <Button
           value="dev"
           fontSize={11}
@@ -50,7 +50,7 @@ function DevPanel() {
   return (
     <UiEntity
       uiTransform={{
-        position: { top: 200, right: 24 },
+        position: { top: 330, right: 24 },
         positionType: 'absolute',
         width: 320,
         padding: 12,

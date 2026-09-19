@@ -13,6 +13,7 @@ import { getLootState, setCoins } from './loot'
 import { isClientSynced, localAddress } from './multiplayer'
 import { onNet, sendNet } from './net'
 import { setProgress } from './party'
+import { loadSettings, serializeSettings } from './settings'
 
 type SaveState = {
   /** The host answered our load request. */
@@ -59,6 +60,7 @@ export function initializeHeroSave() {
     if (loadout) setCommittedLoadout(msg.cid, loadout)
     for (const id of msg.unlocks) unlockInventoryItem(id)
     setCoins(msg.coins)
+    loadSettings(msg.prefs)
     // What came back is what is stored; do not write it straight back.
     lastSaved = fingerprint(msg.cid)
     lastSavedCoins = msg.coins
@@ -100,7 +102,7 @@ function parseLoadout(json: string): EquipmentLoadout | undefined {
 function fingerprint(cid: string): string {
   const a = getCommittedAppearance(cid)
   const l = getCommittedLoadout(cid)
-  return [cid, a.bodyType, a.hairStyle, a.hairColor, a.skinTone, ...EQUIPMENT_SLOTS.map((s) => l[s.id]), ...getUnlockedItems()].join('|')
+  return [cid, a.bodyType, a.hairStyle, a.hairColor, a.skinTone, ...EQUIPMENT_SLOTS.map((s) => l[s.id]), ...getUnlockedItems(), serializeSettings()].join('|')
 }
 
 function update(dt: number) {
@@ -123,7 +125,7 @@ function update(dt: number) {
   const a = getCommittedAppearance(cid)
   sendNet('saveHero', {
     cid, body: a.bodyType, hair: a.hairStyle, hc: a.hairColor, skin: a.skinTone,
-    loadout: JSON.stringify(getCommittedLoadout(cid)), coins, unlocks: getUnlockedItems()
+    loadout: JSON.stringify(getCommittedLoadout(cid)), coins, unlocks: getUnlockedItems(), prefs: serializeSettings()
   })
   lastSaved = now
   lastSavedCoins = coins

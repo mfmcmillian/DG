@@ -141,12 +141,13 @@ function applyCamera() {
 }
 
 /** Pick a camera. Entering or leaving the crawler camera rebuilds the same seed so camera-facing walls swap to parapets. */
-export function setCameraChoice(choice: CameraChoice) {
+export function setCameraChoice(choice: CameraChoice, rebuild = true) {
   if (choice === state.camera) return
   const wasCrawler = state.camera === 'crawler' && crawlerCameraAvailable()
   state.camera = choice
   const isCrawler = choice === 'crawler' && crawlerCameraAvailable()
-  if (wasCrawler !== isCrawler) loadDungeon(state.seed, state.style.id)
+  // `rebuild: false` when a fresh loadDungeon follows anyway; it reads state.camera.
+  if (wasCrawler !== isCrawler && rebuild) loadDungeon(state.seed, state.style.id)
   else applyCamera()
 }
 

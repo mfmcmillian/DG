@@ -13,6 +13,8 @@ import {
   descend, getLobbyState, inRun, leaveParty, myParty, myPhase, openLobby, resultsWait, retryRun, returnToHall, setReady
 } from './party'
 import { HUB } from './partyLookup'
+import { getSettings, openSettings } from './settings'
+import { playerDisplayName } from './heroNameTag'
 import { formatTime, heroLabel, partyTitle } from './lobbyUi'
 import { DIFFICULTIES, LEVELS, MAX_PARTY, nextLevel } from './shared/levels'
 
@@ -44,12 +46,10 @@ function hudLayout() {
   const left = Math.max(0, inset?.left || 0) + 24 * scale
   const right = Math.max(0, inset?.right || 0) + 28 * scale
   const bottom = Math.max(0, inset?.bottom || 0) + 40 * scale
-  // The expanded desktop chat occupies the lower left, not just the chat entry.
-  // Short viewports use the free top-center area instead of squeezing above it.
-  const compact = height < 600 || width < 900
-  const vitalsLeft = compact ? Math.max(width * 0.32, (width - 224 * scale) / 2) : left
-  const vitalsTop = Math.max(0, inset?.top || 0) + (compact ? 118 : Math.max(132, height * 0.155))
-  return { width, height, scale, right, bottom, vitalsLeft, vitalsTop }
+  // Vitals sit on the right, clear of the Explorer's left sidebar and the chat
+  // column, under the minimap / top-right controls.
+  const vitalsTop = Math.max(0, inset?.top || 0) + Math.max(150, height * 0.19)
+  return { width, height, scale, left, right, bottom, vitalsTop }
 }
 
 type IconButtonProps = {
@@ -76,7 +76,14 @@ function IconButton({ id, label, icon, onClick, scale: s, disabled = false }: Ic
   </UiEntity>
 }
 
-function PlayerVitals({ left, top, scale: s }: { left: number; top: number; scale: number }) {
+/** "Ada · Vanguard": the display name (no tag over our own head) with the class dimmed after it. */
+function heroTitle(): string {
+  const name = playerDisplayName(localAddress())
+  const cls = getEquippedCharacter().name
+  return name ? `${name}  <color=#a3b3c2>·  ${cls}</color>` : cls
+}
+
+function PlayerVitals({ right, top, scale: s }: { right: number; top: number; scale: number }) {
   const state = getWorldRivalState()
   if (!state.visible) return null
   const vitals = getPlayerVitals()
@@ -84,38 +91,38 @@ function PlayerVitals({ left, top, scale: s }: { left: number; top: number; scal
   const health = Math.max(0, Math.min(maximum, vitals.health))
   const staminaRatio = Math.max(0, Math.min(1, vitals.stamina / vitals.maxStamina))
   const coins = getLootState().coins
-  return <UiEntity uiTransform={{ positionType: 'absolute', position: { left, top },
+  return <UiEntity uiTransform={{ positionType: 'absolute', position: { right, top },
     width: 224 * s, height: 96 * s, flexDirection: 'column', pointerFilter: 'none' }}>
     <UiEntity uiTransform={{ width: '100%', height: 24 * s, flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
-      <Label value={getEquippedCharacter().name} color={white} font="sans-serif" fontSize={15 * s}
-        textAlign="middle-left" textWrap="nowrap"
-        uiTransform={{ width: 150 * s, height: 24 * s, flexShrink: 0, pointerFilter: 'none' }} />
       <Label value={state.party > 1 ? `◆ ${coins}  ·  ${state.party}` : `◆ ${coins}`} color={gold} font="sans-serif" fontSize={13 * s}
+        textAlign="middle-left" textWrap="nowrap"
+        uiTransform={{ width: 56 * s, height: 24 * s, flexShrink: 0, pointerFilter: 'none' }} />
+      <Label value={heroTitle()} color={white} font="sans-serif" fontSize={15 * s}
         textAlign="middle-right" textWrap="nowrap"
-        uiTransform={{ width: 74 * s, height: 24 * s, flexShrink: 0, pointerFilter: 'none' }} />
+        uiTransform={{ width: 168 * s, height: 24 * s, flexShrink: 0, pointerFilter: 'none' }} />
     </UiEntity>
-    <UiEntity uiTransform={{ width: '100%', height: 18 * s, flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
-      <UiEntity uiTransform={{ width: 17 * s, height: 17 * s, margin: { right: 9 * s }, flexShrink: 0, pointerFilter: 'none' }}
-        uiBackground={{ textureMode: 'stretch', texture: { src: 'images/hud/heart.png' } }} />
-      <UiEntity uiTransform={{ width: 184 * s, height: 8 * s, padding: s, borderRadius: 2 * s, flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: track }}>
+    <UiEntity uiTransform={{ width: '100%', height: 18 * s, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', flexShrink: 0, pointerFilter: 'none' }}>
+      <UiEntity uiTransform={{ width: 184 * s, height: 8 * s, padding: s, borderRadius: 2 * s, flexShrink: 0, flexDirection: 'row', justifyContent: 'flex-end', pointerFilter: 'none' }} uiBackground={{ color: track }}>
         <UiEntity uiTransform={{ width: `${health / maximum * 100}%`, height: '100%', pointerFilter: 'none' }} uiBackground={{ color: red }} />
       </UiEntity>
+      <UiEntity uiTransform={{ width: 17 * s, height: 17 * s, margin: { left: 9 * s }, flexShrink: 0, pointerFilter: 'none' }}
+        uiBackground={{ textureMode: 'stretch', texture: { src: 'images/hud/heart.png' } }} />
     </UiEntity>
-    <UiEntity uiTransform={{ width: '100%', height: 14 * s, flexDirection: 'row', alignItems: 'center', flexShrink: 0, margin: { top: 4 * s }, pointerFilter: 'none' }}>
-      <UiEntity uiTransform={{ width: 17 * s, height: 17 * s, margin: { right: 9 * s }, flexShrink: 0, pointerFilter: 'none' }} />
-      <UiEntity uiTransform={{ width: 184 * s, height: 5 * s, padding: s, borderRadius: 2 * s, flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: track }}>
+    <UiEntity uiTransform={{ width: '100%', height: 14 * s, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', flexShrink: 0, margin: { top: 4 * s }, pointerFilter: 'none' }}>
+      <UiEntity uiTransform={{ width: 184 * s, height: 5 * s, padding: s, borderRadius: 2 * s, flexShrink: 0, flexDirection: 'row', justifyContent: 'flex-end', pointerFilter: 'none' }} uiBackground={{ color: track }}>
         <UiEntity uiTransform={{ width: `${staminaRatio * 100}%`, height: '100%', pointerFilter: 'none' }}
           uiBackground={{ color: vitals.exhausted || staminaRatio < 0.3 ? staminaLow : stamina }} />
       </UiEntity>
+      <UiEntity uiTransform={{ width: 17 * s, height: 17 * s, margin: { left: 9 * s }, flexShrink: 0, pointerFilter: 'none' }} />
     </UiEntity>
-    <UiEntity uiTransform={{ width: '100%', height: 20 * s, flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
-      <Label value={`${Math.ceil(health)} / ${maximum}`} color={muted} font="sans-serif" fontSize={12 * s}
-        textAlign="middle-left" textWrap="nowrap"
-        uiTransform={{ width: 120 * s, height: 20 * s, margin: { left: 26 * s }, flexShrink: 0, pointerFilter: 'none' }} />
-      <UiEntity uiTransform={{ width: 60 * s, height: 20 * s, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', pointerFilter: 'none' }}>
-        {[0, 1, 2].map((i) => <UiEntity key={`combo-${i}`} uiTransform={{ width: 9 * s, height: 9 * s, margin: { left: 4 * s }, borderRadius: 5 * s, pointerFilter: 'none' }}
+    <UiEntity uiTransform={{ width: '100%', height: 20 * s, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', flexShrink: 0, pointerFilter: 'none' }}>
+      <UiEntity uiTransform={{ width: 60 * s, height: 20 * s, flexDirection: 'row', alignItems: 'center', pointerFilter: 'none' }}>
+        {[0, 1, 2].map((i) => <UiEntity key={`combo-${i}`} uiTransform={{ width: 9 * s, height: 9 * s, margin: { right: 4 * s }, borderRadius: 5 * s, pointerFilter: 'none' }}
           uiBackground={{ color: i < vitals.comboStep ? gold : track }} />)}
       </UiEntity>
+      <Label value={`${Math.ceil(health)} / ${maximum}`} color={muted} font="sans-serif" fontSize={12 * s}
+        textAlign="middle-right" textWrap="nowrap"
+        uiTransform={{ width: 120 * s, height: 20 * s, margin: { right: 26 * s }, flexShrink: 0, pointerFilter: 'none' }} />
     </UiEntity>
   </UiEntity>
 }
@@ -181,18 +188,18 @@ function StatusNotice({ width, bottom, scale: s }: { width: number; bottom: numb
 }
 
 /** Under the vitals during a run: the fortress, the tally and who is in with us. */
-function RunPanel({ left, top, scale: s }: { left: number; top: number; scale: number }) {
+function RunPanel({ right, top, scale: s }: { right: number; top: number; scale: number }) {
   const party = myParty()
   if (!party || party.state !== 'running') return null
   const level = LEVELS[party.level]
   const diff = DIFFICULTIES[party.diff]
-  return <UiEntity uiTransform={{ positionType: 'absolute', position: { left, top }, width: 224 * s, flexDirection: 'column', pointerFilter: 'none' }}>
-    <Label value={`${level?.name ?? ''}  ·  ${diff?.name ?? ''}`} color={gold} font="sans-serif" fontSize={12 * s} textAlign="middle-left" textWrap="nowrap"
+  return <UiEntity uiTransform={{ positionType: 'absolute', position: { right, top }, width: 224 * s, flexDirection: 'column', pointerFilter: 'none' }}>
+    <Label value={`${level?.name ?? ''}  ·  ${diff?.name ?? ''}`} color={gold} font="sans-serif" fontSize={12 * s} textAlign="middle-right" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
-    <Label value={`Slain ${party.slain} / ${party.total}   ·   ${formatTime(party.time + getLobbyState().silence)}`} color={muted} font="sans-serif" fontSize={12 * s} textAlign="middle-left" textWrap="nowrap"
+    <Label value={`Slain ${party.slain} / ${party.total}   ·   ${formatTime(party.time + getLobbyState().silence)}`} color={muted} font="sans-serif" fontSize={12 * s} textAlign="middle-right" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
-    {party.members.length > 1 && party.members.map((m) => <Label key={m} value={`${m === party.leader ? '♛ ' : '· '}${heroLabel(m)}`}
-      color={white} font="sans-serif" fontSize={12 * s} textAlign="middle-left" textWrap="nowrap"
+    {party.members.length > 1 && party.members.map((m) => <Label key={m} value={`${heroLabel(m)}${m === party.leader ? ' ♛' : ''}`}
+      color={white} font="sans-serif" fontSize={12 * s} textAlign="middle-right" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 17 * s, flexShrink: 0, pointerFilter: 'none' }} />)}
   </UiEntity>
 }
@@ -268,17 +275,17 @@ function HubPrompt({ width, bottom, scale: s }: { width: number; bottom: number;
 }
 
 export function WorldHudUi() {
-  const { width, height, scale: s, right, bottom, vitalsLeft, vitalsTop } = hudLayout()
+  const { width, height, scale: s, right, bottom, vitalsTop } = hudLayout()
   const created = getPickerState().hasCreatedCharacter
   const player = getPlayerCharacterState()
   const ready = created && player.active && player.loading === 'ready'
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width, height, pointerFilter: 'none' }}>
-    {ready && <PlayerVitals left={vitalsLeft} top={vitalsTop} scale={s} />}
-    {ready && inRun() && <RunPanel left={vitalsLeft} top={vitalsTop + 100 * s} scale={s} />}
+    {ready && <PlayerVitals right={right} top={vitalsTop} scale={s} />}
+    {ready && inRun() && <RunPanel right={right} top={vitalsTop + 100 * s} scale={s} />}
     {ready && <ResultsOverlay width={width} height={height} scale={s} />}
     {ready && <HubPrompt width={width} bottom={bottom} scale={s} />}
     {ready && <BossBar width={width} scale={s} />}
-    {ready && <DungeonDevPanel />}
+    {ready && getSettings().devTools && <DungeonDevPanel />}
     {created && <StatusNotice width={width} bottom={bottom} scale={s} />}
     {created && <Label value={`${netStatus()} | ${netDebugSummary()}`} color={muted} font="sans-serif" fontSize={10 * s} textAlign="bottom-left" textWrap="nowrap"
       uiTransform={{ positionType: 'absolute', position: { left: 12 * s, bottom: 4 * s }, width: width - 140 * s, height: 16 * s, pointerFilter: 'none' }} />}
@@ -288,9 +295,10 @@ export function WorldHudUi() {
         uiTransform={{ width: '100%', height: 12 * s, pointerFilter: 'none' }} />)}
     </UiEntity>}
     {created && <UiEntity uiTransform={{ positionType: 'absolute', position: { right, bottom },
-      width: 108 * s, height: 48 * s, flexDirection: 'row', justifyContent: 'space-between', pointerFilter: 'none' }}>
+      width: 168 * s, height: 48 * s, flexDirection: 'row', justifyContent: 'space-between', pointerFilter: 'none' }}>
       <IconButton id="inventory" label="Inventory" icon="images/hud/inventory.png" scale={s} disabled={!ready} onClick={openInventory} />
       <IconButton id="character" label="Edit character" icon="images/hud/character.png" scale={s} onClick={openPicker} />
+      <IconButton id="settings" label="Settings" icon="images/hud/settings.png" scale={s} onClick={openSettings} />
     </UiEntity>}
     {!created && <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - 250 * s) / 2, bottom },
       width: 250 * s, flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>

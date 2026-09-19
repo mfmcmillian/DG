@@ -17,7 +17,6 @@ import {
   transferEquipmentAvatar
 } from './equipmentAvatar'
 import { fxNumber, fxSlash, fxSound } from './combatFx'
-import { createHeroNameTag, destroyHeroNameTag, updateHeroNameTag } from './heroNameTag'
 import { rearmAvatarHiding } from './avatarHiding'
 import { localAddress, publishHero, withdrawHero } from './multiplayer'
 import { CRAWLER_CAMERA, isCrawlerCameraOn, kickCrawlerCamera } from './dungeon/crawlerCamera'
@@ -43,7 +42,6 @@ const WALK_DWELL_SECONDS = 0.22
 /** A new gait plays as authored for this long before speed matching starts. */
 const STRIDE_SETTLE_SECONDS = 0.4
 let characterRoot: Entity | undefined
-let nameTag: Entity | undefined
 let systemAdded = false
 let active = false
 let suspended = false
@@ -361,7 +359,7 @@ export function initializePlayerCharacter(): Entity {
   // Native position and yaw flow straight through the renderer hierarchy, without
   // a scene-update delay or the attachment's legacy vertical pivot correction.
   Transform.create(characterRoot, { parent: engine.PlayerEntity })
-  nameTag = createHeroNameTag(characterRoot)
+  // No name tag over our own head: the HUD carries our name. Other heroes get theirs in remotePlayers.ts.
   if (!systemAdded) {
     engine.addSystem(updatePlayerCharacter)
     systemAdded = true
@@ -448,10 +446,6 @@ export function disposePlayerCharacter() {
   sampleElapsed = 0
   locomotion = 'idle'
   withdrawHero()
-  if (nameTag !== undefined) {
-    destroyHeroNameTag(nameTag)
-    nameTag = undefined
-  }
   if (characterRoot !== undefined) {
     destroyEquipmentAvatar(characterRoot)
     engine.removeEntity(characterRoot)
@@ -478,7 +472,6 @@ function updatePlayerCharacter(dt: number) {
     resetRoamingCombat(roamingCombat)
     syncInputFreeze(false)
     setCharacterVisible(false)
-    if (nameTag !== undefined) updateHeroNameTag(nameTag, localAddress(), false)
     samplePosition = undefined
     sampleElapsed = 0
     return
@@ -524,7 +517,6 @@ function updatePlayerCharacter(dt: number) {
   const firstPerson = CameraMode.getOrNull(engine.CameraEntity)?.mode === CameraType.CT_FIRST_PERSON
   const shown = canReplace && !suspended && !firstPerson
   setCharacterVisible(shown)
-  if (nameTag !== undefined) updateHeroNameTag(nameTag, localAddress(), shown)
   publishLocalPlayer(player, dt)
 }
 

@@ -45,7 +45,7 @@ type Party = {
 
 type SavedHero = {
   cid: string; body: string; hair: string; hc: string; skin: string
-  loadout: string; coins: number; unlocks: string[]
+  loadout: string; coins: number; unlocks: string[]; prefs?: string
 }
 
 /** How long the party may stand on the results before the host walks it back to the hall. */
@@ -77,7 +77,7 @@ function bind() {
     const id = context.from.toLowerCase()
     const hero: SavedHero = {
       cid: msg.cid, body: msg.body, hair: msg.hair, hc: msg.hc, skin: msg.skin,
-      loadout: msg.loadout, coins: msg.coins, unlocks: [...msg.unlocks]
+      loadout: msg.loadout, coins: msg.coins, unlocks: [...msg.unlocks], prefs: msg.prefs
     }
     heroes.set(id, hero)
     void persist(id, 'hero', hero)
@@ -141,6 +141,7 @@ async function answerLoad(from: string) {
     loadout: hero?.loadout ?? '',
     coins: hero?.coins ?? 0,
     unlocks: hero?.unlocks ?? [],
+    prefs: hero?.prefs ?? '',
     progress: p
   }, { to: [from] })
   console.log(`[Server] hero load for ${id}: ${hero ? `found (${hero.cid})` : 'nothing saved'}`)
