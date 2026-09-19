@@ -86,7 +86,7 @@
     "fixedTime": 1800
   },
   "worldConfiguration": {
-    "name": "SpaceMatt.dcl.eth",
+    "name": "spacematt.dcl.eth",
     "placesConfig": {
       "optOut": true
     }
