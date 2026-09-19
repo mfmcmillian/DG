@@ -22,11 +22,15 @@ const RIGHT = Vector3.create(1, 0, 0)
 const UP = Vector3.cross(FORWARD, RIGHT)
 const TAN_HALF_FOV = Math.tan(Math.PI / 6)
 const MODEL_HEIGHT = 2.1
-const BACKGROUND_ASPECT = 1672 / 941
+const BACKGROUND_ASPECT = 1024 / 576
 const BACKGROUND_OVERSCAN = 1.015
+// Studio lighting against a dark backdrop: warm key from the front-left, cool
+// fill from the right, and a cool rim from behind so the hero's outline
+// separates from the near-black.
 const LIGHTS = [
   { position: Vector3.create(-1.5, 2.7, -1.6), color: Color3.create(1, 0.94, 0.86), intensity: 900 },
-  { position: Vector3.create(1.5, 1.9, -0.8), color: Color3.create(0.84, 0.91, 1), intensity: 500 }
+  { position: Vector3.create(1.5, 1.9, -0.8), color: Color3.create(0.84, 0.91, 1), intensity: 500 },
+  { position: Vector3.create(0.6, 2.4, 1.8), color: Color3.create(0.7, 0.82, 1), intensity: 650 }
 ]
 
 /** A temporary presentation space; the existing scene-camera owner handles entry and return. */
@@ -107,7 +111,7 @@ export function updateMenuPreviewStage(stage: MenuPreviewStage) {
   const cropY = Math.min(1, BACKGROUND_ASPECT / aspect)
   Material.setBasicMaterial(stage.background, {
     texture: Material.Texture.Common({
-      src: 'images/ui/armory-background-sharp.png',
+      src: 'images/ui/armory-backdrop.png',
       tiling: { x: cropX, y: cropY }, offset: { x: (1 - cropX) / 2, y: (1 - cropY) / 2 }
     }),
     diffuseColor: Color4.White(), castShadows: false
