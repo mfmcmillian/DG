@@ -36,6 +36,9 @@ export async function main() {
   const server = (await isServerApi({})).isServer
   console.log(`[DG] v${GAME_VERSION} ${server ? 'server' : 'client'}`)
   if (server) {
+    // The SDK's network layer logs state requests and replies when this is set;
+    // on the headless host that is the only view of the client handshake.
+    ;(globalThis as { DEBUG_NETWORK_MESSAGES?: boolean }).DEBUG_NETWORK_MESSAGES = true
     initServer(DUNGEON_SEED)
     return
   }
