@@ -25,6 +25,13 @@ Manifest module fields:
   wall      { height, inset }: wall-mounted prop; the layout hangs it at
             `height` metres, `inset` metres in from the wall edge
   collide   false to make the piece walk-through (bones, rugs, rubble)
+  scale     uniform scale applied before measuring (oversized Synty props)
+
+Manifest texture fields: atlas, emissive, tiling (all pack members), and
+either `floor` (a pack member copied as the tiling floor texture) or
+`floorBake`: { fbx, size } to render a floor slab module top-down into
+floor.png (packs like Dungeon Realms have no tiling floor texture, only
+atlas-mapped floor meshes). `ceiling` is optional.
 """
 import bpy, os, sys, json, re, shutil, zipfile, mathutils
 
@@ -147,6 +154,10 @@ def import_parts(module):
         for o in meshes:
             o.rotation_euler.z = math.radians(module['rotate'])
         bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    if module.get('scale'):
+        for o in meshes:
+            o.scale = (module['scale'],) * 3
+        bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
     return meshes
 
 
@@ -267,6 +278,52 @@ for module in manifest['modules']:
 
 # Floor (and optional ceiling) textures travel with the kit, scaled to 1024.
 textures_out = {}
+
+
+def bake_floor(spec):
+    """Render a floor slab straight down (flat-lit, textured) into floor.png."""
+    import math
+    module = {'id': '_floor_bake', 'fbx': spec['fbx']}
+    meshes = import_parts(module)
+    for o in meshes:
+        for slot in o.material_slots:
+            slot.material = MAT_ATLAS
+    mn, mx = bounds(meshes)
+    size = float(spec.get('size', max(mx.x - mn.x, mx.y - mn.y)))
+    cam_data = bpy.data.cameras.new('_bake_cam')
+    cam_data.type = 'ORTHO'
+    cam_data.ortho_scale = size
+    cam = bpy.data.objects.new('_bake_cam', cam_data)
+    bpy.context.scene.collection.objects.link(cam)
+    cam.location = ((mn.x + mx.x) / 2, (mn.y + mx.y) / 2, mx.z + 10)
+    cam.rotation_euler = (0, 0, 0)
+    scene = bpy.context.scene
+    scene.camera = cam
+    scene.render.engine = 'BLENDER_WORKBENCH'
+    scene.display.shading.light = 'FLAT'
+    scene.display.shading.color_type = 'TEXTURE'
+    scene.display.shading.show_shadows = False
+    scene.display.shading.show_cavity = False
+    scene.render.resolution_x = scene.render.resolution_y = 1024
+    scene.render.resolution_percentage = 100
+    scene.render.film_transparent = False
+    scene.render.image_settings.file_format = 'PNG'
+    scene.render.image_settings.color_mode = 'RGB'
+    scene.view_settings.view_transform = 'Standard'
+    dest = os.path.join(OUT, 'floor.png')
+    scene.render.filepath = dest
+    bpy.ops.render.render(write_still=True)
+    for o in meshes:
+        bpy.data.objects.remove(o)
+    bpy.data.objects.remove(cam)
+    print(f'floor baked from {spec["fbx"]} at {size} m')
+    return dest
+
+
+if tex.get('floorBake'):
+    bake_floor(tex['floorBake'])
+    textures_out['floor'] = f'models/kits/{REALM}/floor.png'
+
 for key in ('floor', 'ceiling'):
     if tex.get(key):
         img = load_scaled(tex[key], 1024, f'{REALM}_{key}')

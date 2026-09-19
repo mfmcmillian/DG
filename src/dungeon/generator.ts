@@ -15,6 +15,8 @@ export interface Room {
   depth: number
   enemies: Array<[number, number]>
   props: Array<[number, number, Side]>
+  /** Combat-room floor traps (saw / spike); empty unless the style asked for them. */
+  traps: Array<[number, number]>
 }
 
 export interface Edge {
@@ -52,6 +54,8 @@ export interface GeneratorOptions {
   torchEvery: number
   /** Room floor cells per wall prop (default 6); lower is more furnished. */
   cellsPerProp?: number
+  /** Place one trap cell in every combat room. */
+  traps?: boolean
 }
 
 export function mulberry32(seed: number): () => number {
@@ -96,7 +100,7 @@ export function generateDungeon(seed: number, options: GeneratorOptions): Dungeo
   const rooms: Room[] = []
   const ex = Math.floor((size - entranceSize) / 2)
   const ey = size - 1 - entranceSize
-  const entrance: Room = { id: 0, x: ex, y: ey, w: entranceSize, h: entranceSize, kind: 'entrance', depth: 0, enemies: [], props: [] }
+  const entrance: Room = { id: 0, x: ex, y: ey, w: entranceSize, h: entranceSize, kind: 'entrance', depth: 0, enemies: [], props: [], traps: [] }
   rooms.push(entrance)
   for (let yy = ey; yy < ey + entranceSize; yy++) for (let xx = ex; xx < ex + entranceSize; xx++) cells[idx(xx, yy)] = 1
 
@@ -132,7 +136,7 @@ export function generateDungeon(seed: number, options: GeneratorOptions): Dungeo
     const h = ri(minRoom, Math.max(minRoom, leaf.h - 2))
     const x = leaf.x + ri(1, Math.max(1, leaf.w - w - 1))
     const y = leaf.y + ri(1, Math.max(1, leaf.h - h - 1))
-    const room: Room = { id: rooms.length, x, y, w, h, kind: 'quiet', depth: 0, enemies: [], props: [] }
+    const room: Room = { id: rooms.length, x, y, w, h, kind: 'quiet', depth: 0, enemies: [], props: [], traps: [] }
     leaf.room = room
     rooms.push(room)
     for (let yy = y; yy < y + h; yy++) for (let xx = x; xx < x + w; xx++) cells[idx(xx, yy)] = 1
@@ -258,6 +262,14 @@ export function generateDungeon(seed: number, options: GeneratorOptions): Dungeo
     if (r.kind === 'combat' || r.kind === 'boss') {
       const count = r.kind === 'boss' ? 1 : Math.min(5, Math.max(1, Math.floor(area / (size > 20 ? 10 : 4))))
       for (let i = 0; i < count; i++) r.enemies.push([r.x + ri(0, r.w - 1), r.y + ri(0, r.h - 1)])
+    }
+    if (options.traps && r.kind === 'combat') {
+      const used = new Set(r.enemies.map(([x, y]) => `${x},${y}`))
+      for (let tries = 0; tries < 16 && r.traps.length === 0; tries++) {
+        const tx = r.x + ri(0, r.w - 1)
+        const ty = r.y + ri(0, r.h - 1)
+        if (!used.has(`${tx},${ty}`)) r.traps.push([tx, ty])
+      }
     }
     const propCount = r.kind === 'entrance' ? 2 : Math.min(6, Math.floor(area / cellsPerProp))
     const used = new Set<string>()

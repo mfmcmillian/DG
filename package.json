@@ -1,6 +1,6 @@
 {
   "name": "dcl-project",
-  "version": "1.6.4",
+  "version": "1.6.5",
   "description": "SDK7 Template scene",
   "scripts": {
     "start": "sdk-commands start",

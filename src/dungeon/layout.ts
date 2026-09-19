@@ -177,6 +177,12 @@ export function layoutDungeon(dungeon: Dungeon, style: DungeonStyle, options: La
       const c = cellCenter(style, room.x + (room.w - 1) / 2, room.y + (room.h - 1) / 2)
       kit(style.bossCentrepiece, c.x, 0, c.z, 180)
     }
+    if (style.trap) {
+      for (const [tx, ty] of room.traps) {
+        const c = cellCenter(style, tx, ty)
+        kit(style.trap, c.x, 0, c.z, 0, false)
+      }
+    }
     for (const [ex, ey] of room.enemies) {
       const c = cellCenter(style, ex, ey)
       spawns.push({ x: c.x, z: c.z, boss: room.kind === 'boss', roomId: room.id })

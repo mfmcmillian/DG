@@ -19,3 +19,9 @@ export function prefsOpenAll(json: string | undefined): boolean {
   const open = parsePrefs(json).open
   return open === 1 || open === true
 }
+
+/** Developer panel on: every level is selectable. Does not write fake clears. */
+export function prefsHaveDevTools(json: string | undefined): boolean {
+  const dev = parsePrefs(json).dev
+  return dev === 1 || dev === true
+}

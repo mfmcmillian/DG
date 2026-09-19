@@ -21,7 +21,7 @@ import {
   combatDistance, CombatPose, COMBAT_RULES, createSwing, facesCombatant, isHeavyMotion,
   MAX_COMBAT_HEALTH, resolveCombatHit, Swing, WeaponModifiers, WeaponMotion
 } from './combatActions'
-import { createRivalBrain, resetRivalBrain, RivalBrain, RivalProfile, updateRivalBrain } from './rivalBrain'
+import { createRivalBrain, resetRivalBrain, RivalBrain, updateRivalBrain } from './rivalBrain'
 import {
   BossAttack, BossBrain, bossPhaseLabel, createBossBrain, resetBossBrain, updateBossBrain
 } from './bossBrain'
@@ -38,8 +38,10 @@ import { presentRemoteHeal, presentRemoteHit, presentRemoteRevive } from './remo
 import { RECOVER_SECONDS, strikeHero } from './heroVitals'
 import { movePlayerToSpawn } from './playerPlacement'
 import { DungeonState, onDungeonLoaded } from './dungeon'
-import { cellCenter, DungeonStyle, gridOrigin, STYLES } from './dungeon/config'
+import { cellCenter, DungeonStyle, gridOrigin, STYLES, styleGeneratorOptions } from './dungeon/config'
 import { DOOR_OPENINGS } from './dungeon/kit'
+import { edgeMidpoint, sideInward, sideYaw } from './dungeon/layout'
+import { Archetype, allRosterArchetypes, Roster, rosterFor } from './dungeon/rosters'
 import { Dungeon, generateDungeon, RoomKind, Side } from './dungeon/generator'
 import {
   DifficultyDefinition, difficultyById, HUB_LEVEL, LevelDefinition, levelById
@@ -65,14 +67,6 @@ type WorldRivalState = {
   /** Dungeon extras. */
   alive: number; total: number; bossAlive: boolean; party: number
   bossPhase: number; bossLabel: string
-}
-
-type Archetype = {
-  name: string; characterId: string; weapon: string; health: number; scale: number
-  damageScale: number; aggro: number; leash: number
-  /** Walk speed multiplier. */
-  speed: number
-  profile: RivalProfile
 }
 
 type Enemy = CombatPose & {
@@ -108,23 +102,6 @@ type Enemy = CombatPose & {
   rollDir: number
 }
 
-const STRIKER: Archetype = {
-  name: 'Striker', characterId: 'striker', weapon: 'fk-axe-06', health: 90, scale: 1, damageScale: 1,
-  aggro: 6.5, leash: 11, speed: 1.15, profile: { blockChance: 0.15, pace: 0.8 }
-}
-const SCOUT: Archetype = {
-  name: 'Scout', characterId: 'scout', weapon: 'gb-sword-02', health: 75, scale: 0.95, damageScale: 0.85,
-  aggro: 7.5, leash: 11, speed: 1.2, profile: { blockChance: 0.2, pace: 0.9 }
-}
-const GUARD: Archetype = {
-  name: 'Vault Guard', characterId: 'vanguard', weapon: 'dr-warhammer-large-02', health: 150, scale: 1.08, damageScale: 1.15,
-  aggro: 5, leash: 10, speed: 0.9, profile: { blockChance: 0.5, pace: 1.1 }
-}
-const BOSS: Archetype = {
-  name: 'Warlord', characterId: 'brute', weapon: 'df-sword-02', health: 460, scale: 1.48,
-  damageScale: 1.7, aggro: 11, leash: 18, speed: 1.08,
-  profile: { blockChance: 0.08, pace: 0.82, pattern: ['attack_light', 'attack_light2', 'attack_heavy', 'slam'], slamRange: 3.6 }
-}
 const BOSS_APPEARANCE: CharacterAppearance = { bodyType: 'male', hairStyle: 'short', hairColor: 'brown', skinTone: 'warm' }
 
 function archetypeLoadout(archetype: Archetype): EquipmentLoadout {
@@ -134,8 +111,8 @@ function archetypeLoadout(archetype: Archetype): EquipmentLoadout {
 /** Every GLB the dungeon's enemies and the Warlord will request when they spawn. */
 export function enemyPreloadAssets(): string[] {
   const paths: string[] = []
-  for (const archetype of [STRIKER, SCOUT, GUARD, BOSS]) {
-    paths.push(...equipmentModelPaths(archetype.characterId, archetypeLoadout(archetype), archetype === BOSS ? BOSS_APPEARANCE : undefined))
+  for (const archetype of allRosterArchetypes()) {
+    paths.push(...equipmentModelPaths(archetype.characterId, archetypeLoadout(archetype), archetype.role === 'boss' ? BOSS_APPEARANCE : undefined))
   }
   return paths
 }
@@ -182,6 +159,8 @@ type Sim = {
   /** Verdict: the Warlord fell, or every hero was down at once. */
   won: boolean
   lost: boolean
+  /** Host-owned floor traps (forge). Visuals come from the layout. */
+  traps: Array<{ x: number; z: number; radius: number; damage: number; cool: number }>
 }
 
 export type RunStatus = { slain: number; total: number; won: boolean; lost: boolean }
@@ -272,10 +251,7 @@ export function createRunSim(party: string, levelId: number, diffId: number) {
   destroyRunSim(party)
   const level = levelById(levelId)
   const style = STYLES[level.style]
-  const dungeon = generateDungeon(level.seed, {
-    size: style.size, entranceSize: style.entranceSize, minLeaf: style.minLeaf, maxLeaf: style.maxLeaf,
-    minRoom: style.minRoom, torchEvery: style.torchEvery, cellsPerProp: style.cellsPerProp
-  })
+  const dungeon = generateDungeon(level.seed, styleGeneratorOptions(style))
   const s = createSim(party, level, difficultyById(diffId), dungeon, style, true)
   sims.set(party, s)
   console.log(`[Server] run ${party}: level ${level.id + 1} "${level.name}" (${s.diff.name}), ${s.enemies.length} enemies`)
@@ -307,16 +283,29 @@ function simFor(party: string): Sim | undefined {
 
 // --- population --------------------------------------------------------------
 
-function archetypesFor(kind: RoomKind | undefined, index: number, extra: number): Archetype[] {
+function archetypesFor(roster: Roster, kind: RoomKind | undefined, index: number, extra: number): Archetype[] {
   switch (kind) {
-    case 'boss': return [BOSS]
+    case 'boss': return [roster.boss]
     case 'combat': {
-      const pair = index % 2 === 0 ? [STRIKER, SCOUT] : [SCOUT, STRIKER]
-      for (let i = 0; i < extra; i++) pair.push(i % 2 === 0 ? GUARD : STRIKER)
+      const pair = index % 2 === 0 ? [roster.striker, roster.scout] : [roster.scout, roster.striker]
+      if (roster.posted && index === 0) pair[0] = roster.posted
+      for (let i = 0; i < extra; i++) pair.push(i % 2 === 0 ? roster.guard : roster.striker)
       return pair
     }
-    case 'treasure': return [GUARD]
-    default: return [index % 2 === 0 ? SCOUT : STRIKER]
+    case 'treasure': return [roster.guard]
+    default: return [index % 2 === 0 ? roster.scout : roster.striker]
+  }
+}
+
+/** Just inside the room's first doorway, facing out — the posted knight's post. */
+function postedDoorHome(dungeon: Dungeon, room: { x: number; y: number; w: number; h: number }, style: DungeonStyle): CombatPose | undefined {
+  const door = dungeon.doors.find((d) => d.x >= room.x && d.x < room.x + room.w && d.y >= room.y && d.y < room.y + room.h)
+  if (!door) return undefined
+  const m = edgeMidpoint(style, door)
+  const inward = sideInward(door.side)
+  return {
+    position: Vector3.create(m.x + inward.x * (style.tile * 0.38), COURTYARD.characterFloorY, m.z + inward.z * (style.tile * 0.38)),
+    facing: (sideYaw(door.side) * Math.PI) / 180
   }
 }
 
@@ -349,13 +338,14 @@ function createSim(
     blockedEdges: new Set(), doorEdges: new Set(),
     graceSeconds: 1.2, paused: true, bossDropGiven: false, snapshotAge: 0,
     damageScale: level.damage * diff.damage, coinScale: level.coins * diff.coins,
-    slain: 0, won: false, lost: false
+    slain: 0, won: false, lost: false, traps: []
   }
   indexEdges(s)
   if (!withEnemies) return s
   const previous = sim
   sim = s
   const healthScale = level.health * diff.health
+  const roster = rosterFor(style.id)
   // Spawn points come straight from the rooms, so the server and every member
   // enumerate the same enemies in the same order (the snapshot index).
   let index = 0
@@ -363,17 +353,27 @@ function createSim(
     for (const [ex, ey] of room.enemies) {
       const c = cellCenter(style, ex, ey)
       const boss = room.kind === 'boss'
-      archetypesFor(room.kind, index, diff.extra).forEach((archetype, j) => {
+      archetypesFor(roster, room.kind, index, diff.extra).forEach((archetype, j) => {
         // Pairs stand a stride apart, still on floor; face the entrance (+Z) so patrols greet the player.
         const offset = j === 0 ? 0 : j === 1 ? 1.6 : -1.6
         const x = simFloor(c.x + offset, c.z) ? c.x + offset : c.x
-        const home: CombatPose = { position: Vector3.create(x, COURTYARD.characterFloorY, c.z), facing: 0 }
+        let home: CombatPose = { position: Vector3.create(x, COURTYARD.characterFloorY, c.z), facing: 0 }
+        if (archetype.posted) {
+          const posted = postedDoorHome(dungeon, room, style)
+          if (posted) home = posted
+        }
         const e = spawnEnemy(home, archetype, boss)
         e.maxHealth = Math.round(archetype.health * healthScale)
         e.health = e.maxHealth
         s.enemies.push(e)
       })
       index++
+    }
+    if (style.trap) {
+      for (const [tx, ty] of room.traps) {
+        const c = cellCenter(style, tx, ty)
+        s.traps.push({ x: c.x, z: c.z, radius: 1.15, damage: Math.round(18 * s.damageScale), cool: 0 })
+      }
     }
   }
   sim = previous ?? s
@@ -515,6 +515,23 @@ function stepSim(dt: number, fighters: NetFighter[], local: ReturnType<typeof ge
     if (isHost()) {
       const f = fighters[0]
       console.log(`[Server] run ${sim.party} live: ${fighters.length} hero(es); first at ${f.position.x.toFixed(1)}, ${f.position.z.toFixed(1)} health ${f.health}`)
+    }
+  }
+
+  if (isHost() && sim.traps.length && sim.graceSeconds === 0) {
+    for (const trap of sim.traps) {
+      trap.cool = Math.max(0, trap.cool - dt)
+      if (trap.cool > 0) continue
+      for (const fighter of fighters) {
+        if (fighter.health <= 0) continue
+        const dx = fighter.position.x - trap.x
+        const dz = fighter.position.z - trap.z
+        if (dx * dx + dz * dz > trap.radius * trap.radius) continue
+        if (Math.abs(fighter.position.y - COURTYARD.characterFloorY) > 1.2) continue
+        strikeFighter(fighter, trap.damage, 0.35, fighter.facing)
+        trap.cool = 1.6
+        break
+      }
     }
   }
 
@@ -1060,7 +1077,7 @@ function kill(e: Enemy) {
   // The Warlord always drops a weapon, once; guards often, the rest rarely.
   let item = ''
   if (!e.boss || !sim.bossDropGiven) {
-    item = rollWeaponDrop(e.boss ? 'boss' : e.archetype === GUARD ? 'elite' : 'grunt', sim.level.id, sim.diff.id)
+    item = rollWeaponDrop(e.boss ? 'boss' : e.archetype.role === 'elite' ? 'elite' : 'grunt', sim.level.id, sim.diff.id)
   }
   if (e.boss && item) sim.bossDropGiven = true
   publishLoot(sim.party, e.position.x, e.position.z, coin, heart, item)

@@ -1,4 +1,4 @@
-import { BRICK_TEXTURE, CASTLE_TEXTURES, FLOOR_TEXTURE, KitId } from './kit'
+import { BRICK_TEXTURE, CASTLE_TEXTURES, FLOOR_TEXTURE, FORGE_TEXTURES, KitId } from './kit'
 import { RoomKind } from './generator'
 
 /** Scene is 6 x 6 parcels = 96 m. Every style's grid is centred inside it. */
@@ -10,7 +10,7 @@ export const SCENE_SIZE = 96
  * are the Dark Fortress; every later realm (Synty pack exported through
  * scripts/realms/) is one more entry here.
  */
-export type StyleId = 'tight' | 'open' | 'hall' | 'castle'
+export type StyleId = 'tight' | 'open' | 'hall' | 'castle' | 'forge'
 
 export interface DungeonStyle {
   id: StyleId
@@ -50,9 +50,14 @@ export interface DungeonStyle {
   torchLightCount: number
   torchLightIntensity: number
   torchLightRange: number
-  /** Tiling floor texture (one repeat per 2.5 m) and, for roofed styles, the ceiling texture. */
+  /** RGB 0..1 of the torch lights; the Dark Fortress's orange flame when unset. */
+  torchLightColor?: [number, number, number]
+  /** Tiling floor texture (one repeat per `floorMetres`, default 2.5) and, for roofed styles, the ceiling texture. */
   floorTexture: string
+  floorMetres?: number
   ceilingTexture?: string
+  /** Combat-room floor trap mesh; the generator plants one cell per combat room. */
+  trap?: KitId
 }
 
 export const STYLES: Record<StyleId, DungeonStyle> = {
@@ -204,7 +209,71 @@ export const STYLES: Record<StyleId, DungeonStyle> = {
     torchLightCount: 8,
     torchLightIntensity: 900,
     torchLightRange: 22,
+    torchLightColor: [1, 0.72, 0.42],
     floorTexture: CASTLE_TEXTURES.floor
+  },
+  /**
+   * The dwarven forge from Synty's Dungeon Realms (scripts/realms/forge.json):
+   * 5 m carved-stone modules on the castle's grid, lit red by the furnaces.
+   * Balustrades stand in for the parapet under the crawler camera.
+   */
+  forge: {
+    id: 'forge',
+    label: 'Forge (3rd person)',
+    tile: 5,
+    size: 18,
+    wallHeight: 5,
+    entranceSize: 2,
+    minLeaf: 4,
+    maxLeaf: 6,
+    minRoom: 2,
+    ceiling: false,
+    firstPerson: false,
+    walls: [
+      'forge_wall_a',
+      'forge_wall_b',
+      'forge_wall_plain',
+      'forge_wall_c',
+      'forge_wall_d',
+      'forge_wall_a',
+      'forge_wall_dressed',
+      'forge_wall_broken'
+    ],
+    door: 'forge_wall_arch',
+    pillar: 'forge_pillar',
+    torch: 'forge_torch',
+    torchHeight: 2.8,
+    torchEvery: 2,
+    props: {
+      entrance: ['forge_brazier', 'forge_totem', 'forge_brazier', 'forge_weapon_barrel'],
+      boss: ['forge_brazier', 'forge_throne', 'forge_brazier', 'forge_totem', 'forge_trap_head', 'forge_smelting_pot'],
+      treasure: ['forge_chest', 'forge_coins', 'forge_crystal', 'forge_chest', 'forge_shelf', 'forge_weapon_barrel'],
+      combat: ['forge_trap_head', 'forge_weapon_barrel', 'forge_dead_dwarf', 'forge_cog_pile', 'forge_anvil_tools', 'forge_weapon_rack'],
+      quiet: ['forge_table', 'forge_stool', 'forge_bench', 'forge_table_small', 'forge_shelf', 'forge_cog']
+    },
+    bossCentrepiece: 'forge_statue',
+    cutawayWall: 'forge_balustrade',
+    torchLightCount: 8,
+    torchLightIntensity: 1000,
+    torchLightRange: 22,
+    torchLightColor: [1, 0.45, 0.18],
+    floorTexture: FORGE_TEXTURES.floor,
+    floorMetres: 5,
+    trap: 'forge_saw'
+  }
+}
+
+/** Options the generator needs from a style, including whether it plants traps. */
+export function styleGeneratorOptions(style: DungeonStyle) {
+  return {
+    size: style.size,
+    entranceSize: style.entranceSize,
+    minLeaf: style.minLeaf,
+    maxLeaf: style.maxLeaf,
+    minRoom: style.minRoom,
+    torchEvery: style.torchEvery,
+    cellsPerProp: style.cellsPerProp,
+    traps: style.trap !== undefined
   }
 }
 

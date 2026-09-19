@@ -12,7 +12,7 @@
 
 import { StyleId } from '../dungeon/config'
 
-export type RealmId = 'fortress' | 'castle'
+export type RealmId = 'fortress' | 'castle' | 'forge'
 
 export type RealmDefinition = {
   id: RealmId
@@ -30,6 +30,10 @@ export const REALMS: RealmDefinition[] = [
   {
     id: 'castle', name: 'The Fallen Crown', style: 'castle',
     blurb: 'A king\'s castle, its garrison turned. Banners still hang in the halls.'
+  },
+  {
+    id: 'forge', name: 'The Dwarven Forge', style: 'forge',
+    blurb: 'Lava ducts and saw traps. The Forge Lord still works the anvil.'
   }
 ]
 
@@ -75,9 +79,15 @@ export const LEVELS: LevelDefinition[] = [
   },
   // --- The Fallen Crown (castle kit, Fantasy Kingdom) ---------------------------
   {
-    id: 5, realm: 'castle', name: 'The Outer Ward', seed: 4471, style: 'castle',
-    blurb: 'Ten rooms inside the curtain wall. The garrison still walks its rounds.',
-    health: 1, damage: 1, coins: 1
+    id: 5, realm: 'castle', name: 'The Fallen Crown', seed: 4471, style: 'castle',
+    blurb: 'A king\'s castle, its garrison turned. Banners still hang in the halls.',
+    health: 2, damage: 1.65, coins: 3
+  },
+  // --- The Dwarven Forge (forge kit, Dungeon Realms) -----------------------------
+  {
+    id: 6, realm: 'forge', name: 'The Dwarven Forge', seed: 7729, style: 'forge',
+    blurb: 'Lava ducts and saw traps. The Forge Lord still works the anvil.',
+    health: 2.2, damage: 1.8, coins: 3.4
   }
 ]
 
@@ -122,22 +132,14 @@ export function realmOfLevel(level: number): RealmDefinition {
   return realmById(LEVELS[level]?.realm ?? REALMS[0].id)
 }
 
-/** The level that follows a cleared one in its realm, or undefined at the end of the ladder. */
+/** The level that follows a cleared one on the linear ladder, or undefined after the last. */
 export function nextLevel(level: number): LevelDefinition | undefined {
-  const current = LEVELS[level]
-  if (!current) return undefined
-  const ladder = realmLevels(current.realm)
-  const index = ladder.indexOf(current)
-  return index >= 0 && index < ladder.length - 1 ? ladder[index + 1] : undefined
+  return level >= 0 && level < LEVELS.length - 1 ? LEVELS[level + 1] : undefined
 }
 
-/** The level before this one in its realm, or undefined for a realm's first. */
+/** The level before this one on the linear ladder, or undefined for the first. */
 export function previousLevel(level: number): LevelDefinition | undefined {
-  const current = LEVELS[level]
-  if (!current) return undefined
-  const ladder = realmLevels(current.realm)
-  const index = ladder.indexOf(current)
-  return index > 0 ? ladder[index - 1] : undefined
+  return level > 0 && level < LEVELS.length ? LEVELS[level - 1] : undefined
 }
 
 export const MAX_PARTY = 4
@@ -152,11 +154,10 @@ export function difficultyById(id: number): DifficultyDefinition {
 
 /**
  * Progress is one number per level id: 0 = never cleared, n = cleared up to
- * difficulty n-1. Every realm's first level is open; each later level opens
- * once the one before it in that realm has been cleared.
+ * difficulty n-1. One linear ladder: each later level opens once the one
+ * before it has been cleared. Developer tools skip this gate without writing clears.
  */
 export function levelUnlocked(progress: readonly number[], level: number): boolean {
-  const previous = previousLevel(level)
-  if (!previous) return true
-  return (progress[previous.id] ?? 0) > 0
+  if (level <= 0) return true
+  return (progress[level - 1] ?? 0) > 0
 }

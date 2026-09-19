@@ -1,7 +1,7 @@
 // Usage (bundled with esbuild, see scripts/render-layout.py):
 //   node dump-layout.js <seed> <out.json> [tight|open] [cutaway]
 import { writeFileSync } from 'fs'
-import { StyleId, STYLES } from '../src/dungeon/config'
+import { StyleId, STYLES, styleGeneratorOptions } from '../src/dungeon/config'
 import { generateDungeon } from '../src/dungeon/generator'
 import { KIT } from '../src/dungeon/kit'
 import { layoutDungeon } from '../src/dungeon/layout'
@@ -9,14 +9,7 @@ import { layoutDungeon } from '../src/dungeon/layout'
 const seed = Number(process.argv[2] ?? 1337)
 const out = process.argv[3] ?? 'layout.json'
 const style = STYLES[(process.argv[4] as StyleId) ?? 'tight']
-const dungeon = generateDungeon(seed, {
-  size: style.size,
-  entranceSize: style.entranceSize,
-  minLeaf: style.minLeaf,
-  maxLeaf: style.maxLeaf,
-  minRoom: style.minRoom,
-  torchEvery: style.torchEvery
-})
+const dungeon = generateDungeon(seed, styleGeneratorOptions(style))
 const cutaway = process.argv[5] === 'cutaway' && style.cutawayWall !== undefined
 const layout = layoutDungeon(dungeon, style, { cutaway })
 // The layout carries both camera modes; resolve to the one asked for, as the builder does.

@@ -1,0 +1,188 @@
+{
+  "realm": "forge",
+  "pack": "POLYGON_Dungeons_Realms_SourceFiles_v6.zip",
+  "textures": {
+    "atlas": "Textures/Dungeons_2_Texture_01_A.png",
+    "emissive": "Textures/Dungeons_2_Texture_Emission_01.png",
+    "floorBake": {
+      "fbx": "SM_Env_Dwarf_Floor_02",
+      "size": 5
+    }
+  },
+  "modules": [
+    {
+      "id": "forge_wall_a",
+      "fbx": "SM_Env_Dwarf_Wall_01"
+    },
+    {
+      "id": "forge_wall_b",
+      "fbx": "SM_Env_Dwarf_Wall_02"
+    },
+    {
+      "id": "forge_wall_c",
+      "fbx": "SM_Env_Dwarf_Wall_03"
+    },
+    {
+      "id": "forge_wall_d",
+      "fbx": "SM_Env_Dwarf_Wall_05"
+    },
+    {
+      "id": "forge_wall_plain",
+      "fbx": "SM_Env_Dwarf_Wall_04"
+    },
+    {
+      "id": "forge_wall_dressed",
+      "fbx": "SM_Env_Dwarf_Wall_Dressing_01"
+    },
+    {
+      "id": "forge_wall_broken",
+      "fbx": "SM_Env_Dwarf_Wall_Broken_01"
+    },
+    {
+      "id": "forge_wall_arch",
+      "fbx": "SM_Env_Dwarf_Wall_Archway_01"
+    },
+    {
+      "id": "forge_pillar",
+      "fbx": "SM_Env_Dwarf_Pillar_01"
+    },
+    {
+      "id": "forge_balustrade",
+      "parts": [
+        {
+          "fbx": "SM_Env_Dwarf_Balustrade_01",
+          "offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "fbx": "SM_Env_Dwarf_Balustrade_01",
+          "offset": [
+            2.5,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "id": "forge_torch",
+      "fbx": "SM_Prop_Dwarf_Torch_01"
+    },
+    {
+      "id": "forge_brazier",
+      "fbx": "SM_Prop_Dwarf_Brazier_01",
+      "scale": 0.75
+    },
+    {
+      "id": "forge_firepit",
+      "fbx": "SM_Prop_Dwarf_Fire_Pit_01",
+      "collide": false
+    },
+    {
+      "id": "forge_throne",
+      "fbx": "SM_Prop_Dwarf_Throne_01",
+      "scale": 0.65
+    },
+    {
+      "id": "forge_chest",
+      "fbx": "SM_Prop_Dwarf_TreasureChest_01",
+      "scale": 0.6
+    },
+    {
+      "id": "forge_coins",
+      "fbx": "SM_Prop_Gold_Coins_01",
+      "collide": false
+    },
+    {
+      "id": "forge_crystal",
+      "fbx": "SM_Prop_Crystal_Rock_A_01"
+    },
+    {
+      "id": "forge_table",
+      "fbx": "SM_Prop_Dwarf_Table_01",
+      "rotate": 90
+    },
+    {
+      "id": "forge_table_small",
+      "fbx": "SM_Prop_Dwarf_Table_Small_01"
+    },
+    {
+      "id": "forge_bench",
+      "fbx": "SM_Prop_Dwarf_Chair_Bench_01"
+    },
+    {
+      "id": "forge_stool",
+      "fbx": "SM_Prop_Dwarf_Chair_Stool_01"
+    },
+    {
+      "id": "forge_shelf",
+      "fbx": "SM_Prop_Dwarf_Shelf_01",
+      "anchor": "top",
+      "wall": {
+        "height": 1.6,
+        "inset": 0.36
+      }
+    },
+    {
+      "id": "forge_weapon_barrel",
+      "fbx": "SM_Prop_Dwarf_Weapon_Barrel_01"
+    },
+    {
+      "id": "forge_weapon_rack",
+      "fbx": "SM_Prop_Dwarf_Weapon_Rack_02"
+    },
+    {
+      "id": "forge_cog_pile",
+      "fbx": "SM_Prop_Dwarf_Cog_Pile_01",
+      "collide": false
+    },
+    {
+      "id": "forge_cog",
+      "fbx": "SM_Prop_Dwarf_Cog_Large_01",
+      "collide": false
+    },
+    {
+      "id": "forge_trap_head",
+      "fbx": "SM_Prop_Dwarf_Trap_Head_01",
+      "wall": {
+        "height": 2.4,
+        "inset": 0.3
+      }
+    },
+    {
+      "id": "forge_saw",
+      "fbx": "SM_Prop_Dwarf_Trap_Saw_01",
+      "collide": false
+    },
+    {
+      "id": "forge_spike",
+      "fbx": "SM_Prop_Dwarf_Trap_Head_01",
+      "collide": false
+    },
+    {
+      "id": "forge_dead_dwarf",
+      "fbx": "SM_Prop_DeadBody_Dwarf_01",
+      "collide": false
+    },
+    {
+      "id": "forge_smelting_pot",
+      "fbx": "SM_Prop_Dwarf_Smelting_Pot_01",
+      "scale": 0.7
+    },
+    {
+      "id": "forge_anvil_tools",
+      "fbx": "SM_Prop_Dwarf_Cog_Box_01"
+    },
+    {
+      "id": "forge_totem",
+      "fbx": "SM_Prop_Dwarf_Totem_Gold_01"
+    },
+    {
+      "id": "forge_statue",
+      "fbx": "SM_Env_Statue_01"
+    }
+  ]
+}

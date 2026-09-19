@@ -2,7 +2,7 @@ import { executeTask } from '@dcl/sdk/ecs'
 import { Vector3 } from '@dcl/sdk/math'
 import { movePlayerTo } from '~system/RestrictedActions'
 import { buildDungeon, destroyDungeon, DungeonInstance, setDungeonCutaway, setSpawnMarkers, setTorchLightTarget } from './builder'
-import { cellCenter, DungeonStyle, gridOrigin, StyleId, STYLES } from './config'
+import { cellCenter, DungeonStyle, gridOrigin, StyleId, styleGeneratorOptions, STYLES } from './config'
 import { setCrawlerCamera } from './crawlerCamera'
 import { setShoulderCamera } from './shoulderCamera'
 
@@ -101,15 +101,7 @@ export function loadDungeon(seed: number, styleId: StyleId = state.style.id) {
   state.seed = seed >>> 0
   state.style = STYLES[styleId]
   const s = state.style
-  state.dungeon = generateDungeon(state.seed, {
-    size: s.size,
-    entranceSize: s.entranceSize,
-    minLeaf: s.minLeaf,
-    maxLeaf: s.maxLeaf,
-    minRoom: s.minRoom,
-    torchEvery: s.torchEvery,
-    cellsPerProp: s.cellsPerProp
-  })
+  state.dungeon = generateDungeon(state.seed, styleGeneratorOptions(s))
   const crawler = state.camera === 'crawler' && crawlerCameraAvailable(s)
   state.instance = buildDungeon(state.dungeon, s, { cutaway: crawler })
   setTorchLightTarget(state.instance)

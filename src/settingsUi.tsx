@@ -5,8 +5,11 @@ import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { engine, UiCanvasInformation } from '@dcl/sdk/ecs'
 import { Color4 } from '@dcl/sdk/math'
 import { menuColors, MenuAction as Action } from './menuUi'
-import { CAMERA_OPTIONS, closeSettings, getSettings, setCameraPreference, setDevTools, setOpenAll } from './settings'
+import { CAMERA_OPTIONS, closeSettings, getSettings, setCameraPreference, setDevTools } from './settings'
 import { getUnlockedItems, relockAllWeapons, unlockAllWeapons } from './inventory'
+import { flushHeroSave } from './heroSave'
+import { cycleLobbyPickLevel, getLobbyPick } from './party'
+import { LEVELS } from './shared/levels'
 
 const { white, muted, gold, panel, card, line, goldLine } = menuColors
 const veil = Color4.create(0.01, 0.02, 0.03, 0.62)
@@ -86,9 +89,22 @@ export function SettingsUi() {
       <UiEntity uiTransform={{ width: '100%', height: 44 * s, margin: { top: 6 * s }, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
         <Label value="Dungeon panel: seed, room counts, spawn markers and the native camera." color={muted} fontSize={11.5 * s} textAlign="middle-left" textWrap="nowrap"
           uiTransform={{ width: (inner - 150) * s, height: '100%', pointerFilter: 'none' }} />
-        <Action id="settings-dev" text={settings.devTools ? 'Shown' : 'Hidden'} onClick={() => setDevTools(!settings.devTools)}
+        <Action id="settings-dev" text={settings.devTools ? 'Shown' : 'Hidden'} onClick={() => {
+          setDevTools(!getSettings().devTools)
+          flushHeroSave()
+        }}
           width={136} height={38} scale={s} fontSize={13} accent="gold" active={settings.devTools} />
       </UiEntity>
+
+      {settings.devTools && <UiEntity uiTransform={{ width: '100%', height: 44 * s, margin: { top: 6 * s }, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
+        <Label value={`Jump: ${LEVELS[getLobbyPick().level]?.name ?? ''} (does not write clears).`} color={muted} fontSize={11.5 * s} textAlign="middle-left" textWrap="nowrap"
+          uiTransform={{ width: (inner - 200) * s, height: '100%', pointerFilter: 'none' }} />
+        <UiEntity uiTransform={{ flexDirection: 'row', pointerFilter: 'none' }}>
+          <Action id="settings-level-prev" text="Prev" onClick={() => cycleLobbyPickLevel(-1)} width={72} height={38} scale={s} fontSize={13} accent="gold" />
+          <UiEntity uiTransform={{ width: 8 * s, pointerFilter: 'none' }} />
+          <Action id="settings-level-next" text="Next" onClick={() => cycleLobbyPickLevel(1)} width={72} height={38} scale={s} fontSize={13} accent="gold" />
+        </UiEntity>
+      </UiEntity>}
 
       {settings.devTools && <UiEntity uiTransform={{ width: '100%', height: 44 * s, margin: { top: 6 * s }, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
         <Label value={`Armoury: ${getUnlockedItems().length} loot weapon(s) owned.`} color={muted} fontSize={11.5 * s} textAlign="middle-left" textWrap="nowrap"
@@ -98,13 +114,6 @@ export function SettingsUi() {
           <UiEntity uiTransform={{ width: 8 * s, pointerFilter: 'none' }} />
           <Action id="settings-armoury-none" text="Starter only" onClick={relockAllWeapons} width={136} height={38} scale={s} fontSize={13} accent="gold" />
         </UiEntity>
-      </UiEntity>}
-
-      {settings.devTools && <UiEntity uiTransform={{ width: '100%', height: 44 * s, margin: { top: 6 * s }, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
-        <Label value="Every dungeon open: pick any level of any realm without clearing the one before." color={muted} fontSize={11.5 * s} textAlign="middle-left" textWrap="nowrap"
-          uiTransform={{ width: (inner - 150) * s, height: '100%', pointerFilter: 'none' }} />
-        <Action id="settings-open-all" text={settings.openAll ? 'Open' : 'Locked'} onClick={() => setOpenAll(!settings.openAll)}
-          width={136} height={38} scale={s} fontSize={13} accent="gold" active={settings.openAll} />
       </UiEntity>}
 
       <Label value="Saved with your champion." color={muted} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"

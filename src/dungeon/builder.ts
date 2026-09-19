@@ -85,7 +85,7 @@ export function buildDungeon(dungeon: Dungeon, style: DungeonStyle, options?: La
   // see it; door jambs and lintels deliberately do not, so the boom glides through
   // doorways instead of pulling in at every threshold.
   const solid = ColliderLayer.CL_PHYSICS | ColliderLayer.CL_POINTER | CAMERA_LAYER
-  const floorUvs = planeUvs(Math.max(1, Math.round(T / 2.5)))
+  const floorUvs = planeUvs(Math.max(1, Math.round(T / (style.floorMetres ?? 2.5))))
   const floorMat = floorMaterial(style)
   const ceilingMat = ceilingMaterial(style)
 
@@ -238,12 +238,13 @@ export function setTorchLightTarget(instance: DungeonInstance | undefined) {
     return
   }
   const { torchLightCount, torchLightIntensity, torchLightRange } = instance.style
+  const [r, g, b] = instance.style.torchLightColor ?? [1, 0.62, 0.3]
   while (lightPool.length < torchLightCount) {
     const e = engine.addEntity()
     Transform.create(e, { position: Vector3.create(0, -50, 0) })
     LightSource.create(e, {
       type: LightSource.Type.Point({}),
-      color: Color3.create(1, 0.62, 0.3),
+      color: Color3.create(r, g, b),
       intensity: torchLightIntensity,
       range: torchLightRange,
       shadow: false,
@@ -253,6 +254,7 @@ export function setTorchLightTarget(instance: DungeonInstance | undefined) {
   }
   for (const e of lightPool) {
     const l = LightSource.getMutable(e)
+    l.color = Color3.create(r, g, b)
     l.intensity = torchLightIntensity
     l.range = torchLightRange
   }

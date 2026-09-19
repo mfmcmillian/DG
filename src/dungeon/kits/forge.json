@@ -1,0 +1,329 @@
+{
+  "realm": "forge",
+  "textures": {
+    "floor": "models/kits/forge/floor.png"
+  },
+  "pieces": {
+    "forge_wall_a": {
+      "src": "models/kits/forge/forge_wall_a.gltf",
+      "size": [
+        5.0,
+        5.0,
+        0.564
+      ],
+      "tris": 213
+    },
+    "forge_wall_b": {
+      "src": "models/kits/forge/forge_wall_b.gltf",
+      "size": [
+        5.0,
+        5.003,
+        0.564
+      ],
+      "tris": 203
+    },
+    "forge_wall_c": {
+      "src": "models/kits/forge/forge_wall_c.gltf",
+      "size": [
+        5.0,
+        5.0,
+        0.454
+      ],
+      "tris": 187
+    },
+    "forge_wall_d": {
+      "src": "models/kits/forge/forge_wall_d.gltf",
+      "size": [
+        5.0,
+        5.0,
+        0.564
+      ],
+      "tris": 206
+    },
+    "forge_wall_plain": {
+      "src": "models/kits/forge/forge_wall_plain.gltf",
+      "size": [
+        5.0,
+        5.0,
+        0.456
+      ],
+      "tris": 90
+    },
+    "forge_wall_dressed": {
+      "src": "models/kits/forge/forge_wall_dressed.gltf",
+      "size": [
+        5.0,
+        5.017,
+        0.591
+      ],
+      "tris": 1248
+    },
+    "forge_wall_broken": {
+      "src": "models/kits/forge/forge_wall_broken.gltf",
+      "size": [
+        5.0,
+        5.0,
+        0.843
+      ],
+      "tris": 379
+    },
+    "forge_wall_arch": {
+      "src": "models/kits/forge/forge_wall_arch.gltf",
+      "size": [
+        5.003,
+        5.0,
+        0.78
+      ],
+      "tris": 208
+    },
+    "forge_pillar": {
+      "src": "models/kits/forge/forge_pillar.gltf",
+      "size": [
+        1.242,
+        5.0,
+        1.242
+      ],
+      "tris": 298
+    },
+    "forge_balustrade": {
+      "src": "models/kits/forge/forge_balustrade.gltf",
+      "size": [
+        5.002,
+        0.868,
+        0.286
+      ],
+      "tris": 128
+    },
+    "forge_torch": {
+      "src": "models/kits/forge/forge_torch.gltf",
+      "size": [
+        0.247,
+        0.784,
+        0.567
+      ],
+      "tris": 248
+    },
+    "forge_brazier": {
+      "src": "models/kits/forge/forge_brazier.gltf",
+      "size": [
+        1.629,
+        1.217,
+        1.629
+      ],
+      "tris": 783
+    },
+    "forge_firepit": {
+      "src": "models/kits/forge/forge_firepit.gltf",
+      "size": [
+        1.975,
+        0.379,
+        4.157
+      ],
+      "tris": 1778,
+      "collide": false
+    },
+    "forge_throne": {
+      "src": "models/kits/forge/forge_throne.gltf",
+      "size": [
+        2.051,
+        4.316,
+        1.157
+      ],
+      "tris": 1616
+    },
+    "forge_chest": {
+      "src": "models/kits/forge/forge_chest.gltf",
+      "size": [
+        2.299,
+        0.608,
+        1.125
+      ],
+      "tris": 3656
+    },
+    "forge_coins": {
+      "src": "models/kits/forge/forge_coins.gltf",
+      "size": [
+        0.816,
+        0.069,
+        0.705
+      ],
+      "tris": 244,
+      "collide": false
+    },
+    "forge_crystal": {
+      "src": "models/kits/forge/forge_crystal.gltf",
+      "size": [
+        0.732,
+        1.154,
+        0.876
+      ],
+      "tris": 348
+    },
+    "forge_table": {
+      "src": "models/kits/forge/forge_table.gltf",
+      "size": [
+        1.368,
+        0.562,
+        2.024
+      ],
+      "tris": 296
+    },
+    "forge_table_small": {
+      "src": "models/kits/forge/forge_table_small.gltf",
+      "size": [
+        0.788,
+        0.91,
+        0.797
+      ],
+      "tris": 250
+    },
+    "forge_bench": {
+      "src": "models/kits/forge/forge_bench.gltf",
+      "size": [
+        1.583,
+        0.419,
+        0.443
+      ],
+      "tris": 202
+    },
+    "forge_stool": {
+      "src": "models/kits/forge/forge_stool.gltf",
+      "size": [
+        0.441,
+        0.465,
+        0.441
+      ],
+      "tris": 210
+    },
+    "forge_shelf": {
+      "src": "models/kits/forge/forge_shelf.gltf",
+      "size": [
+        1.557,
+        0.164,
+        0.315
+      ],
+      "tris": 50,
+      "wall": {
+        "height": 1.6,
+        "inset": 0.36
+      }
+    },
+    "forge_weapon_barrel": {
+      "src": "models/kits/forge/forge_weapon_barrel.gltf",
+      "size": [
+        0.708,
+        0.883,
+        0.708
+      ],
+      "tris": 650
+    },
+    "forge_weapon_rack": {
+      "src": "models/kits/forge/forge_weapon_rack.gltf",
+      "size": [
+        0.664,
+        0.223,
+        0.218
+      ],
+      "tris": 172
+    },
+    "forge_cog_pile": {
+      "src": "models/kits/forge/forge_cog_pile.gltf",
+      "size": [
+        1.542,
+        0.268,
+        1.188
+      ],
+      "tris": 484,
+      "collide": false
+    },
+    "forge_cog": {
+      "src": "models/kits/forge/forge_cog.gltf",
+      "size": [
+        1.83,
+        0.197,
+        1.83
+      ],
+      "tris": 424,
+      "collide": false
+    },
+    "forge_trap_head": {
+      "src": "models/kits/forge/forge_trap_head.gltf",
+      "size": [
+        1.388,
+        1.811,
+        0.547
+      ],
+      "tris": 296,
+      "wall": {
+        "height": 2.4,
+        "inset": 0.3
+      }
+    },
+    "forge_saw": {
+      "src": "models/kits/forge/forge_saw.gltf",
+      "size": [
+        0.507,
+        0.109,
+        2.371
+      ],
+      "tris": 152,
+      "collide": false
+    },
+    "forge_spike": {
+      "src": "models/kits/forge/forge_spike.gltf",
+      "size": [
+        1.388,
+        1.811,
+        0.547
+      ],
+      "tris": 296,
+      "collide": false
+    },
+    "forge_dead_dwarf": {
+      "src": "models/kits/forge/forge_dead_dwarf.gltf",
+      "size": [
+        1.354,
+        1.452,
+        1.341
+      ],
+      "tris": 3174,
+      "collide": false
+    },
+    "forge_smelting_pot": {
+      "src": "models/kits/forge/forge_smelting_pot.gltf",
+      "size": [
+        2.335,
+        1.574,
+        0.567
+      ],
+      "tris": 728
+    },
+    "forge_anvil_tools": {
+      "src": "models/kits/forge/forge_anvil_tools.gltf",
+      "size": [
+        2.395,
+        1.312,
+        2.313
+      ],
+      "tris": 210
+    },
+    "forge_totem": {
+      "src": "models/kits/forge/forge_totem.gltf",
+      "size": [
+        0.493,
+        1.434,
+        0.618
+      ],
+      "tris": 1354
+    },
+    "forge_statue": {
+      "src": "models/kits/forge/forge_statue.gltf",
+      "size": [
+        1.902,
+        2.179,
+        1.262
+      ],
+      "tris": 6948
+    }
+  }
+}

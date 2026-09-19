@@ -14,7 +14,33 @@ import { movePlayerToSpawn } from './playerPlacement'
 import { applyCameraSetting } from './settings'
 import { getPickerState } from './characterPicker'
 import { getPlayerCharacterState } from './playerCharacter'
-import { difficultyById, HUB_LEVEL, levelById, LEVELS, nextLevel, realmOfLevel } from './shared/levels'
+import { DIFFICULTIES, difficultyById, HUB_LEVEL, levelById, LEVELS, nextLevel, realmOfLevel } from './shared/levels'
+
+/** What the player has picked in the lobby before they have a party of their own. */
+let pickLevel = 0
+let pickDiff = 0
+
+export function getLobbyPick(): { level: number; diff: number } {
+  const party = myParty()
+  return { level: party ? party.level : pickLevel, diff: party ? party.diff : pickDiff }
+}
+
+export function setLobbyPickLevel(level: number) {
+  pickLevel = Math.max(0, Math.min(LEVELS.length - 1, Math.floor(level)))
+  const party = myParty()
+  if (party && isLeader()) setPartyLevel(pickLevel)
+}
+
+export function cycleLobbyPickLevel(dir: number) {
+  const current = getLobbyPick().level
+  setLobbyPickLevel((current + dir + LEVELS.length) % LEVELS.length)
+}
+
+export function setLobbyPickDiff(diff: number) {
+  pickDiff = Math.max(0, Math.min(DIFFICULTIES.length - 1, Math.floor(diff)))
+  const party = myParty()
+  if (party && isLeader()) setPartyDifficulty(pickDiff)
+}
 
 export type PartyInfo = {
   id: string

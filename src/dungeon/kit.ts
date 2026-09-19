@@ -6,6 +6,7 @@
 // other realm is exported by scripts/export-realm-kit.py from a manifest in
 // scripts/realms/, which writes the kit JSON merged here from src/dungeon/kits/.
 import castleKit from './kits/castle.json'
+import forgeKit from './kits/forge.json'
 
 export interface KitPiece {
   src: string
@@ -57,7 +58,8 @@ function realmPieces<T extends Record<string, unknown>>(kit: { pieces: T }): { [
 
 export const KIT = {
   ...DARK_FORTRESS,
-  ...realmPieces(castleKit)
+  ...realmPieces(castleKit),
+  ...realmPieces(forgeKit)
 } satisfies Record<string, KitPiece>
 
 export type KitId = keyof typeof KIT
@@ -70,7 +72,8 @@ export type KitId = keyof typeof KIT
 export const DOOR_OPENINGS: Partial<Record<KitId, { width: number; height: number }>> = {
   wall_door: { width: 2.0, height: 2.1 },
   wall_l_arch: { width: 3.8, height: 4.5 },
-  castle_wall_arch: { width: 3.4, height: 3.5 }
+  castle_wall_arch: { width: 3.4, height: 3.5 },
+  forge_wall_arch: { width: 3.7, height: 3.55 }
 }
 
 /** Dark Fortress floor and brick; other realms carry their own in their kit JSON (see DungeonStyle). */
@@ -78,6 +81,7 @@ export const FLOOR_TEXTURE = 'models/dungeon/floor_tiles.png'
 export const BRICK_TEXTURE = 'models/dungeon/Brick_Large_Texture_01.png'
 
 export const CASTLE_TEXTURES = castleKit.textures
+export const FORGE_TEXTURES = forgeKit.textures
 
 /** Triangle cost of the primitive pieces the builder makes itself. */
 export const PRIMITIVE_TRIS = { plane: 4, box: 12 }

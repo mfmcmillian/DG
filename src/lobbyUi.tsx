@@ -9,25 +9,21 @@ import { playerDisplayName } from './heroNameTag'
 import { isClientSynced, localAddress } from './multiplayer'
 import { menuColors, MenuAction as Action } from './menuUi'
 import {
-  createParty, getLobbyState, isLeader, joinParty, leaveParty, myParty, openParties, PartyInfo,
-  setPartyDifficulty, setPartyLevel, setReady, soloRun, startRun
+  createParty, getLobbyPick, getLobbyState, isLeader, joinParty, leaveParty, myParty, openParties, PartyInfo,
+  setLobbyPickDiff, setLobbyPickLevel, setReady, soloRun, startRun
 } from './party'
 import { getSettings } from './settings'
 import {
-  DIFFICULTIES, LEVELS, levelUnlocked, MAX_PARTY, previousLevel, RealmId, realmLevels, realmOfLevel, REALMS
+  DIFFICULTIES, LEVELS, levelUnlocked, MAX_PARTY, previousLevel
 } from './shared/levels'
 
 const { white, muted, gold, panel, card, line, goldLine, coral, cyan } = menuColors
 const veil = Color4.create(0.01, 0.02, 0.03, 0.62)
 const sheet = Color4.create(0.025, 0.045, 0.07, 0.97)
-const FRAME = { width: 1040, height: 720 }
+const FRAME = { width: 1040, height: 820 }
 const LEFT = 500
 const RIGHT = 420
 let hovered = ''
-/** What the player has picked before they have a party of their own. */
-let pickRealm: RealmId = REALMS[0].id
-let pickLevel = 0
-let pickDiff = 0
 
 function layout() {
   const canvas = UiCanvasInformation.getOrNull(engine.RootEntity)
@@ -68,76 +64,40 @@ function Heading({ title, scale: s }: { title: string; scale: number }) {
     uiTransform={{ width: '100%', height: 20 * s, margin: { bottom: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />
 }
 
-/** Is this level open to the player: cleared up to it, or the developer switch. */
+/** Is this level open to the player: cleared up to it, or the developer panel. */
 function isOpen(progress: readonly number[], level: number): boolean {
-  return getSettings().openAll || levelUnlocked(progress, level)
+  return getSettings().devTools || levelUnlocked(progress, level)
 }
 
-/** The realms as a row of tabs; picking one lands on its first open level. */
-function RealmTabs({ scale: s, party, canPick, realm }: { scale: number; party: PartyInfo | undefined; canPick: boolean; realm: RealmId }) {
+/** The one linear ladder. Locked-via-dev rows show a gold Dev mark. */
+function LevelList({ scale: s, canPick }: { scale: number; canPick: boolean }) {
   const progress = getLobbyState().progress
-  const gap = 8
-  const width = (LEFT - gap * (REALMS.length - 1)) / REALMS.length
-  return <UiEntity uiTransform={{ width: LEFT * s, flexDirection: 'column', flexShrink: 0, margin: { bottom: 14 * s }, pointerFilter: 'none' }}>
-    <Heading title="REALM" scale={s} />
-    <UiEntity uiTransform={{ width: '100%', height: 54 * s, flexDirection: 'row', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
-      {REALMS.map((r) => {
-        const ladder = realmLevels(r.id)
-        const cleared = ladder.filter((l) => (progress[l.id] ?? 0) > 0).length
-        const active = r.id === realm
-        const key = `realm-${r.id}`
-        const hover = hovered === key && canPick
-        return <UiEntity key={key} uiTransform={{ width: width * s, height: '100%', padding: { left: 12 * s, right: 12 * s },
-          borderRadius: 4 * s, borderWidth: s, borderColor: active ? gold : hover ? goldLine : line, flexDirection: 'column', justifyContent: 'center',
-          flexShrink: 0, pointerFilter: canPick ? 'block' : 'none' }}
-          uiBackground={{ color: active ? Color4.create(0.16, 0.12, 0.06, 0.96) : hover ? card : panel }}
-          onMouseEnter={() => { hovered = key }} onMouseLeave={() => { if (hovered === key) hovered = '' }}
-          onMouseDown={!canPick ? undefined : () => {
-            hovered = ''
-            // Land on the deepest open level of the realm, the way the ladder reads.
-            const open = [...ladder].reverse().find((l) => isOpen(progress, l.id)) ?? ladder[0]
-            if (!open) return
-            if (party) setPartyLevel(open.id)
-            else { pickRealm = r.id; pickLevel = open.id }
-          }}>
-          <Label value={r.name} font="serif" color={active ? gold : white} fontSize={16 * s} textAlign="middle-left" textWrap="nowrap"
-            uiTransform={{ width: '100%', height: 22 * s, flexShrink: 0, pointerFilter: 'none' }} />
-          <Label value={`${cleared} of ${ladder.length} cleared`} color={muted} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
-            uiTransform={{ width: '100%', height: 16 * s, flexShrink: 0, pointerFilter: 'none' }} />
-        </UiEntity>
-      })}
-    </UiEntity>
-  </UiEntity>
-}
-
-/** The picked realm's ladder; the current pick (or the party's) is lit. */
-function LevelList({ scale: s, party, canPick, realm }: { scale: number; party: PartyInfo | undefined; canPick: boolean; realm: RealmId }) {
-  const progress = getLobbyState().progress
-  const current = party ? party.level : pickLevel
+  const current = getLobbyPick().level
   return <UiEntity uiTransform={{ width: LEFT * s, flexDirection: 'column', flexShrink: 0, pointerFilter: 'none' }}>
     <Heading title="DUNGEON" scale={s} />
-    {realmLevels(realm).map((level, step) => {
+    {LEVELS.map((level, step) => {
+      const byProgress = levelUnlocked(progress, level.id)
       const unlocked = isOpen(progress, level.id)
       const best = progress[level.id] ?? 0
       const active = current === level.id
       const key = `level-${level.id}`
       const hover = hovered === key && unlocked && canPick
-      const status = !unlocked ? 'Locked' : best > 0 ? `Cleared on ${DIFFICULTIES[best - 1]?.name ?? ''}` : ''
+      const status = !unlocked ? 'Locked' : !byProgress ? 'Dev' : best > 0 ? `Cleared on ${DIFFICULTIES[best - 1]?.name ?? ''}` : ''
       const blurb = unlocked ? level.blurb : `Clear ${previousLevel(level.id)?.name ?? 'the dungeon before'} to open the way.`
       const inner = LEFT - 32 - 40 - 12
-      return <UiEntity key={key} uiTransform={{ width: '100%', height: 74 * s, margin: { bottom: 8 * s }, padding: { left: 16 * s, right: 16 * s },
+      return <UiEntity key={key} uiTransform={{ width: '100%', height: 68 * s, margin: { bottom: 6 * s }, padding: { left: 16 * s, right: 16 * s },
         borderRadius: 4 * s, borderWidth: s, borderColor: active ? gold : hover ? goldLine : line, flexDirection: 'row', alignItems: 'center',
         opacity: unlocked ? 1 : 0.55, flexShrink: 0, pointerFilter: unlocked && canPick ? 'block' : 'none' }}
         uiBackground={{ color: active ? Color4.create(0.16, 0.12, 0.06, 0.96) : hover ? card : panel }}
         onMouseEnter={() => { hovered = key }} onMouseLeave={() => { if (hovered === key) hovered = '' }}
-        onMouseDown={!unlocked || !canPick ? undefined : () => { hovered = ''; if (party) setPartyLevel(level.id); else pickLevel = level.id }}>
-        <Label value={`${step + 1}`} font="serif" color={active ? gold : muted} fontSize={28 * s} textAlign="middle-center" textWrap="nowrap"
+        onMouseDown={!unlocked || !canPick ? undefined : () => { hovered = ''; setLobbyPickLevel(level.id) }}>
+        <Label value={`${step + 1}`} font="serif" color={active ? gold : muted} fontSize={26 * s} textAlign="middle-center" textWrap="nowrap"
           uiTransform={{ width: 40 * s, height: '100%', flexShrink: 0, pointerFilter: 'none' }} />
         <UiEntity uiTransform={{ width: inner * s, height: '100%', flexDirection: 'column', justifyContent: 'center', margin: { left: 12 * s }, pointerFilter: 'none' }}>
-          <UiEntity uiTransform={{ width: '100%', height: 24 * s, flexDirection: 'row', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
-            <Label value={level.name} font="serif" color={white} fontSize={19 * s} textAlign="middle-left" textWrap="nowrap"
+          <UiEntity uiTransform={{ width: '100%', height: 22 * s, flexDirection: 'row', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
+            <Label value={level.name} font="serif" color={white} fontSize={18 * s} textAlign="middle-left" textWrap="nowrap"
               uiTransform={{ width: (inner - 150) * s, height: '100%', pointerFilter: 'none' }} />
-            <Label value={status} color={!unlocked ? coral : cyan} fontSize={11 * s} textAlign="middle-right" textWrap="nowrap"
+            <Label value={status} color={!unlocked ? coral : !byProgress ? gold : cyan} fontSize={11 * s} textAlign="middle-right" textWrap="nowrap"
               uiTransform={{ width: 150 * s, height: '100%', pointerFilter: 'none' }} />
           </UiEntity>
           <Label value={blurb} color={muted} fontSize={11.5 * s} textAlign="middle-left" textWrap="nowrap"
@@ -148,14 +108,14 @@ function LevelList({ scale: s, party, canPick, realm }: { scale: number; party: 
   </UiEntity>
 }
 
-function DifficultyRow({ scale: s, party, canPick }: { scale: number; party: PartyInfo | undefined; canPick: boolean }) {
-  const current = party ? party.diff : pickDiff
+function DifficultyRow({ scale: s, canPick }: { scale: number; canPick: boolean }) {
+  const current = getLobbyPick().diff
   return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', flexShrink: 0, pointerFilter: 'none' }}>
     <Heading title="DIFFICULTY" scale={s} />
     <UiEntity uiTransform={{ width: '100%', height: 38 * s, flexDirection: 'row', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
       {DIFFICULTIES.map((diff) => <Action key={`diff-${diff.id}`} id={`diff-${diff.id}`} text={diff.name} accent="gold" width={(RIGHT - 20) / 3} height={38} scale={s}
         active={current === diff.id} disabled={!canPick} fontSize={14}
-        onClick={() => { if (party) setPartyDifficulty(diff.id); else pickDiff = diff.id }} />)}
+        onClick={() => setLobbyPickDiff(diff.id)} />)}
     </UiEntity>
     <Label value={describeDifficulty(current)} color={muted} fontSize={11.5 * s} textAlign="middle-left" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 20 * s, margin: { top: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />
@@ -231,9 +191,9 @@ function NoParty({ scale: s }: { scale: number }) {
   const synced = isClientSynced()
   return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', flexShrink: 0, margin: { top: 18 * s }, pointerFilter: 'none' }}>
     <UiEntity uiTransform={{ width: '100%', height: 44 * s, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
-      <Action id="lobby-create" text="Make a party" onClick={() => createParty(pickLevel, pickDiff)}
+      <Action id="lobby-create" text="Make a party" onClick={() => createParty(getLobbyPick().level, getLobbyPick().diff)}
         width={(RIGHT - 10) / 2} height={44} scale={s} fontSize={15} primary disabled={!synced} />
-      <Action id="lobby-solo" text="Go alone" onClick={() => soloRun(pickLevel, pickDiff)}
+      <Action id="lobby-solo" text="Go alone" onClick={() => soloRun(getLobbyPick().level, getLobbyPick().diff)}
         width={(RIGHT - 10) / 2} height={44} scale={s} fontSize={15} accent="gold" disabled={!synced} />
     </UiEntity>
     <Label value={synced ? 'A party holds up to four. Others in the hall can join before you start.' : 'Connecting to the hall…'}
@@ -248,8 +208,6 @@ export function LobbyUi() {
   const party = myParty()
   const canPick = !party || isLeader()
   const banner = getLobbyState().banner
-  // In a party the realm shown is the party's; alone it is whatever tab was picked.
-  const realm: RealmId = party ? realmOfLevel(party.level).id : pickRealm
   return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}
     uiBackground={{ color: veil }}>
     <UiEntity uiTransform={{ width, height, positionType: 'absolute', position: { left: x, top: y },
@@ -260,7 +218,7 @@ export function LobbyUi() {
         <UiEntity uiTransform={{ flexDirection: 'column', pointerFilter: 'none' }}>
           <Label value="KINGDOM OF ANTROM" color={gold} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
             uiTransform={{ width: 420 * s, height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
-          <Label value="Choose a realm and a dungeon" font="serif" color={white} fontSize={32 * s} textAlign="middle-left" textWrap="nowrap"
+          <Label value="Choose a dungeon" font="serif" color={white} fontSize={32 * s} textAlign="middle-left" textWrap="nowrap"
             uiTransform={{ width: 600 * s, height: 42 * s, flexShrink: 0, pointerFilter: 'none' }} />
         </UiEntity>
       </UiEntity>
@@ -274,11 +232,10 @@ export function LobbyUi() {
       </UiEntity>}
       <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
         <UiEntity uiTransform={{ width: LEFT * s, flexDirection: 'column', flexShrink: 0, pointerFilter: 'none' }}>
-          <RealmTabs scale={s} party={party} canPick={canPick} realm={realm} />
-          <LevelList scale={s} party={party} canPick={canPick} realm={realm} />
+          <LevelList scale={s} canPick={canPick} />
         </UiEntity>
         <UiEntity uiTransform={{ width: RIGHT * s, flexDirection: 'column', flexShrink: 0, pointerFilter: 'none' }}>
-          <DifficultyRow scale={s} party={party} canPick={canPick} />
+          <DifficultyRow scale={s} canPick={canPick} />
           {party ? <PartyCard scale={s} party={party} /> : <NoParty scale={s} />}
         </UiEntity>
       </UiEntity>

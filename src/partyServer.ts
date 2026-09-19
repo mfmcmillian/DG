@@ -22,7 +22,7 @@ import { HUB, setPartyLookup } from './partyLookup'
 import {
   DIFFICULTIES, LevelDefinition, LEVELS, levelUnlocked, MAX_PARTY, nextLevel, previousLevel
 } from './shared/levels'
-import { prefsOpenAll } from './shared/prefs'
+import { prefsHaveDevTools, prefsOpenAll } from './shared/prefs'
 
 type PartyState = 'open' | 'running' | 'done'
 
@@ -172,10 +172,10 @@ function partyOfMember(id: string): Party | undefined {
 
 function clampLevel(id: string, level: number): number {
   const wanted = Math.max(0, Math.min(LEVELS.length - 1, Math.floor(level) || 0))
-  // The developer "every dungeon open" switch rides in the saved prefs.
-  if (prefsOpenAll(heroes.get(id)?.prefs)) return wanted
+  const prefs = heroes.get(id)?.prefs
+  // Developer tools (or the older open-all switch) skip the progress gate; they do not write fake clears.
+  if (prefsHaveDevTools(prefs) || prefsOpenAll(prefs)) return wanted
   const p = progress.get(id) ?? []
-  // A locked level falls back down its realm's ladder to the highest one open to this leader.
   for (let l: LevelDefinition | undefined = LEVELS[wanted]; l; l = previousLevel(l.id)) if (levelUnlocked(p, l.id)) return l.id
   return 0
 }

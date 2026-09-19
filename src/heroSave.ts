@@ -131,3 +131,18 @@ function update(dt: number) {
   lastSavedCoins = coins
   sinceSave = 0
 }
+
+/** Send the hero immediately (developer toggle, so the host sees `dev: 1` before the next party create). */
+export function flushHeroSave() {
+  if (!isClientSynced() || !getPickerState().hasCreatedCharacter) return
+  const cid = getEquippedCharacter().id
+  const a = getCommittedAppearance(cid)
+  const coins = getLootState().coins
+  sendNet('saveHero', {
+    cid, body: a.bodyType, hair: a.hairStyle, hc: a.hairColor, skin: a.skinTone,
+    loadout: JSON.stringify(getCommittedLoadout(cid)), coins, unlocks: getUnlockedItems(), prefs: serializeSettings()
+  })
+  lastSaved = fingerprint(cid)
+  lastSavedCoins = coins
+  sinceSave = 0
+}
