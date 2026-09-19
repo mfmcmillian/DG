@@ -102,7 +102,16 @@ type Enemy = CombatPose & {
   hyperArmor: boolean
   rollSeconds: number
   rollDir: number
+  /** Seconds left of answering a blow from outside the leash: face it, close to the edge, do not chase. */
+  provoked: number
+  provokedFrom?: CombatPose
+  /** Left home during this engagement; only then does the walk back restore health. */
+  strayed: boolean
+  /** Cached grid route toward whatever the enemy last walked to. */
+  path?: EnemyPath
 }
+
+type EnemyPath = { key: string; cells: Array<{ cx: number; cy: number }>; age: number }
 
 const BOSS_APPEARANCE: CharacterAppearance = { bodyType: 'male', hairStyle: 'short', hairColor: 'brown', skinTone: 'warm' }
 
@@ -132,6 +141,12 @@ const LOCK_MARGIN = 0.35
 const LOCK_COS = 0.1
 /** The swing's lunge closes to this distance from a locked-on enemy. */
 const STEP_TO = 1.2
+/** How long a blow from beyond the leash keeps an enemy facing the shooter at its edge. */
+const PROVOKED_SECONDS = 5
+/** Wandering this far from home during a fight counts as having left it (heals on the way back). */
+const STRAY_DISTANCE = 1.5
+/** Grid routes are re-solved this often while walking. */
+const PATH_REPLAN_SECONDS = 0.4
 
 const state: WorldRivalState = {
   visible: false, phase: 'loading', name: '', health: 0, playerHealth: MAX_COMBAT_HEALTH,
@@ -444,7 +459,8 @@ function spawnEnemy(home: CombatPose, archetype: Archetype, boss: boolean): Enem
     motion: 'combat_idle', healthBar: createEnemyHealthBar(body), brain: createRivalBrain(), slamming: false,
     engaged: false, returningHome: false, dead: false, deadSeconds: 0, loading: isHeadless() ? 'ready' : 'loading', loadSeconds: 0,
     ring: createDecal('ring'), ritual: boss ? createDecal('ritual') : undefined, hitStop: 0, announced: false, stillSeconds: 0,
-    bossBrain: boss ? createBossBrain() : undefined, hyperArmor: false, rollSeconds: 0, rollDir: 1
+    bossBrain: boss ? createBossBrain() : undefined, hyperArmor: false, rollSeconds: 0, rollDir: 1,
+    provoked: 0, strayed: false
   }
 }
 
@@ -591,17 +607,13 @@ function stepSim(dt: number, fighters: NetFighter[], local: ReturnType<typeof ge
           if (e.bossBrain) resetBossBrain(e.bossBrain)
           hideDecals(e)
         }
+        const stride = COMBAT_RULES.rivalSpeed * e.archetype.speed * Math.min(dt, 0.05)
         if (e.returningHome) {
-          const stride = COMBAT_RULES.rivalSpeed * e.archetype.speed * Math.min(dt, 0.05)
-          moveToward(e, e.home, stride, 0)
-          if (combatDistance(e, e.home) < 0.05) {
-            e.returningHome = false
-            e.health = e.maxHealth
-            e.stagger = 0
-            e.recovery = 0
-            playMotion(e, e.boss ? 'menace' : 'combat_idle')
-          }
-          syncTransform(e, dt)
+          e.provoked = 0
+          e.blocking = false
+          walkHome(e, dt, stride)
+        } else if (e.provoked > 0) {
+          updateProvoked(e, dt, stride)
         }
       }
     }
@@ -709,30 +721,28 @@ function updateBoss(e: Enemy, dt: number, target: NetFighter, fighters: NetFight
     hideDecals(e)
   }
   if (e.returningHome) {
-    moveToward(e, e.home, stride, 0)
-    if (combatDistance(e, e.home) < 0.05) {
-      e.returningHome = false
-      e.health = e.maxHealth
-      e.stagger = 0
-      e.recovery = 0
-      playMotion(e, 'menace')
-    }
-    syncTransform(e, dt)
+    walkHome(e, dt, stride)
     return
   }
   const grace = sim?.graceSeconds ?? 0
-  if (!e.engaged && inTerritory && combatDistance(e, target) <= e.archetype.aggro && grace === 0) {
+  if (!e.engaged && inTerritory && (combatDistance(e, target) <= e.archetype.aggro || e.provoked > 0) && grace === 0) {
     e.engaged = true
+    e.provoked = 0
     showNotice(`${e.archetype.name} answers`)
     fxSound('roar', 1)
     kickCrawlerCamera(Vector3.create(0, -0.35, 0.2))
   }
   if (!e.engaged || grace > 0) {
+    if (e.provoked > 0 && grace === 0) {
+      updateProvoked(e, dt, stride)
+      return
+    }
     if (!e.swing && e.stagger <= 0 && e.rollSeconds <= 0) playMotion(e, 'menace')
     hideDecals(e)
     syncTransform(e, dt)
     return
   }
+  if (combatDistance(e, e.home) > STRAY_DISTANCE) e.strayed = true
 
   if (e.rollSeconds > 0) {
     e.rollSeconds = Math.max(0, e.rollSeconds - dt)
@@ -758,7 +768,7 @@ function updateBoss(e: Enemy, dt: number, target: NetFighter, fighters: NetFight
       kickCrawlerCamera(Vector3.create(0, -0.22, 0.12))
     }
   }
-  if (decision.advance && !e.swing) moveToward(e, target, stride * (brain.phase === 3 ? 1.25 : 1), COMBAT_RULES.approachStop)
+  if (decision.advance && !e.swing) walkToward(e, dt, target, stride * (brain.phase === 3 ? 1.25 : 1), COMBAT_RULES.approachStop)
 
   if (decision.telegraphAttack) {
     const slam = decision.telegraphAttack === 'slam'
@@ -849,37 +859,35 @@ function updateEnemy(e: Enemy, dt: number, target: NetFighter, fighters: NetFigh
     hideDecals(e)
   }
   if (e.returningHome) {
-    moveToward(e, e.home, stride, 0)
-    if (combatDistance(e, e.home) < 0.05) {
-      e.returningHome = false
-      e.health = e.maxHealth
-      e.stagger = 0
-      e.recovery = 0
-      playMotion(e, 'combat_idle')
-    }
-    syncTransform(e, dt)
+    walkHome(e, dt, stride)
     return
   }
   const grace = sim?.graceSeconds ?? 0
-  if (!e.engaged && inTerritory && combatDistance(e, target) <= e.archetype.aggro && grace === 0) {
+  if (!e.engaged && inTerritory && (combatDistance(e, target) <= e.archetype.aggro || e.provoked > 0) && grace === 0) {
     e.engaged = true
+    e.provoked = 0
     if (e.boss) {
       showNotice(`${e.archetype.name} has noticed the party`)
       fxSound('roar', 0.9)
     }
   }
   if (!e.engaged || grace > 0) {
+    if (e.provoked > 0 && grace === 0) {
+      updateProvoked(e, dt, stride)
+      return
+    }
     if (!e.swing && e.stagger <= 0) playMotion(e, 'combat_idle')
     advanceSwing(e, dt, target, fighters)
     hideDecals(e)
     return
   }
+  if (combatDistance(e, e.home) > STRAY_DISTANCE) e.strayed = true
 
   if (!e.swing && e.stagger <= 0) faceTarget(e, target)
   const decision = updateRivalBrain(e.brain, dt, combatDistance(e, target), canStartAttack(e), e.archetype.profile)
   e.blocking = decision.block
   if (decision.telegraph) state.telegraph = decision.telegraph
-  if (decision.advance) moveToward(e, target, stride, COMBAT_RULES.approachStop)
+  if (decision.advance) walkToward(e, dt, target, stride, COMBAT_RULES.approachStop)
 
   // Telegraph decals: a red ring the size of the coming swing, or the boss's slam circle.
   if (decision.telegraphAttack) {
@@ -936,7 +944,7 @@ function pickHeroTarget(attacker: CombatPose, range: number, minDot: number, ver
   let best: { e: Enemy; index: number } | undefined
   let bestScore = Infinity
   sim.enemies.forEach((e, index) => {
-    if (e.loading !== 'ready' || e.dead || e.returningHome) return
+    if (e.loading !== 'ready' || e.dead) return
     const d = combatDistance(attacker, e)
     if (d > range || !facesCombatant(attacker, e, minDot)) return
     if (Math.abs(attacker.position.y - e.position.y) > COMBAT_RULES.maximumVerticalReach + verticalSlack) return
@@ -995,7 +1003,7 @@ function projectileTargets(): ProjectileTarget[] {
   const out: ProjectileTarget[] = []
   if (!clientSim || clientSim.paused) return out
   clientSim.enemies.forEach((e, index) => {
-    if (e.loading !== 'ready' || e.dead || e.returningHome) return
+    if (e.loading !== 'ready' || e.dead) return
     out.push({ index, position: e.position, height: 1.85 * e.archetype.scale, radius: 0.45 * e.archetype.scale })
   })
   return out
@@ -1115,7 +1123,15 @@ function heroClassMotionAllowed(id: string, motion: HeroAttackMotion): boolean {
 function applyPlayerHit(
   attacker: CombatPose, e: Enemy, motion: HeroAttackMotion, context: { finisher: boolean; weapon: WeaponModifiers }
 ) {
-  e.engaged = true
+  // A blow from inside the territory starts the fight. One from beyond the leash (an
+  // arrow from the next room) only provokes: the enemy answers at its edge, and the
+  // damage stands, because it never left home to earn the walk-back heal.
+  if (inTerritory(e, attacker)) e.engaged = true
+  else if (!e.engaged) {
+    e.provoked = PROVOKED_SECONDS
+    e.provokedFrom = { position: Vector3.clone(attacker.position), facing: attacker.facing }
+    e.returningHome = false
+  }
   const heavy = isHeavyMotion(motion)
   const guarded = e.blocking && facesCombatant(e, attacker, 0.1)
   const hit = resolveCombatHit(motion, guarded, context.finisher, context.weapon)
@@ -1376,6 +1392,169 @@ function faceTarget(e: Enemy, target: CombatPose) {
   const x = target.position.x - e.position.x
   const z = target.position.z - e.position.z
   if (x * x + z * z > 0.0001) e.facing = Math.atan2(x, z)
+}
+
+/** Whether a fighter stands where this enemy may fight: on the floor, inside the leash, on its level. */
+function inTerritory(e: Enemy, f: CombatPose): boolean {
+  return simFloor(f.position.x, f.position.z) && combatDistance(e.home, f) <= e.archetype.leash &&
+    Math.abs(f.position.y - e.position.y) <= COMBAT_RULES.maximumVerticalReach + 1
+}
+
+/**
+ * Answering a blow from beyond the leash: face where it came from, close to the
+ * edge of the territory on that side, and hold there (shields up for the ones
+ * that block) until the provocation fades, then walk back to the post.
+ */
+function updateProvoked(e: Enemy, dt: number, stride: number) {
+  e.provoked = Math.max(0, e.provoked - dt)
+  e.recovery = Math.max(0, e.recovery - dt)
+  e.stagger = Math.max(0, e.stagger - dt)
+  const from = e.provokedFrom
+  if (e.provoked <= 0 || !from) {
+    e.provoked = 0
+    e.blocking = false
+    e.returningHome = combatDistance(e, e.home) > 0.05
+    if (!e.returningHome) playMotion(e, e.boss ? 'menace' : 'combat_idle')
+    syncTransform(e, dt)
+    return
+  }
+  // The point of the leash circle nearest the shooter, a little inside it.
+  const dx = from.position.x - e.home.position.x
+  const dz = from.position.z - e.home.position.z
+  const d = Math.sqrt(dx * dx + dz * dz)
+  const reach = Math.max(0, Math.min(d, e.archetype.leash - 0.4))
+  const edge: CombatPose = d > 0.0001
+    ? { position: Vector3.create(e.home.position.x + (dx / d) * reach, e.home.position.y, e.home.position.z + (dz / d) * reach), facing: 0 }
+    : e.home
+  if (e.stagger <= 0) {
+    const before = e.position
+    if (combatDistance(e, edge) > 0.15) walkToward(e, dt, edge, stride, 0)
+    // Arrived, or the edge sits in a wall and the walk went nowhere: hold here.
+    if (combatDistance(e, edge) <= 0.15 || combatDistance({ position: before, facing: 0 }, e) < 0.001) {
+      e.path = undefined
+      faceTarget(e, from)
+      e.blocking = e.archetype.profile.blockChance >= 0.3
+      playMotion(e, e.blocking ? 'block' : e.boss ? 'menace' : 'combat_idle')
+    }
+  }
+  syncTransform(e, dt)
+}
+
+/** Walk back to the post; health returns only if the fight actually pulled the enemy away from it. */
+function walkHome(e: Enemy, dt: number, stride: number) {
+  if (combatDistance(e, e.home) > 0.05) walkToward(e, dt, e.home, stride, 0)
+  if (combatDistance(e, e.home) < 0.05) {
+    e.returningHome = false
+    e.path = undefined
+    if (e.strayed) e.health = e.maxHealth
+    e.strayed = false
+    e.stagger = 0
+    e.recovery = 0
+    e.facing = e.home.facing
+    playMotion(e, e.boss ? 'menace' : 'combat_idle')
+  }
+  syncTransform(e, dt)
+}
+
+/**
+ * Step toward a target through the dungeon rather than straight at it: a grid
+ * route over open cells and doorways (re-solved every PATH_REPLAN_SECONDS),
+ * string-pulled to the farthest route point the enemy can walk to directly.
+ */
+function walkToward(e: Enemy, dt: number, target: CombatPose, amount: number, stop: number) {
+  const here = simCell(e.position.x, e.position.z)
+  const there = simCell(target.position.x, target.position.z)
+  if ((here.cx === there.cx && here.cy === there.cy) || clearLine(e.position, target.position)) {
+    e.path = undefined
+    moveToward(e, target, amount, stop)
+    return
+  }
+  const key = `${here.cx},${here.cy}>${there.cx},${there.cy}`
+  if (e.path) e.path.age += dt
+  if (!e.path || e.path.key !== key || e.path.age > PATH_REPLAN_SECONDS) {
+    e.path = { key, cells: findRoute(here, there, e), age: 0 }
+  }
+  const cells = e.path.cells
+  if (cells.length < 2) {
+    // No route inside the territory: press on directly and let `move` slide.
+    moveToward(e, target, amount, stop)
+    return
+  }
+  // Farthest route cell reachable in a straight walk; the target itself if that is clear.
+  let waypoint: CombatPose | undefined
+  for (let i = cells.length - 1; i >= 1; i--) {
+    const c = cellCenter(sim?.style ?? STYLES.open, cells[i].cx, cells[i].cy)
+    const p = Vector3.create(c.x, e.position.y, c.z)
+    if (clearLine(e.position, p)) {
+      waypoint = { position: p, facing: 0 }
+      break
+    }
+  }
+  if (!waypoint) {
+    const c = cellCenter(sim?.style ?? STYLES.open, cells[1].cx, cells[1].cy)
+    waypoint = { position: Vector3.create(c.x, e.position.y, c.z), facing: 0 }
+  }
+  moveToward(e, waypoint, amount, 0)
+}
+
+/** Whether a body can walk the straight segment: floor under every step and no wall or door-jamb crossed. */
+function clearLine(from: Vector3, to: Vector3): boolean {
+  const dx = to.x - from.x
+  const dz = to.z - from.z
+  const length = Math.sqrt(dx * dx + dz * dz)
+  const steps = Math.max(1, Math.ceil(length / 0.25))
+  let px = from.x
+  let pz = from.z
+  for (let i = 1; i <= steps; i++) {
+    const nx = from.x + (dx * i) / steps
+    const nz = from.z + (dz * i) / steps
+    if (!canStand(nx, nz) || !canCross(px, pz, nx, nz)) return false
+    px = nx
+    pz = nz
+  }
+  return true
+}
+
+/** Breadth-first route over floor cells (through doorways, never through walls), kept near the enemy's territory. */
+function findRoute(from: { cx: number; cy: number }, to: { cx: number; cy: number }, e: Enemy): Array<{ cx: number; cy: number }> {
+  if (!sim) return []
+  const d = sim.dungeon
+  const n = d.size
+  const style = sim.style
+  const limit = e.archetype.leash + style.tile * 2
+  const open = (cx: number, cy: number) => {
+    if (cx < 0 || cy < 0 || cx >= n || cy >= n || d.cells[cy * n + cx] === 0) return false
+    const c = cellCenter(style, cx, cy)
+    return combatDistance(e.home, { position: Vector3.create(c.x, e.home.position.y, c.z), facing: 0 }) <= limit
+  }
+  const sides: Array<[Side, number, number]> = [['n', 0, -1], ['s', 0, 1], ['w', -1, 0], ['e', 1, 0]]
+  const prev = new Map<number, number>()
+  const start = from.cy * n + from.cx
+  const goal = to.cy * n + to.cx
+  const queue = [start]
+  prev.set(start, -1)
+  let found = start === goal
+  for (let head = 0; head < queue.length && !found && queue.length < 900; head++) {
+    const cur = queue[head]
+    const cx = cur % n
+    const cy = Math.floor(cur / n)
+    for (const [side, sx, sy] of sides) {
+      const nx = cx + sx
+      const ny = cy + sy
+      const next = ny * n + nx
+      if (prev.has(next) || !open(nx, ny) || sim.blockedEdges.has(`${cx},${cy},${side}`)) continue
+      prev.set(next, cur)
+      if (next === goal) {
+        found = true
+        break
+      }
+      queue.push(next)
+    }
+  }
+  if (!found) return []
+  const cells: Array<{ cx: number; cy: number }> = []
+  for (let cur = goal; cur !== -1; cur = prev.get(cur) ?? -1) cells.push({ cx: cur % n, cy: Math.floor(cur / n) })
+  return cells.reverse()
 }
 
 function moveToward(e: Enemy, target: CombatPose, amount: number, stop: number) {
