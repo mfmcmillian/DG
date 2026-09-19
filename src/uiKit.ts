@@ -11,7 +11,7 @@ export const UI_KIT = {
   flourish: 'images/ui/kit/flourish.png',
   bar: 'images/ui/kit/bar.png',
   crest: 'images/ui/kit/crest.png',
-  titleBg: 'images/ui/kit/title-bg.png'
+  titleBg: 'images/ui/kit/title-bg.jpg'
 } as const
 
 export function kitTexture(src: string) {

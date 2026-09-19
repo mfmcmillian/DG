@@ -215,3 +215,9 @@ models/weapons/pride-sword-combat-v2.glb
 models/weapons/pride-sword-dusk-combat-v2.glb
 
 tools/
+# Legacy preset heroes and cores: characterPicker.model and EQUIPMENT_CORES are never read (the modular roaming outfit is rendered instead)
+models/knight.glb
+models/characters/
+models/combat/equipment/core-*-combat-v2.glb
+# Unused 1024x1024 first-pass swipe flipbook; combatFx uses swipe_02
+images/fx/swipe_01.png
