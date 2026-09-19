@@ -3,15 +3,39 @@ import {
   TextAlignMode, TextShape, Transform, VisibilityComponent
 } from '@dcl/sdk/ecs'
 import { Color4, Vector3 } from '@dcl/sdk/math'
+import { CRAWLER_CAMERA, isCrawlerCameraOn } from './dungeon/crawlerCamera'
 
 /** Above the head: enough to clear hair and helmets, still readable from the crawler camera. */
 const HEIGHT = 2.22
 const GOLD = Color4.create(0.93, 0.82, 0.52, 1)
+/** Names the renderer hands out for a profile it has no name for. */
+const NO_NAME = new Set(['', 'undefined', 'null', 'guest'])
+
+/**
+ * Far-away stand-in for the crawler camera. Under that camera the tag sits
+ * almost straight below the lens, and a billboard aimed at the real camera
+ * re-derives its yaw every frame from a near-vertical direction, which is what
+ * made the name shiver as the player moved. The camera's direction from the
+ * player is a constant in rigid mode, so the tag faces a point 50 km along
+ * it instead: the same orientation, and nothing left to jitter.
+ */
+let farCamera: Entity | undefined
+
+function farCameraTarget(): Entity {
+  if (farCamera !== undefined) return farCamera
+  const { pitch, height, yaw } = CRAWLER_CAMERA
+  const rad = (yaw * Math.PI) / 180
+  const back = height / Math.tan((pitch * Math.PI) / 180)
+  const toCamera = Vector3.normalize(Vector3.create(-Math.sin(rad) * back, height - HEIGHT, -Math.cos(rad) * back))
+  farCamera = engine.addEntity()
+  Transform.create(farCamera, { position: Vector3.scale(toCamera, 50000) })
+  return farCamera
+}
 
 export function createHeroNameTag(parent: Entity): Entity {
   const tag = engine.addEntity()
   Transform.create(tag, { parent, position: Vector3.create(0, HEIGHT, 0) })
-  Billboard.create(tag, { billboardMode: BillboardMode.BM_Y })
+  Billboard.create(tag, { billboardMode: BillboardMode.BM_ALL })
   TextShape.create(tag, {
     text: '',
     fontSize: 2.6,
@@ -24,13 +48,14 @@ export function createHeroNameTag(parent: Entity): Entity {
   return tag
 }
 
-/** Look up the Decentraland display name for this address. Empty until the renderer has it. */
+/** Look up the Decentraland display name for this address. Empty until the renderer has it, or for a nameless guest. */
 export function playerDisplayName(address: string): string {
   const want = address.toLowerCase()
   if (!want) return ''
   for (const [entity, identity] of engine.getEntitiesWith(PlayerIdentityData)) {
     if ((identity.address || '').toLowerCase() !== want) continue
-    return (AvatarBase.getOrNull(entity)?.name || '').trim()
+    const name = (AvatarBase.getOrNull(entity)?.name || '').trim()
+    return NO_NAME.has(name.toLowerCase()) || name.toLowerCase() === want ? '' : name
   }
   return ''
 }
@@ -42,6 +67,10 @@ export function updateHeroNameTag(tag: Entity, address: string, visible: boolean
   if (shape.text !== name) shape.text = name
   const vis = VisibilityComponent.getMutable(tag)
   if (vis.visible !== show) vis.visible = show
+  // Rigid crawler camera: face its fixed direction. Any other camera: face the camera itself.
+  const target = isCrawlerCameraOn() && CRAWLER_CAMERA.mode === 'rigid' ? farCameraTarget() : undefined
+  const billboard = Billboard.getMutable(tag)
+  if (billboard.targetEntity !== target) billboard.targetEntity = target
 }
 
 export function destroyHeroNameTag(tag: Entity) {
