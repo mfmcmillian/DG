@@ -4,6 +4,8 @@
 // boom in fast and back out slowly instead of snapping.
 
 import {
+  Billboard,
+  BillboardMode,
   ColliderLayer,
   engine,
   Entity,
@@ -37,10 +39,23 @@ export const SHOULDER_CAMERA = {
   wallPadding: 0.3,
   /** Ease rates (1/s): pull in quickly, let out gently. */
   easeIn: 14,
-  easeOut: 3
+  easeOut: 3,
+  /** How far away the rig's heading target sits; see setShoulderCamera. */
+  headingDistance: 50000
 }
 
+// The camera must not be positioned from the scene: the scene ticks at ~40 Hz
+// while the renderer draws faster, so a camera placed by the scene shows the
+// avatar juddering against the world. Instead the rig is a child of the player
+// entity (the renderer moves it every frame), its Billboard replaces the
+// inherited avatar yaw with "face the heading target" (a point so far away
+// that walking cannot swing it), and the camera mount and the aim point are
+// children of the rig. The scene only moves things when the mouse turns the
+// view or the boom shortens against a wall.
 let rig: Entity | undefined
+let heading: Entity | undefined
+let mount: Entity | undefined
+let aim: Entity | undefined
 let probe: Entity | undefined
 let enabled = false
 let yaw = 180
@@ -76,20 +91,37 @@ export function setShoulderCamera(on: boolean) {
       pitch = clamp(normalizePitch(e.x), SHOULDER_CAMERA.pitchMin, SHOULDER_CAMERA.pitchMax)
     }
     boom = SHOULDER_CAMERA.distance
-    if (rig === undefined) {
+    if (rig === undefined || heading === undefined || mount === undefined || aim === undefined || probe === undefined) {
+      heading = engine.addEntity()
+      Transform.create(heading, { position: headingTarget() })
       rig = engine.addEntity()
-      Transform.create(rig, {})
-      VirtualCamera.create(rig, { defaultTransition: { transitionMode: VirtualCamera.Transition.Time(0.4) } })
+      Transform.create(rig, { parent: engine.PlayerEntity })
+      Billboard.create(rig, { billboardMode: BillboardMode.BM_Y, targetEntity: heading })
+      aim = engine.addEntity()
+      Transform.create(aim, { parent: rig })
+      mount = engine.addEntity()
+      Transform.create(mount, { parent: rig })
+      VirtualCamera.create(mount, { lookAtEntity: aim, defaultTransition: { transitionMode: VirtualCamera.Transition.Time(0.4) } })
       probe = engine.addEntity()
-      Transform.create(probe, {})
+      Transform.create(probe, { parent: rig })
     }
-    const player = Transform.getOrNull(engine.PlayerEntity)?.position
-    if (player) applyPose(player, 0)
-    MainCamera.createOrReplace(engine.CameraEntity, { virtualCameraEntity: rig })
+    applyPose()
+    MainCamera.createOrReplace(engine.CameraEntity, { virtualCameraEntity: mount })
   } else {
     MainCamera.createOrReplace(engine.CameraEntity, { virtualCameraEntity: undefined })
     if (probe !== undefined && Raycast.has(probe)) Raycast.deleteFrom(probe)
   }
+}
+
+/** World point the rig's Billboard faces: far out along the view heading. */
+function headingTarget(): Vector3 {
+  const rad = (yaw * Math.PI) / 180
+  return Vector3.create(Math.sin(rad) * SHOULDER_CAMERA.headingDistance, 0, Math.cos(rad) * SHOULDER_CAMERA.headingDistance)
+}
+
+/** World -> rig frame. The Billboard leaves the rig's local +Z pointing away from the heading target, a yaw of (yaw + 180). */
+function toRig(world: Vector3): Vector3 {
+  return Vector3.rotate(world, Quaternion.fromEulerDegrees(0, -(yaw + 180), 0))
 }
 
 function clamp(v: number, lo: number, hi: number): number {
@@ -103,12 +135,13 @@ function normalizePitch(x: number): number {
 
 function updateShoulderCamera(dt: number) {
   if (!enabled || rig === undefined || probe === undefined) return
-  const player = Transform.getOrNull(engine.PlayerEntity)?.position
-  if (!player) return
+  const yawBefore = yaw
+  const pitchBefore = pitch
+  const boomBefore = boom
 
   const locked = PointerLock.getOrNull(engine.CameraEntity)?.isPointerLocked ?? true
   const delta = PrimaryPointerInfo.getOrNull(engine.RootEntity)?.screenDelta
-  if (locked && delta) {
+  if (locked && delta && (delta.x !== 0 || delta.y !== 0)) {
     yaw = (yaw + delta.x * SHOULDER_CAMERA.sensitivity) % 360
     const dy = delta.y * SHOULDER_CAMERA.sensitivity * (SHOULDER_CAMERA.invertY ? 1 : -1)
     pitch = clamp(pitch + dy, SHOULDER_CAMERA.pitchMin, SHOULDER_CAMERA.pitchMax)
@@ -124,28 +157,37 @@ function updateShoulderCamera(dt: number) {
   }
   const rate = allowed < boom ? SHOULDER_CAMERA.easeIn : SHOULDER_CAMERA.easeOut
   boom += (allowed - boom) * (1 - Math.exp(-dt * rate))
+  if (Math.abs(boom - allowed) < 0.001) boom = allowed
 
-  applyPose(player, dt)
+  // Touch the transforms only when something changed; the renderer carries the rig otherwise.
+  if (yaw !== yawBefore || pitch !== pitchBefore || boom !== boomBefore) applyPose()
+  else castProbe()
 }
 
-function applyPose(player: Vector3, _dt: number) {
-  if (rig === undefined || probe === undefined) return
+/** Lay the mount, aim and probe out in the rig frame for the current yaw, pitch and boom. */
+function applyPose() {
+  if (rig === undefined || heading === undefined || mount === undefined || aim === undefined || probe === undefined) return
   const rotation = Quaternion.fromEulerDegrees(pitch, yaw, 0)
   const right = Vector3.rotate(Vector3.Right(), rotation)
   const back = Vector3.rotate(Vector3.Backward(), rotation)
-  const pivot = Vector3.create(
-    player.x + right.x * SHOULDER_CAMERA.shoulder,
-    player.y + SHOULDER_CAMERA.pivotHeight,
-    player.z + right.z * SHOULDER_CAMERA.shoulder
-  )
-  const position = Vector3.add(pivot, Vector3.scale(back, boom))
+  // Pivot relative to the player's feet: over the shoulder, at chest height.
+  const pivot = Vector3.create(right.x * SHOULDER_CAMERA.shoulder, SHOULDER_CAMERA.pivotHeight, right.z * SHOULDER_CAMERA.shoulder)
 
-  const t = Transform.getMutable(rig)
-  t.position = position
-  t.rotation = rotation
+  Transform.getMutable(heading).position = headingTarget()
+  Transform.getMutable(aim).position = toRig(pivot)
+  Transform.getMutable(mount).position = toRig(Vector3.add(pivot, Vector3.scale(back, boom)))
+  Transform.getMutable(probe).position = toRig(pivot)
+  castProbe()
+}
 
-  // Probe for next frame: from the pivot straight down the boom.
-  Transform.getMutable(probe).position = pivot
+/**
+ * De-occluder ray for next tick: from the pivot (the probe rides the rig, so
+ * its origin is wherever the renderer has the player) straight down the boom.
+ * Recast every tick: `continuous: false` results go stale as the player walks.
+ */
+function castProbe() {
+  if (probe === undefined) return
+  const back = Vector3.rotate(Vector3.Backward(), Quaternion.fromEulerDegrees(pitch, yaw, 0))
   Raycast.createOrReplace(probe, {
     direction: { $case: 'globalDirection', globalDirection: back },
     maxDistance: SHOULDER_CAMERA.distance + SHOULDER_CAMERA.wallPadding,
