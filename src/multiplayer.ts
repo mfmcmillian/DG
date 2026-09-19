@@ -1,4 +1,4 @@
-import { CreatedBy, engine, Entity, EntityState, PlayerIdentityData, Transform } from '@dcl/sdk/ecs'
+import { CreatedBy, engine, Entity, EntityState, PlayerIdentityData, RealmInfo, Transform } from '@dcl/sdk/ecs'
 import { Vector3 } from '@dcl/sdk/math'
 import { isStateSyncronized, syncEntity } from '@dcl/sdk/network'
 import { CombatPose, MAX_COMBAT_HEALTH } from './combatActions'
@@ -8,6 +8,7 @@ import { EquipmentLoadout, EQUIPMENT_SLOTS } from './equipmentCatalog'
 import { dropHero, heroHealth, rememberHeartDrop, resetHero } from './heroVitals'
 import { HeroBody, HeroBodyValue } from './shared/heroBody'
 import { room } from './shared/messages'
+import { GAME_VERSION } from './version'
 
 export type NetFighter = CombatPose & {
   address: string
@@ -178,6 +179,33 @@ function clientReady() {
   return !hostMode && isStateSyncronized()
 }
 
+// --- diagnostics: what the client sees of the room ------------------------------
+
+let syncError = ''
+let snapshots = 0
+let sinceSnapshot = 0
+
+function tickNetDiag(dt: number) {
+  if (snapshots > 0 && Number.isFinite(dt) && dt > 0) sinceSnapshot += dt
+}
+
+/** One line for the HUD and the server log: where this client stands with the server. */
+export function netStatus(): string {
+  if (hostMode) return 'server'
+  const realm = RealmInfo.getOrNull(engine.RootEntity)
+  const parts = [
+    `v${GAME_VERSION}`,
+    `room ${realm ? (realm.isConnectedSceneRoom ? 'joined' : 'not joined') : 'unknown'}`,
+    `state ${isStateSyncronized() ? 'synced' : 'waiting'}`,
+    `send ${room.isReady() ? 'live' : 'queued'}`,
+    `hero ${heroEntity !== undefined && HeroBody.has(heroEntity) ? 'published' : 'none'}`,
+    `others ${remoteCount()}`,
+    `enemy feed ${snapshots === 0 ? 'none yet' : `${sinceSnapshot.toFixed(1)}s ago`}`
+  ]
+  if (syncError) parts.push(`sync error: ${syncError}`)
+  return parts.join(' | ')
+}
+
 /**
  * Write our hero. The entity is created on first use (once the room state is
  * in, so the profile the sync needs is there) and again if the server dropped
@@ -199,9 +227,11 @@ export function publishHero(hero: HeroPublish, dt: number): boolean {
     } catch (error) {
       // The sync profile is filled asynchronously; try again next tick.
       engine.removeEntity(entity)
+      syncError = error instanceof Error ? error.message : String(error)
       console.log('hero sync not ready', error)
       return false
     }
+    syncError = ''
     HeroBody.create(entity, { ...hero, id, beat })
     heroEntity = entity
     sinceSent = 0
@@ -340,9 +370,12 @@ function bindClient() {
     onImpact?.(msg)
   })
   room.onMessage('enemies', (msg) => {
+    snapshots++
+    sinceSnapshot = 0
     onEnemies?.(msg.list.map((e) => ({ ...e, m: e.m as EquipmentMotion })))
   })
   room.onMessage('loot', (msg) => onLoot?.(msg.x, msg.z, msg.coin, msg.heart, msg.dusk))
+  engine.addSystem(tickNetDiag)
 }
 
 // --- server: who is in the room ---------------------------------------------------------

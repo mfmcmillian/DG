@@ -6,6 +6,7 @@ import { openInventory } from './inventory'
 import { getPlayerCharacterState, getPlayerVitals, retryPlayerCharacter } from './playerCharacter'
 import { getWorldRivalState, retryWorldRival } from './dungeonEnemies'
 import { getLootState } from './loot'
+import { netStatus } from './multiplayer'
 import { DungeonDevPanel } from './dungeon/ui'
 
 const white = Color4.create(0.94, 0.96, 0.98, 1)
@@ -176,6 +177,8 @@ export function WorldHudUi() {
     {ready && <BossBar width={width} scale={s} />}
     {ready && <DungeonDevPanel />}
     {created && <StatusNotice width={width} bottom={bottom} scale={s} />}
+    {created && <Label value={netStatus()} color={muted} font="sans-serif" fontSize={10 * s} textAlign="bottom-left" textWrap="nowrap"
+      uiTransform={{ positionType: 'absolute', position: { left: 12 * s, bottom: 4 * s }, width: width - 140 * s, height: 16 * s, pointerFilter: 'none' }} />}
     {created && <UiEntity uiTransform={{ positionType: 'absolute', position: { right, bottom },
       width: 108 * s, height: 48 * s, flexDirection: 'row', justifyContent: 'space-between', pointerFilter: 'none' }}>
       <IconButton id="inventory" label="Inventory" icon="images/hud/inventory.png" scale={s} disabled={!ready} onClick={openInventory} />

@@ -7,7 +7,7 @@ import {
   destroyEquipmentAvatar, getEquipmentLoading, setEquipmentAvatar, setEquipmentMotion, setEquipmentVisible
 } from './equipmentAvatar'
 import {
-  appearanceOf, fullLoadout, heroOwner, isClientSynced, playerAddressAsReported, playerEntityByAddress, publishDiag,
+  appearanceOf, fullLoadout, heroOwner, netStatus, playerAddressAsReported, playerEntityByAddress, publishDiag,
   remoteHeroes
 } from './multiplayer'
 import { HeroBodyValue } from './shared/heroBody'
@@ -239,9 +239,8 @@ function updateRemotePlayers(dt: number) {
     diagAge = 0
     let identities = 0
     for (const _ of engine.getEntitiesWith(PlayerIdentityData)) identities++
-    publishDiag(
-      `synced: ${isClientSynced() ? 'yes' : 'no'}; players seen by renderer: ${identities}; ` +
-      `bodies: ${replicas.size} (${ready} loaded, ${attached} attached)`
-    )
+    const note = `${netStatus()}; players seen by renderer: ${identities}; bodies: ${replicas.size} (${ready} loaded, ${attached} attached)`
+    console.log(`[DG] ${note}`)
+    publishDiag(note)
   }
 }
