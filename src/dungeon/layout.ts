@@ -5,7 +5,7 @@
 
 import { cellCenter, DungeonStyle, gridOrigin } from './config'
 import { Dungeon, Edge, Room, Side, tileHash } from './generator'
-import { DOOR_OPENINGS, KIT, KitId, PRIMITIVE_TRIS } from './kit'
+import { DOOR_OPENINGS, KIT, KitId, KitPiece, PRIMITIVE_TRIS } from './kit'
 
 /**
  * Pieces that exist in only one camera mode. The layout always describes both
@@ -196,19 +196,18 @@ function decorateRoom(
   const list = style.props[room.kind]
   room.props.forEach(([px, py, side], i) => {
     const id = list[(i + Math.floor(tileHash(px, py, 7) * list.length)) % list.length]
-    const piece = KIT[id]
+    const piece: KitPiece = KIT[id]
     const c = cellCenter(style, px, py)
     const inward = sideInward(side)
-    const wallMounted = id === 'banner' || id === 'rune'
-    const yaw = sideYaw(side) + (wallMounted ? 0 : (tileHash(px, py, 11) - 0.5) * 20)
-    if (id === 'banner') {
-      kit(id, c.x - inward.x * (T / 2 - 0.3), Math.min(H, 3.5) - 0.15, c.z - inward.z * (T / 2 - 0.3), yaw, false)
-    } else if (id === 'rune') {
-      kit(id, c.x - inward.x * (T / 2 - 0.2), 1.4, c.z - inward.z * (T / 2 - 0.2), yaw, false)
+    const yaw = sideYaw(side) + (piece.wall ? 0 : (tileHash(px, py, 11) - 0.5) * 20)
+    if (piece.wall) {
+      // Hung on the wall: its anchor at the piece's height, kept under the wall top.
+      const inset = T / 2 - piece.wall.inset
+      kit(id, c.x - inward.x * inset, Math.min(H - 0.15, piece.wall.height), c.z - inward.z * inset, yaw, false)
     } else {
       // Push the prop back against the wall it was assigned to.
       const gap = T / 2 - piece.size[2] / 2 - 0.12
-      kit(id, c.x - inward.x * gap, 0, c.z - inward.z * gap, yaw, id !== 'skulls' && id !== 'bones' && id !== 'rubble')
+      kit(id, c.x - inward.x * gap, 0, c.z - inward.z * gap, yaw, piece.collide !== false)
     }
   })
 }

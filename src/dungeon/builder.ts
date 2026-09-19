@@ -18,7 +18,7 @@ import { Color3, Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
 import { DungeonStyle, gridOrigin } from './config'
 import { CAMERA_LAYER } from './shoulderCamera'
 import { Dungeon } from './generator'
-import { BRICK_TEXTURE, FLOOR_TEXTURE, KIT, KitId } from './kit'
+import { BRICK_TEXTURE, KIT, KitId } from './kit'
 import { Layout, layoutDungeon, LayoutOptions, PieceMode, Placement, SpawnPoint } from './layout'
 
 export interface DungeonInstance {
@@ -37,11 +37,13 @@ export interface DungeonInstance {
   modal: Array<{ entity: Entity; placement: Placement; only: PieceMode }>
 }
 
-const FLOOR_MATERIAL: PBMaterial_PbrMaterial = {
-  texture: Material.Texture.Common({ src: FLOOR_TEXTURE, wrapMode: TextureWrapMode.TWM_REPEAT }),
-  roughness: 1,
-  metallic: 0,
-  specularIntensity: 0
+function floorMaterial(style: DungeonStyle): PBMaterial_PbrMaterial {
+  return {
+    texture: Material.Texture.Common({ src: style.floorTexture, wrapMode: TextureWrapMode.TWM_REPEAT }),
+    roughness: 1,
+    metallic: 0,
+    specularIntensity: 0
+  }
 }
 /** Near-black, matte: the negative space around the rooms swallows the sky's ambient tint. */
 const VOID_MATERIAL: PBMaterial_PbrMaterial = {
@@ -51,12 +53,14 @@ const VOID_MATERIAL: PBMaterial_PbrMaterial = {
   specularIntensity: 0,
   castShadows: false
 }
-const CEILING_MATERIAL: PBMaterial_PbrMaterial = {
-  texture: Material.Texture.Common({ src: BRICK_TEXTURE, wrapMode: TextureWrapMode.TWM_REPEAT }),
-  albedoColor: Color4.create(0.28, 0.28, 0.32, 1),
-  roughness: 1,
-  metallic: 0,
-  specularIntensity: 0
+function ceilingMaterial(style: DungeonStyle): PBMaterial_PbrMaterial {
+  return {
+    texture: Material.Texture.Common({ src: style.ceilingTexture ?? BRICK_TEXTURE, wrapMode: TextureWrapMode.TWM_REPEAT }),
+    albedoColor: Color4.create(0.28, 0.28, 0.32, 1),
+    roughness: 1,
+    metallic: 0,
+    specularIntensity: 0
+  }
 }
 
 /** Plane UVs (both faces) repeating the texture `r` times per side. */
@@ -82,6 +86,8 @@ export function buildDungeon(dungeon: Dungeon, style: DungeonStyle, options?: La
   // doorways instead of pulling in at every threshold.
   const solid = ColliderLayer.CL_PHYSICS | ColliderLayer.CL_POINTER | CAMERA_LAYER
   const floorUvs = planeUvs(Math.max(1, Math.round(T / 2.5)))
+  const floorMat = floorMaterial(style)
+  const ceilingMat = ceilingMaterial(style)
 
   layout.placements.forEach((p, index) => {
     const e = engine.addEntity()
@@ -102,7 +108,7 @@ export function buildDungeon(dungeon: Dungeon, style: DungeonStyle, options?: La
           parent: root
         })
         MeshRenderer.setPlane(e, floorUvs)
-        Material.setPbrMaterial(e, p.kind === 'floor' ? FLOOR_MATERIAL : CEILING_MATERIAL)
+        Material.setPbrMaterial(e, p.kind === 'floor' ? floorMat : ceilingMat)
         break
       case 'box':
         Transform.create(e, {

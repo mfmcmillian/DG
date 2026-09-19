@@ -3,6 +3,7 @@
 import { writeFileSync } from 'fs'
 import { StyleId, STYLES } from '../src/dungeon/config'
 import { generateDungeon } from '../src/dungeon/generator'
+import { KIT } from '../src/dungeon/kit'
 import { layoutDungeon } from '../src/dungeon/layout'
 
 const seed = Number(process.argv[2] ?? 1337)
@@ -22,11 +23,13 @@ const layout = layoutDungeon(dungeon, style, { cutaway })
 const placements = layout.placements
   .filter((p) => !('only' in p && p.only) || (p.only === 'cutaway') === cutaway)
   .map((p) => (p.kind === 'kit' && p.lowId && cutaway ? { ...p, id: p.lowId } : p))
+  // Each kit placement carries its model path so the renderer needs no kit table of its own.
+  .map((p) => (p.kind === 'kit' ? { ...p, src: KIT[p.id].src } : p))
 writeFileSync(
   out,
   JSON.stringify({
     seed,
-    style: { id: style.id, tile: style.tile, size: style.size, wallHeight: style.wallHeight },
+    style: { id: style.id, tile: style.tile, size: style.size, wallHeight: style.wallHeight, floorTexture: style.floorTexture },
     stats: layout.stats,
     entrance: dungeon.entrance,
     boss: dungeon.boss,

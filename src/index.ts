@@ -21,7 +21,8 @@ import { initializeRemotePlayers } from './remotePlayers'
 import { initializeAvatarHiding } from './avatarHiding'
 import { adoptPlayerCharacter, initializePlayerCharacter, setPlayerCharacter } from './playerCharacter'
 import { preloadAssets } from './preload'
-import { BRICK_TEXTURE, FLOOR_TEXTURE, KIT } from './dungeon/kit'
+import { KIT } from './dungeon/kit'
+import { styleTextures } from './dungeon/config'
 import { equipmentModelPaths } from './equipmentAvatar'
 import { enemyPreloadAssets } from './dungeonEnemies'
 import { CHARACTERS } from './characterPicker'
@@ -56,7 +57,7 @@ function initClient() {
   // floors in piecemeal while the player is already fighting.
   preloadAssets([
     ...Object.values(KIT).map((piece) => piece.src),
-    FLOOR_TEXTURE, BRICK_TEXTURE,
+    ...styleTextures(),
     'models/loot/coin.glb', 'models/loot/heart.glb',
     ...fxSoundAssets(),
     ...enemyPreloadAssets(),

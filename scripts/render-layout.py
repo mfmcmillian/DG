@@ -22,10 +22,12 @@ bpy.ops.wm.read_factory_settings(use_empty=True)
 scene = bpy.context.scene
 
 templates = {}
-def template(kit_id):
+def template(kit_id, src=None):
     if kit_id in templates:
         return templates[kit_id]
-    bpy.ops.import_scene.gltf(filepath=os.path.join(MODELS, kit_id + ".gltf"))
+    # Newer dumps carry the model path per placement (realm kits live under models/kits/<realm>/).
+    path = os.path.join(SCENE, src.replace("/", os.sep)) if src else os.path.join(MODELS, kit_id + ".gltf")
+    bpy.ops.import_scene.gltf(filepath=path)
     roots = [o for o in bpy.context.selected_objects if o.parent is None]
     if len(roots) > 1:
         bpy.ops.object.join()
@@ -57,7 +59,9 @@ def tex_material(name, path, tint=None, scale=1.0):
 
 style = data.get("style", {"tile": 2.5, "size": 28, "wallHeight": 3})
 tile = style["tile"]; size = style["size"]
-floor_mat = tex_material("floor", os.path.join(MODELS, "floor_tiles.png"), scale=max(1, round(tile / 2.5)))
+floor_tex = style.get("floorTexture")
+floor_path = os.path.join(SCENE, floor_tex.replace("/", os.sep)) if floor_tex else os.path.join(MODELS, "floor_tiles.png")
+floor_mat = tex_material("floor", floor_path, scale=max(1, round(tile / 2.5)))
 
 def place(obj, p):
     obj.location = (p["x"], -p["z"], p["y"])
@@ -71,7 +75,7 @@ for p in data["placements"]:
         bpy.ops.mesh.primitive_plane_add(size=tile)
         o = bpy.context.active_object; place(o, p); o.data.materials.append(floor_mat)
     elif k == "kit":
-        t = template(p["id"])
+        t = template(p["id"], p.get("src"))
         o = bpy.data.objects.new(p["id"], t.data)
         bpy.context.collection.objects.link(o)
         place(o, p)

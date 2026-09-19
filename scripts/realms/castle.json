@@ -1,0 +1,49 @@
+{
+  "realm": "castle",
+  "pack": "POLYGON_Fantasy_Kingdom_SourceFiles_v6.zip",
+  "textures": {
+    "atlas": "Textures/PolygonFantasyKingdom_Texture_01_A.png",
+    "emissive": "Textures/PolygonFantasyKingdom_Texture_Emmisive.png",
+    "tiling": "Textures/PolygonFantasyKingdon_Texture_Wall_Large_Brick_01.png",
+    "floor": "Textures/PolygonFantasyKingdon_Texture_Wall_Dungeon_01.png"
+  },
+  "tilingSlots": "^(Wall|Castle|A_Wall)",
+  "tilingWorldSize": 2.5,
+  "modules": [
+    { "id": "castle_wall_a", "fbx": "SM_Bld_Castle_Wall_01" },
+    { "id": "castle_wall_b", "fbx": "SM_Bld_Castle_Wall_02" },
+    { "id": "castle_wall_c", "fbx": "SM_Bld_Castle_Wall_03" },
+    { "id": "castle_wall_window", "fbx": "SM_Bld_Castle_Wall_Window_01" },
+    { "id": "castle_wall_arrowslit", "fbx": "SM_Bld_Castle_Wall_Arrowslit_01" },
+    { "id": "castle_wall_door", "fbx": "SM_Bld_Castle_Wall_Door_01" },
+    { "id": "castle_wall_arch", "fbx": "SM_Bld_Castle_Wall_Archway_01" },
+    { "id": "castle_pillar", "fbx": "SM_Bld_Castle_Pillar_Stone_02" },
+    { "id": "castle_battlements", "fbx": "SM_Bld_Castle_Battlements_01" },
+    { "id": "castle_torch", "fbx": "SM_Prop_Torch_02" },
+    { "id": "castle_banner", "fbx": "SM_Prop_Battle_Banner_01", "anchor": "top", "wall": { "height": 3.6, "inset": 0.32 } },
+    { "id": "castle_shelf", "fbx": "SM_Prop_Shelf_01", "anchor": "top", "wall": { "height": 1.8, "inset": 0.5 } },
+    { "id": "castle_table", "fbx": "SM_Prop_Table_Wood_01", "rotate": 90 },
+    { "id": "castle_bench", "fbx": "SM_Prop_Bench_Seat_01" },
+    { "id": "castle_chair", "fbx": "SM_Prop_Chair_Fancy_01" },
+    { "id": "castle_barrel", "fbx": "SM_Prop_Barrel_01" },
+    { "id": "castle_crate", "fbx": "SM_Prop_Crate_Wood_01" },
+    { "id": "castle_sacks", "fbx": "SM_Prop_Sack_01", "collide": false },
+    { "id": "castle_chest", "fbx": "SM_Prop_Chest_01_Preset" },
+    { "id": "castle_throne", "fbx": "SM_Prop_Throne_01" },
+    { "id": "castle_armor", "fbx": "SM_Prop_Dummy_Armour_01" },
+    { "id": "castle_weapon_rack", "fbx": "SM_Prop_Weapon_Rack_02" },
+    { "id": "castle_cage", "fbx": "SM_Prop_Cage_Man_01" },
+    { "id": "castle_cauldron", "fbx": "SM_Prop_Cauldron_01" },
+    { "id": "castle_firepit", "fbx": "SM_Prop_FirePit_01", "collide": false },
+    { "id": "castle_brazier", "fbx": "SM_Prop_Camp_Brazier_01" },
+    { "id": "castle_dead_knight", "fbx": "SM_Prop_Dead_Knight_01", "collide": false },
+    { "id": "castle_hay", "fbx": "SM_Prop_Hay_Bale_01", "collide": false },
+    {
+      "id": "castle_statue",
+      "parts": [
+        { "fbx": "SM_Prop_Statue_Plinth_01", "offset": [0, 0, 0] },
+        { "fbx": "SM_Prop_Statue_Knight_01", "offset": [0, 1.69, 0] }
+      ]
+    }
+  ]
+}

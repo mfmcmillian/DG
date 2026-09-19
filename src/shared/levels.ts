@@ -1,4 +1,4 @@
-// The five dungeons and the difficulty table. Pure data shared by the server
+// The dungeons and the difficulty table. Pure data shared by the server
 // (which simulates each party's run) and the clients (which build the layout
 // and show the lobby), so a level is the same fortress everywhere.
 //
@@ -46,6 +46,12 @@ export const LEVELS: LevelDefinition[] = [
     id: 4, name: 'The Deep Keep', seed: 2318, style: 'open',
     blurb: 'Eleven rooms deep, the longest road to the Warlord. Bring a party.',
     health: 1.75, damage: 1.5, coins: 2.5
+  },
+  // First realm beyond the fortress: the castle kit (Fantasy Kingdom).
+  {
+    id: 5, name: 'The Fallen Crown', seed: 4471, style: 'castle',
+    blurb: 'A king\'s castle, its garrison turned. Banners still hang in the halls.',
+    health: 2, damage: 1.65, coins: 3
   }
 ]
 

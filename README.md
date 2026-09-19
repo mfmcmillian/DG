@@ -55,6 +55,13 @@ npm run deploy -- --target-content https://worlds-content-server.decentraland.or
   packs in `~/Downloads`) by `scripts/build-weapons.py` (run inside Blender),
   which also writes `src/weaponCatalog.json`. `src/weapons.ts` holds classes,
   rarities and drop tables.
+- `models/kits/<realm>/` + `src/dungeon/kits/<realm>.json` — one kit per
+  realm beyond the Dark Fortress, exported from a Synty source pack by
+  `scripts/export-realm-kit.py` driven by `scripts/realms/<realm>.json`
+  (which modules, textures, wall-mount and collider flags). `kit.ts` merges
+  the kit JSONs into `KIT`; a realm is then a `DungeonStyle` in
+  `src/dungeon/config.ts` and a level in `src/shared/levels.ts`. Check a
+  style offline with `scripts/dump-layout.ts` + `scripts/render-layout.py`.
 - `scripts/` — the animation pipeline: `export-boss-clips.py` (Blender,
   FBX → bare skeleton GLB per clip), `splice-boss-clips.py` (merge clips into
   existing GLBs), `bake-sword-clips.py` (bake clips onto single-joint weapons),

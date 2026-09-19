@@ -1,10 +1,16 @@
-import { KitId } from './kit'
+import { BRICK_TEXTURE, CASTLE_TEXTURES, FLOOR_TEXTURE, KitId } from './kit'
 import { RoomKind } from './generator'
 
 /** Scene is 6 x 6 parcels = 96 m. Every style's grid is centred inside it. */
 export const SCENE_SIZE = 96
 
-export type StyleId = 'tight' | 'open' | 'hall'
+/**
+ * A style is a realm's look on the shared generator: which kit modules stand
+ * on the grid, how big a cell is, how it is lit. `tight`, `open` and `hall`
+ * are the Dark Fortress; every later realm (Synty pack exported through
+ * scripts/realms/) is one more entry here.
+ */
+export type StyleId = 'tight' | 'open' | 'hall' | 'castle'
 
 export interface DungeonStyle {
   id: StyleId
@@ -44,6 +50,9 @@ export interface DungeonStyle {
   torchLightCount: number
   torchLightIntensity: number
   torchLightRange: number
+  /** Tiling floor texture (one repeat per 2.5 m) and, for roofed styles, the ceiling texture. */
+  floorTexture: string
+  ceilingTexture?: string
 }
 
 export const STYLES: Record<StyleId, DungeonStyle> = {
@@ -74,7 +83,9 @@ export const STYLES: Record<StyleId, DungeonStyle> = {
     },
     torchLightCount: 6,
     torchLightIntensity: 260,
-    torchLightRange: 12
+    torchLightRange: 12,
+    floorTexture: FLOOR_TEXTURE,
+    ceilingTexture: BRICK_TEXTURE
   },
   open: {
     id: 'open',
@@ -105,7 +116,8 @@ export const STYLES: Record<StyleId, DungeonStyle> = {
     cutawayWall: 'parapet',
     torchLightCount: 8,
     torchLightIntensity: 900,
-    torchLightRange: 22
+    torchLightRange: 22,
+    floorTexture: FLOOR_TEXTURE
   },
   /**
    * The hub between runs: a 60 m keep of three rooms, nobody to fight. Same
@@ -144,8 +156,66 @@ export const STYLES: Record<StyleId, DungeonStyle> = {
     cutawayWall: 'parapet',
     torchLightCount: 8,
     torchLightIntensity: 900,
-    torchLightRange: 22
+    torchLightRange: 22,
+    floorTexture: FLOOR_TEXTURE
+  },
+  /**
+   * First realm off the Dark Fortress: a king's castle from Synty's Fantasy
+   * Kingdom (scripts/realms/castle.json). Its wall modules are 5 m x 5 m, so it
+   * runs on the same 18-cell grid as `open` with a lower wall; battlements
+   * stand in for the parapet when the crawler camera is on.
+   */
+  castle: {
+    id: 'castle',
+    label: 'Castle (3rd person)',
+    tile: 5,
+    size: 18,
+    wallHeight: 5,
+    entranceSize: 2,
+    minLeaf: 4,
+    maxLeaf: 6,
+    minRoom: 2,
+    ceiling: false,
+    firstPerson: false,
+    walls: [
+      'castle_wall_a',
+      'castle_wall_a',
+      'castle_wall_b',
+      'castle_wall_c',
+      'castle_wall_window',
+      'castle_wall_arrowslit',
+      'castle_wall_a',
+      'castle_wall_door'
+    ],
+    door: 'castle_wall_arch',
+    pillar: 'castle_pillar',
+    torch: 'castle_torch',
+    torchHeight: 2.6,
+    torchEvery: 2,
+    props: {
+      entrance: ['castle_brazier', 'castle_banner', 'castle_brazier', 'castle_weapon_rack'],
+      boss: ['castle_brazier', 'castle_banner', 'castle_throne', 'castle_banner', 'castle_brazier', 'castle_armor'],
+      treasure: ['castle_chest', 'castle_crate', 'castle_barrel', 'castle_chest', 'castle_sacks', 'castle_shelf'],
+      combat: ['castle_cage', 'castle_weapon_rack', 'castle_dead_knight', 'castle_barrel', 'castle_hay', 'castle_armor'],
+      quiet: ['castle_table', 'castle_chair', 'castle_bench', 'castle_barrel', 'castle_shelf', 'castle_cauldron']
+    },
+    bossCentrepiece: 'castle_statue',
+    cutawayWall: 'castle_battlements',
+    torchLightCount: 8,
+    torchLightIntensity: 900,
+    torchLightRange: 22,
+    floorTexture: CASTLE_TEXTURES.floor
   }
+}
+
+/** Every texture any style may ask the builder for, for preloading. */
+export function styleTextures(): string[] {
+  const out = new Set<string>()
+  for (const s of Object.values(STYLES)) {
+    out.add(s.floorTexture)
+    if (s.ceilingTexture) out.add(s.ceilingTexture)
+  }
+  return Array.from(out)
 }
 
 export function gridOrigin(style: DungeonStyle): { x: number; z: number } {

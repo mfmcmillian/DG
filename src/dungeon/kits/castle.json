@@ -1,0 +1,281 @@
+{
+  "realm": "castle",
+  "textures": {
+    "floor": "models/kits/castle/floor.png"
+  },
+  "pieces": {
+    "castle_wall_a": {
+      "src": "models/kits/castle/castle_wall_a.gltf",
+      "size": [
+        5.0,
+        5.0,
+        0.5
+      ],
+      "tris": 20
+    },
+    "castle_wall_b": {
+      "src": "models/kits/castle/castle_wall_b.gltf",
+      "size": [
+        5.0,
+        5.0,
+        0.5
+      ],
+      "tris": 52
+    },
+    "castle_wall_c": {
+      "src": "models/kits/castle/castle_wall_c.gltf",
+      "size": [
+        5.0,
+        5.0,
+        0.682
+      ],
+      "tris": 100
+    },
+    "castle_wall_window": {
+      "src": "models/kits/castle/castle_wall_window.gltf",
+      "size": [
+        5.0,
+        5.0,
+        0.648
+      ],
+      "tris": 504
+    },
+    "castle_wall_arrowslit": {
+      "src": "models/kits/castle/castle_wall_arrowslit.gltf",
+      "size": [
+        5.0,
+        5.0,
+        0.5
+      ],
+      "tris": 116
+    },
+    "castle_wall_door": {
+      "src": "models/kits/castle/castle_wall_door.gltf",
+      "size": [
+        5.0,
+        5.0,
+        0.625
+      ],
+      "tris": 192
+    },
+    "castle_wall_arch": {
+      "src": "models/kits/castle/castle_wall_arch.gltf",
+      "size": [
+        5.0,
+        5.0,
+        0.5
+      ],
+      "tris": 104
+    },
+    "castle_pillar": {
+      "src": "models/kits/castle/castle_pillar.gltf",
+      "size": [
+        0.687,
+        5.051,
+        0.687
+      ],
+      "tris": 32
+    },
+    "castle_battlements": {
+      "src": "models/kits/castle/castle_battlements.gltf",
+      "size": [
+        5.0,
+        1.382,
+        0.5
+      ],
+      "tris": 146
+    },
+    "castle_torch": {
+      "src": "models/kits/castle/castle_torch.gltf",
+      "size": [
+        0.24,
+        0.647,
+        0.411
+      ],
+      "tris": 290
+    },
+    "castle_banner": {
+      "src": "models/kits/castle/castle_banner.gltf",
+      "size": [
+        0.751,
+        2.013,
+        0.107
+      ],
+      "tris": 302,
+      "wall": {
+        "height": 3.6,
+        "inset": 0.32
+      }
+    },
+    "castle_shelf": {
+      "src": "models/kits/castle/castle_shelf.gltf",
+      "size": [
+        1.603,
+        0.351,
+        0.437
+      ],
+      "tris": 104,
+      "wall": {
+        "height": 1.8,
+        "inset": 0.5
+      }
+    },
+    "castle_table": {
+      "src": "models/kits/castle/castle_table.gltf",
+      "size": [
+        2.95,
+        0.945,
+        1.575
+      ],
+      "tris": 816
+    },
+    "castle_bench": {
+      "src": "models/kits/castle/castle_bench.gltf",
+      "size": [
+        2.918,
+        0.596,
+        0.594
+      ],
+      "tris": 228
+    },
+    "castle_chair": {
+      "src": "models/kits/castle/castle_chair.gltf",
+      "size": [
+        0.613,
+        1.114,
+        0.698
+      ],
+      "tris": 486
+    },
+    "castle_barrel": {
+      "src": "models/kits/castle/castle_barrel.gltf",
+      "size": [
+        0.718,
+        0.91,
+        0.718
+      ],
+      "tris": 440
+    },
+    "castle_crate": {
+      "src": "models/kits/castle/castle_crate.gltf",
+      "size": [
+        1.071,
+        1.071,
+        1.071
+      ],
+      "tris": 706
+    },
+    "castle_sacks": {
+      "src": "models/kits/castle/castle_sacks.gltf",
+      "size": [
+        0.621,
+        0.232,
+        0.406
+      ],
+      "tris": 132,
+      "collide": false
+    },
+    "castle_chest": {
+      "src": "models/kits/castle/castle_chest.gltf",
+      "size": [
+        1.0,
+        0.464,
+        0.61
+      ],
+      "tris": 630
+    },
+    "castle_throne": {
+      "src": "models/kits/castle/castle_throne.gltf",
+      "size": [
+        0.887,
+        1.816,
+        0.769
+      ],
+      "tris": 2384
+    },
+    "castle_armor": {
+      "src": "models/kits/castle/castle_armor.gltf",
+      "size": [
+        0.729,
+        1.782,
+        0.561
+      ],
+      "tris": 1592
+    },
+    "castle_weapon_rack": {
+      "src": "models/kits/castle/castle_weapon_rack.gltf",
+      "size": [
+        2.038,
+        1.584,
+        0.659
+      ],
+      "tris": 368
+    },
+    "castle_cage": {
+      "src": "models/kits/castle/castle_cage.gltf",
+      "size": [
+        0.905,
+        2.242,
+        0.905
+      ],
+      "tris": 728
+    },
+    "castle_cauldron": {
+      "src": "models/kits/castle/castle_cauldron.gltf",
+      "size": [
+        0.888,
+        0.71,
+        0.845
+      ],
+      "tris": 480
+    },
+    "castle_firepit": {
+      "src": "models/kits/castle/castle_firepit.gltf",
+      "size": [
+        1.011,
+        0.151,
+        1.032
+      ],
+      "tris": 408,
+      "collide": false
+    },
+    "castle_brazier": {
+      "src": "models/kits/castle/castle_brazier.gltf",
+      "size": [
+        0.554,
+        0.593,
+        0.554
+      ],
+      "tris": 540
+    },
+    "castle_dead_knight": {
+      "src": "models/kits/castle/castle_dead_knight.gltf",
+      "size": [
+        0.901,
+        0.701,
+        1.908
+      ],
+      "tris": 2218,
+      "collide": false
+    },
+    "castle_hay": {
+      "src": "models/kits/castle/castle_hay.gltf",
+      "size": [
+        1.381,
+        1.084,
+        1.084
+      ],
+      "tris": 544,
+      "collide": false
+    },
+    "castle_statue": {
+      "src": "models/kits/castle/castle_statue.gltf",
+      "size": [
+        1.442,
+        4.6,
+        1.442
+      ],
+      "tris": 5083
+    }
+  }
+}
