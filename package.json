@@ -5,8 +5,8 @@
   "scripts": {
     "start": "sdk-commands start",
     "deploy": "sdk-commands deploy",
-    "deploy:land": "node tools/deploy-land.mjs",
-    "deploy:world": "sdk-commands deploy --target-content https://worlds-content-server.decentraland.org",
+    "deploy:land": "sdk-commands deploy",
+    "deploy:world": "node tools/deploy-world.mjs",
     "build": "sdk-commands build",
     "upgrade-sdk": "npm install --save-dev @dcl/sdk@latest",
     "upgrade-sdk:next": "npm install --save-dev @dcl/sdk@next",

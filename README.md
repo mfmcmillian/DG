@@ -26,12 +26,11 @@ npm run start
 
 ## Deploy
 
-`scene.json` targets the World in `worldConfiguration.name`. The full scene
-(~490 MB after `.dclignore`) is over the world content server's single-upload
-limit, so deploy in two passes — first with `models/roaming/customization/`
-temporarily added to `.dclignore`, then again with it removed. Already
-uploaded files are deduplicated by hash, so the second pass only sends the
-remainder.
+`scene.json` targets LAND: the 6x6 block at `-17,123` in Genesis City.
+`npm run deploy:land` deploys it as committed. `npm run deploy:world` deploys
+to the World (`spacematt.dcl.eth`) by temporarily rewriting `scene.json` to a
+`0,0` base with a `worldConfiguration` block and restoring it afterwards.
+The deploy is ~186 MB after `.dclignore`, which fits in a single pass.
 
 ```
 npm run deploy -- --target-content https://worlds-content-server.decentraland.org
