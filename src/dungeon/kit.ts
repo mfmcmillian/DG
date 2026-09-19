@@ -19,6 +19,11 @@ export interface KitPiece {
   wall?: { height: number; inset: number }
   /** false: walk-through decoration (bones, rubble, sacks). Default true. */
   collide?: boolean
+  /**
+   * Wall variant with a see-through breach or doorway in its mesh. The layout
+   * backs it with an invisible full-tile collider so the room stays closed.
+   */
+  sealed?: boolean
 }
 
 const DARK_FORTRESS = {

@@ -132,6 +132,11 @@ export function layoutDungeon(dungeon: Dungeon, style: DungeonStyle, options: La
     } else {
       kit(id, m.x, 0, m.z, sideYaw(w.side))
     }
+    // Breached or doored wall variants collide only where they have mesh, so a
+    // solid slab stands behind them; the cutaway box already covers the low wall.
+    if ((KIT[id] as KitPiece).sealed) {
+      push({ kind: 'box', only: lowered ? 'full' : undefined, x: m.x, y: H / 2, z: m.z, yaw: sideYaw(w.side), sx: T, sy: H, sz: Math.max(0.5, KIT[id].size[2]) }, 0)
+    }
     stats.walls++
   }
 

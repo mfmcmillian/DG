@@ -15,7 +15,7 @@
     { "id": "castle_wall_c", "fbx": "SM_Bld_Castle_Wall_03" },
     { "id": "castle_wall_window", "fbx": "SM_Bld_Castle_Wall_Window_01" },
     { "id": "castle_wall_arrowslit", "fbx": "SM_Bld_Castle_Wall_Arrowslit_01" },
-    { "id": "castle_wall_door", "fbx": "SM_Bld_Castle_Wall_Door_01" },
+    { "id": "castle_wall_door", "fbx": "SM_Bld_Castle_Wall_Door_01", "sealed": true },
     { "id": "castle_wall_arch", "fbx": "SM_Bld_Castle_Wall_Archway_01" },
     { "id": "castle_pillar", "fbx": "SM_Bld_Castle_Pillar_Stone_02" },
     { "id": "castle_battlements", "fbx": "SM_Bld_Castle_Battlements_01" },

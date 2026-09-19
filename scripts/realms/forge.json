@@ -36,7 +36,8 @@
     },
     {
       "id": "forge_wall_broken",
-      "fbx": "SM_Env_Dwarf_Wall_Broken_01"
+      "fbx": "SM_Env_Dwarf_Wall_Broken_01",
+      "sealed": true
     },
     {
       "id": "forge_wall_arch",

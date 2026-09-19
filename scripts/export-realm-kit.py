@@ -25,6 +25,8 @@ Manifest module fields:
   wall      { height, inset }: wall-mounted prop; the layout hangs it at
             `height` metres, `inset` metres in from the wall edge
   collide   false to make the piece walk-through (bones, rugs, rubble)
+  sealed    true for a wall variant with an opening in its mesh (breach,
+            doorway); the layout backs it with an invisible full-tile collider
   scale     uniform scale applied before measuring (oversized Synty props)
 
 Manifest texture fields: atlas, emissive, tiling (all pack members), and
@@ -250,6 +252,8 @@ for module in manifest['modules']:
         entry['wall'] = module['wall']
     if module.get('collide') is False:
         entry['collide'] = False
+    if module.get('sealed'):
+        entry['sealed'] = True
     report[out_name] = entry
     print(f'{out_name}: {entry["size"]} {entry["tris"]} tris uv={uv_info}')
     bpy.ops.object.select_all(action='DESELECT')

@@ -56,7 +56,8 @@
         5.0,
         0.625
       ],
-      "tris": 192
+      "tris": 192,
+      "sealed": true
     },
     "castle_wall_arch": {
       "src": "models/kits/castle/castle_wall_arch.gltf",

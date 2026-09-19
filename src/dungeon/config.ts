@@ -190,7 +190,7 @@ export const STYLES: Record<StyleId, DungeonStyle> = {
       'castle_wall_window',
       'castle_wall_arrowslit',
       'castle_wall_a',
-      'castle_wall_door'
+      'castle_wall_c'
     ],
     door: 'castle_wall_arch',
     pillar: 'castle_pillar',

@@ -65,7 +65,8 @@
         5.0,
         0.843
       ],
-      "tris": 379
+      "tris": 379,
+      "sealed": true
     },
     "forge_wall_arch": {
       "src": "models/kits/forge/forge_wall_arch.gltf",
