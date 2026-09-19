@@ -133,7 +133,5 @@
   "models/customization/male/warm/chest.glb": "models/roaming/customization/male/warm/chest.glb",
   "models/customization/male/warm/core.glb": "models/roaming/customization/male/warm/core.glb",
   "models/customization/male/warm/hands.glb": "models/roaming/customization/male/warm/hands.glb",
-  "models/customization/male/warm/legs.glb": "models/roaming/customization/male/warm/legs.glb",
-  "models/weapons/pride-sword-combat-v3.glb": "models/roaming/weapons/pride-sword-combat-v3.glb",
-  "models/weapons/pride-sword-dusk-combat-v3.glb": "models/roaming/weapons/pride-sword-dusk-combat-v3.glb"
+  "models/customization/male/warm/legs.glb": "models/roaming/customization/male/warm/legs.glb"
 }

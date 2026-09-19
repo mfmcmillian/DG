@@ -1,0 +1,2478 @@
+{
+ "schemaVersion": 1,
+ "dropOffset": {
+  "position": [
+   -0.7642266154289246,
+   -0.32043877243995667,
+   -1.318991780281067
+  ],
+  "rotation": [
+   0.2395114153623581,
+   -0.6002197861671448,
+   -0.7148531675338745,
+   0.2671229839324951
+  ]
+ },
+ "items": [
+  {
+   "id": "gb-club-01",
+   "name": "Camp Club",
+   "slot": "weapon",
+   "description": "A length of firewood somebody swung once and kept.",
+   "icon": "images/weapons/gb-club-01.png",
+   "models": [
+    "models/roaming/weapons/gb-club-01.glb"
+   ],
+   "weapon": {
+    "class": "club",
+    "rarity": "common",
+    "pack": "Goblin War Camp"
+   }
+  },
+  {
+   "id": "gb-club-02",
+   "name": "Jawbone Club",
+   "slot": "weapon",
+   "description": "Something big died for this. It still bites.",
+   "icon": "images/weapons/gb-club-02.png",
+   "models": [
+    "models/roaming/weapons/gb-club-02.glb"
+   ],
+   "weapon": {
+    "class": "club",
+    "rarity": "common",
+    "pack": "Goblin War Camp"
+   }
+  },
+  {
+   "id": "gb-club-03",
+   "name": "Skull Cudgel",
+   "slot": "weapon",
+   "description": "A goblin chieftain's answer to a mace.",
+   "icon": "images/weapons/gb-club-03.png",
+   "models": [
+    "models/roaming/weapons/gb-club-03.glb"
+   ],
+   "weapon": {
+    "class": "club",
+    "rarity": "uncommon",
+    "pack": "Goblin War Camp"
+   }
+  },
+  {
+   "id": "gb-club-04",
+   "name": "Totem Bludgeon",
+   "slot": "weapon",
+   "description": "Carved, feathered and far too heavy for the goblin who carried it.",
+   "icon": "images/weapons/gb-club-04.png",
+   "models": [
+    "models/roaming/weapons/gb-club-04.glb"
+   ],
+   "weapon": {
+    "class": "club",
+    "rarity": "uncommon",
+    "pack": "Goblin War Camp"
+   }
+  },
+  {
+   "id": "gb-cleaver-01",
+   "name": "Butcher's Cleaver",
+   "slot": "weapon",
+   "description": "Kitchen steel put to worse use.",
+   "icon": "images/weapons/gb-cleaver-01.png",
+   "models": [
+    "models/roaming/weapons/gb-cleaver-01.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "common",
+    "pack": "Goblin War Camp"
+   }
+  },
+  {
+   "id": "gb-cleaver-02",
+   "name": "Rusted Chopper",
+   "slot": "weapon",
+   "description": "The edge is mostly rust. Rust cuts too.",
+   "icon": "images/weapons/gb-cleaver-02.png",
+   "models": [
+    "models/roaming/weapons/gb-cleaver-02.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "common",
+    "pack": "Goblin War Camp"
+   }
+  },
+  {
+   "id": "gb-dagger-01",
+   "name": "Scrap Shiv",
+   "slot": "weapon",
+   "description": "Hammered from a broken sword and wrapped in cord.",
+   "icon": "images/weapons/gb-dagger-01.png",
+   "models": [
+    "models/roaming/weapons/gb-dagger-01.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "common",
+    "pack": "Goblin War Camp"
+   }
+  },
+  {
+   "id": "gb-axe-01",
+   "name": "Warcamp Hatchet",
+   "slot": "weapon",
+   "description": "Notched, bound and swung by a dozen owners.",
+   "icon": "images/weapons/gb-axe-01.png",
+   "models": [
+    "models/roaming/weapons/gb-axe-01.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "common",
+    "pack": "Goblin War Camp"
+   }
+  },
+  {
+   "id": "gb-axe-02",
+   "name": "Bone Axe",
+   "slot": "weapon",
+   "description": "A stone edge lashed to a thigh bone.",
+   "icon": "images/weapons/gb-axe-02.png",
+   "models": [
+    "models/roaming/weapons/gb-axe-02.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "common",
+    "pack": "Goblin War Camp"
+   }
+  },
+  {
+   "id": "gb-sword-01",
+   "name": "Scavenged Blade",
+   "slot": "weapon",
+   "description": "Pulled off a battlefield and never cleaned.",
+   "icon": "images/weapons/gb-sword-01.png",
+   "models": [
+    "models/roaming/weapons/gb-sword-01.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "common",
+    "pack": "Goblin War Camp"
+   }
+  },
+  {
+   "id": "gb-sword-02",
+   "name": "Raid Cutlass",
+   "slot": "weapon",
+   "description": "A goblin raider's pride: stolen, and sharp.",
+   "icon": "images/weapons/gb-sword-02.png",
+   "models": [
+    "models/roaming/weapons/gb-sword-02.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "uncommon",
+    "pack": "Goblin War Camp"
+   }
+  },
+  {
+   "id": "gb-sword-03",
+   "name": "Chieftain's Sword",
+   "slot": "weapon",
+   "description": "The one straight blade in the whole war camp.",
+   "icon": "images/weapons/gb-sword-03.png",
+   "models": [
+    "models/roaming/weapons/gb-sword-03.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "uncommon",
+    "pack": "Goblin War Camp"
+   }
+  },
+  {
+   "id": "vk-club-01",
+   "name": "Oar Club",
+   "slot": "weapon",
+   "description": "Half an oar. The other half is still in the fjord.",
+   "icon": "images/weapons/vk-club-01.png",
+   "models": [
+    "models/roaming/weapons/vk-club-01.glb"
+   ],
+   "weapon": {
+    "class": "club",
+    "rarity": "common",
+    "pack": "Vikings"
+   }
+  },
+  {
+   "id": "vk-ball-hammer-01",
+   "name": "Smith's Hammer",
+   "slot": "weapon",
+   "description": "Meant for iron. Works on skulls.",
+   "icon": "images/weapons/vk-ball-hammer-01.png",
+   "models": [
+    "models/roaming/weapons/vk-ball-hammer-01.glb"
+   ],
+   "weapon": {
+    "class": "hammer",
+    "rarity": "common",
+    "pack": "Vikings"
+   }
+  },
+  {
+   "id": "vk-hammer-01",
+   "name": "Raider's Hammer",
+   "slot": "weapon",
+   "description": "A short haft and a heavy head, made to be swung from a boat.",
+   "icon": "images/weapons/vk-hammer-01.png",
+   "models": [
+    "models/roaming/weapons/vk-hammer-01.glb"
+   ],
+   "weapon": {
+    "class": "hammer",
+    "rarity": "uncommon",
+    "pack": "Vikings"
+   }
+  },
+  {
+   "id": "vk-hammer-02",
+   "name": "Thane's Mallet",
+   "slot": "weapon",
+   "description": "Plain, balanced and unbreakable.",
+   "icon": "images/weapons/vk-hammer-02.png",
+   "models": [
+    "models/roaming/weapons/vk-hammer-02.glb"
+   ],
+   "weapon": {
+    "class": "hammer",
+    "rarity": "common",
+    "pack": "Vikings"
+   }
+  },
+  {
+   "id": "vk-hammerlarge-01",
+   "name": "Fjord Sledge",
+   "slot": "weapon",
+   "description": "Two hands' worth of iron, swung with one.",
+   "icon": "images/weapons/vk-hammerlarge-01.png",
+   "models": [
+    "models/roaming/weapons/vk-hammerlarge-01.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "rare",
+    "pack": "Vikings"
+   }
+  },
+  {
+   "id": "vk-axe-01",
+   "name": "Bearded Axe",
+   "slot": "weapon",
+   "description": "The classic Norse edge, hooked to pull a shield aside.",
+   "icon": "images/weapons/vk-axe-01.png",
+   "models": [
+    "models/roaming/weapons/vk-axe-01.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "common",
+    "pack": "Vikings"
+   }
+  },
+  {
+   "id": "vk-axe-02",
+   "name": "Hewing Axe",
+   "slot": "weapon",
+   "description": "A woodsman's tool with a warrior's edge.",
+   "icon": "images/weapons/vk-axe-02.png",
+   "models": [
+    "models/roaming/weapons/vk-axe-02.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "common",
+    "pack": "Vikings"
+   }
+  },
+  {
+   "id": "vk-largeaxe-01",
+   "name": "Dane Axe",
+   "slot": "weapon",
+   "description": "A long haft and a wide blade. Reach nobody argues with.",
+   "icon": "images/weapons/vk-largeaxe-01.png",
+   "models": [
+    "models/roaming/weapons/vk-largeaxe-01.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "rare",
+    "pack": "Vikings"
+   }
+  },
+  {
+   "id": "vk-sword-01",
+   "name": "Jarl's Sword",
+   "slot": "weapon",
+   "description": "Pattern-welded steel, the kind that gets a name.",
+   "icon": "images/weapons/vk-sword-01.png",
+   "models": [
+    "models/roaming/weapons/vk-sword-01.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "uncommon",
+    "pack": "Vikings"
+   }
+  },
+  {
+   "id": "fk-sword-01",
+   "name": "Squire's Sword",
+   "slot": "weapon",
+   "description": "The first real blade a squire is trusted with.",
+   "icon": "images/weapons/fk-sword-01.png",
+   "models": [
+    "models/roaming/weapons/fk-sword-01.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-sword-02",
+   "name": "Footman's Blade",
+   "slot": "weapon",
+   "description": "Standard issue for the castle guard.",
+   "icon": "images/weapons/fk-sword-02.png",
+   "models": [
+    "models/roaming/weapons/fk-sword-02.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-sword-03",
+   "name": "Arming Sword",
+   "slot": "weapon",
+   "description": "A plain, honest sword. Thousands were made.",
+   "icon": "images/weapons/fk-sword-03.png",
+   "models": [
+    "models/roaming/weapons/fk-sword-03.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "common",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-sword-04",
+   "name": "Watchman's Sword",
+   "slot": "weapon",
+   "description": "Carried on the walls every cold night.",
+   "icon": "images/weapons/fk-sword-04.png",
+   "models": [
+    "models/roaming/weapons/fk-sword-04.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "common",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-sword-05",
+   "name": "Kingsguard Longsword",
+   "slot": "weapon",
+   "description": "Blued steel with the guard's red grip.",
+   "icon": "images/weapons/fk-sword-05.png",
+   "models": [
+    "models/roaming/weapons/fk-sword-05.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-sword-06",
+   "name": "Castellan's Blade",
+   "slot": "weapon",
+   "description": "Kept sharp by a man who rarely drew it.",
+   "icon": "images/weapons/fk-sword-06.png",
+   "models": [
+    "models/roaming/weapons/fk-sword-06.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-sword-07",
+   "name": "Marshal's Longsword",
+   "slot": "weapon",
+   "description": "A longer blade for a longer reach.",
+   "icon": "images/weapons/fk-sword-07.png",
+   "models": [
+    "models/roaming/weapons/fk-sword-07.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "rare",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-sword-08",
+   "name": "Bastard Sword",
+   "slot": "weapon",
+   "description": "Long enough for two hands, light enough for one.",
+   "icon": "images/weapons/fk-sword-08.png",
+   "models": [
+    "models/roaming/weapons/fk-sword-08.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "rare",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-sword-09",
+   "name": "Short Sword",
+   "slot": "weapon",
+   "description": "Quick to draw, quick to cut.",
+   "icon": "images/weapons/fk-sword-09.png",
+   "models": [
+    "models/roaming/weapons/fk-sword-09.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "common",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-sword-10",
+   "name": "Tourney Blade",
+   "slot": "weapon",
+   "description": "Won in the lists, kept for the war.",
+   "icon": "images/weapons/fk-sword-10.png",
+   "models": [
+    "models/roaming/weapons/fk-sword-10.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-sword-11",
+   "name": "Chapel Sword",
+   "slot": "weapon",
+   "description": "Blessed, or so the priest said.",
+   "icon": "images/weapons/fk-sword-11.png",
+   "models": [
+    "models/roaming/weapons/fk-sword-11.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-sword-12",
+   "name": "Knight's Longsword",
+   "slot": "weapon",
+   "description": "Gilded hilt, working edge.",
+   "icon": "images/weapons/fk-sword-12.png",
+   "models": [
+    "models/roaming/weapons/fk-sword-12.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-sword-13",
+   "name": "Crusader's Longsword",
+   "slot": "weapon",
+   "description": "Wide, heavy and tired of foreign sun.",
+   "icon": "images/weapons/fk-sword-13.png",
+   "models": [
+    "models/roaming/weapons/fk-sword-13.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "rare",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-sword-14",
+   "name": "Duelist's Sabre",
+   "slot": "weapon",
+   "description": "Curved for the cut, quick in the hand.",
+   "icon": "images/weapons/fk-sword-14.png",
+   "models": [
+    "models/roaming/weapons/fk-sword-14.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "rare",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-sword-15",
+   "name": "Crimson Kingsblade",
+   "slot": "weapon",
+   "description": "Red-edged steel from the king's own forge.",
+   "icon": "images/weapons/fk-sword-15.png",
+   "models": [
+    "models/roaming/weapons/fk-sword-15.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "epic",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-sword-16",
+   "name": "Heraldic Longsword",
+   "slot": "weapon",
+   "description": "A house sigil worked into the guard.",
+   "icon": "images/weapons/fk-sword-16.png",
+   "models": [
+    "models/roaming/weapons/fk-sword-16.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "rare",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-sword-17",
+   "name": "Bloodoath Blade",
+   "slot": "weapon",
+   "description": "Sworn on, bled on, never sheathed unpaid.",
+   "icon": "images/weapons/fk-sword-17.png",
+   "models": [
+    "models/roaming/weapons/fk-sword-17.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "epic",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-sword-18",
+   "name": "Vermilion Fang",
+   "slot": "weapon",
+   "description": "A slim red blade for a fast hand.",
+   "icon": "images/weapons/fk-sword-18.png",
+   "models": [
+    "models/roaming/weapons/fk-sword-18.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-axe-01",
+   "name": "Woodsman's Axe",
+   "slot": "weapon",
+   "description": "Fells trees. Fells men.",
+   "icon": "images/weapons/fk-axe-01.png",
+   "models": [
+    "models/roaming/weapons/fk-axe-01.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "common",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-axe-02",
+   "name": "Guard Axe",
+   "slot": "weapon",
+   "description": "A long-hafted axe for the castle gate.",
+   "icon": "images/weapons/fk-axe-02.png",
+   "models": [
+    "models/roaming/weapons/fk-axe-02.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-axe-03",
+   "name": "Twin-Bit Axe",
+   "slot": "weapon",
+   "description": "Two edges so neither side of the swing is wasted.",
+   "icon": "images/weapons/fk-axe-03.png",
+   "models": [
+    "models/roaming/weapons/fk-axe-03.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "rare",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-axe-04",
+   "name": "Horned Axe",
+   "slot": "weapon",
+   "description": "A wide crescent edge on a plain haft.",
+   "icon": "images/weapons/fk-axe-04.png",
+   "models": [
+    "models/roaming/weapons/fk-axe-04.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-axe-05",
+   "name": "Kingsguard Axe",
+   "slot": "weapon",
+   "description": "Red-wrapped and heavy at the head.",
+   "icon": "images/weapons/fk-axe-05.png",
+   "models": [
+    "models/roaming/weapons/fk-axe-05.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "rare",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-axe-06",
+   "name": "Reaver's Axe",
+   "slot": "weapon",
+   "description": "Curved for pulling riders from saddles.",
+   "icon": "images/weapons/fk-axe-06.png",
+   "models": [
+    "models/roaming/weapons/fk-axe-06.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-axe-07",
+   "name": "Broad Axe",
+   "slot": "weapon",
+   "description": "As wide as it is honest.",
+   "icon": "images/weapons/fk-axe-07.png",
+   "models": [
+    "models/roaming/weapons/fk-axe-07.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-axe-08",
+   "name": "Executioner's Axe",
+   "slot": "weapon",
+   "description": "Only ever needs one swing.",
+   "icon": "images/weapons/fk-axe-08.png",
+   "models": [
+    "models/roaming/weapons/fk-axe-08.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "epic",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-axe-09",
+   "name": "Hand Axe",
+   "slot": "weapon",
+   "description": "Small, quick and easy to throw. Don't.",
+   "icon": "images/weapons/fk-axe-09.png",
+   "models": [
+    "models/roaming/weapons/fk-axe-09.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "common",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-axe-10",
+   "name": "Battle Axe",
+   "slot": "weapon",
+   "description": "The soldier's axe, no ornament, no mercy.",
+   "icon": "images/weapons/fk-axe-10.png",
+   "models": [
+    "models/roaming/weapons/fk-axe-10.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-axe-11",
+   "name": "Long Axe",
+   "slot": "weapon",
+   "description": "A slim blade on the longest haft in the armory.",
+   "icon": "images/weapons/fk-axe-11.png",
+   "models": [
+    "models/roaming/weapons/fk-axe-11.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "rare",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-dagger-01",
+   "name": "Rondel Dagger",
+   "slot": "weapon",
+   "description": "A needle for finding gaps in plate.",
+   "icon": "images/weapons/fk-dagger-01.png",
+   "models": [
+    "models/roaming/weapons/fk-dagger-01.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "common",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-dagger-02",
+   "name": "Bollock Dagger",
+   "slot": "weapon",
+   "description": "Everyone carries one. Few admit it.",
+   "icon": "images/weapons/fk-dagger-02.png",
+   "models": [
+    "models/roaming/weapons/fk-dagger-02.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "common",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-dagger-03",
+   "name": "Guard's Dagger",
+   "slot": "weapon",
+   "description": "A wider blade with a proper crossguard.",
+   "icon": "images/weapons/fk-dagger-03.png",
+   "models": [
+    "models/roaming/weapons/fk-dagger-03.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-dagger-04",
+   "name": "Knight's Dirk",
+   "slot": "weapon",
+   "description": "Kept for when the sword is lost.",
+   "icon": "images/weapons/fk-dagger-04.png",
+   "models": [
+    "models/roaming/weapons/fk-dagger-04.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-dagger-05",
+   "name": "Quillon Dagger",
+   "slot": "weapon",
+   "description": "Plain steel, plain wood, sharp point.",
+   "icon": "images/weapons/fk-dagger-05.png",
+   "models": [
+    "models/roaming/weapons/fk-dagger-05.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "common",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-dagger-06",
+   "name": "Parrying Sword",
+   "slot": "weapon",
+   "description": "Long for a dagger, short for a sword. Perfect for both.",
+   "icon": "images/weapons/fk-dagger-06.png",
+   "models": [
+    "models/roaming/weapons/fk-dagger-06.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "rare",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-dagger-07",
+   "name": "Hunting Dagger",
+   "slot": "weapon",
+   "description": "Made for boar. Boar are tougher than most men.",
+   "icon": "images/weapons/fk-dagger-07.png",
+   "models": [
+    "models/roaming/weapons/fk-dagger-07.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-knife-01",
+   "name": "Kitchen Knife",
+   "slot": "weapon",
+   "description": "Not a weapon. Tell that to the last cook.",
+   "icon": "images/weapons/fk-knife-01.png",
+   "models": [
+    "models/roaming/weapons/fk-knife-01.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "common",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-knife-02",
+   "name": "Carving Knife",
+   "slot": "weapon",
+   "description": "Long and thin and sharper than it should be.",
+   "icon": "images/weapons/fk-knife-02.png",
+   "models": [
+    "models/roaming/weapons/fk-knife-02.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "common",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-knife-03",
+   "name": "Skinning Knife",
+   "slot": "weapon",
+   "description": "A pale, narrow blade.",
+   "icon": "images/weapons/fk-knife-03.png",
+   "models": [
+    "models/roaming/weapons/fk-knife-03.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "common",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-knife-04",
+   "name": "Paring Knife",
+   "slot": "weapon",
+   "description": "Small enough to hide. Sharp enough to matter.",
+   "icon": "images/weapons/fk-knife-04.png",
+   "models": [
+    "models/roaming/weapons/fk-knife-04.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "common",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-hammer-01",
+   "name": "Warhammer",
+   "slot": "weapon",
+   "description": "A square head and a spike. Plate means nothing.",
+   "icon": "images/weapons/fk-hammer-01.png",
+   "models": [
+    "models/roaming/weapons/fk-hammer-01.glb"
+   ],
+   "weapon": {
+    "class": "hammer",
+    "rarity": "rare",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-hammer-02",
+   "name": "Mason's Hammer",
+   "slot": "weapon",
+   "description": "Builds castles. Unbuilds knights.",
+   "icon": "images/weapons/fk-hammer-02.png",
+   "models": [
+    "models/roaming/weapons/fk-hammer-02.glb"
+   ],
+   "weapon": {
+    "class": "hammer",
+    "rarity": "common",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-hammer-03",
+   "name": "Horseman's Hammer",
+   "slot": "weapon",
+   "description": "Light in the hand, hard on the helm.",
+   "icon": "images/weapons/fk-hammer-03.png",
+   "models": [
+    "models/roaming/weapons/fk-hammer-03.glb"
+   ],
+   "weapon": {
+    "class": "hammer",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-hammer-04",
+   "name": "Gate Maul",
+   "slot": "weapon",
+   "description": "A long haft and a head like a doorstop.",
+   "icon": "images/weapons/fk-hammer-04.png",
+   "models": [
+    "models/roaming/weapons/fk-hammer-04.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "rare",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-hammer-05",
+   "name": "Kingsguard Hammer",
+   "slot": "weapon",
+   "description": "Red-wrapped haft, blued head.",
+   "icon": "images/weapons/fk-hammer-05.png",
+   "models": [
+    "models/roaming/weapons/fk-hammer-05.glb"
+   ],
+   "weapon": {
+    "class": "hammer",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-hammer-06",
+   "name": "Judgement",
+   "slot": "weapon",
+   "description": "The royal executioner's hammer. Never rusts.",
+   "icon": "images/weapons/fk-hammer-06.png",
+   "models": [
+    "models/roaming/weapons/fk-hammer-06.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "epic",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-mace-01",
+   "name": "Flanged Mace",
+   "slot": "weapon",
+   "description": "Iron flanges on a short haft.",
+   "icon": "images/weapons/fk-mace-01.png",
+   "models": [
+    "models/roaming/weapons/fk-mace-01.glb"
+   ],
+   "weapon": {
+    "class": "mace",
+    "rarity": "common",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-mace-02",
+   "name": "Knight's Mace",
+   "slot": "weapon",
+   "description": "A slender haft and a heavy round head.",
+   "icon": "images/weapons/fk-mace-02.png",
+   "models": [
+    "models/roaming/weapons/fk-mace-02.glb"
+   ],
+   "weapon": {
+    "class": "mace",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-mace-03",
+   "name": "Morning Star",
+   "slot": "weapon",
+   "description": "Spikes on a ball on a stick. Simple. Awful.",
+   "icon": "images/weapons/fk-mace-03.png",
+   "models": [
+    "models/roaming/weapons/fk-mace-03.glb"
+   ],
+   "weapon": {
+    "class": "mace",
+    "rarity": "rare",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-mace-04",
+   "name": "Footman's Mace",
+   "slot": "weapon",
+   "description": "Standard issue for breaking shields.",
+   "icon": "images/weapons/fk-mace-04.png",
+   "models": [
+    "models/roaming/weapons/fk-mace-04.glb"
+   ],
+   "weapon": {
+    "class": "mace",
+    "rarity": "common",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-mace-05",
+   "name": "Chapel Mace",
+   "slot": "weapon",
+   "description": "A priest's weapon: no edge, no sin.",
+   "icon": "images/weapons/fk-mace-05.png",
+   "models": [
+    "models/roaming/weapons/fk-mace-05.glb"
+   ],
+   "weapon": {
+    "class": "mace",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-mace-06",
+   "name": "Spiked Club",
+   "slot": "weapon",
+   "description": "A club that met a blacksmith.",
+   "icon": "images/weapons/fk-mace-06.png",
+   "models": [
+    "models/roaming/weapons/fk-mace-06.glb"
+   ],
+   "weapon": {
+    "class": "mace",
+    "rarity": "common",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-sceptre-01",
+   "name": "Iron Sceptre",
+   "slot": "weapon",
+   "description": "An officer's baton, heavier than it looks.",
+   "icon": "images/weapons/fk-sceptre-01.png",
+   "models": [
+    "models/roaming/weapons/fk-sceptre-01.glb"
+   ],
+   "weapon": {
+    "class": "mace",
+    "rarity": "rare",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-sceptre-02",
+   "name": "Bishop's Sceptre",
+   "slot": "weapon",
+   "description": "A jewelled head on a dark shaft.",
+   "icon": "images/weapons/fk-sceptre-02.png",
+   "models": [
+    "models/roaming/weapons/fk-sceptre-02.glb"
+   ],
+   "weapon": {
+    "class": "mace",
+    "rarity": "rare",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-sceptre-03",
+   "name": "Herald's Rod",
+   "slot": "weapon",
+   "description": "Announces. Also concludes.",
+   "icon": "images/weapons/fk-sceptre-03.png",
+   "models": [
+    "models/roaming/weapons/fk-sceptre-03.glb"
+   ],
+   "weapon": {
+    "class": "mace",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-sceptre-04",
+   "name": "Sceptre of the Crown",
+   "slot": "weapon",
+   "description": "Gold cross, gold head, iron heart.",
+   "icon": "images/weapons/fk-sceptre-04.png",
+   "models": [
+    "models/roaming/weapons/fk-sceptre-04.glb"
+   ],
+   "weapon": {
+    "class": "mace",
+    "rarity": "epic",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-sceptre-05",
+   "name": "Sunburst Sceptre",
+   "slot": "weapon",
+   "description": "The high priest's mace, gilded and blessed.",
+   "icon": "images/weapons/fk-sceptre-05.png",
+   "models": [
+    "models/roaming/weapons/fk-sceptre-05.glb"
+   ],
+   "weapon": {
+    "class": "mace",
+    "rarity": "epic",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-sceptre-06",
+   "name": "Steward's Rod",
+   "slot": "weapon",
+   "description": "A plain sceptre for a plain office.",
+   "icon": "images/weapons/fk-sceptre-06.png",
+   "models": [
+    "models/roaming/weapons/fk-sceptre-06.glb"
+   ],
+   "weapon": {
+    "class": "mace",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-sceptre-07",
+   "name": "Orb Sceptre",
+   "slot": "weapon",
+   "description": "A silver orb on a red-wrapped shaft.",
+   "icon": "images/weapons/fk-sceptre-07.png",
+   "models": [
+    "models/roaming/weapons/fk-sceptre-07.glb"
+   ],
+   "weapon": {
+    "class": "mace",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-sceptre-08",
+   "name": "Regent's Sceptre",
+   "slot": "weapon",
+   "description": "Carried in the king's absence. Swung in his name.",
+   "icon": "images/weapons/fk-sceptre-08.png",
+   "models": [
+    "models/roaming/weapons/fk-sceptre-08.glb"
+   ],
+   "weapon": {
+    "class": "mace",
+    "rarity": "rare",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-sceptre-09",
+   "name": "Chancellor's Sceptre",
+   "slot": "weapon",
+   "description": "Signs decrees. Ends arguments.",
+   "icon": "images/weapons/fk-sceptre-09.png",
+   "models": [
+    "models/roaming/weapons/fk-sceptre-09.glb"
+   ],
+   "weapon": {
+    "class": "mace",
+    "rarity": "rare",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "kn-broadsword-01",
+   "name": "Knight's Broadsword",
+   "slot": "weapon",
+   "description": "Wide, gilded and made for the charge.",
+   "icon": "images/weapons/kn-broadsword-01.png",
+   "models": [
+    "models/roaming/weapons/kn-broadsword-01.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "rare",
+    "pack": "Knights"
+   }
+  },
+  {
+   "id": "kn-rapier-01",
+   "name": "Court Rapier",
+   "slot": "weapon",
+   "description": "Thin as a lie and twice as quick.",
+   "icon": "images/weapons/kn-rapier-01.png",
+   "models": [
+    "models/roaming/weapons/kn-rapier-01.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "rare",
+    "pack": "Knights"
+   }
+  },
+  {
+   "id": "kn-zweihander-01",
+   "name": "Zweihander",
+   "slot": "weapon",
+   "description": "A sword the height of a man. You will need both hands and all your nerve.",
+   "icon": "images/weapons/kn-zweihander-01.png",
+   "models": [
+    "models/roaming/weapons/kn-zweihander-01.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "epic",
+    "pack": "Knights"
+   }
+  },
+  {
+   "id": "dr-sword-small-01",
+   "name": "Deep Gladius",
+   "slot": "weapon",
+   "description": "A stubby dwarven blade for tight tunnels.",
+   "icon": "images/weapons/dr-sword-small-01.png",
+   "models": [
+    "models/roaming/weapons/dr-sword-small-01.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "common",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-sword-small-02",
+   "name": "Vault Shortsword",
+   "slot": "weapon",
+   "description": "Bronze-hilted, from a sealed vault.",
+   "icon": "images/weapons/dr-sword-small-02.png",
+   "models": [
+    "models/roaming/weapons/dr-sword-small-02.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "uncommon",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-sword-small-03",
+   "name": "Miner's Sword",
+   "slot": "weapon",
+   "description": "Sharpened on rock.",
+   "icon": "images/weapons/dr-sword-small-03.png",
+   "models": [
+    "models/roaming/weapons/dr-sword-small-03.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "common",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-sword-small-04",
+   "name": "Tunnel Blade",
+   "slot": "weapon",
+   "description": "Short, because the ceilings are.",
+   "icon": "images/weapons/dr-sword-small-04.png",
+   "models": [
+    "models/roaming/weapons/dr-sword-small-04.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "common",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-sword-small-05",
+   "name": "Dwarven Shortsword",
+   "slot": "weapon",
+   "description": "Thick spine, hard edge.",
+   "icon": "images/weapons/dr-sword-small-05.png",
+   "models": [
+    "models/roaming/weapons/dr-sword-small-05.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "uncommon",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-sword-small-06",
+   "name": "Delver's Sword",
+   "slot": "weapon",
+   "description": "Standard kit for the deep roads.",
+   "icon": "images/weapons/dr-sword-small-06.png",
+   "models": [
+    "models/roaming/weapons/dr-sword-small-06.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "common",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-sword-medium-01",
+   "name": "Deep Longsword",
+   "slot": "weapon",
+   "description": "Balanced for a dwarf, fine for anyone.",
+   "icon": "images/weapons/dr-sword-medium-01.png",
+   "models": [
+    "models/roaming/weapons/dr-sword-medium-01.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "uncommon",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-sword-medium-02",
+   "name": "Vault Sabre",
+   "slot": "weapon",
+   "description": "A curved blade with a bronze knuckle.",
+   "icon": "images/weapons/dr-sword-medium-02.png",
+   "models": [
+    "models/roaming/weapons/dr-sword-medium-02.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "uncommon",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-sword-medium-03",
+   "name": "Ancestor's Sword",
+   "slot": "weapon",
+   "description": "Older than the hall it was found in.",
+   "icon": "images/weapons/dr-sword-medium-03.png",
+   "models": [
+    "models/roaming/weapons/dr-sword-medium-03.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "rare",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-sword-medium-04",
+   "name": "Ironroot Blade",
+   "slot": "weapon",
+   "description": "A dark steel edge on a red grip.",
+   "icon": "images/weapons/dr-sword-medium-04.png",
+   "models": [
+    "models/roaming/weapons/dr-sword-medium-04.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "uncommon",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-sword-medium-05",
+   "name": "Gilded Scimitar",
+   "slot": "weapon",
+   "description": "Curved and gilded, a merchant-prince's blade.",
+   "icon": "images/weapons/dr-sword-medium-05.png",
+   "models": [
+    "models/roaming/weapons/dr-sword-medium-05.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "rare",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-sword-medium-06",
+   "name": "Deep Falchion",
+   "slot": "weapon",
+   "description": "One wide edge, bronze-backed.",
+   "icon": "images/weapons/dr-sword-medium-06.png",
+   "models": [
+    "models/roaming/weapons/dr-sword-medium-06.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "rare",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-sword-medium-07",
+   "name": "Hooked Falchion",
+   "slot": "weapon",
+   "description": "The point curls back to catch a guard.",
+   "icon": "images/weapons/dr-sword-medium-07.png",
+   "models": [
+    "models/roaming/weapons/dr-sword-medium-07.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "uncommon",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-sword-medium-08",
+   "name": "Runeforged Sword",
+   "slot": "weapon",
+   "description": "A long blade with veins of red rune-light.",
+   "icon": "images/weapons/dr-sword-medium-08.png",
+   "models": [
+    "models/roaming/weapons/dr-sword-medium-08.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "rare",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-sword-medium-09",
+   "name": "Kinslayer",
+   "slot": "weapon",
+   "description": "A dwarven king's sword, and the reason he was the last.",
+   "icon": "images/weapons/dr-sword-medium-09.png",
+   "models": [
+    "models/roaming/weapons/dr-sword-medium-09.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "epic",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-sword-large-01",
+   "name": "Hall Guard's Sword",
+   "slot": "weapon",
+   "description": "The blade of the door-wardens of the deep.",
+   "icon": "images/weapons/dr-sword-large-01.png",
+   "models": [
+    "models/roaming/weapons/dr-sword-large-01.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "rare",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-sword-large-02",
+   "name": "Vault Greatsword",
+   "slot": "weapon",
+   "description": "A long bronze blade from the treasure vaults.",
+   "icon": "images/weapons/dr-sword-large-02.png",
+   "models": [
+    "models/roaming/weapons/dr-sword-large-02.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "rare",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-sword-large-03",
+   "name": "Deep Claymore",
+   "slot": "weapon",
+   "description": "A dark blade, longer than a dwarf is tall.",
+   "icon": "images/weapons/dr-sword-large-03.png",
+   "models": [
+    "models/roaming/weapons/dr-sword-large-03.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "rare",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-sword-large-04",
+   "name": "Ancestor's Greatsword",
+   "slot": "weapon",
+   "description": "Cut from a hall-pillar's worth of steel.",
+   "icon": "images/weapons/dr-sword-large-04.png",
+   "models": [
+    "models/roaming/weapons/dr-sword-large-04.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "epic",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-sword-large-05",
+   "name": "Gilded Greatsword",
+   "slot": "weapon",
+   "description": "Gold along the fuller, bronze at the guard.",
+   "icon": "images/weapons/dr-sword-large-05.png",
+   "models": [
+    "models/roaming/weapons/dr-sword-large-05.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "rare",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-sword-large-06",
+   "name": "Hooked Cleaver",
+   "slot": "weapon",
+   "description": "Wide, curved and eager.",
+   "icon": "images/weapons/dr-sword-large-06.png",
+   "models": [
+    "models/roaming/weapons/dr-sword-large-06.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "rare",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-sword-large-07",
+   "name": "Delver's Greatsword",
+   "slot": "weapon",
+   "description": "Long, plain and dependable.",
+   "icon": "images/weapons/dr-sword-large-07.png",
+   "models": [
+    "models/roaming/weapons/dr-sword-large-07.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "rare",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-sword-large-08",
+   "name": "Dark Iron Greatsword",
+   "slot": "weapon",
+   "description": "Black steel that drinks the torchlight.",
+   "icon": "images/weapons/dr-sword-large-08.png",
+   "models": [
+    "models/roaming/weapons/dr-sword-large-08.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "rare",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-sword-large-09",
+   "name": "Long Falchion",
+   "slot": "weapon",
+   "description": "A single heavy edge, bronze-backed.",
+   "icon": "images/weapons/dr-sword-large-09.png",
+   "models": [
+    "models/roaming/weapons/dr-sword-large-09.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "uncommon",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-sword-large-10",
+   "name": "Vault Scimitar",
+   "slot": "weapon",
+   "description": "A wide curve of bright steel.",
+   "icon": "images/weapons/dr-sword-large-10.png",
+   "models": [
+    "models/roaming/weapons/dr-sword-large-10.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "uncommon",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-sword-large-11",
+   "name": "Mountainbreaker",
+   "slot": "weapon",
+   "description": "The largest blade the deep forges ever cast. Rune-lit down its whole length.",
+   "icon": "images/weapons/dr-sword-large-11.png",
+   "models": [
+    "models/roaming/weapons/dr-sword-large-11.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "legendary",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-sword-large-12",
+   "name": "Grave Warden",
+   "slot": "weapon",
+   "description": "A sword left to guard a tomb. It still does.",
+   "icon": "images/weapons/dr-sword-large-12.png",
+   "models": [
+    "models/roaming/weapons/dr-sword-large-12.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "epic",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-axe-small-01",
+   "name": "Deep Hatchet",
+   "slot": "weapon",
+   "description": "A dwarven hand axe.",
+   "icon": "images/weapons/dr-axe-small-01.png",
+   "models": [
+    "models/roaming/weapons/dr-axe-small-01.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "common",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-axe-small-02",
+   "name": "Vault Axe",
+   "slot": "weapon",
+   "description": "Bronze-edged, from the vaults.",
+   "icon": "images/weapons/dr-axe-small-02.png",
+   "models": [
+    "models/roaming/weapons/dr-axe-small-02.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "uncommon",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-axe-small-03",
+   "name": "Miner's Axe",
+   "slot": "weapon",
+   "description": "Cuts timber props. Cuts more.",
+   "icon": "images/weapons/dr-axe-small-03.png",
+   "models": [
+    "models/roaming/weapons/dr-axe-small-03.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "common",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-axe-small-04",
+   "name": "Delver's Axe",
+   "slot": "weapon",
+   "description": "A wide blade on a short haft.",
+   "icon": "images/weapons/dr-axe-small-04.png",
+   "models": [
+    "models/roaming/weapons/dr-axe-small-04.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "uncommon",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-axe-small-05",
+   "name": "Tunnel Pick",
+   "slot": "weapon",
+   "description": "Half pick, half axe, all business.",
+   "icon": "images/weapons/dr-axe-small-05.png",
+   "models": [
+    "models/roaming/weapons/dr-axe-small-05.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "common",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-axe-small-06",
+   "name": "Ironroot Axe",
+   "slot": "weapon",
+   "description": "A heavy head on a red-bound haft.",
+   "icon": "images/weapons/dr-axe-small-06.png",
+   "models": [
+    "models/roaming/weapons/dr-axe-small-06.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "uncommon",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-axe-large-01",
+   "name": "Hall Guard's Axe",
+   "slot": "weapon",
+   "description": "A bearded axe with a spiked back.",
+   "icon": "images/weapons/dr-axe-large-01.png",
+   "models": [
+    "models/roaming/weapons/dr-axe-large-01.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "rare",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-axe-large-02",
+   "name": "Vault Battleaxe",
+   "slot": "weapon",
+   "description": "Bronze and steel, made to hold a door.",
+   "icon": "images/weapons/dr-axe-large-02.png",
+   "models": [
+    "models/roaming/weapons/dr-axe-large-02.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "rare",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-axe-large-03",
+   "name": "Ancestor's Axe",
+   "slot": "weapon",
+   "description": "The old pattern, still the best.",
+   "icon": "images/weapons/dr-axe-large-03.png",
+   "models": [
+    "models/roaming/weapons/dr-axe-large-03.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "rare",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-axe-large-04",
+   "name": "Deep Battleaxe",
+   "slot": "weapon",
+   "description": "A tall blade for a tall swing.",
+   "icon": "images/weapons/dr-axe-large-04.png",
+   "models": [
+    "models/roaming/weapons/dr-axe-large-04.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "rare",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-axe-large-05",
+   "name": "Runeforged Axe",
+   "slot": "weapon",
+   "description": "Red rune-light along the edge.",
+   "icon": "images/weapons/dr-axe-large-05.png",
+   "models": [
+    "models/roaming/weapons/dr-axe-large-05.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "epic",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-axe-large-06",
+   "name": "Dark Iron Axe",
+   "slot": "weapon",
+   "description": "A double-edged head of black steel.",
+   "icon": "images/weapons/dr-axe-large-06.png",
+   "models": [
+    "models/roaming/weapons/dr-axe-large-06.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "epic",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-axe-large-07",
+   "name": "Delver's Battleaxe",
+   "slot": "weapon",
+   "description": "A crescent edge and a long haft.",
+   "icon": "images/weapons/dr-axe-large-07.png",
+   "models": [
+    "models/roaming/weapons/dr-axe-large-07.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "rare",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-knife-large-01",
+   "name": "Deep Dirk",
+   "slot": "weapon",
+   "description": "A long dwarven knife.",
+   "icon": "images/weapons/dr-knife-large-01.png",
+   "models": [
+    "models/roaming/weapons/dr-knife-large-01.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "common",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-knife-large-02",
+   "name": "Gilded Kukri",
+   "slot": "weapon",
+   "description": "A curved bronze blade from the vaults.",
+   "icon": "images/weapons/dr-knife-large-02.png",
+   "models": [
+    "models/roaming/weapons/dr-knife-large-02.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "uncommon",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-knife-medium-01",
+   "name": "Curved Skinner",
+   "slot": "weapon",
+   "description": "A hooked dwarven knife.",
+   "icon": "images/weapons/dr-knife-medium-01.png",
+   "models": [
+    "models/roaming/weapons/dr-knife-medium-01.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "common",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-knife-small-01",
+   "name": "Belt Knife",
+   "slot": "weapon",
+   "description": "Small and always there.",
+   "icon": "images/weapons/dr-knife-small-01.png",
+   "models": [
+    "models/roaming/weapons/dr-knife-small-01.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "common",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-knife-small-02",
+   "name": "Deep Stiletto",
+   "slot": "weapon",
+   "description": "A needle of dark steel.",
+   "icon": "images/weapons/dr-knife-small-02.png",
+   "models": [
+    "models/roaming/weapons/dr-knife-small-02.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "common",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-mace-large-01",
+   "name": "Deep Warmace",
+   "slot": "weapon",
+   "description": "A dwarven mace with a long reach.",
+   "icon": "images/weapons/dr-mace-large-01.png",
+   "models": [
+    "models/roaming/weapons/dr-mace-large-01.glb"
+   ],
+   "weapon": {
+    "class": "mace",
+    "rarity": "rare",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-mace-large-02",
+   "name": "Vault Mace",
+   "slot": "weapon",
+   "description": "A bronze head, ribbed and heavy.",
+   "icon": "images/weapons/dr-mace-large-02.png",
+   "models": [
+    "models/roaming/weapons/dr-mace-large-02.glb"
+   ],
+   "weapon": {
+    "class": "mace",
+    "rarity": "rare",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-mace-large-03",
+   "name": "Ancestor's Maul",
+   "slot": "weapon",
+   "description": "A twin-bladed head of dark steel and bronze.",
+   "icon": "images/weapons/dr-mace-large-03.png",
+   "models": [
+    "models/roaming/weapons/dr-mace-large-03.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "epic",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-mace-large-05",
+   "name": "Delver's Warmace",
+   "slot": "weapon",
+   "description": "A long haft and a spiked crown.",
+   "icon": "images/weapons/dr-mace-large-05.png",
+   "models": [
+    "models/roaming/weapons/dr-mace-large-05.glb"
+   ],
+   "weapon": {
+    "class": "mace",
+    "rarity": "rare",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-mace-medium-01",
+   "name": "Deep Mace",
+   "slot": "weapon",
+   "description": "Compact and dwarf-forged.",
+   "icon": "images/weapons/dr-mace-medium-01.png",
+   "models": [
+    "models/roaming/weapons/dr-mace-medium-01.glb"
+   ],
+   "weapon": {
+    "class": "mace",
+    "rarity": "uncommon",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-mace-medium-02",
+   "name": "Ribbed Mace",
+   "slot": "weapon",
+   "description": "A bronze head with heavy ribs.",
+   "icon": "images/weapons/dr-mace-medium-02.png",
+   "models": [
+    "models/roaming/weapons/dr-mace-medium-02.glb"
+   ],
+   "weapon": {
+    "class": "mace",
+    "rarity": "uncommon",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-mace-medium-03",
+   "name": "Spiked Warmace",
+   "slot": "weapon",
+   "description": "A ball of spikes on a bronze haft.",
+   "icon": "images/weapons/dr-mace-medium-03.png",
+   "models": [
+    "models/roaming/weapons/dr-mace-medium-03.glb"
+   ],
+   "weapon": {
+    "class": "mace",
+    "rarity": "rare",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-warhammer-large-01",
+   "name": "Vault Warhammer",
+   "slot": "weapon",
+   "description": "A square bronze head and a spike.",
+   "icon": "images/weapons/dr-warhammer-large-01.png",
+   "models": [
+    "models/roaming/weapons/dr-warhammer-large-01.glb"
+   ],
+   "weapon": {
+    "class": "hammer",
+    "rarity": "rare",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-warhammer-large-02",
+   "name": "Deep Warhammer",
+   "slot": "weapon",
+   "description": "Dark iron on a red-bound haft.",
+   "icon": "images/weapons/dr-warhammer-large-02.png",
+   "models": [
+    "models/roaming/weapons/dr-warhammer-large-02.glb"
+   ],
+   "weapon": {
+    "class": "hammer",
+    "rarity": "rare",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-warhammer-large-03",
+   "name": "Ancestor's Warhammer",
+   "slot": "weapon",
+   "description": "Twin-headed, old and unbroken.",
+   "icon": "images/weapons/dr-warhammer-large-03.png",
+   "models": [
+    "models/roaming/weapons/dr-warhammer-large-03.glb"
+   ],
+   "weapon": {
+    "class": "hammer",
+    "rarity": "rare",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-warhammer-large-04",
+   "name": "Runeforged Maul",
+   "slot": "weapon",
+   "description": "A spiked head lit from within.",
+   "icon": "images/weapons/dr-warhammer-large-04.png",
+   "models": [
+    "models/roaming/weapons/dr-warhammer-large-04.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "epic",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-warhammer-small-01",
+   "name": "Deep Hammer",
+   "slot": "weapon",
+   "description": "A dwarven war hammer, short and fierce.",
+   "icon": "images/weapons/dr-warhammer-small-01.png",
+   "models": [
+    "models/roaming/weapons/dr-warhammer-small-01.glb"
+   ],
+   "weapon": {
+    "class": "hammer",
+    "rarity": "uncommon",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-warhammer-small-02",
+   "name": "Vault Pick-Hammer",
+   "slot": "weapon",
+   "description": "A hammer face and a pick back.",
+   "icon": "images/weapons/dr-warhammer-small-02.png",
+   "models": [
+    "models/roaming/weapons/dr-warhammer-small-02.glb"
+   ],
+   "weapon": {
+    "class": "hammer",
+    "rarity": "uncommon",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "df-sword-01",
+   "name": "Runeblade",
+   "slot": "weapon",
+   "description": "A fortress sword with a blade of living rune-light.",
+   "icon": "images/weapons/df-sword-01.png",
+   "models": [
+    "models/roaming/weapons/df-sword-01.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "epic",
+    "pack": "Dark Fortress"
+   }
+  },
+  {
+   "id": "df-sword-02",
+   "name": "Warlord's Edge",
+   "slot": "weapon",
+   "description": "The Warlord's own pattern: dark steel, bright rune.",
+   "icon": "images/weapons/df-sword-02.png",
+   "models": [
+    "models/roaming/weapons/df-sword-02.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "epic",
+    "pack": "Dark Fortress"
+   }
+  },
+  {
+   "id": "df-sword-03",
+   "name": "Fortress Greatblade",
+   "slot": "weapon",
+   "description": "A wide rune-lit blade with a hooked guard.",
+   "icon": "images/weapons/df-sword-03.png",
+   "models": [
+    "models/roaming/weapons/df-sword-03.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "epic",
+    "pack": "Dark Fortress"
+   }
+  },
+  {
+   "id": "df-axe-01",
+   "name": "Rune Axe",
+   "slot": "weapon",
+   "description": "A fortress axe, its edge lit with runes.",
+   "icon": "images/weapons/df-axe-01.png",
+   "models": [
+    "models/roaming/weapons/df-axe-01.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "epic",
+    "pack": "Dark Fortress"
+   }
+  },
+  {
+   "id": "df-mace-01",
+   "name": "Horned Mace",
+   "slot": "weapon",
+   "description": "A ram's skull on a spiked haft. The eyes glow.",
+   "icon": "images/weapons/df-mace-01.png",
+   "models": [
+    "models/roaming/weapons/df-mace-01.glb"
+   ],
+   "weapon": {
+    "class": "mace",
+    "rarity": "epic",
+    "pack": "Dark Fortress"
+   }
+  },
+  {
+   "id": "df-mace-02",
+   "name": "Fortress Morningstar",
+   "slot": "weapon",
+   "description": "A ball of iron spikes from the fortress armory.",
+   "icon": "images/weapons/df-mace-02.png",
+   "models": [
+    "models/roaming/weapons/df-mace-02.glb"
+   ],
+   "weapon": {
+    "class": "mace",
+    "rarity": "epic",
+    "pack": "Dark Fortress"
+   }
+  },
+  {
+   "id": "df-hammer-01",
+   "name": "Rune Hammer",
+   "slot": "weapon",
+   "description": "A square rune-lit head on a bound haft.",
+   "icon": "images/weapons/df-hammer-01.png",
+   "models": [
+    "models/roaming/weapons/df-hammer-01.glb"
+   ],
+   "weapon": {
+    "class": "hammer",
+    "rarity": "epic",
+    "pack": "Dark Fortress"
+   }
+  },
+  {
+   "id": "df-club-01",
+   "name": "Skull Club",
+   "slot": "weapon",
+   "description": "Someone's skull on someone's femur.",
+   "icon": "images/weapons/df-club-01.png",
+   "models": [
+    "models/roaming/weapons/df-club-01.glb"
+   ],
+   "weapon": {
+    "class": "club",
+    "rarity": "epic",
+    "pack": "Dark Fortress"
+   }
+  },
+  {
+   "id": "df-saw-01",
+   "name": "Bone Saw",
+   "slot": "weapon",
+   "description": "A great circular blade of teeth. Nobody knows what it was for.",
+   "icon": "images/weapons/df-saw-01.png",
+   "models": [
+    "models/roaming/weapons/df-saw-01.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "epic",
+    "pack": "Dark Fortress"
+   }
+  },
+  {
+   "id": "df-sword-01-gold",
+   "name": "Gilded Runeblade",
+   "slot": "weapon",
+   "description": "A fortress sword with a blade of living rune-light. Gold-lit: the fortress kept these for its champions.",
+   "icon": "images/weapons/df-sword-01-gold.png",
+   "models": [
+    "models/roaming/weapons/df-sword-01-gold.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "legendary",
+    "pack": "Dark Fortress"
+   }
+  },
+  {
+   "id": "df-sword-02-gold",
+   "name": "Gilded Warlord's Edge",
+   "slot": "weapon",
+   "description": "The Warlord's own pattern: dark steel, bright rune. Gold-lit: the fortress kept these for its champions.",
+   "icon": "images/weapons/df-sword-02-gold.png",
+   "models": [
+    "models/roaming/weapons/df-sword-02-gold.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "legendary",
+    "pack": "Dark Fortress"
+   }
+  },
+  {
+   "id": "df-sword-03-gold",
+   "name": "Gilded Fortress Greatblade",
+   "slot": "weapon",
+   "description": "A wide rune-lit blade with a hooked guard. Gold-lit: the fortress kept these for its champions.",
+   "icon": "images/weapons/df-sword-03-gold.png",
+   "models": [
+    "models/roaming/weapons/df-sword-03-gold.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "legendary",
+    "pack": "Dark Fortress"
+   }
+  },
+  {
+   "id": "df-axe-01-gold",
+   "name": "Gilded Rune Axe",
+   "slot": "weapon",
+   "description": "A fortress axe, its edge lit with runes. Gold-lit: the fortress kept these for its champions.",
+   "icon": "images/weapons/df-axe-01-gold.png",
+   "models": [
+    "models/roaming/weapons/df-axe-01-gold.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "legendary",
+    "pack": "Dark Fortress"
+   }
+  },
+  {
+   "id": "df-hammer-01-gold",
+   "name": "Gilded Rune Hammer",
+   "slot": "weapon",
+   "description": "A square rune-lit head on a bound haft. Gold-lit: the fortress kept these for its champions.",
+   "icon": "images/weapons/df-hammer-01-gold.png",
+   "models": [
+    "models/roaming/weapons/df-hammer-01-gold.glb"
+   ],
+   "weapon": {
+    "class": "hammer",
+    "rarity": "legendary",
+    "pack": "Dark Fortress"
+   }
+  },
+  {
+   "id": "df-sword-01-ember",
+   "name": "Emberblade",
+   "slot": "weapon",
+   "description": "A Runeblade quenched in fire. The blade burns red.",
+   "icon": "images/weapons/df-sword-01-ember.png",
+   "models": [
+    "models/roaming/weapons/df-sword-01-ember.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "legendary",
+    "pack": "Dark Fortress"
+   }
+  },
+  {
+   "id": "df-sword-02-frost",
+   "name": "Frostbrand",
+   "slot": "weapon",
+   "description": "A Warlord's Edge cooled in the deep. The blade glows cold.",
+   "icon": "images/weapons/df-sword-02-frost.png",
+   "models": [
+    "models/roaming/weapons/df-sword-02-frost.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "legendary",
+    "pack": "Dark Fortress"
+   }
+  },
+  {
+   "id": "pride-sword",
+   "name": "Prism Saber",
+   "slot": "weapon",
+   "description": "A bright one-handed blade. Quick slashes, a heavy thrust and a steady guard.",
+   "icon": "images/weapons/pride-sword.png",
+   "models": [
+    "models/roaming/weapons/pride-sword.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "rare",
+    "pack": "Pride Weapons"
+   }
+  },
+  {
+   "id": "pride-sword-dusk",
+   "name": "Dusk Saber",
+   "slot": "weapon",
+   "description": "An alternate palette for the same balanced sword. A different look, equal power.",
+   "icon": "images/weapons/pride-sword-dusk.png",
+   "models": [
+    "models/roaming/weapons/pride-sword-dusk.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "epic",
+    "pack": "Pride Weapons"
+   }
+  },
+  {
+   "id": "pride-sword-dawn",
+   "name": "Dawn Saber",
+   "slot": "weapon",
+   "description": "The prism saber in the colors of first light.",
+   "icon": "images/weapons/pride-sword-dawn.png",
+   "models": [
+    "models/roaming/weapons/pride-sword-dawn.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "legendary",
+    "pack": "Pride Weapons"
+   }
+  },
+  {
+   "id": "pride-sword-tide",
+   "name": "Tide Saber",
+   "slot": "weapon",
+   "description": "The prism saber in deep sea blues.",
+   "icon": "images/weapons/pride-sword-tide.png",
+   "models": [
+    "models/roaming/weapons/pride-sword-tide.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "legendary",
+    "pack": "Pride Weapons"
+   }
+  },
+  {
+   "id": "pride-sword-verdant",
+   "name": "Verdant Saber",
+   "slot": "weapon",
+   "description": "The prism saber in forest greens.",
+   "icon": "images/weapons/pride-sword-verdant.png",
+   "models": [
+    "models/roaming/weapons/pride-sword-verdant.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "legendary",
+    "pack": "Pride Weapons"
+   }
+  }
+ ]
+}

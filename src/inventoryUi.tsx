@@ -9,6 +9,7 @@ import {
 import { EquipmentItem, EquipmentSlot, EQUIPMENT_SLOTS, getEquipmentItem, getUnequippedItem } from './equipmentCatalog'
 import { getMenuLayout } from './menuLayout'
 import { menuColors, MenuAction as Action } from './menuUi'
+import { RARITIES, weaponStatLine, weaponSubtitle } from './weapons'
 
 const { white, muted, gold, cyan, line, panel, card, selectedCard, coral } = menuColors
 let hovered = ''
@@ -72,8 +73,9 @@ function BackpackCard({ item, index, scale: s }: { key?: string, item?: Equipmen
   const equipped = !!item && getCommittedLoadout(state.characterId)[item.slot] === item.id
   const id = item ? `item-${item.id}` : `empty-${index}`
   const hover = hovered === id && !!item
+  const rarity = item?.weapon ? RARITIES[item.weapon.rarity] : undefined
   return <UiEntity uiTransform={{ ...rect(666 + (index % 4) * 145, 205 + Math.floor(index / 4) * 109, 133, 98, s),
-    borderRadius: 3 * s, borderWidth: s, borderColor: selected ? cyan : hover ? gold : line,
+    borderRadius: 3 * s, borderWidth: s, borderColor: selected ? cyan : hover ? gold : rarity && rarity.rank > 0 ? rarity.color : line,
     alignItems: 'center', justifyContent: 'center', opacity: item ? 1 : 0.25,
     pointerFilter: item ? 'block' : 'none' }}
     uiBackground={{ color: selected ? selectedCard : card }}
@@ -85,6 +87,7 @@ function BackpackCard({ item, index, scale: s }: { key?: string, item?: Equipmen
       uiTransform={rect(0, 68, 133, 21, s)} />}
     {equipped && !isEmptyItem(item) && <Label value="✓" color={gold} fontSize={16 * s}
       uiTransform={rect(108, 3, 21, 23, s)} />}
+    {rarity && <UiEntity uiTransform={rect(4, 4, 6, 6, s)} uiBackground={{ color: rarity.color }} />}
     {selected && <UiEntity uiTransform={rect(18, 95, 97, 2, s)} uiBackground={{ color: cyan }} />}
   </UiEntity>
 }
@@ -167,11 +170,13 @@ export function InventoryUi() {
       <UiEntity uiTransform={{ ...rect(666, 584, 62, 62, s), alignItems: 'center', justifyContent: 'center' }}>
         <ItemIcon item={selected} size={60} scale={s} />
       </UiEntity>
-      <Label value={slotLabel(selected.slot).toUpperCase()} color={gold} fontSize={10 * s}
+      <Label value={selected.weapon ? weaponSubtitle(selected).toUpperCase() : slotLabel(selected.slot).toUpperCase()}
+        color={selected.weapon ? RARITIES[selected.weapon.rarity].color : gold} fontSize={10 * s}
         textAlign="middle-left" textWrap="nowrap" uiTransform={rect(744, 579, 488, 22, s)} />
       <Label value={selected.name} font="serif" color={white} fontSize={25 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={rect(744, 601, 490, 34, s)} />
-      <Label value={selected.description} color={muted} fontSize={12 * s} textAlign="middle-left"
+      <Label value={selected.weapon ? `${selected.description}  ${weaponStatLine(selected)}` : selected.description}
+        color={muted} fontSize={12 * s} textAlign="middle-left"
         uiTransform={rect(744, 637, 490, 35, s)} />
       <Label value={status} color={error ? coral : dirty ? cyan : muted} fontSize={11 * s} textAlign="middle-left"
         uiTransform={rect(666, 683, showAction ? 364 : 568, 26, s)} />

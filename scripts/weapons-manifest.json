@@ -1,0 +1,1756 @@
+{
+ "schemaVersion": 1,
+ "note": "Source packs live in the Downloads folder; scripts/build-weapons.py extracts what it needs. grip: metres to raise the weapon along its length before placing it in the hand (for meshes whose origin is at the pommel).",
+ "packs": {
+  "df": {
+   "zip": "POLYGON_Dark_Fortress_SourceFiles_v4.zip",
+   "fbx": "FBX/{name}.fbx",
+   "palettes": {
+    "rune": "Texture/Alts/PolygonDarkFortress_Texture_01_A.png",
+    "gold": "Texture/Alts/PolygonDarkFortress_Texture_03_A.png",
+    "ember": "Texture/Alts/PolygonDarkFortress_Texture_01_C.png",
+    "frost": "Texture/Alts/PolygonDarkFortress_Texture_02_A.png"
+   },
+   "emission": {
+    "rune": "Texture/Emissive/PolygonDarkFortress_Emissive_01_A.png",
+    "gold": "Texture/Emissive/PolygonDarkFortress_Emissive_03_A.png",
+    "ember": "Texture/Emissive/PolygonDarkFortress_Emissive_01_C.png",
+    "frost": "Texture/Emissive/PolygonDarkFortress_Emissive_02_A.png"
+   },
+   "label": "Dark Fortress"
+  },
+  "pr": {
+   "zip": "POLYGON_Pride_Weapons_SourceFiles_v1.zip",
+   "fbx": "SourceFiles/Models/{name}.fbx",
+   "palettes": {
+    "alt01": "SourceFiles/Textures/Alt/PolygonPrideWeapons_Texture_Alt_01.png",
+    "alt02": "SourceFiles/Textures/Alt/PolygonPrideWeapons_Texture_Alt_02.png",
+    "alt03": "SourceFiles/Textures/Alt/PolygonPrideWeapons_Texture_Alt_03.png",
+    "alt04": "SourceFiles/Textures/Alt/PolygonPrideWeapons_Texture_Alt_04.png",
+    "alt05": "SourceFiles/Textures/Alt/PolygonPrideWeapons_Texture_Alt_05.png",
+    "alt06": "SourceFiles/Textures/Alt/PolygonPrideWeapons_Texture_Alt_06.png",
+    "alt07": "SourceFiles/Textures/Alt/PolygonPrideWeapons_Texture_Alt_07.png",
+    "alt08": "SourceFiles/Textures/Alt/PolygonPrideWeapons_Texture_Alt_08.png",
+    "alt09": "SourceFiles/Textures/Alt/PolygonPrideWeapons_Texture_Alt_09.png",
+    "alt10": "SourceFiles/Textures/Alt/PolygonPrideWeapons_Texture_Alt_10.png"
+   },
+   "emission": {
+    "alt01": "SourceFiles/Textures/Emission/PolygonPrideWeapons_Alt_01_Emission.png",
+    "alt02": "SourceFiles/Textures/Emission/PolygonPrideWeapons_Texture_Alt_02_Emission.png",
+    "alt03": "SourceFiles/Textures/Emission/PolygonPrideWeapons_Texture_Alt_03_Emission.png",
+    "alt04": "SourceFiles/Textures/Emission/PolygonPrideWeapons_Texture_Alt_04_Emission.png",
+    "alt05": "SourceFiles/Textures/Emission/PolygonPrideWeapons_Texture_Alt_05_Emission.png",
+    "alt06": "SourceFiles/Textures/Emission/PolygonPrideWeapons_Texture_Alt_06_Emission.png",
+    "alt07": "SourceFiles/Textures/Emission/PolygonPrideWeapons_Texture_Alt_07_Emission.png",
+    "alt08": "SourceFiles/Textures/Emission/PolygonPrideWeapons_Texture_Alt_08_Emission.png",
+    "alt09": "SourceFiles/Textures/Emission/PolygonPrideWeapons_Texture_Alt_09_Emission.png",
+    "alt10": "SourceFiles/Textures/Emission/PolygonPrideWeapons_Texture_Alt_10_Emission.png"
+   },
+   "label": "Pride Weapons"
+  },
+  "dr": {
+   "zip": "POLYGON_Dungeons_Realms_SourceFiles_v6.zip",
+   "fbx": "FBX/{name}.fbx",
+   "palettes": {
+    "base": "Textures/Dungeons_2_Texture_01_A.png"
+   },
+   "emission": {
+    "base": "Textures/Dungeons_2_Texture_Emission_01.png"
+   },
+   "label": "Dungeon Realms"
+  },
+  "fk": {
+   "zip": "POLYGON_Fantasy_Kingdom_SourceFiles_v6.zip",
+   "fbx": "FBX/{name}.fbx",
+   "palettes": {
+    "base": "Textures/PolygonFantasyKingdom_Texture_01_A.png"
+   },
+   "emission": {},
+   "label": "Fantasy Kingdom"
+  },
+  "kn": {
+   "zip": "POLYGON_Knights_Source_Files_v3.zip",
+   "fbx": "Source_Files/FBX/{name}.fbx",
+   "palettes": {
+    "base": "Source_Files/Textures/Texture_01.png"
+   },
+   "emission": {},
+   "label": "Knights"
+  },
+  "gb": {
+   "zip": "POLYGON_Goblin_War_Camp_SourceFiles_v3.zip",
+   "fbx": "FBX/Weapons/{name}.fbx",
+   "palettes": {
+    "base": "Textures/Alts/PolygonGoblinWarCamp_Texture_01_A.png"
+   },
+   "emission": {},
+   "label": "Goblin War Camp"
+  },
+  "vk": {
+   "zip": "POLYGON_Vikings_Source_Files_v3.zip",
+   "fbx": "Source_Files/FBX/{name}.fbx",
+   "palettes": {
+    "base": "Source_Files/Textures/Texture_01.png"
+   },
+   "emission": {},
+   "label": "Vikings"
+  }
+ },
+ "weapons": [
+  {
+   "id": "gb-club-01",
+   "name": "Camp Club",
+   "pack": "gb",
+   "mesh": "SM_Wep_Club_01",
+   "palette": "base",
+   "class": "club",
+   "rarity": "common",
+   "description": "A length of firewood somebody swung once and kept."
+  },
+  {
+   "id": "gb-club-02",
+   "name": "Jawbone Club",
+   "pack": "gb",
+   "mesh": "SM_Wep_Club_02",
+   "palette": "base",
+   "class": "club",
+   "rarity": "common",
+   "description": "Something big died for this. It still bites."
+  },
+  {
+   "id": "gb-club-03",
+   "name": "Skull Cudgel",
+   "pack": "gb",
+   "mesh": "SM_Wep_Club_03",
+   "palette": "base",
+   "class": "club",
+   "rarity": "uncommon",
+   "description": "A goblin chieftain's answer to a mace."
+  },
+  {
+   "id": "gb-club-04",
+   "name": "Totem Bludgeon",
+   "pack": "gb",
+   "mesh": "SM_Wep_Club_04",
+   "palette": "base",
+   "class": "club",
+   "rarity": "uncommon",
+   "description": "Carved, feathered and far too heavy for the goblin who carried it."
+  },
+  {
+   "id": "gb-cleaver-01",
+   "name": "Butcher's Cleaver",
+   "pack": "gb",
+   "mesh": "SM_Wep_Cleaver_01",
+   "palette": "base",
+   "class": "dagger",
+   "rarity": "common",
+   "description": "Kitchen steel put to worse use."
+  },
+  {
+   "id": "gb-cleaver-02",
+   "name": "Rusted Chopper",
+   "pack": "gb",
+   "mesh": "SM_Wep_Cleaver_02",
+   "palette": "base",
+   "class": "dagger",
+   "rarity": "common",
+   "description": "The edge is mostly rust. Rust cuts too."
+  },
+  {
+   "id": "gb-dagger-01",
+   "name": "Scrap Shiv",
+   "pack": "gb",
+   "mesh": "SM_Wep_Dagger_01",
+   "palette": "base",
+   "class": "dagger",
+   "rarity": "common",
+   "description": "Hammered from a broken sword and wrapped in cord."
+  },
+  {
+   "id": "gb-axe-01",
+   "name": "Warcamp Hatchet",
+   "pack": "gb",
+   "mesh": "SM_Wep_Axe_01",
+   "palette": "base",
+   "class": "axe",
+   "rarity": "common",
+   "description": "Notched, bound and swung by a dozen owners."
+  },
+  {
+   "id": "gb-axe-02",
+   "name": "Bone Axe",
+   "pack": "gb",
+   "mesh": "SM_Wep_Axe_02",
+   "palette": "base",
+   "class": "axe",
+   "rarity": "common",
+   "description": "A stone edge lashed to a thigh bone."
+  },
+  {
+   "id": "gb-sword-01",
+   "name": "Scavenged Blade",
+   "pack": "gb",
+   "mesh": "SM_Wep_Sword_01",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "common",
+   "description": "Pulled off a battlefield and never cleaned."
+  },
+  {
+   "id": "gb-sword-02",
+   "name": "Raid Cutlass",
+   "pack": "gb",
+   "mesh": "SM_Wep_Sword_02",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "uncommon",
+   "description": "A goblin raider's pride: stolen, and sharp."
+  },
+  {
+   "id": "gb-sword-03",
+   "name": "Chieftain's Sword",
+   "pack": "gb",
+   "mesh": "SM_Wep_Sword_03",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "uncommon",
+   "description": "The one straight blade in the whole war camp."
+  },
+  {
+   "id": "vk-club-01",
+   "name": "Oar Club",
+   "pack": "vk",
+   "mesh": "SM_Wep_Club_01",
+   "palette": "base",
+   "class": "club",
+   "rarity": "common",
+   "description": "Half an oar. The other half is still in the fjord."
+  },
+  {
+   "id": "vk-ball-hammer-01",
+   "name": "Smith's Hammer",
+   "pack": "vk",
+   "mesh": "SM_Wep_Ball_Hammer_01",
+   "palette": "base",
+   "class": "hammer",
+   "rarity": "common",
+   "description": "Meant for iron. Works on skulls."
+  },
+  {
+   "id": "vk-hammer-01",
+   "name": "Raider's Hammer",
+   "pack": "vk",
+   "mesh": "SM_Wep_Hammer_01",
+   "palette": "base",
+   "class": "hammer",
+   "rarity": "uncommon",
+   "description": "A short haft and a heavy head, made to be swung from a boat."
+  },
+  {
+   "id": "vk-hammer-02",
+   "name": "Thane's Mallet",
+   "pack": "vk",
+   "mesh": "SM_Wep_Hammer_02",
+   "palette": "base",
+   "class": "hammer",
+   "rarity": "common",
+   "description": "Plain, balanced and unbreakable."
+  },
+  {
+   "id": "vk-hammerlarge-01",
+   "name": "Fjord Sledge",
+   "pack": "vk",
+   "mesh": "SM_Wep_HammerLarge_01",
+   "palette": "base",
+   "class": "great",
+   "rarity": "rare",
+   "description": "Two hands' worth of iron, swung with one."
+  },
+  {
+   "id": "vk-axe-01",
+   "name": "Bearded Axe",
+   "pack": "vk",
+   "mesh": "SM_Wep_Axe_01",
+   "palette": "base",
+   "class": "axe",
+   "rarity": "common",
+   "description": "The classic Norse edge, hooked to pull a shield aside."
+  },
+  {
+   "id": "vk-axe-02",
+   "name": "Hewing Axe",
+   "pack": "vk",
+   "mesh": "SM_Wep_Axe_02",
+   "palette": "base",
+   "class": "axe",
+   "rarity": "common",
+   "description": "A woodsman's tool with a warrior's edge."
+  },
+  {
+   "id": "vk-largeaxe-01",
+   "name": "Dane Axe",
+   "pack": "vk",
+   "mesh": "SM_Wep_LargeAxe_01",
+   "palette": "base",
+   "class": "great",
+   "rarity": "rare",
+   "description": "A long haft and a wide blade. Reach nobody argues with."
+  },
+  {
+   "id": "vk-sword-01",
+   "name": "Jarl's Sword",
+   "pack": "vk",
+   "mesh": "SM_Wep_Sword_01",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "uncommon",
+   "description": "Pattern-welded steel, the kind that gets a name."
+  },
+  {
+   "id": "fk-sword-01",
+   "name": "Squire's Sword",
+   "pack": "fk",
+   "mesh": "SM_Wep_Sword_01",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "uncommon",
+   "description": "The first real blade a squire is trusted with."
+  },
+  {
+   "id": "fk-sword-02",
+   "name": "Footman's Blade",
+   "pack": "fk",
+   "mesh": "SM_Wep_Sword_02",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "uncommon",
+   "description": "Standard issue for the castle guard."
+  },
+  {
+   "id": "fk-sword-03",
+   "name": "Arming Sword",
+   "pack": "fk",
+   "mesh": "SM_Wep_Sword_03",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "common",
+   "description": "A plain, honest sword. Thousands were made."
+  },
+  {
+   "id": "fk-sword-04",
+   "name": "Watchman's Sword",
+   "pack": "fk",
+   "mesh": "SM_Wep_Sword_04",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "common",
+   "description": "Carried on the walls every cold night."
+  },
+  {
+   "id": "fk-sword-05",
+   "name": "Kingsguard Longsword",
+   "pack": "fk",
+   "mesh": "SM_Wep_Sword_05",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "uncommon",
+   "description": "Blued steel with the guard's red grip."
+  },
+  {
+   "id": "fk-sword-06",
+   "name": "Castellan's Blade",
+   "pack": "fk",
+   "mesh": "SM_Wep_Sword_06",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "uncommon",
+   "description": "Kept sharp by a man who rarely drew it."
+  },
+  {
+   "id": "fk-sword-07",
+   "name": "Marshal's Longsword",
+   "pack": "fk",
+   "mesh": "SM_Wep_Sword_07",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "rare",
+   "description": "A longer blade for a longer reach."
+  },
+  {
+   "id": "fk-sword-08",
+   "name": "Bastard Sword",
+   "pack": "fk",
+   "mesh": "SM_Wep_Sword_08",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "rare",
+   "description": "Long enough for two hands, light enough for one."
+  },
+  {
+   "id": "fk-sword-09",
+   "name": "Short Sword",
+   "pack": "fk",
+   "mesh": "SM_Wep_Sword_09",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "common",
+   "description": "Quick to draw, quick to cut."
+  },
+  {
+   "id": "fk-sword-10",
+   "name": "Tourney Blade",
+   "pack": "fk",
+   "mesh": "SM_Wep_Sword_10",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "uncommon",
+   "description": "Won in the lists, kept for the war."
+  },
+  {
+   "id": "fk-sword-11",
+   "name": "Chapel Sword",
+   "pack": "fk",
+   "mesh": "SM_Wep_Sword_11",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "uncommon",
+   "description": "Blessed, or so the priest said."
+  },
+  {
+   "id": "fk-sword-12",
+   "name": "Knight's Longsword",
+   "pack": "fk",
+   "mesh": "SM_Wep_Sword_12",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "uncommon",
+   "description": "Gilded hilt, working edge."
+  },
+  {
+   "id": "fk-sword-13",
+   "name": "Crusader's Longsword",
+   "pack": "fk",
+   "mesh": "SM_Wep_Sword_13",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "rare",
+   "description": "Wide, heavy and tired of foreign sun."
+  },
+  {
+   "id": "fk-sword-14",
+   "name": "Duelist's Sabre",
+   "pack": "fk",
+   "mesh": "SM_Wep_Sword_14",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "rare",
+   "description": "Curved for the cut, quick in the hand."
+  },
+  {
+   "id": "fk-sword-15",
+   "name": "Crimson Kingsblade",
+   "pack": "fk",
+   "mesh": "SM_Wep_Sword_15",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "epic",
+   "description": "Red-edged steel from the king's own forge."
+  },
+  {
+   "id": "fk-sword-16",
+   "name": "Heraldic Longsword",
+   "pack": "fk",
+   "mesh": "SM_Wep_Sword_16",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "rare",
+   "description": "A house sigil worked into the guard."
+  },
+  {
+   "id": "fk-sword-17",
+   "name": "Bloodoath Blade",
+   "pack": "fk",
+   "mesh": "SM_Wep_Sword_17",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "epic",
+   "description": "Sworn on, bled on, never sheathed unpaid."
+  },
+  {
+   "id": "fk-sword-18",
+   "name": "Vermilion Fang",
+   "pack": "fk",
+   "mesh": "SM_Wep_Sword_18",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "uncommon",
+   "description": "A slim red blade for a fast hand."
+  },
+  {
+   "id": "fk-axe-01",
+   "name": "Woodsman's Axe",
+   "pack": "fk",
+   "mesh": "SM_Wep_Axe_01",
+   "palette": "base",
+   "class": "axe",
+   "rarity": "common",
+   "description": "Fells trees. Fells men."
+  },
+  {
+   "id": "fk-axe-02",
+   "name": "Guard Axe",
+   "pack": "fk",
+   "mesh": "SM_Wep_Axe_02",
+   "palette": "base",
+   "class": "axe",
+   "rarity": "uncommon",
+   "description": "A long-hafted axe for the castle gate."
+  },
+  {
+   "id": "fk-axe-03",
+   "name": "Twin-Bit Axe",
+   "pack": "fk",
+   "mesh": "SM_Wep_Axe_03",
+   "palette": "base",
+   "class": "great",
+   "rarity": "rare",
+   "description": "Two edges so neither side of the swing is wasted."
+  },
+  {
+   "id": "fk-axe-04",
+   "name": "Horned Axe",
+   "pack": "fk",
+   "mesh": "SM_Wep_Axe_04",
+   "palette": "base",
+   "class": "axe",
+   "rarity": "uncommon",
+   "description": "A wide crescent edge on a plain haft."
+  },
+  {
+   "id": "fk-axe-05",
+   "name": "Kingsguard Axe",
+   "pack": "fk",
+   "mesh": "SM_Wep_Axe_05",
+   "palette": "base",
+   "class": "great",
+   "rarity": "rare",
+   "description": "Red-wrapped and heavy at the head."
+  },
+  {
+   "id": "fk-axe-06",
+   "name": "Reaver's Axe",
+   "pack": "fk",
+   "mesh": "SM_Wep_Axe_06",
+   "palette": "base",
+   "class": "axe",
+   "rarity": "uncommon",
+   "description": "Curved for pulling riders from saddles."
+  },
+  {
+   "id": "fk-axe-07",
+   "name": "Broad Axe",
+   "pack": "fk",
+   "mesh": "SM_Wep_Axe_07",
+   "palette": "base",
+   "class": "axe",
+   "rarity": "uncommon",
+   "description": "As wide as it is honest."
+  },
+  {
+   "id": "fk-axe-08",
+   "name": "Executioner's Axe",
+   "pack": "fk",
+   "mesh": "SM_Wep_Axe_08",
+   "palette": "base",
+   "class": "great",
+   "rarity": "epic",
+   "description": "Only ever needs one swing."
+  },
+  {
+   "id": "fk-axe-09",
+   "name": "Hand Axe",
+   "pack": "fk",
+   "mesh": "SM_Wep_Axe_09",
+   "palette": "base",
+   "class": "axe",
+   "rarity": "common",
+   "description": "Small, quick and easy to throw. Don't."
+  },
+  {
+   "id": "fk-axe-10",
+   "name": "Battle Axe",
+   "pack": "fk",
+   "mesh": "SM_Wep_Axe_10",
+   "palette": "base",
+   "class": "axe",
+   "rarity": "uncommon",
+   "description": "The soldier's axe, no ornament, no mercy."
+  },
+  {
+   "id": "fk-axe-11",
+   "name": "Long Axe",
+   "pack": "fk",
+   "mesh": "SM_Wep_Axe_11",
+   "palette": "base",
+   "class": "great",
+   "rarity": "rare",
+   "description": "A slim blade on the longest haft in the armory."
+  },
+  {
+   "id": "fk-dagger-01",
+   "name": "Rondel Dagger",
+   "pack": "fk",
+   "mesh": "SM_Wep_Dagger_01",
+   "palette": "base",
+   "class": "dagger",
+   "rarity": "common",
+   "description": "A needle for finding gaps in plate."
+  },
+  {
+   "id": "fk-dagger-02",
+   "name": "Bollock Dagger",
+   "pack": "fk",
+   "mesh": "SM_Wep_Dagger_02",
+   "palette": "base",
+   "class": "dagger",
+   "rarity": "common",
+   "description": "Everyone carries one. Few admit it."
+  },
+  {
+   "id": "fk-dagger-03",
+   "name": "Guard's Dagger",
+   "pack": "fk",
+   "mesh": "SM_Wep_Dagger_03",
+   "palette": "base",
+   "class": "dagger",
+   "rarity": "uncommon",
+   "description": "A wider blade with a proper crossguard."
+  },
+  {
+   "id": "fk-dagger-04",
+   "name": "Knight's Dirk",
+   "pack": "fk",
+   "mesh": "SM_Wep_Dagger_04",
+   "palette": "base",
+   "class": "dagger",
+   "rarity": "uncommon",
+   "description": "Kept for when the sword is lost."
+  },
+  {
+   "id": "fk-dagger-05",
+   "name": "Quillon Dagger",
+   "pack": "fk",
+   "mesh": "SM_Wep_Dagger_05",
+   "palette": "base",
+   "class": "dagger",
+   "rarity": "common",
+   "description": "Plain steel, plain wood, sharp point."
+  },
+  {
+   "id": "fk-dagger-06",
+   "name": "Parrying Sword",
+   "pack": "fk",
+   "mesh": "SM_Wep_Dagger_06",
+   "palette": "base",
+   "class": "dagger",
+   "rarity": "rare",
+   "description": "Long for a dagger, short for a sword. Perfect for both."
+  },
+  {
+   "id": "fk-dagger-07",
+   "name": "Hunting Dagger",
+   "pack": "fk",
+   "mesh": "SM_Wep_Dagger_07",
+   "palette": "base",
+   "class": "dagger",
+   "rarity": "uncommon",
+   "description": "Made for boar. Boar are tougher than most men."
+  },
+  {
+   "id": "fk-knife-01",
+   "name": "Kitchen Knife",
+   "pack": "fk",
+   "mesh": "SM_Wep_Knife_01",
+   "palette": "base",
+   "class": "dagger",
+   "rarity": "common",
+   "description": "Not a weapon. Tell that to the last cook."
+  },
+  {
+   "id": "fk-knife-02",
+   "name": "Carving Knife",
+   "pack": "fk",
+   "mesh": "SM_Wep_Knife_02",
+   "palette": "base",
+   "class": "dagger",
+   "rarity": "common",
+   "description": "Long and thin and sharper than it should be."
+  },
+  {
+   "id": "fk-knife-03",
+   "name": "Skinning Knife",
+   "pack": "fk",
+   "mesh": "SM_Wep_Knife_03",
+   "palette": "base",
+   "class": "dagger",
+   "rarity": "common",
+   "description": "A pale, narrow blade."
+  },
+  {
+   "id": "fk-knife-04",
+   "name": "Paring Knife",
+   "pack": "fk",
+   "mesh": "SM_Wep_Knife_04",
+   "palette": "base",
+   "class": "dagger",
+   "rarity": "common",
+   "description": "Small enough to hide. Sharp enough to matter."
+  },
+  {
+   "id": "fk-hammer-01",
+   "name": "Warhammer",
+   "pack": "fk",
+   "mesh": "SM_Wep_Hammer_01",
+   "palette": "base",
+   "class": "hammer",
+   "rarity": "rare",
+   "description": "A square head and a spike. Plate means nothing."
+  },
+  {
+   "id": "fk-hammer-02",
+   "name": "Mason's Hammer",
+   "pack": "fk",
+   "mesh": "SM_Wep_Hammer_02",
+   "palette": "base",
+   "class": "hammer",
+   "rarity": "common",
+   "description": "Builds castles. Unbuilds knights."
+  },
+  {
+   "id": "fk-hammer-03",
+   "name": "Horseman's Hammer",
+   "pack": "fk",
+   "mesh": "SM_Wep_Hammer_03",
+   "palette": "base",
+   "class": "hammer",
+   "rarity": "uncommon",
+   "description": "Light in the hand, hard on the helm."
+  },
+  {
+   "id": "fk-hammer-04",
+   "name": "Gate Maul",
+   "pack": "fk",
+   "mesh": "SM_Wep_Hammer_04",
+   "palette": "base",
+   "class": "great",
+   "rarity": "rare",
+   "description": "A long haft and a head like a doorstop."
+  },
+  {
+   "id": "fk-hammer-05",
+   "name": "Kingsguard Hammer",
+   "pack": "fk",
+   "mesh": "SM_Wep_Hammer_05",
+   "palette": "base",
+   "class": "hammer",
+   "rarity": "uncommon",
+   "description": "Red-wrapped haft, blued head."
+  },
+  {
+   "id": "fk-hammer-06",
+   "name": "Judgement",
+   "pack": "fk",
+   "mesh": "SM_Wep_Hammer_06",
+   "palette": "base",
+   "class": "great",
+   "rarity": "epic",
+   "description": "The royal executioner's hammer. Never rusts."
+  },
+  {
+   "id": "fk-mace-01",
+   "name": "Flanged Mace",
+   "pack": "fk",
+   "mesh": "SM_Wep_Mace_01",
+   "palette": "base",
+   "class": "mace",
+   "rarity": "common",
+   "description": "Iron flanges on a short haft."
+  },
+  {
+   "id": "fk-mace-02",
+   "name": "Knight's Mace",
+   "pack": "fk",
+   "mesh": "SM_Wep_Mace_02",
+   "palette": "base",
+   "class": "mace",
+   "rarity": "uncommon",
+   "description": "A slender haft and a heavy round head."
+  },
+  {
+   "id": "fk-mace-03",
+   "name": "Morning Star",
+   "pack": "fk",
+   "mesh": "SM_Wep_Mace_03",
+   "palette": "base",
+   "class": "mace",
+   "rarity": "rare",
+   "description": "Spikes on a ball on a stick. Simple. Awful."
+  },
+  {
+   "id": "fk-mace-04",
+   "name": "Footman's Mace",
+   "pack": "fk",
+   "mesh": "SM_Wep_Mace_04",
+   "palette": "base",
+   "class": "mace",
+   "rarity": "common",
+   "description": "Standard issue for breaking shields."
+  },
+  {
+   "id": "fk-mace-05",
+   "name": "Chapel Mace",
+   "pack": "fk",
+   "mesh": "SM_Wep_Mace_05",
+   "palette": "base",
+   "class": "mace",
+   "rarity": "uncommon",
+   "description": "A priest's weapon: no edge, no sin."
+  },
+  {
+   "id": "fk-mace-06",
+   "name": "Spiked Club",
+   "pack": "fk",
+   "mesh": "SM_Wep_Mace_06",
+   "palette": "base",
+   "class": "mace",
+   "rarity": "common",
+   "description": "A club that met a blacksmith.",
+   "grip": 0.09
+  },
+  {
+   "id": "fk-sceptre-01",
+   "name": "Iron Sceptre",
+   "pack": "fk",
+   "mesh": "SM_Wep_Sceptre_01",
+   "palette": "base",
+   "class": "mace",
+   "rarity": "rare",
+   "description": "An officer's baton, heavier than it looks.",
+   "grip": 0.2
+  },
+  {
+   "id": "fk-sceptre-02",
+   "name": "Bishop's Sceptre",
+   "pack": "fk",
+   "mesh": "SM_Wep_Sceptre_02",
+   "palette": "base",
+   "class": "mace",
+   "rarity": "rare",
+   "description": "A jewelled head on a dark shaft.",
+   "grip": 0.2
+  },
+  {
+   "id": "fk-sceptre-03",
+   "name": "Herald's Rod",
+   "pack": "fk",
+   "mesh": "SM_Wep_Sceptre_03",
+   "palette": "base",
+   "class": "mace",
+   "rarity": "uncommon",
+   "description": "Announces. Also concludes.",
+   "grip": 0.2
+  },
+  {
+   "id": "fk-sceptre-04",
+   "name": "Sceptre of the Crown",
+   "pack": "fk",
+   "mesh": "SM_Wep_Sceptre_04",
+   "palette": "base",
+   "class": "mace",
+   "rarity": "epic",
+   "description": "Gold cross, gold head, iron heart.",
+   "grip": 0.2
+  },
+  {
+   "id": "fk-sceptre-05",
+   "name": "Sunburst Sceptre",
+   "pack": "fk",
+   "mesh": "SM_Wep_Sceptre_05",
+   "palette": "base",
+   "class": "mace",
+   "rarity": "epic",
+   "description": "The high priest's mace, gilded and blessed.",
+   "grip": 0.2
+  },
+  {
+   "id": "fk-sceptre-06",
+   "name": "Steward's Rod",
+   "pack": "fk",
+   "mesh": "SM_Wep_Sceptre_06",
+   "palette": "base",
+   "class": "mace",
+   "rarity": "uncommon",
+   "description": "A plain sceptre for a plain office.",
+   "grip": 0.2
+  },
+  {
+   "id": "fk-sceptre-07",
+   "name": "Orb Sceptre",
+   "pack": "fk",
+   "mesh": "SM_Wep_Sceptre_07",
+   "palette": "base",
+   "class": "mace",
+   "rarity": "uncommon",
+   "description": "A silver orb on a red-wrapped shaft.",
+   "grip": 0.2
+  },
+  {
+   "id": "fk-sceptre-08",
+   "name": "Regent's Sceptre",
+   "pack": "fk",
+   "mesh": "SM_Wep_Sceptre_08",
+   "palette": "base",
+   "class": "mace",
+   "rarity": "rare",
+   "description": "Carried in the king's absence. Swung in his name.",
+   "grip": 0.2
+  },
+  {
+   "id": "fk-sceptre-09",
+   "name": "Chancellor's Sceptre",
+   "pack": "fk",
+   "mesh": "SM_Wep_Sceptre_09",
+   "palette": "base",
+   "class": "mace",
+   "rarity": "rare",
+   "description": "Signs decrees. Ends arguments.",
+   "grip": 0.2
+  },
+  {
+   "id": "kn-broadsword-01",
+   "name": "Knight's Broadsword",
+   "pack": "kn",
+   "mesh": "SM_Wep_Broadsword_01",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "rare",
+   "description": "Wide, gilded and made for the charge."
+  },
+  {
+   "id": "kn-rapier-01",
+   "name": "Court Rapier",
+   "pack": "kn",
+   "mesh": "SM_Wep_Rapier_01",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "rare",
+   "description": "Thin as a lie and twice as quick."
+  },
+  {
+   "id": "kn-zweihander-01",
+   "name": "Zweihander",
+   "pack": "kn",
+   "mesh": "SM_Wep_Zweihander_01",
+   "palette": "base",
+   "class": "great",
+   "rarity": "epic",
+   "description": "A sword the height of a man. You will need both hands and all your nerve."
+  },
+  {
+   "id": "dr-sword-small-01",
+   "name": "Deep Gladius",
+   "pack": "dr",
+   "mesh": "SM_Wep_Sword_Small_01",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "common",
+   "description": "A stubby dwarven blade for tight tunnels."
+  },
+  {
+   "id": "dr-sword-small-02",
+   "name": "Vault Shortsword",
+   "pack": "dr",
+   "mesh": "SM_Wep_Sword_Small_02",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "uncommon",
+   "description": "Bronze-hilted, from a sealed vault."
+  },
+  {
+   "id": "dr-sword-small-03",
+   "name": "Miner's Sword",
+   "pack": "dr",
+   "mesh": "SM_Wep_Sword_Small_03",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "common",
+   "description": "Sharpened on rock."
+  },
+  {
+   "id": "dr-sword-small-04",
+   "name": "Tunnel Blade",
+   "pack": "dr",
+   "mesh": "SM_Wep_Sword_Small_04",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "common",
+   "description": "Short, because the ceilings are."
+  },
+  {
+   "id": "dr-sword-small-05",
+   "name": "Dwarven Shortsword",
+   "pack": "dr",
+   "mesh": "SM_Wep_Sword_Small_05",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "uncommon",
+   "description": "Thick spine, hard edge."
+  },
+  {
+   "id": "dr-sword-small-06",
+   "name": "Delver's Sword",
+   "pack": "dr",
+   "mesh": "SM_Wep_Sword_Small_06",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "common",
+   "description": "Standard kit for the deep roads."
+  },
+  {
+   "id": "dr-sword-medium-01",
+   "name": "Deep Longsword",
+   "pack": "dr",
+   "mesh": "SM_Wep_Sword_Medium_01",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "uncommon",
+   "description": "Balanced for a dwarf, fine for anyone."
+  },
+  {
+   "id": "dr-sword-medium-02",
+   "name": "Vault Sabre",
+   "pack": "dr",
+   "mesh": "SM_Wep_Sword_Medium_02",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "uncommon",
+   "description": "A curved blade with a bronze knuckle."
+  },
+  {
+   "id": "dr-sword-medium-03",
+   "name": "Ancestor's Sword",
+   "pack": "dr",
+   "mesh": "SM_Wep_Sword_Medium_03",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "rare",
+   "description": "Older than the hall it was found in."
+  },
+  {
+   "id": "dr-sword-medium-04",
+   "name": "Ironroot Blade",
+   "pack": "dr",
+   "mesh": "SM_Wep_Sword_Medium_04",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "uncommon",
+   "description": "A dark steel edge on a red grip."
+  },
+  {
+   "id": "dr-sword-medium-05",
+   "name": "Gilded Scimitar",
+   "pack": "dr",
+   "mesh": "SM_Wep_Sword_Medium_05",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "rare",
+   "description": "Curved and gilded, a merchant-prince's blade."
+  },
+  {
+   "id": "dr-sword-medium-06",
+   "name": "Deep Falchion",
+   "pack": "dr",
+   "mesh": "SM_Wep_Sword_Medium_06",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "rare",
+   "description": "One wide edge, bronze-backed."
+  },
+  {
+   "id": "dr-sword-medium-07",
+   "name": "Hooked Falchion",
+   "pack": "dr",
+   "mesh": "SM_Wep_Sword_Medium_07",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "uncommon",
+   "description": "The point curls back to catch a guard."
+  },
+  {
+   "id": "dr-sword-medium-08",
+   "name": "Runeforged Sword",
+   "pack": "dr",
+   "mesh": "SM_Wep_Sword_Medium_08",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "rare",
+   "description": "A long blade with veins of red rune-light."
+  },
+  {
+   "id": "dr-sword-medium-09",
+   "name": "Kinslayer",
+   "pack": "dr",
+   "mesh": "SM_Wep_Sword_Medium_09",
+   "palette": "base",
+   "class": "sword",
+   "rarity": "epic",
+   "description": "A dwarven king's sword, and the reason he was the last."
+  },
+  {
+   "id": "dr-sword-large-01",
+   "name": "Hall Guard's Sword",
+   "pack": "dr",
+   "mesh": "SM_Wep_Sword_Large_01",
+   "palette": "base",
+   "class": "great",
+   "rarity": "rare",
+   "description": "The blade of the door-wardens of the deep."
+  },
+  {
+   "id": "dr-sword-large-02",
+   "name": "Vault Greatsword",
+   "pack": "dr",
+   "mesh": "SM_Wep_Sword_Large_02",
+   "palette": "base",
+   "class": "great",
+   "rarity": "rare",
+   "description": "A long bronze blade from the treasure vaults."
+  },
+  {
+   "id": "dr-sword-large-03",
+   "name": "Deep Claymore",
+   "pack": "dr",
+   "mesh": "SM_Wep_Sword_Large_03",
+   "palette": "base",
+   "class": "great",
+   "rarity": "rare",
+   "description": "A dark blade, longer than a dwarf is tall."
+  },
+  {
+   "id": "dr-sword-large-04",
+   "name": "Ancestor's Greatsword",
+   "pack": "dr",
+   "mesh": "SM_Wep_Sword_Large_04",
+   "palette": "base",
+   "class": "great",
+   "rarity": "epic",
+   "description": "Cut from a hall-pillar's worth of steel."
+  },
+  {
+   "id": "dr-sword-large-05",
+   "name": "Gilded Greatsword",
+   "pack": "dr",
+   "mesh": "SM_Wep_Sword_Large_05",
+   "palette": "base",
+   "class": "great",
+   "rarity": "rare",
+   "description": "Gold along the fuller, bronze at the guard."
+  },
+  {
+   "id": "dr-sword-large-06",
+   "name": "Hooked Cleaver",
+   "pack": "dr",
+   "mesh": "SM_Wep_Sword_Large_06",
+   "palette": "base",
+   "class": "great",
+   "rarity": "rare",
+   "description": "Wide, curved and eager."
+  },
+  {
+   "id": "dr-sword-large-07",
+   "name": "Delver's Greatsword",
+   "pack": "dr",
+   "mesh": "SM_Wep_Sword_Large_07",
+   "palette": "base",
+   "class": "great",
+   "rarity": "rare",
+   "description": "Long, plain and dependable."
+  },
+  {
+   "id": "dr-sword-large-08",
+   "name": "Dark Iron Greatsword",
+   "pack": "dr",
+   "mesh": "SM_Wep_Sword_Large_08",
+   "palette": "base",
+   "class": "great",
+   "rarity": "rare",
+   "description": "Black steel that drinks the torchlight."
+  },
+  {
+   "id": "dr-sword-large-09",
+   "name": "Long Falchion",
+   "pack": "dr",
+   "mesh": "SM_Wep_Sword_Large_09",
+   "palette": "base",
+   "class": "great",
+   "rarity": "uncommon",
+   "description": "A single heavy edge, bronze-backed."
+  },
+  {
+   "id": "dr-sword-large-10",
+   "name": "Vault Scimitar",
+   "pack": "dr",
+   "mesh": "SM_Wep_Sword_Large_10",
+   "palette": "base",
+   "class": "great",
+   "rarity": "uncommon",
+   "description": "A wide curve of bright steel."
+  },
+  {
+   "id": "dr-sword-large-11",
+   "name": "Mountainbreaker",
+   "pack": "dr",
+   "mesh": "SM_Wep_Sword_Large_11",
+   "palette": "base",
+   "class": "great",
+   "rarity": "legendary",
+   "description": "The largest blade the deep forges ever cast. Rune-lit down its whole length."
+  },
+  {
+   "id": "dr-sword-large-12",
+   "name": "Grave Warden",
+   "pack": "dr",
+   "mesh": "SM_Wep_Sword_Large_12",
+   "palette": "base",
+   "class": "great",
+   "rarity": "epic",
+   "description": "A sword left to guard a tomb. It still does."
+  },
+  {
+   "id": "dr-axe-small-01",
+   "name": "Deep Hatchet",
+   "pack": "dr",
+   "mesh": "SM_Wep_Axe_Small_01",
+   "palette": "base",
+   "class": "axe",
+   "rarity": "common",
+   "description": "A dwarven hand axe."
+  },
+  {
+   "id": "dr-axe-small-02",
+   "name": "Vault Axe",
+   "pack": "dr",
+   "mesh": "SM_Wep_Axe_Small_02",
+   "palette": "base",
+   "class": "axe",
+   "rarity": "uncommon",
+   "description": "Bronze-edged, from the vaults."
+  },
+  {
+   "id": "dr-axe-small-03",
+   "name": "Miner's Axe",
+   "pack": "dr",
+   "mesh": "SM_Wep_Axe_Small_03",
+   "palette": "base",
+   "class": "axe",
+   "rarity": "common",
+   "description": "Cuts timber props. Cuts more."
+  },
+  {
+   "id": "dr-axe-small-04",
+   "name": "Delver's Axe",
+   "pack": "dr",
+   "mesh": "SM_Wep_Axe_Small_04",
+   "palette": "base",
+   "class": "axe",
+   "rarity": "uncommon",
+   "description": "A wide blade on a short haft."
+  },
+  {
+   "id": "dr-axe-small-05",
+   "name": "Tunnel Pick",
+   "pack": "dr",
+   "mesh": "SM_Wep_Axe_Small_05",
+   "palette": "base",
+   "class": "axe",
+   "rarity": "common",
+   "description": "Half pick, half axe, all business."
+  },
+  {
+   "id": "dr-axe-small-06",
+   "name": "Ironroot Axe",
+   "pack": "dr",
+   "mesh": "SM_Wep_Axe_Small_06",
+   "palette": "base",
+   "class": "axe",
+   "rarity": "uncommon",
+   "description": "A heavy head on a red-bound haft."
+  },
+  {
+   "id": "dr-axe-large-01",
+   "name": "Hall Guard's Axe",
+   "pack": "dr",
+   "mesh": "SM_Wep_Axe_Large_01",
+   "palette": "base",
+   "class": "great",
+   "rarity": "rare",
+   "description": "A bearded axe with a spiked back."
+  },
+  {
+   "id": "dr-axe-large-02",
+   "name": "Vault Battleaxe",
+   "pack": "dr",
+   "mesh": "SM_Wep_Axe_Large_02",
+   "palette": "base",
+   "class": "great",
+   "rarity": "rare",
+   "description": "Bronze and steel, made to hold a door."
+  },
+  {
+   "id": "dr-axe-large-03",
+   "name": "Ancestor's Axe",
+   "pack": "dr",
+   "mesh": "SM_Wep_Axe_Large_03",
+   "palette": "base",
+   "class": "great",
+   "rarity": "rare",
+   "description": "The old pattern, still the best."
+  },
+  {
+   "id": "dr-axe-large-04",
+   "name": "Deep Battleaxe",
+   "pack": "dr",
+   "mesh": "SM_Wep_Axe_Large_04",
+   "palette": "base",
+   "class": "great",
+   "rarity": "rare",
+   "description": "A tall blade for a tall swing."
+  },
+  {
+   "id": "dr-axe-large-05",
+   "name": "Runeforged Axe",
+   "pack": "dr",
+   "mesh": "SM_Wep_Axe_Large_05",
+   "palette": "base",
+   "class": "axe",
+   "rarity": "epic",
+   "description": "Red rune-light along the edge."
+  },
+  {
+   "id": "dr-axe-large-06",
+   "name": "Dark Iron Axe",
+   "pack": "dr",
+   "mesh": "SM_Wep_Axe_Large_06",
+   "palette": "base",
+   "class": "axe",
+   "rarity": "epic",
+   "description": "A double-edged head of black steel."
+  },
+  {
+   "id": "dr-axe-large-07",
+   "name": "Delver's Battleaxe",
+   "pack": "dr",
+   "mesh": "SM_Wep_Axe_Large_07",
+   "palette": "base",
+   "class": "axe",
+   "rarity": "rare",
+   "description": "A crescent edge and a long haft."
+  },
+  {
+   "id": "dr-knife-large-01",
+   "name": "Deep Dirk",
+   "pack": "dr",
+   "mesh": "SM_Wep_Knife_Large_01",
+   "palette": "base",
+   "class": "dagger",
+   "rarity": "common",
+   "description": "A long dwarven knife."
+  },
+  {
+   "id": "dr-knife-large-02",
+   "name": "Gilded Kukri",
+   "pack": "dr",
+   "mesh": "SM_Wep_Knife_Large_02",
+   "palette": "base",
+   "class": "dagger",
+   "rarity": "uncommon",
+   "description": "A curved bronze blade from the vaults.",
+   "grip": 0.15
+  },
+  {
+   "id": "dr-knife-medium-01",
+   "name": "Curved Skinner",
+   "pack": "dr",
+   "mesh": "SM_Wep_Knife_Medium_01",
+   "palette": "base",
+   "class": "dagger",
+   "rarity": "common",
+   "description": "A hooked dwarven knife.",
+   "grip": 0.15
+  },
+  {
+   "id": "dr-knife-small-01",
+   "name": "Belt Knife",
+   "pack": "dr",
+   "mesh": "SM_Wep_Knife_Small_01",
+   "palette": "base",
+   "class": "dagger",
+   "rarity": "common",
+   "description": "Small and always there.",
+   "grip": 0.14
+  },
+  {
+   "id": "dr-knife-small-02",
+   "name": "Deep Stiletto",
+   "pack": "dr",
+   "mesh": "SM_Wep_Knife_Small_02",
+   "palette": "base",
+   "class": "dagger",
+   "rarity": "common",
+   "description": "A needle of dark steel.",
+   "grip": 0.14
+  },
+  {
+   "id": "dr-mace-large-01",
+   "name": "Deep Warmace",
+   "pack": "dr",
+   "mesh": "SM_Wep_Mace_Large_01",
+   "palette": "base",
+   "class": "mace",
+   "rarity": "rare",
+   "description": "A dwarven mace with a long reach."
+  },
+  {
+   "id": "dr-mace-large-02",
+   "name": "Vault Mace",
+   "pack": "dr",
+   "mesh": "SM_Wep_Mace_Large_02",
+   "palette": "base",
+   "class": "mace",
+   "rarity": "rare",
+   "description": "A bronze head, ribbed and heavy."
+  },
+  {
+   "id": "dr-mace-large-03",
+   "name": "Ancestor's Maul",
+   "pack": "dr",
+   "mesh": "SM_Wep_Mace_Large_03",
+   "palette": "base",
+   "class": "great",
+   "rarity": "epic",
+   "description": "A twin-bladed head of dark steel and bronze."
+  },
+  {
+   "id": "dr-mace-large-05",
+   "name": "Delver's Warmace",
+   "pack": "dr",
+   "mesh": "SM_Wep_Mace_Large_05",
+   "palette": "base",
+   "class": "mace",
+   "rarity": "rare",
+   "description": "A long haft and a spiked crown."
+  },
+  {
+   "id": "dr-mace-medium-01",
+   "name": "Deep Mace",
+   "pack": "dr",
+   "mesh": "SM_Wep_Mace_Medium_01",
+   "palette": "base",
+   "class": "mace",
+   "rarity": "uncommon",
+   "description": "Compact and dwarf-forged.",
+   "grip": 0.17
+  },
+  {
+   "id": "dr-mace-medium-02",
+   "name": "Ribbed Mace",
+   "pack": "dr",
+   "mesh": "SM_Wep_Mace_Medium_02",
+   "palette": "base",
+   "class": "mace",
+   "rarity": "uncommon",
+   "description": "A bronze head with heavy ribs."
+  },
+  {
+   "id": "dr-mace-medium-03",
+   "name": "Spiked Warmace",
+   "pack": "dr",
+   "mesh": "SM_Wep_Mace_Medium_03",
+   "palette": "base",
+   "class": "mace",
+   "rarity": "rare",
+   "description": "A ball of spikes on a bronze haft."
+  },
+  {
+   "id": "dr-warhammer-large-01",
+   "name": "Vault Warhammer",
+   "pack": "dr",
+   "mesh": "SM_Wep_WarHammer_Large_01",
+   "palette": "base",
+   "class": "hammer",
+   "rarity": "rare",
+   "description": "A square bronze head and a spike."
+  },
+  {
+   "id": "dr-warhammer-large-02",
+   "name": "Deep Warhammer",
+   "pack": "dr",
+   "mesh": "SM_Wep_WarHammer_Large_02",
+   "palette": "base",
+   "class": "hammer",
+   "rarity": "rare",
+   "description": "Dark iron on a red-bound haft."
+  },
+  {
+   "id": "dr-warhammer-large-03",
+   "name": "Ancestor's Warhammer",
+   "pack": "dr",
+   "mesh": "SM_Wep_WarHammer_Large_03",
+   "palette": "base",
+   "class": "hammer",
+   "rarity": "rare",
+   "description": "Twin-headed, old and unbroken."
+  },
+  {
+   "id": "dr-warhammer-large-04",
+   "name": "Runeforged Maul",
+   "pack": "dr",
+   "mesh": "SM_Wep_WarHammer_Large_04",
+   "palette": "base",
+   "class": "great",
+   "rarity": "epic",
+   "description": "A spiked head lit from within."
+  },
+  {
+   "id": "dr-warhammer-small-01",
+   "name": "Deep Hammer",
+   "pack": "dr",
+   "mesh": "SM_Wep_WarHammer_Small_01",
+   "palette": "base",
+   "class": "hammer",
+   "rarity": "uncommon",
+   "description": "A dwarven war hammer, short and fierce."
+  },
+  {
+   "id": "dr-warhammer-small-02",
+   "name": "Vault Pick-Hammer",
+   "pack": "dr",
+   "mesh": "SM_Wep_WarHammer_Small_02",
+   "palette": "base",
+   "class": "hammer",
+   "rarity": "uncommon",
+   "description": "A hammer face and a pick back."
+  },
+  {
+   "id": "df-sword-01",
+   "name": "Runeblade",
+   "pack": "df",
+   "mesh": "SM_Wep_Sword_01",
+   "palette": "rune",
+   "class": "sword",
+   "rarity": "epic",
+   "description": "A fortress sword with a blade of living rune-light."
+  },
+  {
+   "id": "df-sword-02",
+   "name": "Warlord's Edge",
+   "pack": "df",
+   "mesh": "SM_Wep_Sword_02",
+   "palette": "rune",
+   "class": "sword",
+   "rarity": "epic",
+   "description": "The Warlord's own pattern: dark steel, bright rune."
+  },
+  {
+   "id": "df-sword-03",
+   "name": "Fortress Greatblade",
+   "pack": "df",
+   "mesh": "SM_Wep_Sword_03",
+   "palette": "rune",
+   "class": "sword",
+   "rarity": "epic",
+   "description": "A wide rune-lit blade with a hooked guard."
+  },
+  {
+   "id": "df-axe-01",
+   "name": "Rune Axe",
+   "pack": "df",
+   "mesh": "SM_Wep_Axe_01",
+   "palette": "rune",
+   "class": "axe",
+   "rarity": "epic",
+   "description": "A fortress axe, its edge lit with runes."
+  },
+  {
+   "id": "df-mace-01",
+   "name": "Horned Mace",
+   "pack": "df",
+   "mesh": "SM_Wep_Mace_01",
+   "palette": "rune",
+   "class": "mace",
+   "rarity": "epic",
+   "description": "A ram's skull on a spiked haft. The eyes glow."
+  },
+  {
+   "id": "df-mace-02",
+   "name": "Fortress Morningstar",
+   "pack": "df",
+   "mesh": "SM_Wep_Mace_02",
+   "palette": "rune",
+   "class": "mace",
+   "rarity": "epic",
+   "description": "A ball of iron spikes from the fortress armory."
+  },
+  {
+   "id": "df-hammer-01",
+   "name": "Rune Hammer",
+   "pack": "df",
+   "mesh": "SM_Wep_Hammer_01",
+   "palette": "rune",
+   "class": "hammer",
+   "rarity": "epic",
+   "description": "A square rune-lit head on a bound haft."
+  },
+  {
+   "id": "df-club-01",
+   "name": "Skull Club",
+   "pack": "df",
+   "mesh": "SM_Wep_Club_01",
+   "palette": "rune",
+   "class": "club",
+   "rarity": "epic",
+   "description": "Someone's skull on someone's femur."
+  },
+  {
+   "id": "df-saw-01",
+   "name": "Bone Saw",
+   "pack": "df",
+   "mesh": "SM_Wep_Saw_01",
+   "palette": "rune",
+   "class": "great",
+   "rarity": "epic",
+   "description": "A great circular blade of teeth. Nobody knows what it was for."
+  },
+  {
+   "id": "df-sword-01-gold",
+   "name": "Gilded Runeblade",
+   "pack": "df",
+   "mesh": "SM_Wep_Sword_01",
+   "palette": "gold",
+   "class": "sword",
+   "rarity": "legendary",
+   "description": "A fortress sword with a blade of living rune-light. Gold-lit: the fortress kept these for its champions."
+  },
+  {
+   "id": "df-sword-02-gold",
+   "name": "Gilded Warlord's Edge",
+   "pack": "df",
+   "mesh": "SM_Wep_Sword_02",
+   "palette": "gold",
+   "class": "sword",
+   "rarity": "legendary",
+   "description": "The Warlord's own pattern: dark steel, bright rune. Gold-lit: the fortress kept these for its champions."
+  },
+  {
+   "id": "df-sword-03-gold",
+   "name": "Gilded Fortress Greatblade",
+   "pack": "df",
+   "mesh": "SM_Wep_Sword_03",
+   "palette": "gold",
+   "class": "sword",
+   "rarity": "legendary",
+   "description": "A wide rune-lit blade with a hooked guard. Gold-lit: the fortress kept these for its champions."
+  },
+  {
+   "id": "df-axe-01-gold",
+   "name": "Gilded Rune Axe",
+   "pack": "df",
+   "mesh": "SM_Wep_Axe_01",
+   "palette": "gold",
+   "class": "axe",
+   "rarity": "legendary",
+   "description": "A fortress axe, its edge lit with runes. Gold-lit: the fortress kept these for its champions."
+  },
+  {
+   "id": "df-hammer-01-gold",
+   "name": "Gilded Rune Hammer",
+   "pack": "df",
+   "mesh": "SM_Wep_Hammer_01",
+   "palette": "gold",
+   "class": "hammer",
+   "rarity": "legendary",
+   "description": "A square rune-lit head on a bound haft. Gold-lit: the fortress kept these for its champions."
+  },
+  {
+   "id": "df-sword-01-ember",
+   "name": "Emberblade",
+   "pack": "df",
+   "mesh": "SM_Wep_Sword_01",
+   "palette": "ember",
+   "class": "sword",
+   "rarity": "legendary",
+   "description": "A Runeblade quenched in fire. The blade burns red."
+  },
+  {
+   "id": "df-sword-02-frost",
+   "name": "Frostbrand",
+   "pack": "df",
+   "mesh": "SM_Wep_Sword_02",
+   "palette": "frost",
+   "class": "sword",
+   "rarity": "legendary",
+   "description": "A Warlord's Edge cooled in the deep. The blade glows cold."
+  },
+  {
+   "id": "pride-sword",
+   "name": "Prism Saber",
+   "pack": "pr",
+   "mesh": "SM_Wep_Sword_01",
+   "palette": "alt01",
+   "class": "sword",
+   "rarity": "rare",
+   "description": "A bright one-handed blade. Quick slashes, a heavy thrust and a steady guard."
+  },
+  {
+   "id": "pride-sword-dusk",
+   "name": "Dusk Saber",
+   "pack": "pr",
+   "mesh": "SM_Wep_Sword_01",
+   "palette": "alt02",
+   "class": "sword",
+   "rarity": "epic",
+   "description": "An alternate palette for the same balanced sword. A different look, equal power."
+  },
+  {
+   "id": "pride-sword-dawn",
+   "name": "Dawn Saber",
+   "pack": "pr",
+   "mesh": "SM_Wep_Sword_01",
+   "palette": "alt03",
+   "class": "sword",
+   "rarity": "legendary",
+   "description": "The prism saber in the colors of first light."
+  },
+  {
+   "id": "pride-sword-tide",
+   "name": "Tide Saber",
+   "pack": "pr",
+   "mesh": "SM_Wep_Sword_01",
+   "palette": "alt05",
+   "class": "sword",
+   "rarity": "legendary",
+   "description": "The prism saber in deep sea blues."
+  },
+  {
+   "id": "pride-sword-verdant",
+   "name": "Verdant Saber",
+   "pack": "pr",
+   "mesh": "SM_Wep_Sword_01",
+   "palette": "alt08",
+   "class": "sword",
+   "rarity": "legendary",
+   "description": "The prism saber in forest greens."
+  }
+ ]
+}

@@ -19,7 +19,7 @@ import { EquipmentMotion } from './combatAnimations'
 import {
   advanceAttack, attackCanReach, attackRange, attackRecovery, AttackMotion, canStartAttack,
   combatDistance, CombatPose, COMBAT_RULES, createSwing, facesCombatant, isHeavyMotion,
-  MAX_COMBAT_HEALTH, resolveCombatHit, Swing, WeaponMotion
+  MAX_COMBAT_HEALTH, resolveCombatHit, Swing, WeaponModifiers, WeaponMotion
 } from './combatActions'
 import { createRivalBrain, resetRivalBrain, RivalBrain, RivalProfile, updateRivalBrain } from './rivalBrain'
 import {
@@ -30,7 +30,7 @@ import {
   createEnemyHealthBar, destroyEnemyHealthBar, EnemyHealthBar, updateEnemyHealthBar
 } from './enemyHealthBar'
 import {
-  getPlayerCombatPose, healPlayer, hitStopPlayer, isPlayerDown, playerBlockedHit, playerDodgedHit,
+  getPlayerCombatPose, getPlayerWeapon, healPlayer, hitStopPlayer, isPlayerDown, playerBlockedHit, playerDodgedHit,
   receivePlayerCombatHit, reconcilePlayerHealth, restorePlayerCombatHealth,
   setPlayerAttackContactHandler, setPlayerAttackStartHandler, setPlayerFacingOverride, setPlayerStepIn
 } from './playerCharacter'
@@ -49,11 +49,11 @@ import {
   createDecal, Decal, destroyDecal, fxDeathPuff, fxGlitter, fxImpact, fxNumber, fxSlam, fxSlash, fxSound, updateDecal
 } from './combatFx'
 import { kickCrawlerCamera } from './dungeon/crawlerCamera'
-import { clearLoot, spawnLoot } from './loot'
-import { unlockInventoryItem } from './inventory'
+import { clearLoot, setLootNoticeHandler, spawnLoot } from './loot'
+import { rollWeaponDrop, weaponStats } from './weapons'
 import { AttackContext } from './roamingCombat'
 import {
-  allFighters, EnemySnap, HeroHit, ImpactNet, isHeadless, isHost, localAddress, NetFighter, publishEnemies, publishHitEnemy,
+  allFighters, EnemySnap, HeroHit, heroWeapon, ImpactNet, isHeadless, isHost, localAddress, NetFighter, publishEnemies, publishHitEnemy,
   publishImpact, publishLoot, publishRespawn, setMultiplayerHandlers
 } from './multiplayer'
 
@@ -109,19 +109,19 @@ type Enemy = CombatPose & {
 }
 
 const STRIKER: Archetype = {
-  name: 'Striker', characterId: 'striker', weapon: 'pride-sword', health: 90, scale: 1, damageScale: 1,
+  name: 'Striker', characterId: 'striker', weapon: 'fk-axe-06', health: 90, scale: 1, damageScale: 1,
   aggro: 6.5, leash: 11, speed: 1.15, profile: { blockChance: 0.15, pace: 0.8 }
 }
 const SCOUT: Archetype = {
-  name: 'Scout', characterId: 'scout', weapon: 'pride-sword-dusk', health: 75, scale: 0.95, damageScale: 0.85,
+  name: 'Scout', characterId: 'scout', weapon: 'gb-sword-02', health: 75, scale: 0.95, damageScale: 0.85,
   aggro: 7.5, leash: 11, speed: 1.2, profile: { blockChance: 0.2, pace: 0.9 }
 }
 const GUARD: Archetype = {
-  name: 'Vault Guard', characterId: 'vanguard', weapon: 'pride-sword', health: 150, scale: 1.08, damageScale: 1.15,
+  name: 'Vault Guard', characterId: 'vanguard', weapon: 'dr-warhammer-large-02', health: 150, scale: 1.08, damageScale: 1.15,
   aggro: 5, leash: 10, speed: 0.9, profile: { blockChance: 0.5, pace: 1.1 }
 }
 const BOSS: Archetype = {
-  name: 'Warlord', characterId: 'brute', weapon: 'pride-sword-dusk', health: 460, scale: 1.48,
+  name: 'Warlord', characterId: 'brute', weapon: 'df-sword-02', health: 460, scale: 1.48,
   damageScale: 1.7, aggro: 11, leash: 18, speed: 1.08,
   profile: { blockChance: 0.08, pace: 0.82, pattern: ['attack_light', 'attack_light2', 'attack_heavy', 'slam'], slamRange: 3.6 }
 }
@@ -149,7 +149,6 @@ const LOCK_MARGIN = 0.35
 const LOCK_COS = 0.1
 /** The swing's lunge closes to this distance from a locked-on enemy. */
 const STEP_TO = 1.2
-const BOSS_DROP = 'pride-sword-dusk'
 
 const state: WorldRivalState = {
   visible: false, phase: 'loading', name: '', health: 0, playerHealth: MAX_COMBAT_HEALTH,
@@ -234,6 +233,7 @@ export function initializeDungeonEnemies() {
       }
     }
   })
+  setLootNoticeHandler(showNotice)
   engine.addSystem(updateEnemies)
   onDungeonLoaded(populate)
 }
@@ -955,7 +955,7 @@ function hitEnemies(motion: AttackMotion, context: AttackContext) {
   })
   if (!best || bestIndex < 0) return
   presentPlayerStrike(attacker, best, motion, context)
-  if (isHost()) applyPlayerHit(attacker, best, motion, context)
+  if (isHost()) applyPlayerHit(attacker, best, motion, { finisher: context.finisher, weapon: localWeapon() })
   else publishHitEnemy(bestIndex, motion, context.finisher)
 }
 
@@ -973,7 +973,13 @@ function applyRemoteHit(id: string, index: number, motion: string, finisher: boo
   if (!attacker) return
   if (Math.abs(attacker.position.y - e.position.y) > COMBAT_RULES.maximumVerticalReach + 0.5) return
   if (combatDistance(attacker, e) > attackRange(attack) + 1.5) return
-  applyPlayerHit(attacker, e, attack, { finisher })
+  // The weapon is read off the hero's synced body: the client never states its own damage.
+  applyPlayerHit(attacker, e, attack, { finisher, weapon: weaponStats(heroWeapon(id)) })
+}
+
+/** The local hero's weapon, for the numbers it shows and the hits it hosts. */
+function localWeapon(): WeaponModifiers {
+  return weaponStats(getPlayerWeapon())
 }
 
 function enemySnaps(): EnemySnap[] {
@@ -983,11 +989,11 @@ function enemySnaps(): EnemySnap[] {
 }
 
 function applyPlayerHit(
-  attacker: CombatPose, e: Enemy, motion: AttackMotion, context: { finisher: boolean }
+  attacker: CombatPose, e: Enemy, motion: AttackMotion, context: { finisher: boolean; weapon: WeaponModifiers }
 ) {
   e.engaged = true
   const guarded = e.blocking && facesCombatant(e, attacker, 0.1)
-  const hit = resolveCombatHit(motion, guarded, context.finisher)
+  const hit = resolveCombatHit(motion, guarded, context.finisher, context.weapon)
   const armored = e.hyperArmor && !context.finisher && motion !== 'attack_heavy'
   const damage = armored ? Math.max(1, Math.round(hit.damage * 0.55)) : hit.damage
   e.health = Math.max(0, e.health - damage)
@@ -1015,7 +1021,7 @@ function presentPlayerStrike(
 ) {
   const heavy = motion === 'attack_heavy'
   const guarded = e.blocking && facesCombatant(e, attacker, 0.1)
-  const hit = resolveCombatHit(motion, guarded, context.finisher)
+  const hit = resolveCombatHit(motion, guarded, context.finisher, localWeapon())
   const contact = Vector3.create(
     (attacker.position.x + e.position.x) / 2, e.position.y + 1.15 * e.archetype.scale, (attacker.position.z + e.position.z) / 2)
   fxImpact(contact, heavy || context.finisher, hit.damage === 0)
@@ -1051,21 +1057,21 @@ function kill(e: Enemy) {
   sim.slain++
   const coin = Math.round((e.boss ? 10 : 2 + Math.floor(Math.random() * 3)) * sim.coinScale)
   const heart = e.boss ? 2 : Math.random() < 0.35 ? 1 : 0
-  const dusk = !!(e.boss && !sim.bossDropGiven)
-  if (dusk) sim.bossDropGiven = true
-  publishLoot(sim.party, e.position.x, e.position.z, coin, heart, dusk)
+  // The Warlord always drops a weapon, once; guards often, the rest rarely.
+  let item = ''
+  if (!e.boss || !sim.bossDropGiven) {
+    item = rollWeaponDrop(e.boss ? 'boss' : e.archetype === GUARD ? 'elite' : 'grunt', sim.level.id, sim.diff.id)
+  }
+  if (e.boss && item) sim.bossDropGiven = true
+  publishLoot(sim.party, e.position.x, e.position.z, coin, heart, item)
 }
 
-function grantLoot(party: string, x: number, z: number, coin: number, heart: number, dusk: boolean) {
+function grantLoot(party: string, x: number, z: number, coin: number, heart: number, item: string) {
   if (!clientSim || party !== clientSim.party) return
   const origin = Vector3.create(x, COURTYARD.characterFloorY, z)
   if (coin > 0) spawnLoot(origin, 'coin', coin)
   if (heart > 0) spawnLoot(origin, 'heart', heart)
-  if (dusk && unlockInventoryItem(BOSS_DROP)) {
-    fxGlitter(Vector3.add(origin, Vector3.create(0, 1.2, 0)), Color4.create(0.6, 0.5, 1, 1))
-    fxNumber(Vector3.add(origin, Vector3.create(0, 2.4, 0)), 'Dusk blade unlocked', 'note')
-    showNotice('The Warlord drops the Dusk blade — check your inventory', 3)
-  }
+  if (item) spawnLoot(origin, 'weapon', 1, item)
 }
 
 function presentDeath(e: Enemy) {
@@ -1093,7 +1099,8 @@ function advanceSwing(e: Enemy, dt: number, target: NetFighter, fighters: NetFig
     }
     if (!attackCanReach(e, target, swing.motion)) return
     const guarded = target.blocking && facesCombatant(target, e, 0.1)
-    const hit = resolveCombatHit(swing.motion, guarded)
+    // Enemies get their weapon's class, not its rarity bonus: the archetype's damageScale is their tuning.
+    const hit = resolveCombatHit(swing.motion, guarded, false, weaponStats(e.archetype.weapon, false))
     if (hit.damage === 0) {
       blockFighter(target, e.facing)
       return

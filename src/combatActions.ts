@@ -58,19 +58,27 @@ export function attackCanReach(attacker: CombatPose, target: CombatPose, motion:
     combatDistance(attacker, target) <= range && facesCombatant(attacker, target, aim)
 }
 
-export function resolveCombatHit(motion: WeaponMotion, guarded: boolean, finisher = false): {
+/** What the weapon in hand does to a blow: class multipliers and the rarity's flat bonus. */
+export type WeaponModifiers = { damage: number; stagger: number; knockback: number; bonus: number }
+const PLAIN_SWORD: WeaponModifiers = { damage: 1, stagger: 1, knockback: 1, bonus: 0 }
+
+export function resolveCombatHit(motion: WeaponMotion, guarded: boolean, finisher = false, weapon: WeaponModifiers = PLAIN_SWORD): {
   damage: number; stagger: number; knockback: number; interrupt: boolean
 } {
   const heavy = isHeavyMotion(motion)
   const smash = motion === 'flourish_heavy' || motion === 'heavy_combo_c' || motion === 'leap'
   // The third light of a string breaks guard like a heavy does.
   if (guarded && !heavy && !finisher) return { damage: 0, stagger: 0, knockback: 0, interrupt: false }
-  const raw = smash ? 34 : motion === 'stab' ? 26 : motion === 'heavy_combo_a' || motion === 'heavy_combo_b' ? 24
+  const base = smash ? 34 : motion === 'stab' ? 26 : motion === 'heavy_combo_a' || motion === 'heavy_combo_b' ? 24
     : heavy ? 28 : finisher || motion === 'attack_light3' ? 22 : motion === 'fencing' ? 12 : 14
+  const raw = Math.round(base * weapon.damage + weapon.bonus)
+  const stagger = guarded ? Math.min(0.32, COMBAT_CLIPS.hit.duration) : COMBAT_CLIPS.hit.duration * (heavy || finisher ? 1 : 0.7)
+  const knockback = guarded ? 0.1 : smash ? 0.55 : heavy ? 0.36 : finisher ? 0.5 : 0.17
   return {
     damage: guarded ? Math.max(4, Math.round(raw * 0.2)) : raw,
-    stagger: guarded ? Math.min(0.32, COMBAT_CLIPS.hit.duration) : COMBAT_CLIPS.hit.duration * (heavy || finisher ? 1 : 0.7),
-    knockback: guarded ? 0.1 : smash ? 0.55 : heavy ? 0.36 : finisher ? 0.5 : 0.17,
+    // A blocked blow's reel is capped as authored; a landed one carries the weapon's weight.
+    stagger: guarded ? stagger : Math.min(COMBAT_CLIPS.hit.duration * 1.5, stagger * weapon.stagger),
+    knockback: knockback * (guarded ? 1 : weapon.knockback),
     interrupt: true
   }
 }

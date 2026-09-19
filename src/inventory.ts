@@ -107,7 +107,9 @@ export function getInventoryIsDirty(): boolean {
 }
 
 // Loot-gated gear: hidden from the inventory until the dungeon hands it over.
-const GATED_ITEMS = ['pride-sword-dusk']
+// Every loot weapon but the starter saber is earned.
+export const STARTER_WEAPON = 'pride-sword'
+const GATED_ITEMS = EQUIPMENT_ITEMS.filter((item) => !!item.weapon && item.id !== STARTER_WEAPON).map((item) => item.id)
 const lockedItems = new Set<string>(GATED_ITEMS)
 
 export function isInventoryItemLocked(id: string): boolean {
@@ -122,6 +124,11 @@ export function unlockInventoryItem(id: string): boolean {
 /** Gated items the hero has earned; what a saved hero carries between sessions. */
 export function getUnlockedItems(): string[] {
   return GATED_ITEMS.filter((id) => !lockedItems.has(id))
+}
+
+/** Weapons this hero can equip right now: the starter plus everything looted. */
+export function ownedWeaponIds(): string[] {
+  return EQUIPMENT_ITEMS.filter((item) => item.slot === 'weapon' && !lockedItems.has(item.id)).map((item) => item.id)
 }
 
 export function getInventoryItems(): EquipmentItem[] {
@@ -329,7 +336,7 @@ function createPreview(loadout: EquipmentLoadout): Entity {
     parent: stage!.anchor,
     rotation: Quaternion.fromEulerDegrees(0, facing, 0)
   })
-  setEquipmentAvatar(root, state.characterId, loadout, false, { preloadWeapons: true, presentation: 'menu' })
+  setEquipmentAvatar(root, state.characterId, loadout, false, { preloadWeapons: ownedWeaponIds(), presentation: 'menu' })
   // Show the outfit in a relaxed standing pose, including the matching sword clip.
   setEquipmentMotion(root, 'idle')
   showPreview(root, false)

@@ -2,7 +2,7 @@ import {
   Animator, ColliderLayer, engine, Entity, GltfContainer, GltfContainerLoadingState,
   LoadingState, Transform, VisibilityComponent
 } from '@dcl/sdk/ecs'
-import { EQUIPMENT_ITEMS, EQUIPMENT_SLOTS, EquipmentItem, EquipmentLoadout, getEquipmentItem } from './equipmentCatalog'
+import { EQUIPMENT_SLOTS, EquipmentItem, EquipmentLoadout, getEquipmentItem } from './equipmentCatalog'
 import { COMBAT_CLIPS, EQUIPMENT_CLIPS, EquipmentMotion, JumpMotion } from './combatAnimations'
 import { appearanceArmor, appearanceHair, appearancePart, BodyType, CharacterAppearance, getCommittedAppearance, normalizeAppearance } from './appearance'
 import roamingModels from './roamingModels.json'
@@ -10,7 +10,8 @@ import roamingModels from './roamingModels.json'
 export { EquipmentMotion, EQUIPMENT_CLIPS } from './combatAnimations'
 export type EquipmentLoading = 'loading' | 'ready' | 'error'
 export type EquipmentAvatarOptions = {
-  preloadWeapons?: boolean
+  /** Weapon ids to keep loaded alongside the equipped one, so a menu preview can swap instantly. */
+  preloadWeapons?: string[]
   appearance?: CharacterAppearance
   presentation?: 'gameplay' | 'menu'
 }
@@ -72,14 +73,15 @@ export function setEquipmentAvatar(
   const assembly: Assembly = {
     bodyType: appearance.bodyType,
     entities: [], bodyEntities: [], weapons: new Map(), weaponId: loadout.weapon,
-    preloadWeapons: options.preloadWeapons === true, armed: loadout.weapon !== 'none-weapon'
+    preloadWeapons: Array.isArray(options.preloadWeapons), armed: loadout.weapon !== 'none-weapon'
   }
   for (const path of paths) {
     assembly.bodyEntities.push(getOrCreatePart(avatar, root, path, pointerCollisions))
   }
   assembly.entities.push(...assembly.bodyEntities)
+  // A menu preview loads the weapons it may be asked to swap to; a fighter loads the one in hand.
   const weapons = assembly.preloadWeapons
-    ? EQUIPMENT_ITEMS.filter((item) => item.slot === 'weapon')
+    ? [...new Set([...options.preloadWeapons || [], loadout.weapon])].map((id) => getEquipmentItem(id))
     : [getEquipmentItem(loadout.weapon)]
   for (const weapon of weapons) {
     const children = weaponPartPaths(characterId, weapon)

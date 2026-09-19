@@ -81,7 +81,8 @@ export const Messages = {
     z: Schemas.Number,
     coin: Schemas.Int,
     heart: Schemas.Int,
-    dusk: Schemas.Boolean
+    /** Weapon id dropped with the kill, '' for none. */
+    item: Schemas.String
   }),
   /** Client -> server: a one-line status the server prints, so client state shows in `server-logs`. */
   diag: Schemas.Map({ note: Schemas.String }),

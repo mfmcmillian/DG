@@ -4,7 +4,7 @@ import { isStateSyncronized, syncEntity } from '@dcl/sdk/network'
 import { CombatPose, MAX_COMBAT_HEALTH } from './combatActions'
 import { EquipmentMotion } from './combatAnimations'
 import { CharacterAppearance } from './appearance'
-import { EquipmentLoadout, EQUIPMENT_SLOTS } from './equipmentCatalog'
+import { EquipmentLoadout, EQUIPMENT_SLOTS, sanitizeLoadout } from './equipmentCatalog'
 import { dropHero, heroHealth, initializeHeroVitals, rememberHeartDrop, resetHero } from './heroVitals'
 import { HeroBody, HeroBodyValue } from './shared/heroBody'
 import { room } from './shared/messages'
@@ -200,6 +200,17 @@ export function allFighters(local?: (CombatPose & { health: number; invulnerable
   return list
 }
 
+/**
+ * The weapon a hero's body says it carries. The host resolves hits with this,
+ * so a client cannot claim a better blade than the one everybody can see.
+ */
+export function heroWeapon(id: string): string {
+  for (const [entity, hero] of engine.getEntitiesWith(HeroBody)) {
+    if (heroOwner(entity, hero) === id) return hero.loadout.weapon || 'none-weapon'
+  }
+  return 'none-weapon'
+}
+
 export function appearanceOf(hero: HeroBodyValue): CharacterAppearance {
   return { bodyType: hero.body === 'female' ? 'female' : 'male', hairStyle: hero.hair, hairColor: hero.hc, skinTone: hero.skin }
 }
@@ -209,7 +220,8 @@ export function fullLoadout(hero: HeroBodyValue): EquipmentLoadout {
   for (const slot of EQUIPMENT_SLOTS) {
     if (!loadout[slot.id]) loadout[slot.id] = slot.id === 'weapon' ? 'none-weapon' : `none-${slot.id}`
   }
-  return loadout
+  // A newer client may carry a weapon this build has never heard of.
+  return sanitizeLoadout(loadout, hero.cid)
 }
 
 // --- client: owning our hero -------------------------------------------------------
@@ -368,10 +380,11 @@ export function publishEnemies(party: string, list: EnemySnap[]) {
   sendNet('enemies', { party, list })
 }
 
-export function publishLoot(party: string, x: number, z: number, coin: number, heart: number, dusk: boolean) {
+/** `item` is a weapon id from the catalog, or '' when the kill dropped no weapon. */
+export function publishLoot(party: string, x: number, z: number, coin: number, heart: number, item: string) {
   if (!isHost()) return
   rememberHeartDrop(x, z, heart)
-  sendNet('loot', { party, x, z, coin, heart, dusk })
+  sendNet('loot', { party, x, z, coin, heart, item })
 }
 
 export type HeroHit = {
@@ -385,7 +398,7 @@ let onRevive: ((id: string, health: number) => void) | undefined
 let onVitals: ((id: string, health: number) => void) | undefined
 let onImpact: ((p: ImpactNet) => void) | undefined
 let onEnemies: ((party: string, list: EnemySnap[]) => void) | undefined
-let onLoot: ((party: string, x: number, z: number, coin: number, heart: number, dusk: boolean) => void) | undefined
+let onLoot: ((party: string, x: number, z: number, coin: number, heart: number, item: string) => void) | undefined
 let onJoin: ((id: string) => void) | undefined
 let onLeave: ((id: string) => void) | undefined
 
@@ -430,7 +443,7 @@ function bindClient() {
     sinceSnapshot = 0
     onEnemies?.(msg.party, msg.list.map((e) => ({ ...e, m: e.m as EquipmentMotion })))
   })
-  onNet('loot', (msg) => onLoot?.(msg.party, msg.x, msg.z, msg.coin, msg.heart, msg.dusk))
+  onNet('loot', (msg) => onLoot?.(msg.party, msg.x, msg.z, msg.coin, msg.heart, msg.item))
   engine.addSystem(tickNetDiag)
   engine.addSystem(watchForServer)
 }

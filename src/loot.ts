@@ -1,18 +1,26 @@
-// Drops: coins and hearts that pop out of a slain enemy, settle on the floor,
-// bob and spin, and are collected by walking over them.
+// Drops: coins, hearts and weapons that pop out of a slain enemy, settle on
+// the floor, bob and spin, and are collected by walking over them.
+//
+// Loot is personal: every client in the party sees the same drop and each
+// hero collects its own copy, so nobody races a friend to a legendary.
 
 import { engine, Entity, GltfContainer, Transform } from '@dcl/sdk/ecs'
 import { Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
 import { fxGlitter, fxNumber, fxSound } from './combatFx'
 import { isInCourtyard } from './courtyard'
+import { getEquipmentItemOrNull, WEAPON_DROP_OFFSET } from './equipmentCatalog'
+import { unlockInventoryItem } from './inventory'
 import { publishPickup } from './multiplayer'
 import { getPlayerCombatPose, getPlayerVitals } from './playerCharacter'
+import { RARITIES, rarityOf } from './weapons'
 
-export type LootKind = 'coin' | 'heart'
+export type LootKind = 'coin' | 'heart' | 'weapon'
 
 type Drop = {
   entity: Entity
   kind: LootKind
+  /** Weapon id for `weapon` drops. */
+  item?: string
   from: Vector3
   to: Vector3
   /** Seconds since the drop; the pop-out arc lasts POP seconds. */
@@ -26,6 +34,12 @@ const MAX_DROPS = 40
 const drops: Drop[] = []
 const state = { coins: 0 }
 let initialized = false
+let notice: (message: string, seconds: number) => void = () => {}
+
+/** The dungeon HUD lends its notice line for pickups. */
+export function setLootNoticeHandler(handler: typeof notice) {
+  notice = handler
+}
 
 export function initializeLoot() {
   if (initialized) return
@@ -47,8 +61,10 @@ export function clearLoot() {
   drops.length = 0
 }
 
-/** Scatter `count` drops of a kind around a point on the floor. */
-export function spawnLoot(origin: Vector3, kind: LootKind, count: number) {
+/** Scatter `count` drops of a kind around a point on the floor (`item`: the weapon id for weapon drops). */
+export function spawnLoot(origin: Vector3, kind: LootKind, count: number, item?: string) {
+  const weapon = kind === 'weapon' ? (item ? getEquipmentItemOrNull(item) : undefined) : undefined
+  if (kind === 'weapon' && !weapon) return
   for (let i = 0; i < count; i++) {
     if (drops.length >= MAX_DROPS) engine.removeEntity(drops.shift()!.entity)
     const angle = Math.random() * Math.PI * 2
@@ -61,8 +77,20 @@ export function spawnLoot(origin: Vector3, kind: LootKind, count: number) {
       rotation: Quaternion.Identity(),
       scale: kind === 'coin' ? Vector3.create(1.4, 1.4, 1.4) : Vector3.create(1, 1, 1)
     })
-    GltfContainer.create(entity, { src: `models/loot/${kind}.glb`, visibleMeshesCollisionMask: 0, invisibleMeshesCollisionMask: 0 })
-    drops.push({ entity, kind, from: Vector3.add(origin, Vector3.create(0, 0.9, 0)), to, age: 0, phase: Math.random() * Math.PI * 2 })
+    if (weapon) {
+      // The weapon GLB is authored in the hero's hand; a child carries the offset that stands it up here.
+      const model = engine.addEntity()
+      Transform.create(model, {
+        parent: entity,
+        position: Vector3.create(WEAPON_DROP_OFFSET.position[0], WEAPON_DROP_OFFSET.position[1], WEAPON_DROP_OFFSET.position[2]),
+        rotation: Quaternion.create(WEAPON_DROP_OFFSET.rotation[0], WEAPON_DROP_OFFSET.rotation[1], WEAPON_DROP_OFFSET.rotation[2], WEAPON_DROP_OFFSET.rotation[3])
+      })
+      GltfContainer.create(model, { src: weapon.models[0], visibleMeshesCollisionMask: 0, invisibleMeshesCollisionMask: 0 })
+      fxGlitter(Vector3.add(to, Vector3.create(0, 0.5, 0)), RARITIES[rarityOf(weapon.id)].color)
+    } else {
+      GltfContainer.create(entity, { src: `models/loot/${kind}.glb`, visibleMeshesCollisionMask: 0, invisibleMeshesCollisionMask: 0 })
+    }
+    drops.push({ entity, kind, item: weapon?.id, from: Vector3.add(origin, Vector3.create(0, 0.9, 0)), to, age: 0, phase: Math.random() * Math.PI * 2 })
   }
 }
 
@@ -86,11 +114,14 @@ function update(dt: number) {
       continue
     }
     const wobble = d.age + d.phase
-    t.position = Vector3.create(d.to.x, d.to.y + 0.18 + Math.sin(wobble * 3) * 0.06, d.to.z)
-    // The coin is authored flat; stand it up and spin it. The heart is authored upright.
+    t.position = Vector3.create(d.to.x, d.to.y + (d.kind === 'weapon' ? 0.28 : 0.18) + Math.sin(wobble * 3) * 0.06, d.to.z)
+    // The coin is authored flat; stand it up and spin it. The heart is authored
+    // upright. A weapon stands on its pommel, leaning a little, and turns slowly.
     t.rotation = d.kind === 'coin'
       ? Quaternion.multiply(Quaternion.fromEulerDegrees(0, wobble * 160, 0), Quaternion.fromEulerDegrees(90, 0, 0))
-      : Quaternion.fromEulerDegrees(0, wobble * 90, 0)
+      : d.kind === 'weapon'
+        ? Quaternion.multiply(Quaternion.fromEulerDegrees(0, wobble * 60, 0), Quaternion.fromEulerDegrees(0, 0, 28))
+        : Quaternion.fromEulerDegrees(0, wobble * 90, 0)
 
     if (!player) continue
     const dx = player.position.x - d.to.x
@@ -109,6 +140,22 @@ function collect(d: Drop) {
     fxSound('coin', 0.6)
     fxGlitter(at, Color4.create(1, 0.85, 0.3, 1))
     fxNumber(at, '+1', 'coin')
+  } else if (d.kind === 'weapon' && d.item) {
+    const item = getEquipmentItemOrNull(d.item)
+    const rarity = RARITIES[rarityOf(d.item)]
+    fxGlitter(at, rarity.color)
+    fxGlitter(Vector3.add(at, Vector3.create(0, 0.6, 0)), rarity.color)
+    if (item && unlockInventoryItem(item.id)) {
+      fxSound('heal', 0.9)
+      fxNumber(Vector3.add(at, Vector3.create(0, 0.9, 0)), item.name, 'note')
+      notice(`${rarity.label} ${item.name} — check your inventory`, 3.5)
+    } else {
+      // Already owned: salvaged for coin on the spot.
+      state.coins += rarity.coins
+      fxSound('coin', 0.7)
+      fxNumber(Vector3.add(at, Vector3.create(0, 0.9, 0)), `+${rarity.coins}`, 'coin')
+      notice(`${item?.name ?? 'Weapon'} again — salvaged for ${rarity.coins} coins`, 2.5)
+    }
   } else {
     // The host owns hero health: it checks the heart against its own drop
     // record and answers with `heal`, which plays the +N. The sparkle is local.

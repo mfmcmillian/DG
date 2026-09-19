@@ -50,8 +50,14 @@ npm run deploy -- --target-content https://worlds-content-server.decentraland.or
   combat and roll clips baked in (loaded in place of the originals via
   `src/roamingModels.json`). `models/dungeon/`, `models/loot/`,
   `models/characters/` — dungeon kit, drops and preset heroes.
+- `models/roaming/weapons/` + `images/weapons/` — the 164 loot weapons and
+  their icons, generated from `scripts/weapons-manifest.json` (Synty source
+  packs in `~/Downloads`) by `scripts/build-weapons.py` (run inside Blender),
+  which also writes `src/weaponCatalog.json`. `src/weapons.ts` holds classes,
+  rarities and drop tables.
 - `scripts/` — the animation pipeline: `export-boss-clips.py` (Blender,
   FBX → bare skeleton GLB per clip), `splice-boss-clips.py` (merge clips into
-  existing GLBs), `bake-sword-clips.py` (bake clips onto single-joint weapons).
+  existing GLBs), `bake-sword-clips.py` (bake clips onto single-joint weapons),
+  `build-weapons.py` (FBX → hand-skinned weapon GLB + icon, for the manifest).
 - `.dclignore` — deploy trimming. Assets it excludes as unused are also kept
   out of git (see `.gitignore`); they only exist on the authoring machine.

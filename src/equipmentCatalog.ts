@@ -1,5 +1,15 @@
+import weaponCatalog from './weaponCatalog.json'
+
 export type EquipmentSlot = 'head' | 'chest' | 'shoulders' | 'hands' | 'legs' | 'boots' | 'weapon'
 export type EquipmentLoadout = Record<EquipmentSlot, string>
+
+/** Loot weapons (scripts/build-weapons.py writes src/weaponCatalog.json from the manifest). */
+export type WeaponInfo = {
+  class: 'sword' | 'dagger' | 'axe' | 'mace' | 'hammer' | 'club' | 'great'
+  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
+  /** Which Synty pack the mesh came from, for the inventory line. */
+  pack: string
+}
 
 export interface EquipmentItem {
   id: string
@@ -9,6 +19,7 @@ export interface EquipmentItem {
   icon: string
   models: string[]
   modelsByCharacter?: Record<string, string[]>
+  weapon?: WeaponInfo
 }
 
 export const EQUIPMENT_SLOTS: Array<{ id: EquipmentSlot; label: string }> = [
@@ -354,26 +365,6 @@ const ASSETS = {
       }
     },
     {
-      "id": "pride-sword",
-      "name": "Prism Saber",
-      "slot": "weapon",
-      "description": "A bright one-handed blade. Quick slashes, a heavy thrust and a steady guard.",
-      "icon": "images/weapons/pride-sword.png",
-      "models": [
-        "models/weapons/pride-sword-combat-v3.glb"
-      ]
-    },
-    {
-      "id": "pride-sword-dusk",
-      "name": "Dusk Saber",
-      "slot": "weapon",
-      "description": "An alternate palette for the same balanced sword. A different look, equal power.",
-      "icon": "images/weapons/pride-sword-dusk.png",
-      "models": [
-        "models/weapons/pride-sword-dusk-combat-v3.glb"
-      ]
-    },
-    {
       "id": "none-weapon",
       "name": "Unarmed",
       "slot": "weapon",
@@ -470,14 +461,43 @@ const ASSETS = {
   }
 } as EquipmentAssets
 
-export const EQUIPMENT_ITEMS: EquipmentItem[] = ASSETS.items
+/** Armor and the empty slots from the Sidekick export, then every loot weapon. */
+export const EQUIPMENT_ITEMS: EquipmentItem[] = [...ASSETS.items, ...(weaponCatalog.items as EquipmentItem[])]
 export const EQUIPMENT_CORES: Record<string, string[]> = ASSETS.cores
 export const DEFAULT_LOADOUTS: Record<string, EquipmentLoadout> = ASSETS.defaults
 
+/**
+ * Where a loot weapon's GLB stands when nothing animates it: at the hero's
+ * T-pose right hand. A drop on the floor parents the GLB under this local
+ * transform to show it upright at the drop's origin.
+ */
+export const WEAPON_DROP_OFFSET: { position: number[]; rotation: number[] } = weaponCatalog.dropOffset
+
+const byId = new Map<string, EquipmentItem>(EQUIPMENT_ITEMS.map((item) => [item.id, item]))
+
 export function getEquipmentItem(id: string): EquipmentItem {
-  const item = EQUIPMENT_ITEMS.find((entry) => entry.id === id)
+  const item = byId.get(id)
   if (!item) throw new Error(`Unknown equipment item: ${id}`)
   return item
+}
+
+export function getEquipmentItemOrNull(id: string): EquipmentItem | undefined {
+  return byId.get(id)
+}
+
+/**
+ * A loadout from the network or a save may name items this build does not
+ * have (another client's newer weapon, a renamed id). Unknown entries fall
+ * back to the character's defaults so nothing downstream has to throw.
+ */
+export function sanitizeLoadout(loadout: EquipmentLoadout, characterId: string): EquipmentLoadout {
+  const defaults = DEFAULT_LOADOUTS[characterId] ?? DEFAULT_LOADOUTS.vanguard
+  const out = { ...loadout }
+  for (const slot of EQUIPMENT_SLOTS) {
+    const item = byId.get(out[slot.id])
+    if (!item || item.slot !== slot.id) out[slot.id] = defaults[slot.id]
+  }
+  return out
 }
 
 export function getUnequippedItem(slot: EquipmentSlot): EquipmentItem {

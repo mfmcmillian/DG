@@ -92,6 +92,11 @@ export function getPlayerCombatPose(): (CombatPose & { health: number; invulnera
     speed: groundSpeed }
 }
 
+/** The weapon id the local hero's body is carrying right now ('none-weapon' when unarmed). */
+export function getPlayerWeapon(): string {
+  return requestedLoadout?.weapon || 'none-weapon'
+}
+
 export function getPlayerVitals(): PlayerVitals {
   return {
     health: roamingCombat.health, maxHealth: MAX_COMBAT_HEALTH, stamina: roamingCombat.stamina, maxStamina: STAMINA.max,
