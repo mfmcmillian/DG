@@ -208,7 +208,9 @@ def concat_clips(parts):
                 vals = [track.sample(lo + t0)]
                 for t, v in zip(times, values):
                     tt = t[0] - t0
-                    if lo < tt < hi:
+                    # Strictly inside the window, with float slack: a key that rounds onto the
+                    # window's edge would otherwise duplicate the edge key appended below.
+                    if lo + 1e-4 < tt < hi - 1e-4:
                         keys.append((tt - lo + offset,))
                         vals.append(v)
                 keys.append((hi - lo + offset,))
