@@ -26,6 +26,7 @@ import { equipmentModelPaths } from './equipmentAvatar'
 import { enemyPreloadAssets } from './dungeonEnemies'
 import { CHARACTERS } from './characterPicker'
 import { GAME_VERSION } from './version'
+import { installNetDebug } from './netDebug'
 
 export const DUNGEON_SEED = 1337
 
@@ -46,6 +47,7 @@ export async function main() {
 }
 
 function initClient() {
+  installNetDebug()
   // Deep night so the torches carry the lighting.
   SkyboxTime.create(engine.RootEntity, { fixedTime: 1800 })
   // Ask the renderer for everything the first minute needs before the title
