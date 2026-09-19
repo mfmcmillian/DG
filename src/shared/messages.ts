@@ -86,7 +86,9 @@ export const Messages = {
     heart: Schemas.Int,
     dusk: Schemas.Boolean
   }),
-  leave: Schemas.Map({ id: Schemas.String })
+  leave: Schemas.Map({ id: Schemas.String }),
+  /** Client -> server: a one-line status the server prints, so client state shows in `server-logs`. */
+  diag: Schemas.Map({ note: Schemas.String })
 }
 
 /** Register before `main()` so both the headless server and every client share one room. */

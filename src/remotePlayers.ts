@@ -1,4 +1,4 @@
-import { AvatarAnchorPointType, AvatarAttach, engine, Entity, Transform } from '@dcl/sdk/ecs'
+import { AvatarAnchorPointType, AvatarAttach, engine, Entity, PlayerIdentityData, Transform } from '@dcl/sdk/ecs'
 import { Quaternion, Vector3 } from '@dcl/sdk/math'
 import { setNativeAvatarHidden } from './avatarHiding'
 import { AttackMotion } from './combatActions'
@@ -8,7 +8,8 @@ import {
   destroyEquipmentAvatar, getEquipmentLoading, setEquipmentAvatar, setEquipmentMotion, setEquipmentVisible
 } from './equipmentAvatar'
 import {
-  appearanceOf, emptyLoadout, PlayerNet, playerEntityByAddress, setMultiplayerHandlers
+  appearanceOf, emptyLoadout, isClientSynced, PlayerNet, playerAddressAsReported, playerEntityByAddress,
+  publishDiag, remoteCount, setMultiplayerHandlers
 } from './multiplayer'
 
 type Replica = {
@@ -17,6 +18,8 @@ type Replica = {
   /** The custom body, a child of the anchor; carries the facing correction. */
   root: Entity
   parent?: Entity
+  /** The address spelling the anchor is attached with ('' while riding the published position). */
+  attachedAs: string
   look: string
   motion: string
   facing: number
@@ -24,6 +27,11 @@ type Replica = {
   /** Seconds until a failed outfit load is requested again. */
   retryIn: number
 }
+
+/** How fast a body riding the published position catches up (1/s). */
+const NET_FOLLOW = 10
+const DIAG_SECONDS = 10
+let diagAge = 0
 
 /**
  * Other players' entities cannot be used as Transform parents (the renderer
@@ -67,20 +75,37 @@ function lookKey(p: PlayerNet) {
     p.loadout.hands, p.loadout.legs, p.loadout.boots, p.loadout.weapon].join('|')
 }
 
-function attachAnchor(replica: Replica, id: string) {
-  AvatarAttach.createOrReplace(replica.anchor, { avatarId: id, anchorPointId: AvatarAnchorPointType.AAPT_POSITION })
+/** Ride the renderer's avatar, addressed exactly as the renderer spells it. */
+function attachAnchor(replica: Replica, address: string) {
+  replica.attachedAs = address
+  AvatarAttach.createOrReplace(replica.anchor, { avatarId: address, anchorPointId: AvatarAnchorPointType.AAPT_POSITION })
+}
+
+/** No avatar to ride: stand where the player's own packets say they are. */
+function detachAnchor(replica: Replica) {
+  replica.attachedAs = ''
+  if (AvatarAttach.has(replica.anchor)) AvatarAttach.deleteFrom(replica.anchor)
+  const t = Transform.getMutable(replica.anchor)
+  t.position = Vector3.create(replica.last.x, replica.last.y - ATTACH_PIVOT_CORRECTION, replica.last.z)
+  t.rotation = Quaternion.Identity()
+}
+
+function followPublished(replica: Replica, dt: number) {
+  const target = Vector3.create(replica.last.x, replica.last.y - ATTACH_PIVOT_CORRECTION, replica.last.z)
+  const t = Transform.getMutable(replica.anchor)
+  const k = Math.min(1, NET_FOLLOW * dt)
+  t.position = Vector3.distance(t.position, target) > 6 ? target : Vector3.lerp(t.position, target, k)
 }
 
 function upsertReplica(p: PlayerNet) {
   let replica = replicas.get(p.id)
   if (!replica) {
     const anchor = engine.addEntity()
-    Transform.create(anchor)
+    Transform.create(anchor, { position: Vector3.create(p.x, p.y - ATTACH_PIVOT_CORRECTION, p.z) })
     const root = engine.addEntity()
     Transform.create(root, { parent: anchor, position: Vector3.create(0, ATTACH_PIVOT_CORRECTION, 0) })
-    replica = { anchor, root, look: '', motion: 'idle', facing: p.f, last: p, retryIn: 0 }
+    replica = { anchor, root, attachedAs: '', look: '', motion: 'idle', facing: p.f, last: p, retryIn: 0 }
     replicas.set(p.id, replica)
-    attachAnchor(replica, p.id)
   }
   replica.last = p
   const look = lookKey(p)
@@ -99,7 +124,11 @@ function upsertReplica(p: PlayerNet) {
 function remoteChest(id: string): Vector3 | undefined {
   const entity = playerEntityByAddress(id)
   const position = entity !== undefined ? Transform.getOrNull(entity)?.position : undefined
-  return position ? Vector3.add(position, Vector3.create(0, 1.9, 0)) : undefined
+  if (position) return Vector3.add(position, Vector3.create(0, 1.9, 0))
+  const replica = replicas.get(id)
+  if (!replica) return undefined
+  const anchor = Transform.getOrNull(replica.anchor)?.position
+  return anchor ? Vector3.add(anchor, Vector3.create(0, 1.9 + ATTACH_PIVOT_CORRECTION, 0)) : undefined
 }
 
 /** An enemy blow the host resolved against another hero. */
@@ -164,31 +193,52 @@ function playerYaw(entity: Entity) {
 }
 
 function updateRemotePlayers(dt: number) {
+  let attached = 0
+  let riding = 0
+  let ready = 0
   for (const [id, replica] of replicas) {
     const parent = playerEntityByAddress(id)
-    if (parent === undefined) {
-      // Out of the scene: the renderer has no avatar to follow.
-      setEquipmentVisible(replica.root, false)
-      setNativeAvatarHidden(id, false)
-      replica.parent = undefined
-      continue
-    }
-    if (replica.parent !== parent) {
-      // A returning player may have been handed a different avatar instance;
-      // a fresh attach makes the renderer resolve it again.
-      replica.parent = parent
-      attachAnchor(replica, id)
+    const reported = parent !== undefined ? playerAddressAsReported(id) : undefined
+    if (parent !== undefined && reported) {
+      if (replica.parent !== parent || replica.attachedAs !== reported) {
+        // A returning player may have been handed a different avatar instance;
+        // a fresh attach makes the renderer resolve it again.
+        replica.parent = parent
+        attachAnchor(replica, reported)
+      }
+      attached++
+    } else {
+      // The renderer shows no avatar for this player (not yet, or never on this
+      // engine); the body still stands where their packets put them.
+      if (replica.parent !== undefined || replica.attachedAs !== '' || AvatarAttach.has(replica.anchor)) {
+        replica.parent = undefined
+        detachAnchor(replica)
+      }
+      followPublished(replica, dt)
+      riding++
     }
     const loading = getEquipmentLoading(replica.root)
     if (loading === 'error') {
       replica.retryIn -= dt
       if (replica.retryIn <= 0) loadOutfit(replica, replica.last)
     }
-    const ready = loading === 'ready'
-    setEquipmentVisible(replica.root, ready)
-    setNativeAvatarHidden(id, ready)
-    // The anchor turns with the native avatar; the body adds the published facing on top.
-    const delta = replica.facing - playerYaw(parent)
+    const loaded = loading === 'ready'
+    if (loaded) ready++
+    setEquipmentVisible(replica.root, loaded)
+    setNativeAvatarHidden(id, loaded)
+    // An attached anchor turns with the native avatar; the body adds the published facing on top.
+    const baseYaw = parent !== undefined && replica.attachedAs ? playerYaw(parent) : 0
+    const delta = replica.facing - baseYaw
     Transform.getMutable(replica.root).rotation = Quaternion.fromEulerDegrees(0, (delta * 180) / Math.PI, 0)
+  }
+  diagAge += Number.isFinite(dt) && dt > 0 ? dt : 0
+  if (diagAge >= DIAG_SECONDS) {
+    diagAge = 0
+    let identities = 0
+    for (const _ of engine.getEntitiesWith(PlayerIdentityData)) identities++
+    publishDiag(
+      `synced: ${isClientSynced() ? 'yes' : 'no'}; players seen by renderer: ${identities}; ` +
+      `heroes known: ${remoteCount()}; bodies: ${replicas.size} (${ready} loaded, ${attached} attached, ${riding} on packets)`
+    )
   }
 }

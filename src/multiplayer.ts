@@ -125,6 +125,19 @@ export function playerEntityByAddress(address: string): ReturnType<typeof engine
   return undefined
 }
 
+/**
+ * The address exactly as the renderer spells it. AvatarAttach and the hide
+ * area's exclusions are matched case-sensitively against that spelling, so
+ * the normalised lower-case id must not be used for them.
+ */
+export function playerAddressAsReported(address: string): string | undefined {
+  const want = address.toLowerCase()
+  for (const [, identity] of engine.getEntitiesWith(PlayerIdentityData)) {
+    if (identity.address && identity.address.toLowerCase() === want) return identity.address
+  }
+  return undefined
+}
+
 export function publishPlayer(p: PlayerNet): boolean {
   if (!clientReady() || !p.id) return false
   void room.send('player', asPlayer(p))
@@ -160,6 +173,21 @@ export function publishRespawn() {
   const id = localAddress()
   if (!clientReady() || !id) return
   void room.send('respawn', { id })
+}
+
+/**
+ * Client -> server: one line of client state for the server log. Sent even
+ * before the state sync so a client that never syncs still shows up (the room
+ * queues it until the connection is up).
+ */
+export function publishDiag(note: string) {
+  if (hostMode) return
+  void room.send('diag', { note })
+}
+
+/** Whether this client has received the server's state (its messages are sent, not queued). */
+export function isClientSynced(): boolean {
+  return clientReady()
 }
 
 export function publishEnemies(list: EnemySnap[]) {
@@ -303,6 +331,10 @@ function bindServer() {
   room.onMessage('impact', (msg, context) => {
     if (!context) return
     void room.send('impact', { ...msg, id: context.from.toLowerCase() })
+  })
+  room.onMessage('diag', (msg, context) => {
+    if (!context) return
+    console.log(`[Client ${context.from}] ${msg.note}`)
   })
   engine.addSystem(pruneGonePlayers)
   console.log('[Server] multiplayer room ready')
