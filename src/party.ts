@@ -13,7 +13,7 @@ import { HUB, setPartyLookup } from './partyLookup'
 import { movePlayerToSpawn } from './playerPlacement'
 import { getPickerState } from './characterPicker'
 import { getPlayerCharacterState } from './playerCharacter'
-import { difficultyById, HUB_LEVEL, levelById, LEVELS } from './shared/levels'
+import { difficultyById, HUB_LEVEL, levelById, LEVELS, nextLevel } from './shared/levels'
 
 export type PartyInfo = {
   id: string
@@ -27,6 +27,9 @@ export type PartyInfo = {
   slain: number
   total: number
   won: boolean
+  run: number
+  /** Seconds left on the results before the host sends the party to the hall. */
+  wait: number
 }
 
 export type RunResult = {
@@ -49,14 +52,19 @@ type LobbyState = {
   progress: number[]
   /** The verdict of the run we just finished, while the party shows results. */
   result: RunResult | undefined
-  /** The level the player is standing in (hub = the first fortress, empty). */
+  /** The level the player is standing in (HUB_LEVEL.id in the hall). */
   levelId: number
+  /** One line for the lobby's header after a run: what the last fight opened, or took. */
+  banner: string
 }
 
-const state: LobbyState = { parties: [], open: false, silence: 0, progress: [], result: undefined, levelId: HUB_LEVEL.id }
-/** The phase the built dungeon is for. */
+const state: LobbyState = { parties: [], open: false, silence: 0, progress: [], result: undefined, levelId: HUB_LEVEL.id, banner: '' }
+/** The phase the built dungeon is for, and the party's run counter it was built for. */
 let appliedPhase = HUB
+let appliedRun = -1
 let appliedState: PartyInfo['state'] | undefined = undefined
+/** Back from a fortress: the lobby reopens on its own once the hero is standing in the hall. */
+let reopenLobbyIn = 0
 /** Coins when the run began, to show what the run paid. */
 let coinsAtStart = 0
 let initialized = false
@@ -71,7 +79,7 @@ export function initializeParty() {
       id: p.id, leader: p.leader.toLowerCase(), level: p.level, diff: p.diff,
       state: (p.state === 'running' || p.state === 'done' ? p.state : 'open'),
       members: p.members.map((m) => m.toLowerCase()), ready: p.ready.map((m) => m.toLowerCase()),
-      time: p.time, slain: p.slain, total: p.total, won: p.won
+      time: p.time, slain: p.slain, total: p.total, won: p.won, run: p.run, wait: p.wait
     }))
   })
   onNet('progress', (msg) => {
@@ -132,6 +140,7 @@ export function openLobby() {
 export function closeLobby() {
   if (!state.open) return
   state.open = false
+  state.banner = ''
   InputModifier.deleteFrom(engine.PlayerEntity)
 }
 
@@ -180,12 +189,35 @@ export function soloRun(level: number, diff: number) {
   act('start')
 }
 
+// The results screen's ways out (leader only; members mark themselves ready).
+
+export function descend() {
+  act('descend')
+}
+
+export function retryRun() {
+  act('retry')
+}
+
+export function returnToHall() {
+  act('hall')
+}
+
+/** Seconds the party has left on the results before the host walks it back to the hall. */
+export function resultsWait(): number {
+  const party = myParty()
+  if (!party || party.state !== 'done') return 0
+  return Math.max(0, party.wait - state.silence)
+}
+
 // --- following the host ---------------------------------------------------------------
 
 /** The lobby opens by itself the first time the hero stands ready in the hall. */
 let greeted = false
 let standingFor = 0
 const GREET_AFTER_SECONDS = 0.8
+/** Long enough for the hall to build and the hero to land on its entrance. */
+const REOPEN_AFTER_SECONDS = 1.2
 
 function update(dt: number) {
   const span = Number.isFinite(dt) && dt > 0 ? dt : 0
@@ -204,6 +236,9 @@ function update(dt: number) {
   if (phase !== appliedPhase) {
     if (phase === HUB) enterHub()
     else if (party) enterRun(party)
+  } else if (party && phase !== HUB && party.run !== appliedRun) {
+    // Same party, new run: the leader chose to descend or retry from the results.
+    enterRun(party)
   }
   if (party && phase !== HUB && party.state === 'done' && appliedState !== 'done') {
     state.result = {
@@ -213,11 +248,18 @@ function update(dt: number) {
   }
   appliedState = party?.state
   if (state.open && phase !== HUB) closeLobby()
+  if (reopenLobbyIn > 0 && phase === HUB) {
+    reopenLobbyIn -= span
+    if (reopenLobbyIn <= 0) openLobby()
+  }
 }
 
 function enterRun(party: PartyInfo) {
   appliedPhase = party.id
+  appliedRun = party.run
   state.result = undefined
+  state.banner = ''
+  reopenLobbyIn = 0
   coinsAtStart = getLootState().coins
   const level = levelById(party.level)
   state.levelId = level.id
@@ -225,16 +267,36 @@ function enterRun(party: PartyInfo) {
   setClientRun({ party: party.id, level: party.level, diff: party.diff })
   loadDungeon(level.seed, level.style)
   movePlayerToSpawn()
-  console.log(`[DG] entering ${level.name} (${difficultyById(party.diff).name}) with party ${party.id}`)
+  console.log(`[DG] entering ${level.name} (${difficultyById(party.diff).name}) with party ${party.id}, run ${party.run}`)
 }
 
 function enterHub() {
+  const fromRun = appliedPhase !== HUB
   appliedPhase = HUB
+  appliedRun = -1
   state.levelId = HUB_LEVEL.id
   setClientRun(undefined)
   loadDungeon(HUB_LEVEL.seed, HUB_LEVEL.style)
   movePlayerToSpawn()
-  console.log('[DG] back in the hub')
+  if (fromRun) {
+    // Back from a fortress: say what it changed and put the lobby straight up,
+    // with the party's (already advanced) pick lit, so the next fight is one click.
+    state.banner = bannerFor(state.result)
+    state.result = undefined
+    reopenLobbyIn = REOPEN_AFTER_SECONDS
+  }
+  console.log('[DG] back in the hall')
+}
+
+/** The line under the lobby title after a run. */
+function bannerFor(result: RunResult | undefined): string {
+  if (!result) return ''
+  const level = LEVELS[result.level]
+  if (!result.won) return `The party fell in ${level?.name ?? 'the fortress'}. Pick your next fight.`
+  const next = nextLevel(result.level)
+  if (next) return `${level?.name ?? 'The fortress'} cleared. ${next.name} is open to you.`
+  const diff = difficultyById(result.diff)
+  return `${level?.name ?? 'The last fortress'} cleared on ${diff.name}. Every fortress has fallen to you.`
 }
 
 export function levelName(id: number): string {

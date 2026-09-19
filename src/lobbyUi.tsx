@@ -201,6 +201,7 @@ export function LobbyUi() {
   const { scale: s, width, height, x, y } = layout()
   const party = myParty()
   const canPick = !party || isLeader()
+  const banner = getLobbyState().banner
   return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}
     uiBackground={{ color: veil }}>
     <UiEntity uiTransform={{ width, height, positionType: 'absolute', position: { left: x, top: y },
@@ -216,8 +217,14 @@ export function LobbyUi() {
         </UiEntity>
         <Action id="lobby-close" text="×" onClick={closeLobby} width={38} height={38} scale={s} fontSize={26} accent="gold" />
       </UiEntity>
-      <UiEntity uiTransform={{ width: 200 * s, height: 2 * s, margin: { bottom: 16 * s }, flexShrink: 0, pointerFilter: 'none' }}
+      <UiEntity uiTransform={{ width: 200 * s, height: 2 * s, margin: { bottom: banner ? 8 * s : 16 * s }, flexShrink: 0, pointerFilter: 'none' }}
         uiBackground={{ color: gold }} />
+      {banner && <UiEntity uiTransform={{ width: '100%', height: 30 * s, margin: { bottom: 12 * s }, padding: { left: 14 * s, right: 14 * s },
+        borderRadius: 4 * s, borderWidth: s, borderColor: goldLine, alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}
+        uiBackground={{ color: Color4.create(0.16, 0.12, 0.06, 0.96) }}>
+        <Label value={banner} color={gold} fontSize={13 * s} textAlign="middle-left" textWrap="nowrap"
+          uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} />
+      </UiEntity>}
       <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
         <LevelList scale={s} party={party} canPick={canPick} />
         <UiEntity uiTransform={{ width: RIGHT * s, flexDirection: 'column', flexShrink: 0, pointerFilter: 'none' }}>

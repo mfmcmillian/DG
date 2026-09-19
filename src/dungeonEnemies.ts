@@ -274,7 +274,7 @@ export function createRunSim(party: string, levelId: number, diffId: number) {
   const style = STYLES[level.style]
   const dungeon = generateDungeon(level.seed, {
     size: style.size, entranceSize: style.entranceSize, minLeaf: style.minLeaf, maxLeaf: style.maxLeaf,
-    minRoom: style.minRoom, torchEvery: style.torchEvery
+    minRoom: style.minRoom, torchEvery: style.torchEvery, cellsPerProp: style.cellsPerProp
   })
   const s = createSim(party, level, difficultyById(diffId), dungeon, style, true)
   sims.set(party, s)

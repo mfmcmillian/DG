@@ -50,6 +50,8 @@ export interface GeneratorOptions {
   minRoom: number
   /** Every n-th room wall edge gets a torch. */
   torchEvery: number
+  /** Room floor cells per wall prop (default 6); lower is more furnished. */
+  cellsPerProp?: number
 }
 
 export function mulberry32(seed: number): () => number {
@@ -82,6 +84,7 @@ interface Leaf {
 
 export function generateDungeon(seed: number, options: GeneratorOptions): Dungeon {
   const { size, entranceSize, minLeaf, maxLeaf, minRoom } = options
+  const cellsPerProp = options.cellsPerProp ?? 6
   const rnd = mulberry32(seed)
   const ri = (lo: number, hi: number) => lo + Math.floor(rnd() * (hi - lo + 1))
   const cells: Cell[] = new Array(size * size).fill(0)
@@ -256,7 +259,7 @@ export function generateDungeon(seed: number, options: GeneratorOptions): Dungeo
       const count = r.kind === 'boss' ? 1 : Math.min(5, Math.max(1, Math.floor(area / (size > 20 ? 10 : 4))))
       for (let i = 0; i < count; i++) r.enemies.push([r.x + ri(0, r.w - 1), r.y + ri(0, r.h - 1)])
     }
-    const propCount = r.kind === 'entrance' ? 2 : Math.min(6, Math.floor(area / 6))
+    const propCount = r.kind === 'entrance' ? 2 : Math.min(6, Math.floor(area / cellsPerProp))
     const used = new Set<string>()
     for (let i = 0; i < propCount * 3 && r.props.length < propCount; i++) {
       const alongTop = rnd() < 0.5

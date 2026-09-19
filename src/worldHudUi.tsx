@@ -6,12 +6,15 @@ import { openInventory } from './inventory'
 import { getPlayerCharacterState, getPlayerVitals, retryPlayerCharacter } from './playerCharacter'
 import { getWorldRivalState, retryWorldRival } from './dungeonEnemies'
 import { getLootState } from './loot'
-import { isClientSynced, isSoloMode, netStatus } from './multiplayer'
+import { isClientSynced, isSoloMode, localAddress, netStatus } from './multiplayer'
 import { netDebugSummary, recentLogs } from './netDebug'
-import { getLobbyState, inRun, myParty, myPhase, openLobby } from './party'
+import { MenuAction } from './menuUi'
+import {
+  descend, getLobbyState, inRun, leaveParty, myParty, myPhase, openLobby, resultsWait, retryRun, returnToHall, setReady
+} from './party'
 import { HUB } from './partyLookup'
 import { formatTime, heroLabel, partyTitle } from './lobbyUi'
-import { DIFFICULTIES, LEVELS, MAX_PARTY } from './shared/levels'
+import { DIFFICULTIES, LEVELS, MAX_PARTY, nextLevel } from './shared/levels'
 
 /** The handshake log is for the wait; once the fight runs (server or solo) it goes. */
 function showNetLog() {
@@ -194,17 +197,32 @@ function RunPanel({ left, top, scale: s }: { left: number; top: number; scale: n
   </UiEntity>
 }
 
-/** The verdict, up while the host holds the party in `done` before the hall. */
+/**
+ * The verdict and the decision. The party stands in the fortress it just
+ * fought through (loot still on the floor) while the leader picks: down to the
+ * next level or back to the hall after a win, again or the hall after a loss.
+ * Going deeper needs everyone ready, like starting from the lobby. The host
+ * walks an undecided party back on its own when the timer runs out.
+ */
 function ResultsOverlay({ width, height, scale: s }: { width: number; height: number; scale: number }) {
   const party = myParty()
   const result = getLobbyState().result
   if (!party || party.state !== 'done' || !result) return null
   const level = LEVELS[result.level]
   const diff = DIFFICULTIES[result.diff]
-  const next = result.won && result.level < LEVELS.length - 1 ? LEVELS[result.level + 1] : undefined
+  const next = result.won ? nextLevel(result.level) : undefined
+  const me = localAddress()
+  const leader = party.leader === me
+  const solo = party.members.length === 1
+  const readyCount = party.members.filter((m) => party.ready.includes(m)).length
+  const othersReady = party.members.every((m) => m === party.leader || party.ready.includes(m))
+  const meReady = party.ready.includes(me)
+  const wait = resultsWait()
   const cardWidth = Math.min(520 * s, width * 0.7)
-  return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - cardWidth) / 2, top: height * 0.22 },
-    width: cardWidth, padding: 28 * s, borderRadius: 8 * s, borderWidth: s, borderColor: result.won ? gold : line,
+  const goText = result.won ? (next ? `Descend to ${next.name}` : 'Fight it again') : 'Try again'
+  const go = result.won && next ? descend : retryRun
+  return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - cardWidth) / 2, top: height * 0.1 },
+    width: cardWidth, padding: 24 * s, borderRadius: 8 * s, borderWidth: s, borderColor: result.won ? gold : line,
     flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }} uiBackground={{ color: panel }}>
     <Label value={result.won ? 'FORTRESS CLEARED' : 'THE PARTY HAS FALLEN'} font="serif" color={result.won ? gold : red} fontSize={30 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 40 * s, flexShrink: 0, pointerFilter: 'none' }} />
@@ -215,8 +233,23 @@ function ResultsOverlay({ width, height, scale: s }: { width: number; height: nu
       uiTransform={{ width: '100%', height: 24 * s, margin: { top: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />
     {next && <Label value={`${next.name} is open to you.`} color={gold} font="sans-serif" fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 22 * s, margin: { top: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
-    <Label value="Returning to the hall…" color={muted} font="sans-serif" fontSize={12 * s} textAlign="middle-center" textWrap="nowrap"
-      uiTransform={{ width: '100%', height: 20 * s, margin: { top: 14 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+    {result.won && !next && <Label value="Every fortress has fallen to you." color={gold} font="sans-serif" fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 22 * s, margin: { top: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
+    <UiEntity uiTransform={{ width: '100%', height: 40 * s, margin: { top: 16 * s }, flexDirection: 'row', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+      {leader
+        ? <MenuAction id="results-go" text={othersReady ? goText : `${goText}  (${readyCount}/${party.members.length} ready)`} onClick={go}
+          width={cardWidth / s - 48 - 176} height={40} scale={s} fontSize={14} primary disabled={!othersReady} />
+        : <MenuAction id="results-ready" text={meReady ? 'Ready  ✓' : `Ready to go on  (${readyCount}/${party.members.length})`} onClick={() => setReady(!meReady)}
+          width={cardWidth / s - 48 - 176} height={40} scale={s} fontSize={14} primary={!meReady} accent="gold" active={meReady} />}
+      <UiEntity uiTransform={{ width: 12 * s, flexShrink: 0, pointerFilter: 'none' }} />
+      <MenuAction id="results-hall" text={leader ? 'Return to the hall' : 'Leave for the hall'} onClick={leader ? returnToHall : leaveParty}
+        width={164} height={40} scale={s} fontSize={14} accent="gold" />
+    </UiEntity>
+    <Label value={leader
+      ? (solo ? `Back to the hall on its own in ${formatTime(wait)}.` : `You lead: the party goes on once everyone is ready. Back to the hall on its own in ${formatTime(wait)}.`)
+      : `${heroLabel(party.leader)} decides where the party goes next. Back to the hall in ${formatTime(wait)} at the latest.`}
+      color={muted} font="sans-serif" fontSize={11.5 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 20 * s, margin: { top: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />
   </UiEntity>
 }
 

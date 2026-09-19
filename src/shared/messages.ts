@@ -28,7 +28,11 @@ const PartySnap = Schemas.Map({
   time: Schemas.Number,
   slain: Schemas.Int,
   total: Schemas.Int,
-  won: Schemas.Boolean
+  won: Schemas.Boolean,
+  /** Counts up with every run the party starts, so a client can tell a new run in the same party. */
+  run: Schemas.Int,
+  /** While `done`: seconds left before the host sends the party back to the hall on its own. */
+  wait: Schemas.Number
 })
 
 export const Messages = {

@@ -107,7 +107,8 @@ export function loadDungeon(seed: number, styleId: StyleId = state.style.id) {
     minLeaf: s.minLeaf,
     maxLeaf: s.maxLeaf,
     minRoom: s.minRoom,
-    torchEvery: s.torchEvery
+    torchEvery: s.torchEvery,
+    cellsPerProp: s.cellsPerProp
   })
   const crawler = state.camera === 'crawler' && crawlerCameraAvailable(s)
   state.instance = buildDungeon(state.dungeon, s, { cutaway: crawler })

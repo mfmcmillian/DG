@@ -3,8 +3,8 @@
 // and show the lobby), so a level is the same fortress everywhere.
 //
 // Every level is a seed for the generator plus a tier that scales the enemies
-// even on Normal; the difficulty multiplies on top. Level 1 is the seed the
-// scene.json spawn point was placed for, and doubles as the hub layout.
+// even on Normal; the difficulty multiplies on top. The hub between runs is
+// its own layout (HUB_LEVEL), not one of the five.
 
 import { StyleId } from '../dungeon/config'
 
@@ -65,8 +65,21 @@ export const DIFFICULTIES: DifficultyDefinition[] = [
   { id: 2, name: 'Nightmare', health: 2.2, damage: 1.8, extra: 1, coins: 3 }
 ]
 
-/** The hub is the first fortress with nobody in it: the layout the spawn point was placed for. */
-export const HUB_LEVEL = LEVELS[0]
+/**
+ * The hub between runs: its own small keep (the `hall` style) so coming back
+ * from a fortress never looks like the same fortress emptied out. Not in
+ * LEVELS, never has enemies; the scene.json spawn point sits on its entrance.
+ */
+export const HUB_LEVEL: LevelDefinition = {
+  id: -1, name: 'The Hall of Antrom', seed: 1, style: 'hall',
+  blurb: 'Where champions gather between fortresses.',
+  health: 1, damage: 1, coins: 1
+}
+
+/** The level that follows a cleared one, or undefined after the last. */
+export function nextLevel(level: number): LevelDefinition | undefined {
+  return level >= 0 && level < LEVELS.length - 1 ? LEVELS[level + 1] : undefined
+}
 
 export const MAX_PARTY = 4
 
