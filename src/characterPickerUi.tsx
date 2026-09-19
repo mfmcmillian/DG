@@ -9,6 +9,7 @@ import { getMenuLayout } from './menuLayout'
 import { menuColors, MenuAction as Action, KitButton } from './menuUi'
 import { kitTexture, UI_KIT } from './uiKit'
 import { isTitleOpen, isTitleReady, titleBegin, titleContinue } from './titleScreen'
+import { GAME_VERSION } from './version'
 import { getPreloadState } from './preload'
 import { BODY_TYPES, HAIR_STYLES, HAIR_COLORS, SKIN_TONES } from './appearance'
 import {
@@ -195,6 +196,8 @@ function TitleScreen() {
         </UiEntity>
         : <TitleLoading scale={s} />}
     </UiEntity>
+    <Label value={`v${GAME_VERSION}`} color={gold} fontSize={12 * s} textAlign="middle-right" textWrap="nowrap"
+      uiTransform={{ positionType: 'absolute', position: { right: 16 * s, bottom: 12 * s }, width: 160 * s, height: 20 * s, pointerFilter: 'none' }} />
   </UiEntity>
 }
 

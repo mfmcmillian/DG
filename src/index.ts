@@ -25,6 +25,7 @@ import { BRICK_TEXTURE, FLOOR_TEXTURE, KIT } from './dungeon/kit'
 import { equipmentModelPaths } from './equipmentAvatar'
 import { enemyPreloadAssets } from './dungeonEnemies'
 import { CHARACTERS } from './characterPicker'
+import { GAME_VERSION } from './version'
 
 export const DUNGEON_SEED = 1337
 
@@ -33,6 +34,7 @@ export async function main() {
   // atom is filled by the same RPC asynchronously and may not have landed yet
   // on the first tick, which is when main() runs.
   const server = (await isServerApi({})).isServer
+  console.log(`[DG] v${GAME_VERSION} ${server ? 'server' : 'client'}`)
   if (server) {
     initServer(DUNGEON_SEED)
     return
