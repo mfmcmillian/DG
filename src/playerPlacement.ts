@@ -1,6 +1,7 @@
 import { ColliderLayer, engine, executeTask, MeshCollider, Transform } from '@dcl/sdk/ecs'
 import { Vector3 } from '@dcl/sdk/math'
 import { movePlayerTo } from '~system/RestrictedActions'
+import { rearmAvatarHiding } from './avatarHiding'
 import { COURTYARD, courtyardSpawnCameraTarget, courtyardSpawnPosition, isInCourtyard } from './courtyard'
 
 const CHECK_INTERVAL = 0.25
@@ -67,7 +68,11 @@ export function movePlayerToSpawn() {
 
 function requestMove(position: Vector3, cameraTarget?: Vector3): Promise<boolean> {
   const pending = movePlayerTo({ newRelativePosition: position, cameraTarget, avatarTarget: cameraTarget })
-    .then((result) => result.success)
+    .then((result) => {
+      // A teleport can land the avatar shown; run it through the hide again.
+      rearmAvatarHiding()
+      return result.success
+    })
     .finally(() => { if (movement === pending) movement = undefined })
   movement = pending
   return pending

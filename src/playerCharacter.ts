@@ -18,6 +18,7 @@ import {
 } from './equipmentAvatar'
 import { fxNumber, fxSlash, fxSound } from './combatFx'
 import { createHeroNameTag, destroyHeroNameTag, updateHeroNameTag } from './heroNameTag'
+import { rearmAvatarHiding } from './avatarHiding'
 import { localAddress, publishHero, withdrawHero } from './multiplayer'
 import { CRAWLER_CAMERA, isCrawlerCameraOn, kickCrawlerCamera } from './dungeon/crawlerCamera'
 
@@ -484,7 +485,11 @@ function updatePlayerCharacter(dt: number) {
   }
 
   const equipmentReady = getEquipmentLoading(characterRoot) === 'ready'
-  if (equipmentReady) hasReadyCharacter = true
+  if (equipmentReady && !hasReadyCharacter) {
+    hasReadyCharacter = true
+    // Our body is up: make sure the native avatar under it is hidden, whatever reset it meanwhile.
+    rearmAvatarHiding()
+  }
   updateLocomotion(player.position, dt)
   if (!equipmentReady || suspended) resetRoamingCombat(roamingCombat)
   const actionMotion = equipmentReady && !suspended

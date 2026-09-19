@@ -1,5 +1,6 @@
 import { AvatarAnchorPointType, AvatarAttach, engine, Entity, PlayerIdentityData, Transform } from '@dcl/sdk/ecs'
 import { Quaternion, Vector3 } from '@dcl/sdk/math'
+import { rearmAvatarHiding } from './avatarHiding'
 import { AttackMotion } from './combatActions'
 import { EquipmentMotion } from './combatAnimations'
 import { fxImpact, fxNumber, fxSlash, fxSound } from './combatFx'
@@ -88,6 +89,8 @@ function createReplica(id: string, hero: HeroBodyValue): Replica {
   Transform.create(anchor)
   const root = engine.addEntity()
   Transform.create(root, { parent: anchor, position: Vector3.create(0, ATTACH_PIVOT_CORRECTION, 0) })
+  // A hero arriving means a native avatar arrived too; make sure the hide catches it.
+  rearmAvatarHiding()
   return {
     id, anchor, root, attachedAs: '', look: '', motion: 'idle', netMotion: 'idle', seq: hero.seq, echoGrace: 0, retryIn: 0,
     beat: hero.beat, silence: 0, turn: 0, nameTag: createHeroNameTag(root)
