@@ -58,7 +58,9 @@ export function playerDisplayName(address: string): string {
   for (const [entity, identity] of engine.getEntitiesWith(PlayerIdentityData)) {
     if ((identity.address || '').toLowerCase() !== want) continue
     const name = (AvatarBase.getOrNull(entity)?.name || '').trim()
-    return name.toLowerCase() === want ? '' : name
+    // A guest, or a profile the renderer has not resolved, comes through as a placeholder word.
+    if (name.toLowerCase() === want || /^(undefined|unknown|null|guest)$/i.test(name)) return ''
+    return name
   }
   return ''
 }

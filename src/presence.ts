@@ -18,20 +18,25 @@ export type Presence = {
   cls: string
   /** "in the hall", "party · The Vaults", "in The Deep Keep", "at the results", "at the gate". */
   where: string
+  /** The same place in a word or two, for a narrow column: Hall, Party, Pit, the level's name. */
+  short: string
   me: boolean
   /** Standing in the hall (not off in a fortress). */
   inHall: boolean
 }
 
-function whereabouts(id: string): { where: string; inHall: boolean } {
+function whereabouts(id: string): { where: string; short: string; inHall: boolean } {
   const phase = partyOf(id)
   const party = getLobbyState().parties.find((p) => p.members.includes(id))
   if (phase === HUB) {
-    return party ? { where: `party · ${levelNameOf(party.level)}`, inHall: true } : { where: 'in the hall', inHall: true }
+    return party
+      ? { where: `party · ${levelNameOf(party.level)}`, short: 'Party', inHall: true }
+      : { where: 'in the hall', short: 'Hall', inHall: true }
   }
-  if (party?.state === 'done') return { where: 'at the results', inHall: false }
-  if (party?.id === RAID_PARTY) return { where: 'in the Pit of Chains', inHall: false }
-  return { where: `in ${levelNameOf(party?.level ?? 0)}`, inHall: false }
+  if (party?.state === 'done') return { where: 'at the results', short: 'Results', inHall: false }
+  if (party?.id === RAID_PARTY) return { where: 'in the Pit of Chains', short: 'The Pit', inHall: false }
+  const level = levelNameOf(party?.level ?? 0)
+  return { where: `in ${level}`, short: level, inHall: false }
 }
 
 /** Everyone connected, ourselves first, then by name. */
@@ -49,7 +54,7 @@ export function presence(): Presence[] {
   for (const [, identity] of engine.getEntitiesWith(PlayerIdentityData)) {
     const id = identity.address?.toLowerCase()
     if (!id || seen.has(id)) continue
-    seen.set(id, { id, name: heroTagText(id), cls: '', where: 'at the gate', me: id === me, inHall: false })
+    seen.set(id, { id, name: heroTagText(id), cls: '', where: 'at the gate', short: 'Gate', me: id === me, inHall: false })
   }
   return [...seen.values()].sort((a, b) => (a.me === b.me ? a.name.localeCompare(b.name) : a.me ? -1 : 1))
 }
