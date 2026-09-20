@@ -67,7 +67,10 @@ function lavaPool(wx: number, wz: number): Furniture[] {
 
 const FURNITURE: Furniture[] = [
   // --- the disc, the braziers that ring it ------------------------------------
-  { id: 'pit_circle', ...m(PIT_CENTER.x, PIT_CENTER.z), lift: 0.05 },
+  // The Hell Circle is a 2.1 m dais with its runes on top: sunk so only the carved
+  // face shows, flush with the floor, so the Colossus stands on the arena floor
+  // and a hero can walk up to its feet without vanishing inside the stone.
+  { id: 'pit_circle', ...m(PIT_CENTER.x, PIT_CENTER.z), lift: -2.06 },
   ...[22.5, 67.5, 112.5, 157.5, 202.5, 247.5, 292.5, 337.5].map((a): Furniture => ({ id: 'pit_brazier', ...ring(12.5, a), yaw: a + 180 })),
 
   // --- the four corners: lava, and the pillars that hold the roof of the world up --
