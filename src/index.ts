@@ -14,6 +14,7 @@ import { initializeInventory } from './inventory'
 import { getCommittedLoadout } from './equipmentState'
 import { initializeCombat } from './combat'
 import { initializeDungeonEnemies } from './dungeonEnemies'
+import { initializeTrainingDummies } from './trainingDummies'
 import { initializeCombatFx } from './combatFx'
 import { initializeProjectiles } from './projectiles'
 import { initializeLoot } from './loot'
@@ -77,6 +78,7 @@ function initClient() {
   initializeInventory(applyCharacter)
   initializeCombat()
   initializeDungeonEnemies()
+  initializeTrainingDummies()
   // Lobby mirror and saved hero ride on the room; a client that goes solo also
   // hosts the party registry itself (see partyServer's onHostStart binding).
   initializeParty()

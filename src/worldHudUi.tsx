@@ -20,6 +20,7 @@ import { openSettings } from './settings'
 import { devToolsOn } from './devAccess'
 import { playerDisplayName } from './heroNameTag'
 import { presence } from './presence'
+import { trainingActive, trainingTally } from './trainingDummies'
 import { formatTime, heroLabel, partyTitle } from './lobbyUi'
 import { DIFFICULTIES, LEVELS, MAX_PARTY, nextLevel, realmOfLevel } from './shared/levels'
 
@@ -382,6 +383,38 @@ function HubNotice({ width, top, scale: s }: { width: number; top: number; scale
   </UiEntity>
 }
 
+/**
+ * The training yard's tally, top centre while the player is working a dummy:
+ * the last blow, the string so far and its pace, and the best blow yet.
+ */
+function TrainingTally({ width, top, scale: s }: { width: number; top: number; scale: number }) {
+  if (myPhase() !== HUB || getLobbyState().open || !trainingActive()) return null
+  const t = trainingTally()
+  // Fade in on the first blow, out over the last second and a half.
+  const alpha = Math.min(1, (6 - t.since) / 1.5)
+  const boxWidth = Math.min(560 * s, width * 0.7)
+  const dim = Color4.create(muted.r, muted.g, muted.b, alpha)
+  const bright = Color4.create(white.r, white.g, white.b, alpha)
+  const cell = (label: string, value: string, colour = bright) => <UiEntity uiTransform={{ flexDirection: 'column', alignItems: 'center', width: boxWidth / 4, pointerFilter: 'none' }}>
+    <Label value={value} color={colour} font="sans-serif" fontSize={22 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 28 * s, pointerFilter: 'none' }} />
+    <Label value={label} color={dim} font="sans-serif" fontSize={10 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 14 * s, pointerFilter: 'none' }} />
+  </UiEntity>
+  return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - boxWidth) / 2, top },
+    width: boxWidth, flexDirection: 'column', alignItems: 'center', padding: { top: 6 * s, bottom: 8 * s }, borderRadius: 8 * s, pointerFilter: 'none' }}
+    uiBackground={{ color: Color4.create(panel.r, panel.g, panel.b, panel.a * alpha) }}>
+    <Label value="TRAINING YARD" color={Color4.create(gold.r, gold.g, gold.b, alpha)} font="sans-serif" fontSize={10 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 14 * s, margin: { bottom: 2 * s }, pointerFilter: 'none' }} />
+    <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', pointerFilter: 'none' }}>
+      {cell('LAST BLOW', `${t.last}`, Color4.create(gold.r, gold.g, gold.b, alpha))}
+      {cell(t.hits === 1 ? '1 BLOW' : `${t.hits} BLOWS`, `${t.total}`)}
+      {cell('PER SECOND', t.perSecond > 0 ? t.perSecond.toFixed(1) : '—')}
+      {cell('BEST BLOW', `${t.best}`)}
+    </UiEntity>
+  </UiEntity>
+}
+
 export function WorldHudUi() {
   const { width, height, scale: s, right, bottom, vitalsTop } = hudLayout()
   const created = getPickerState().hasCreatedCharacter
@@ -394,6 +427,7 @@ export function WorldHudUi() {
     {ready && <ResultsOverlay width={width} height={height} scale={s} />}
     {ready && <HubPrompt width={width} bottom={bottom} scale={s} />}
     {ready && <HubNotice width={width} top={vitalsTop - 60 * s} scale={s} />}
+    {ready && <TrainingTally width={width} top={vitalsTop - 8 * s} scale={s} />}
     {ready && <BossBar width={width} scale={s} />}
     {ready && <LootToasts right={right} bottom={bottom} scale={s} />}
     {ready && devToolsOn() && <DungeonDevPanel />}

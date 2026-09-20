@@ -8,7 +8,7 @@
 //
 //        x  0 1 2 3 4 5 6 7 8 9 10 11
 //   y  4    . . . G G G G G . . .  .     G great hall, statue on the north wall
-//      5    . S S G G G G G E E .  .     S smithy (west), E hall of champions (east)
+//      5    . S S G G G G G E E .  .     S smithy (west), E training yard (east)
 //      6    . S S = G G G = E E .  .     = doorway
 //      7    . S S G G G G G E E .  .
 //      8    . . . G G G G G . . .  .
@@ -48,6 +48,15 @@ const ROOMS: Array<Rect & { kind: Room['kind'] }> = [
 export const WAR_TABLE_TAG = 'war-table'
 
 /**
+ * The training yard's targets by tag, with each body's size relative to a hero
+ * (the projectile hull and the point an arrow aims for). Dummies are hero
+ * sized; the round targets on the wall are hit at chest height.
+ */
+export const TRAINING_TARGETS: Record<string, number> = {
+  'dummy-0': 1, 'dummy-1': 1, 'dummy-2': 1, 'dummy-3': 0.6, 'dummy-4': 0.6
+}
+
+/**
  * Free-standing pieces are easier to place in metres: world x / z to cell
  * coordinates. The hall grid starts at (18, 18): (96 - 12 * 5) / 2.
  */
@@ -58,7 +67,7 @@ function m(wx: number, wz: number): { x: number; y: number } {
 }
 
 // World bounds, for reading the numbers below: great hall x 33..58, z 38..63
-// (centre 45.5, 50.5); smithy x 23..33 and hall of champions x 58..68, both
+// (centre 45.5, 50.5); smithy x 23..33 and training yard x 58..68, both
 // z 43..58; vestibule x 38..53, z 63..73 with the spawn at (45.5, 68).
 // Yaw: a piece's front faces +Z (south) at 0, +X (east) at 90, -X (west) at -90.
 
@@ -119,17 +128,21 @@ const FURNITURE: Furniture[] = [
   { id: 'forge_cog_pile', ...m(25, 46) },
   { id: 'rune', x: 1, y: 5, side: 'w' },
 
-  // --- hall of champions (east): armour, trophies, and room for a merchant --
-  { id: 'castle_armor', x: 8, y: 5, side: 'n' },
-  { id: 'castle_armor', x: 9, y: 5, side: 'n' },
-  { id: 'castle_shelf', x: 9, y: 5, side: 'e' },
-  { id: 'castle_weapon_rack', x: 9, y: 6, side: 'e' },
-  { id: 'chest', x: 9, y: 7, side: 'e' },
-  { id: 'chest', x: 8.5, y: 7, side: 's' },
-  { id: 'crystal', ...m(66.6, 56.6) },
+  // --- training yard (east): dummies to swing at, targets to shoot -----------
+  // Three dummies in a row across the north half, room to circle each; two
+  // round targets on the east wall for the archers and casters at the door.
+  { id: 'castle_armor', ...m(60.5, 47), yaw: 0, tag: 'dummy-0' },
+  { id: 'castle_dummy', ...m(63, 47), yaw: 0, tag: 'dummy-1' },
+  { id: 'castle_dummy_straw', ...m(65.5, 47), yaw: 0, tag: 'dummy-2' },
+  { id: 'castle_target', x: 9, y: 6, side: 'e', tag: 'dummy-3' },
+  { id: 'castle_target', x: 9, y: 7, side: 'e', tag: 'dummy-4' },
+  { id: 'castle_weapon_rack', x: 8, y: 5, side: 'n' },
+  { id: 'castle_weapon_rack', x: 9, y: 5, side: 'n' },
   { id: 'castle_barrel', x: 8, y: 7, side: 's' },
+  { id: 'castle_barrel', x: 8.4, y: 7, side: 's' },
   { id: 'castle_banner', x: 8, y: 7, side: 'w' },
   { id: 'urn', x: 8, y: 5, side: 'w' },
+  { id: 'castle_hay', x: 9, y: 7, side: 's' },
 
   // --- vestibule: the door in, lit either side ------------------------------
   { id: 'brazier', x: 4, y: 10, side: 's' },

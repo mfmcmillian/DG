@@ -938,15 +938,56 @@ function updateEnemy(e: Enemy, dt: number, target: NetFighter, fighters: NetFigh
   syncTransform(e, dt)
 }
 
+// --- training targets ----------------------------------------------------------
+
+/**
+ * Something in the hall a hero can hit that is not an enemy: the training
+ * dummies. They take every blow a hero can land (sword, arrow, bolt), show the
+ * same numbers and impacts, and report each hit back; they have no health and
+ * no host authority, so the hits stay on the client that threw them.
+ */
+export type TrainingTarget = {
+  position: Vector3
+  /** Body size relative to a hero, for the projectile hull and the aim point. */
+  scale: number
+  onHit: (damage: number, attacker: CombatPose, motion: HeroAttackMotion, heavy: boolean) => void
+}
+let trainingTargets: () => TrainingTarget[] = () => []
+
+export function setTrainingTargets(provider: () => TrainingTarget[]) {
+  trainingTargets = provider
+}
+
+/** What a hero's blow needs of whatever it lands on; enemies and training targets both fit. */
+type StrikeTarget = CombatPose & { blocking: boolean; archetype: { scale: number } }
+
+function trainingBody(t: TrainingTarget): StrikeTarget {
+  return { position: t.position, facing: 0, blocking: false, archetype: { scale: t.scale } }
+}
+
+/** Indices below zero in the shared target space are training targets. */
+function trainingIndex(i: number) {
+  return -1 - i
+}
+
+function strikeTraining(attacker: CombatPose, t: TrainingTarget, motion: HeroAttackMotion, context: { finisher: boolean }, at?: Vector3) {
+  presentPlayerStrike(attacker, trainingBody(t), motion, context, at)
+  const hit = resolveCombatHit(motion, false, context.finisher, localWeapon())
+  t.onHit(hit.damage, attacker, motion, isHeavyMotion(motion) || context.finisher)
+}
+
 // --- player attacks ----------------------------------------------------------
 
-/** The best enemy in front within `range` and the cone `minDot`: near and centred wins. */
-function pickHeroTarget(attacker: CombatPose, range: number, minDot: number, verticalSlack = 0): { e: Enemy; index: number } | undefined {
+/**
+ * The best enemy (or training target) in front within `range` and the cone
+ * `minDot`: near and centred wins. Training targets share the index space
+ * below zero.
+ */
+function pickHeroTarget(attacker: CombatPose, range: number, minDot: number, verticalSlack = 0): { e: StrikeTarget; index: number } | undefined {
   if (!sim) return undefined
-  let best: { e: Enemy; index: number } | undefined
+  let best: { e: StrikeTarget; index: number } | undefined
   let bestScore = Infinity
-  sim.enemies.forEach((e, index) => {
-    if (e.loading !== 'ready' || e.dead) return
+  const consider = (e: StrikeTarget, index: number) => {
     const d = combatDistance(attacker, e)
     if (d > range || !facesCombatant(attacker, e, minDot)) return
     if (Math.abs(attacker.position.y - e.position.y) > COMBAT_RULES.maximumVerticalReach + verticalSlack) return
@@ -959,7 +1000,12 @@ function pickHeroTarget(attacker: CombatPose, range: number, minDot: number, ver
       bestScore = score
       best = { e, index }
     }
+  }
+  sim.enemies.forEach((e, index) => {
+    if (e.loading !== 'ready' || e.dead) return
+    consider(e, index)
   })
+  trainingTargets().forEach((t, i) => consider(trainingBody(t), trainingIndex(i)))
   return best
 }
 
@@ -1008,6 +1054,7 @@ function projectileTargets(): ProjectileTarget[] {
     if (e.loading !== 'ready' || e.dead) return
     out.push({ index, position: e.position, height: 1.85 * e.archetype.scale, radius: 0.45 * e.archetype.scale })
   })
+  trainingTargets().forEach((t, i) => out.push({ index: trainingIndex(i), position: t.position, height: 1.85 * t.scale, radius: 0.45 * t.scale }))
   return out
 }
 
@@ -1031,7 +1078,22 @@ function hitEnemies(motion: HeroAttackMotion, context: AttackContext) {
       bestIndex = i
     }
   })
-  if (!best || bestIndex < 0) return
+  if (!best || bestIndex < 0) {
+    // Nobody to fight: a training dummy in reach takes the blow instead.
+    let dummy: TrainingTarget | undefined
+    let dummyDistance = Infinity
+    for (const t of trainingTargets()) {
+      const body = trainingBody(t)
+      if (!attackCanReach(attacker, body, motion)) continue
+      const d = combatDistance(attacker, body)
+      if (d < dummyDistance) {
+        dummyDistance = d
+        dummy = t
+      }
+    }
+    if (dummy) strikeTraining(attacker, dummy, motion, context)
+    return
+  }
   presentPlayerStrike(attacker, best, motion, context)
   if (isHost()) applyPlayerHit(attacker, best, motion, { finisher: context.finisher, weapon: localWeapon() })
   else publishHitEnemy(bestIndex, motion, context.finisher)
@@ -1066,6 +1128,15 @@ function shootEnemies(attacker: CombatPose, motion: HeroAttackMotion, context: A
       // The sim may have been rebuilt while the arrow flew; the index means nothing then.
       if (simAtLaunch !== clientSim || !clientSim || clientSim.paused || defeated) return
       sim = clientSim
+      if (t.index < 0) {
+        const dummy = trainingTargets()[trainingIndex(t.index)]
+        if (!dummy) return
+        const shooter = getPlayerCombatPose() ?? attacker
+        const dx = dummy.position.x - shooter.position.x
+        const dz = dummy.position.z - shooter.position.z
+        strikeTraining({ position: shooter.position, facing: dx * dx + dz * dz > 0.0001 ? Math.atan2(dx, dz) : shooter.facing }, dummy, motion, context, at)
+        return
+      }
       const e = sim.enemies[t.index]
       if (!e || e.dead || e.loading !== 'ready') return
       const shooter = getPlayerCombatPose() ?? attacker
@@ -1167,7 +1238,7 @@ function applyPlayerHit(
 }
 
 function presentPlayerStrike(
-  attacker: CombatPose, e: Enemy, motion: HeroAttackMotion, context: { finisher: boolean }, at?: Vector3
+  attacker: CombatPose, e: StrikeTarget, motion: HeroAttackMotion, context: { finisher: boolean }, at?: Vector3
 ) {
   const heavy = isHeavyMotion(motion)
   const guarded = e.blocking && facesCombatant(e, attacker, 0.1)

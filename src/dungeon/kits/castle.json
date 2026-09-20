@@ -277,6 +277,33 @@
         1.442
       ],
       "tris": 5083
+    },
+    "castle_dummy": {
+      "src": "models/kits/castle/castle_dummy.gltf",
+      "size": [
+        0.729,
+        1.782,
+        0.599
+      ],
+      "tris": 2508
+    },
+    "castle_dummy_straw": {
+      "src": "models/kits/castle/castle_dummy_straw.gltf",
+      "size": [
+        0.993,
+        1.904,
+        0.368
+      ],
+      "tris": 1319
+    },
+    "castle_target": {
+      "src": "models/kits/castle/castle_target.gltf",
+      "size": [
+        0.736,
+        1.003,
+        0.954
+      ],
+      "tris": 1152
     }
   }
 }
