@@ -53,7 +53,7 @@ import {
   createDecal, Decal, destroyDecal, fxDeathPuff, fxGlitter, fxImpact, fxNumber, fxSlam, fxSlash, fxSound, updateDecal
 } from './combatFx'
 import { kickCrawlerCamera } from './dungeon/crawlerCamera'
-import { clearLoot, setLootNoticeHandler, spawnLoot } from './loot'
+import { clearLoot, spawnLoot } from './loot'
 import { rollWeaponDrop, weaponStats } from './weapons'
 import { AttackContext } from './roamingCombat'
 import {
@@ -238,7 +238,6 @@ export function initializeDungeonEnemies() {
       }
     }
   })
-  setLootNoticeHandler(showNotice)
   engine.addSystem(updateEnemies)
   onDungeonLoaded(populate)
 }
@@ -768,7 +767,10 @@ function updateBoss(e: Enemy, dt: number, target: NetFighter, fighters: NetFight
       kickCrawlerCamera(Vector3.create(0, -0.22, 0.12))
     }
   }
-  if (decision.advance && !e.swing) walkToward(e, dt, target, stride * (brain.phase === 3 ? 1.25 : 1), COMBAT_RULES.approachStop)
+  if (decision.advance && !e.swing && e.stagger <= 0) {
+    const pace = (brain.phase === 3 ? 1.25 : 1) * (e.recovery > 0 ? 0.5 : 1)
+    walkToward(e, dt, target, stride * pace, COMBAT_RULES.approachStop)
+  }
 
   if (decision.telegraphAttack) {
     const slam = decision.telegraphAttack === 'slam'
@@ -1142,6 +1144,13 @@ function applyPlayerHit(
   e.hitStop = freeze
   setEquipmentTimeScale(e.body, 0.02)
   if (!hit.interrupt || armored) return
+  // The Warlord's poise: a single arrow or bolt wounds him but does not stop him
+  // (the third of a string still does), and nothing stops a leap or a roll once
+  // it has begun. Without this an archer at ten paces cancels every leap and he
+  // never reaches anyone.
+  const rangedLight = (motion === 'bow_shoot' || motion === 'cast_bolt') && !context.finisher
+  const committed = e.swing?.motion === 'leap' || e.rollSeconds > 0
+  if (e.boss && (rangedLight || committed) && e.health > 0) return
   e.swing = undefined
   e.slamming = false
   e.blocking = false
@@ -1219,15 +1228,15 @@ function kill(e: Enemy) {
       e.boss ? 'boss' : e.archetype.role === 'elite' ? 'elite' : 'grunt', sim.level.id, sim.diff.id, Math.random, weaponPoolFor(characters))
   }
   if (e.boss && item) sim.bossDropGiven = true
-  publishLoot(sim.party, e.position.x, e.position.z, coin, heart, item)
+  publishLoot(sim.party, e.position.x, e.position.z, coin, heart, item, e.boss)
 }
 
-function grantLoot(party: string, x: number, z: number, coin: number, heart: number, item: string) {
+function grantLoot(party: string, x: number, z: number, coin: number, heart: number, item: string, boss: boolean) {
   if (!clientSim || party !== clientSim.party) return
   const origin = Vector3.create(x, COURTYARD.characterFloorY, z)
   if (coin > 0) spawnLoot(origin, 'coin', coin)
   if (heart > 0) spawnLoot(origin, 'heart', heart)
-  if (item) spawnLoot(origin, 'weapon', 1, item)
+  if (item) spawnLoot(origin, 'weapon', 1, item, boss)
 }
 
 function presentDeath(e: Enemy) {

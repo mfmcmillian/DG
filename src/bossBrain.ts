@@ -28,6 +28,8 @@ export type BossDecision = {
 
 const PHASE_TWO = 0.65
 const PHASE_THREE = 0.32
+/** Metres a leaping strike can close; from further out the Warlord walks. */
+export const LEAP_RANGE = 7
 
 export function createBossBrain(): BossBrain {
   return {
@@ -94,7 +96,13 @@ export function updateBossBrain(
     return decision
   }
 
-  if (!available) return decision
+  if (!available) {
+    // Recovering from a swing or reeling from a blow: he cannot start anything,
+    // but a target that keeps its distance still gets walked down (updateBoss
+    // slows the stride while he recovers).
+    if ((brain.mode === 'approach' || brain.mode === 'cooldown') && distance > LEAP_RANGE) decision.advance = true
+    return decision
+  }
 
   if (brain.mode === 'block') {
     brain.timer -= dt
@@ -127,8 +135,11 @@ export function updateBossBrain(
   }
 
   const next = brain.queue.shift() ?? chooseAttack(brain.phase, distance)
-  const reach = next === 'roll' ? 99 : next === 'slam' ? 3.2 : attackRange(next)
-  if (next !== 'roll' && next !== 'leap' && distance > Math.max(reach, COMBAT_RULES.approachRange)) {
+  // A leap covers LEAP_RANGE, and a roll is only worth it about that close;
+  // beyond it he closes on foot first, in every phase, rather than
+  // telegraphing leaps that never land or side-stepping at a distant archer.
+  const reach = next === 'roll' || next === 'leap' ? LEAP_RANGE : next === 'slam' ? 3.2 : attackRange(next)
+  if (distance > Math.max(reach, COMBAT_RULES.approachRange)) {
     brain.queue.unshift(next)
     decision.advance = true
     return decision
@@ -190,7 +201,9 @@ function intro(brain: BossBrain, dt: number, decision: BossDecision): BossDecisi
 }
 
 function chooseAttack(phase: BossPhase, distance: number): BossAttack {
-  if (distance > 3.6) return phase === 1 ? 'leap' : Math.random() < 0.45 ? 'leap' : 'roll'
+  // Out of reach: leap. Later phases mix in a side-roll, but only when he is
+  // already close; from further out a roll just keeps a kiting archer safe.
+  if (distance > 3.6) return phase === 1 || distance > 5 || Math.random() < 0.6 ? 'leap' : 'roll'
   if (phase === 1) {
     const roll = Math.random()
     if (roll < 0.28) return 'fencing'

@@ -6,7 +6,7 @@
 import { engine, InputModifier, PointerLock } from '@dcl/sdk/ecs'
 import { loadDungeon } from './dungeon'
 import { setClientRun } from './dungeonEnemies'
-import { getLootState } from './loot'
+import { getLootState, getRunLoot, resetRunLoot } from './loot'
 import { isClientSynced, localAddress } from './multiplayer'
 import { onNet, sendNet } from './net'
 import { HUB, setPartyLookup } from './partyLookup'
@@ -67,6 +67,10 @@ export type RunResult = {
   slain: number
   total: number
   coins: number
+  /** Weapon ids this hero unlocked during the run, in the order they were picked up. */
+  found: string[]
+  /** Duplicates picked up and turned into coin. */
+  salvaged: number
 }
 
 type LobbyState = {
@@ -270,7 +274,8 @@ function update(dt: number) {
   if (party && phase !== HUB && party.state === 'done' && appliedState !== 'done') {
     state.result = {
       won: party.won, level: party.level, diff: party.diff, time: party.time,
-      slain: party.slain, total: party.total, coins: getLootState().coins - coinsAtStart
+      slain: party.slain, total: party.total, coins: getLootState().coins - coinsAtStart,
+      found: [...getRunLoot().found], salvaged: getRunLoot().salvaged
     }
   }
   appliedState = party?.state
@@ -288,6 +293,7 @@ function enterRun(party: PartyInfo) {
   state.banner = ''
   reopenLobbyIn = 0
   coinsAtStart = getLootState().coins
+  resetRunLoot()
   const level = levelById(party.level)
   state.levelId = level.id
   closeLobby()

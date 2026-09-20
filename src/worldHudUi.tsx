@@ -6,7 +6,9 @@ import { openInventory } from './inventory'
 import { IconButton } from './hudButtons'
 import { getPlayerCharacterState, getPlayerVitals, retryPlayerCharacter } from './playerCharacter'
 import { getWorldRivalState, retryWorldRival } from './dungeonEnemies'
-import { getLootState } from './loot'
+import { getLootState, getLootToasts, TOAST_SECONDS } from './loot'
+import { getEquipmentItemOrNull } from './equipmentCatalog'
+import { RARITIES, WEAPON_CLASSES } from './weapons'
 import { isClientSynced, isSoloMode, localAddress, netStatus } from './multiplayer'
 import { netDebugSummary, recentLogs } from './netDebug'
 import { MenuAction } from './menuUi'
@@ -164,6 +166,72 @@ function StatusNotice({ width, bottom, scale: s }: { width: number; bottom: numb
   </UiEntity>
 }
 
+function withAlpha(color: Color4, alpha: number): Color4 {
+  return Color4.create(color.r, color.g, color.b, color.a * alpha)
+}
+
+/**
+ * Weapon pickups, stacked above the action buttons on the right: the icon, the
+ * name in its rarity's colour and what it is, or what a duplicate salvaged for.
+ * Each card fades out over its last second.
+ */
+function LootToasts({ right, bottom, scale: s }: { right: number; bottom: number; scale: number }) {
+  const toasts = getLootToasts()
+  if (!toasts.length) return null
+  const cardWidth = 300 * s
+  const cardHeight = 54 * s
+  return <UiEntity uiTransform={{ positionType: 'absolute', position: { right, bottom: bottom + 60 * s },
+    width: cardWidth, flexDirection: 'column-reverse', pointerFilter: 'none' }}>
+    {toasts.map((t, i) => {
+      const fade = Math.max(0, Math.min(1, (TOAST_SECONDS - t.age) / 0.9))
+      const rarity = t.item.weapon ? RARITIES[t.item.weapon.rarity] : undefined
+      const rarityColor = rarity ? rarity.color : white
+      const subtitle = t.salvaged > 0
+        ? `Already owned  ·  salvaged for ${t.salvaged} coins`
+        : t.item.weapon ? `${rarity?.label ?? ''}  ·  ${WEAPON_CLASSES[t.item.weapon.class].label}  ·  now in your inventory` : ''
+      return <UiEntity key={`${t.item.id}-${i}`} uiTransform={{ width: cardWidth, height: cardHeight, margin: { top: 6 * s },
+        padding: 7 * s, borderRadius: 8 * s, borderWidth: s, borderColor: withAlpha(t.salvaged > 0 ? line : rarityColor, fade * 0.9),
+        flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: withAlpha(panel, fade) }}>
+        <UiEntity uiTransform={{ width: 40 * s, height: 40 * s, borderRadius: 6 * s, flexShrink: 0, pointerFilter: 'none' }}
+          uiBackground={{ color: withAlpha(track, fade), textureMode: 'stretch', texture: { src: t.item.icon } }} />
+        <UiEntity uiTransform={{ width: cardWidth - 62 * s, height: 40 * s, margin: { left: 8 * s }, flexDirection: 'column', justifyContent: 'center', pointerFilter: 'none' }}>
+          <Label value={t.item.name} color={withAlpha(t.salvaged > 0 ? muted : rarityColor, fade)} font="sans-serif" fontSize={13.5 * s}
+            textAlign="middle-left" textWrap="nowrap" uiTransform={{ width: '100%', height: 20 * s, flexShrink: 0, pointerFilter: 'none' }} />
+          <Label value={subtitle} color={withAlpha(muted, fade)} font="sans-serif" fontSize={11 * s}
+            textAlign="middle-left" textWrap="nowrap" uiTransform={{ width: '100%', height: 17 * s, flexShrink: 0, pointerFilter: 'none' }} />
+        </UiEntity>
+      </UiEntity>
+    })}
+  </UiEntity>
+}
+
+/** The results card's haul: an icon per weapon unlocked, framed in its rarity, and the salvage tally. */
+function FoundThisRun({ found, salvaged, width, scale: s }: { found: string[]; salvaged: number; width: number; scale: number }) {
+  const items = found.map((id) => getEquipmentItemOrNull(id)).filter((item) => !!item)
+  const shown = items.slice(0, 8)
+  const more = items.length - shown.length
+  const salvageText = salvaged > 0 ? `${salvaged} duplicate${salvaged === 1 ? '' : 's'} salvaged for coin` : ''
+  const caption = items.length
+    ? `Found this run  ·  ${items.length} new weapon${items.length === 1 ? '' : 's'}${salvageText ? `  ·  ${salvageText}` : ''}`
+    : salvageText ? `No new weapons  ·  ${salvageText}` : 'No weapons dropped this run'
+  return <UiEntity uiTransform={{ width, margin: { top: 12 * s }, flexDirection: 'column', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+    <Label value={caption} color={items.length ? gold : muted} font="sans-serif" fontSize={12 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 20 * s, flexShrink: 0, pointerFilter: 'none' }} />
+    {shown.length > 0 && <UiEntity uiTransform={{ width: '100%', height: 56 * s, margin: { top: 4 * s }, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+      {shown.map((item, i) => {
+        const color = item.weapon ? RARITIES[item.weapon.rarity].color : line
+        return <UiEntity key={`${item.id}-${i}`} uiTransform={{ width: 48 * s, height: 48 * s, margin: { left: 3 * s, right: 3 * s }, padding: 2 * s,
+          borderRadius: 6 * s, borderWidth: 1.5 * s, borderColor: color, flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: track }}>
+          <UiEntity uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }}
+            uiBackground={{ textureMode: 'stretch', texture: { src: item.icon } }} />
+        </UiEntity>
+      })}
+      {more > 0 && <Label value={`+${more}`} color={muted} font="sans-serif" fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
+        uiTransform={{ width: 40 * s, height: 48 * s, flexShrink: 0, pointerFilter: 'none' }} />}
+    </UiEntity>}
+  </UiEntity>
+}
+
 /** Under the vitals during a run: the fortress, the tally and who is in with us. */
 function RunPanel({ right, top, scale: s }: { right: number; top: number; scale: number }) {
   const party = myParty()
@@ -215,6 +283,7 @@ function ResultsOverlay({ width, height, scale: s }: { width: number; height: nu
     <Label value={`Time ${formatTime(result.time)}   ·   Slain ${result.slain} / ${result.total}   ·   Coins +${Math.max(0, result.coins)}`}
       color={muted} font="sans-serif" fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 24 * s, margin: { top: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+    <FoundThisRun found={result.found} salvaged={result.salvaged} width={cardWidth - 48 * s} scale={s} />
     {next && <Label value={`${next.name} is open to you.`} color={gold} font="sans-serif" fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 22 * s, margin: { top: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
     {result.won && !next && <Label value={`All of ${realmOfLevel(result.level).name} has fallen to you.`} color={gold} font="sans-serif" fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
@@ -262,6 +331,7 @@ export function WorldHudUi() {
     {ready && <ResultsOverlay width={width} height={height} scale={s} />}
     {ready && <HubPrompt width={width} bottom={bottom} scale={s} />}
     {ready && <BossBar width={width} scale={s} />}
+    {ready && <LootToasts right={right} bottom={bottom} scale={s} />}
     {ready && getSettings().devTools && <DungeonDevPanel />}
     {created && <StatusNotice width={width} bottom={bottom} scale={s} />}
     {created && <Label value={`${netStatus()} | ${netDebugSummary()}`} color={muted} font="sans-serif" fontSize={10 * s} textAlign="bottom-left" textWrap="nowrap"

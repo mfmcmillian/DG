@@ -6,9 +6,9 @@
 
 import { engine, Entity, GltfContainer, Transform } from '@dcl/sdk/ecs'
 import { Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
-import { fxGlitter, fxNumber, fxSound } from './combatFx'
+import { fxGlitter, fxLootBeam, fxNumber, fxSound } from './combatFx'
 import { isInCourtyard } from './courtyard'
-import { getEquipmentItemOrNull, WEAPON_DROP_OFFSET, WEAPON_DROP_OFFSET_LEFT } from './equipmentCatalog'
+import { EquipmentItem, getEquipmentItemOrNull, WEAPON_DROP_OFFSET, WEAPON_DROP_OFFSET_LEFT } from './equipmentCatalog'
 import { unlockInventoryItem } from './inventory'
 import { publishPickup } from './multiplayer'
 import { getPlayerCombatPose, getPlayerVitals } from './playerCharacter'
@@ -21,24 +21,55 @@ type Drop = {
   kind: LootKind
   /** Weapon id for `weapon` drops. */
   item?: string
+  /** The Warlord's drop: a taller pop and a beam of light while it lies there. */
+  boss: boolean
   from: Vector3
   to: Vector3
   /** Seconds since the drop; the pop-out arc lasts POP seconds. */
   age: number
   phase: number
+  /** Seconds until the beam fires again (boss drops). */
+  beamIn: number
 }
 
+/** A weapon pickup as the HUD shows it: a card that slides in and fades. */
+export type LootToast = {
+  item: EquipmentItem
+  /** Already owned: turned into coin instead. */
+  salvaged: number
+  age: number
+}
+
+/** What a run handed over: the weapons unlocked (ids, in order) and how many duplicates were salvaged. */
+export type RunLoot = { found: string[]; salvaged: number }
+
 const POP = 0.55
+const BOSS_POP = 0.8
 const PICKUP_RADIUS = 0.95
 const MAX_DROPS = 40
+const BEAM_EVERY = 0.5
+export const TOAST_SECONDS = 4.2
+const MAX_TOASTS = 3
 const drops: Drop[] = []
+const toasts: LootToast[] = []
+const run: RunLoot = { found: [], salvaged: 0 }
 const state = { coins: 0 }
 let initialized = false
-let notice: (message: string, seconds: number) => void = () => {}
 
-/** The dungeon HUD lends its notice line for pickups. */
-export function setLootNoticeHandler(handler: typeof notice) {
-  notice = handler
+/** Pickup cards for the HUD, newest last. */
+export function getLootToasts(): readonly LootToast[] {
+  return toasts
+}
+
+/** The weapons this run has produced so far (for the results card). */
+export function getRunLoot(): Readonly<RunLoot> {
+  return run
+}
+
+/** A new run starts: forget the last one's haul. */
+export function resetRunLoot() {
+  run.found.length = 0
+  run.salvaged = 0
 }
 
 export function initializeLoot() {
@@ -61,8 +92,11 @@ export function clearLoot() {
   drops.length = 0
 }
 
-/** Scatter `count` drops of a kind around a point on the floor (`item`: the weapon id for weapon drops). */
-export function spawnLoot(origin: Vector3, kind: LootKind, count: number, item?: string) {
+/**
+ * Scatter `count` drops of a kind around a point on the floor (`item`: the
+ * weapon id for weapon drops; `boss`: the Warlord's, which lands with a beam).
+ */
+export function spawnLoot(origin: Vector3, kind: LootKind, count: number, item?: string, boss = false) {
   const weapon = kind === 'weapon' ? (item ? getEquipmentItemOrNull(item) : undefined) : undefined
   if (kind === 'weapon' && !weapon) return
   for (let i = 0; i < count; i++) {
@@ -75,7 +109,7 @@ export function spawnLoot(origin: Vector3, kind: LootKind, count: number, item?:
     Transform.create(entity, {
       position: Vector3.add(origin, Vector3.create(0, 0.9, 0)),
       rotation: Quaternion.Identity(),
-      scale: kind === 'coin' ? Vector3.create(1.4, 1.4, 1.4) : Vector3.create(1, 1, 1)
+      scale: kind === 'coin' ? Vector3.create(1.4, 1.4, 1.4) : boss && weapon ? Vector3.create(1.25, 1.25, 1.25) : Vector3.create(1, 1, 1)
     })
     if (weapon) {
       // The weapon GLB is authored in the hero's hand; a child carries the offset that stands it up here.
@@ -91,21 +125,30 @@ export function spawnLoot(origin: Vector3, kind: LootKind, count: number, item?:
     } else {
       GltfContainer.create(entity, { src: `models/loot/${kind}.glb`, visibleMeshesCollisionMask: 0, invisibleMeshesCollisionMask: 0 })
     }
-    drops.push({ entity, kind, item: weapon?.id, from: Vector3.add(origin, Vector3.create(0, 0.9, 0)), to, age: 0, phase: Math.random() * Math.PI * 2 })
+    drops.push({
+      entity, kind, item: weapon?.id, boss: boss && !!weapon, from: Vector3.add(origin, Vector3.create(0, 0.9, 0)), to,
+      age: 0, phase: Math.random() * Math.PI * 2, beamIn: 0
+    })
   }
 }
 
 function update(dt: number) {
-  if (!Number.isFinite(dt) || dt <= 0 || !drops.length) return
+  if (!Number.isFinite(dt) || dt <= 0) return
+  for (let i = toasts.length - 1; i >= 0; i--) {
+    toasts[i].age += dt
+    if (toasts[i].age >= TOAST_SECONDS) toasts.splice(i, 1)
+  }
+  if (!drops.length) return
   const player = getPlayerCombatPose()
   const vitals = getPlayerVitals()
   for (let i = drops.length - 1; i >= 0; i--) {
     const d = drops[i]
     d.age += dt
     const t = Transform.getMutable(d.entity)
-    if (d.age < POP) {
-      const k = d.age / POP
-      const arc = Math.sin(k * Math.PI) * 0.8
+    const pop = d.boss ? BOSS_POP : POP
+    if (d.age < pop) {
+      const k = d.age / pop
+      const arc = Math.sin(k * Math.PI) * (d.boss ? 1.6 : 0.8)
       t.position = Vector3.create(
         d.from.x + (d.to.x - d.from.x) * k,
         d.from.y + (d.to.y - d.from.y) * k + arc,
@@ -123,6 +166,13 @@ function update(dt: number) {
       : d.kind === 'weapon'
         ? Quaternion.multiply(Quaternion.fromEulerDegrees(0, wobble * 60, 0), Quaternion.fromEulerDegrees(0, 0, 28))
         : Quaternion.fromEulerDegrees(0, wobble * 90, 0)
+    if (d.boss && d.item) {
+      d.beamIn -= dt
+      if (d.beamIn <= 0) {
+        d.beamIn = BEAM_EVERY
+        fxLootBeam(Vector3.add(d.to, Vector3.create(0, 0.1, 0)), RARITIES[rarityOf(d.item)].color)
+      }
+    }
 
     if (!player) continue
     const dx = player.position.x - d.to.x
@@ -132,6 +182,11 @@ function update(dt: number) {
     collect(d)
     drops.splice(i, 1)
   }
+}
+
+function toast(item: EquipmentItem, salvaged: number) {
+  if (toasts.length >= MAX_TOASTS) toasts.shift()
+  toasts.push({ item, salvaged, age: 0 })
 }
 
 function collect(d: Drop) {
@@ -146,16 +201,20 @@ function collect(d: Drop) {
     const rarity = RARITIES[rarityOf(d.item)]
     fxGlitter(at, rarity.color)
     fxGlitter(Vector3.add(at, Vector3.create(0, 0.6, 0)), rarity.color)
-    if (item && unlockInventoryItem(item.id)) {
+    if (!item) {
+      // Nothing to hand over (a weapon since removed from the catalog).
+    } else if (unlockInventoryItem(item.id)) {
       fxSound('heal', 0.9)
       fxNumber(Vector3.add(at, Vector3.create(0, 0.9, 0)), item.name, 'note')
-      notice(`${rarity.label} ${item.name} — check your inventory`, 3.5)
+      run.found.push(item.id)
+      toast(item, 0)
     } else {
       // Already owned: salvaged for coin on the spot.
       state.coins += rarity.coins
+      run.salvaged++
       fxSound('coin', 0.7)
       fxNumber(Vector3.add(at, Vector3.create(0, 0.9, 0)), `+${rarity.coins}`, 'coin')
-      notice(`${item?.name ?? 'Weapon'} again — salvaged for ${rarity.coins} coins`, 2.5)
+      toast(item, rarity.coins)
     }
   } else {
     // The host owns hero health: it checks the heart against its own drop

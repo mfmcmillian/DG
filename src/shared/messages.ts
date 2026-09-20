@@ -100,7 +100,9 @@ export const Messages = {
     coin: Schemas.Int,
     heart: Schemas.Int,
     /** Weapon id dropped with the kill, '' for none. */
-    item: Schemas.String
+    item: Schemas.String,
+    /** The Warlord's drop: presented with a beam. */
+    boss: Schemas.Boolean
   }),
   /** Client -> server: a one-line status the server prints, so client state shows in `server-logs`. */
   diag: Schemas.Map({ note: Schemas.String }),

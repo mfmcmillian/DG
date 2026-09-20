@@ -402,6 +402,28 @@ export function fxGlitter(position: Vector3, color: Color4) {
   }, 0.9)
 }
 
+/**
+ * A column of light over the Warlord's drop: sparks rising three metres in the
+ * rarity's colour. Loot re-fires it every half second while the weapon lies
+ * there, so it reads from across the room.
+ */
+export function fxLootBeam(position: Vector3, color: Color4) {
+  burst('glitter', position, {
+    texture: { src: TEX.sparkle },
+    blendMode: BLEND_ADD,
+    lifetime: 1.3,
+    maxParticles: 24,
+    gravity: 0,
+    initialSize: { start: 0.08, end: 0.16 },
+    sizeOverTime: { start: 1, end: 0.2 },
+    initialColor: { start: color, end: Color4.create(1, 1, 1, 1) },
+    colorOverTime: { start: Color4.create(1, 1, 1, 0.9), end: Color4.create(color.r, color.g, color.b, 0) },
+    initialVelocitySpeed: { start: 1.8, end: 2.6 },
+    shape: ParticleSystem.Shape.Cone({ angle: 4, radius: 0.18 }),
+    bursts: { values: [{ time: 0, count: 12 }] }
+  }, 1.4)
+}
+
 /** Death: a dark puff where the body was. */
 export function fxDeathPuff(position: Vector3) {
   burst('puff', Vector3.add(position, Vector3.create(0, 0.9, 0)), {

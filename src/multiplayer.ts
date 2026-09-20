@@ -432,10 +432,10 @@ export function publishEnemies(party: string, list: EnemySnap[]) {
 }
 
 /** `item` is a weapon id from the catalog, or '' when the kill dropped no weapon. */
-export function publishLoot(party: string, x: number, z: number, coin: number, heart: number, item: string) {
+export function publishLoot(party: string, x: number, z: number, coin: number, heart: number, item: string, boss: boolean) {
   if (!isHost()) return
   rememberHeartDrop(x, z, heart)
-  sendNet('loot', { party, x, z, coin, heart, item })
+  sendNet('loot', { party, x, z, coin, heart, item, boss })
 }
 
 export type HeroHit = {
@@ -450,7 +450,7 @@ let onVitals: ((id: string, health: number) => void) | undefined
 let onImpact: ((p: ImpactNet) => void) | undefined
 let onShot: ((p: ShotNet) => void) | undefined
 let onEnemies: ((party: string, list: EnemySnap[]) => void) | undefined
-let onLoot: ((party: string, x: number, z: number, coin: number, heart: number, item: string) => void) | undefined
+let onLoot: ((party: string, x: number, z: number, coin: number, heart: number, item: string, boss: boolean) => void) | undefined
 let onJoin: ((id: string) => void) | undefined
 let onLeave: ((id: string) => void) | undefined
 
@@ -502,7 +502,7 @@ function bindClient() {
     sinceSnapshot = 0
     onEnemies?.(msg.party, msg.list.map((e) => ({ ...e, m: e.m as EquipmentMotion })))
   })
-  onNet('loot', (msg) => onLoot?.(msg.party, msg.x, msg.z, msg.coin, msg.heart, msg.item))
+  onNet('loot', (msg) => onLoot?.(msg.party, msg.x, msg.z, msg.coin, msg.heart, msg.item, msg.boss))
   engine.addSystem(tickNetDiag)
   engine.addSystem(watchForServer)
 }
