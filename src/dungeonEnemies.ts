@@ -50,7 +50,7 @@ import {
 } from './shared/levels'
 import { HUB, partyOf } from './partyLookup'
 import {
-  createDecal, Decal, destroyDecal, fxDeathPuff, fxGlitter, fxImpact, fxNumber, fxSlam, fxSlash, fxSound, updateDecal
+  createDecal, Decal, destroyDecal, fxDeathPuff, fxGlitter, fxImpact, fxNumber, fxSlam, fxSlash, fxSound, FxSound, fxWoodHit, updateDecal
 } from './combatFx'
 import { kickCrawlerCamera } from './dungeon/crawlerCamera'
 import { clearLoot, spawnLoot } from './loot'
@@ -950,6 +950,8 @@ export type TrainingTarget = {
   position: Vector3
   /** Body size relative to a hero, for the projectile hull and the aim point. */
   scale: number
+  /** What the blow lands on, for the chips it throws and the sound it makes. */
+  material: 'wood' | 'straw'
   onHit: (damage: number, attacker: CombatPose, motion: HeroAttackMotion, heavy: boolean) => void
 }
 let trainingTargets: () => TrainingTarget[] = () => []
@@ -971,9 +973,23 @@ function trainingIndex(i: number) {
 }
 
 function strikeTraining(attacker: CombatPose, t: TrainingTarget, motion: HeroAttackMotion, context: { finisher: boolean }, at?: Vector3) {
-  presentPlayerStrike(attacker, trainingBody(t), motion, context, at)
+  const heavy = isHeavyMotion(motion) || context.finisher
   const hit = resolveCombatHit(motion, false, context.finisher, localWeapon())
-  t.onHit(hit.damage, attacker, motion, isHeavyMotion(motion) || context.finisher)
+  const contact = at ? Vector3.clone(at) : Vector3.create(
+    (attacker.position.x + t.position.x) / 2, t.position.y + 1.15 * t.scale, (attacker.position.z + t.position.z) / 2)
+  // Wood and straw, not flesh: chips and dust, a knock instead of a wet hit.
+  fxWoodHit(contact, heavy, t.material === 'straw')
+  const label = `${hit.damage}`
+  const kind = context.finisher ? 'finisher' : heavy ? 'heavy' : 'damage'
+  fxNumber(Vector3.create(contact.x, contact.y + 0.6, contact.z), label, kind)
+  const sound: FxSound = t.material === 'straw' ? 'thud_straw' : 'thunk_wood'
+  const vol = heavy ? 1 : 0.85
+  fxSound(sound, vol)
+  const weight = heavy ? 0.26 : 0.14
+  kickCrawlerCamera(Vector3.create(Math.sin(attacker.facing) * weight, -weight * 0.3, Math.cos(attacker.facing) * weight))
+  hitStopPlayer(heavy ? 0.08 : 0.05)
+  publishImpact({ x: contact.x, y: contact.y, z: contact.z, heavy, blocked: false, label, kind, sound, vol, material: t.material })
+  t.onHit(hit.damage, attacker, motion, heavy)
 }
 
 // --- player attacks ----------------------------------------------------------
@@ -1258,15 +1274,16 @@ function presentPlayerStrike(
   hitStopPlayer(heavy || context.finisher ? 0.09 : 0.06)
   publishImpact({
     x: contact.x, y: contact.y, z: contact.z, heavy: heavy || context.finisher,
-    blocked: hit.damage === 0, label, kind, sound, vol
+    blocked: hit.damage === 0, label, kind, sound, vol, material: ''
   })
 }
 
 function presentImpact(p: ImpactNet) {
   const contact = Vector3.create(p.x, p.y, p.z)
-  fxImpact(contact, p.heavy, p.blocked)
+  if (p.material) fxWoodHit(contact, p.heavy, p.material === 'straw')
+  else fxImpact(contact, p.heavy, p.blocked)
   fxNumber(Vector3.create(p.x, p.y + 0.6, p.z), p.label, p.kind as 'damage' | 'heavy' | 'finisher' | 'blocked')
-  fxSound(p.sound as 'block' | 'hit_heavy' | 'hit_light', p.vol)
+  fxSound(p.sound as FxSound, p.vol)
 }
 
 function asAttack(motion: string): AttackMotion | undefined {

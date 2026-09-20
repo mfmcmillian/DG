@@ -22,10 +22,11 @@ import { playerEntityByAddress } from './multiplayer'
 export type FxSound =
   | 'swing_light' | 'swing_heavy' | 'hit_light' | 'hit_heavy' | 'block' | 'hurt'
   | 'dodge' | 'coin' | 'heal' | 'slam' | 'roar' | 'death'
+  | 'thunk_wood' | 'thud_straw'
 
 const FX_SOUNDS: FxSound[] = [
   'swing_light', 'swing_heavy', 'hit_light', 'hit_heavy', 'block', 'hurt',
-  'dodge', 'coin', 'heal', 'slam', 'roar', 'death'
+  'dodge', 'coin', 'heal', 'slam', 'roar', 'death', 'thunk_wood', 'thud_straw'
 ]
 
 /** Every clip `fxSound` can play, for the title-screen preloader. */
@@ -96,6 +97,8 @@ export function initializeCombatFx() {
 function warmFx() {
   fxImpact(HIDDEN, false, false)
   fxImpact(HIDDEN, true, false)
+  fxWoodHit(HIDDEN, false, false)
+  fxWoodHit(HIDDEN, false, true)
   fxMagicBurst(HIDDEN, Color4.create(0.45, 0.7, 1, 1))
   fxGlitter(HIDDEN, Color4.create(1, 0.9, 0.5, 1))
   fxDeathPuff(HIDDEN)
@@ -184,6 +187,45 @@ export function fxImpact(position: Vector3, heavy: boolean, blocked: boolean) {
       bursts: { values: [{ time: 0, count: heavy ? 6 : 4 }] }
     }, 0.7)
   }
+}
+
+/**
+ * A blow on a training dummy: chips of wood (or flecks of straw) thrown off
+ * the point of contact and a puff of dry dust, in place of sparks and blood.
+ */
+export function fxWoodHit(position: Vector3, heavy: boolean, straw: boolean) {
+  const chip = straw
+    ? { start: Color4.create(0.93, 0.82, 0.45, 1), end: Color4.create(0.75, 0.6, 0.3, 0) }
+    : { start: Color4.create(0.62, 0.42, 0.22, 1), end: Color4.create(0.4, 0.26, 0.14, 0) }
+  burst('sparks', position, {
+    texture: { src: TEX.sparkle },
+    blendMode: BLEND_ALPHA,
+    lifetime: 0.55,
+    maxParticles: 40,
+    gravity: -11,
+    initialSize: { start: 0.05, end: straw ? 0.14 : 0.1 },
+    sizeOverTime: { start: 1, end: 0.6 },
+    initialColor: { start: chip.start, end: chip.start },
+    colorOverTime: chip,
+    initialVelocitySpeed: { start: 2, end: heavy ? 5.5 : 3.8 },
+    shape: ParticleSystem.Shape.Sphere({ radius: 0.1 }),
+    bursts: { values: [{ time: 0, count: heavy ? 22 : 12 }] }
+  }, 0.7)
+  burst('puff', position, {
+    texture: { src: TEX.smoke },
+    blendMode: BLEND_ALPHA,
+    lifetime: 0.7,
+    maxParticles: 8,
+    gravity: 0.3,
+    initialSize: { start: 0.3, end: 0.5 },
+    sizeOverTime: { start: 0.6, end: 1.8 },
+    initialColor: { start: Color4.create(0.6, 0.55, 0.45, 0.55), end: Color4.create(0.7, 0.65, 0.5, 0.55) },
+    colorOverTime: { start: Color4.create(1, 1, 1, 0.55), end: Color4.create(1, 1, 1, 0) },
+    initialVelocitySpeed: { start: 0.5, end: 1.2 },
+    rotationOverTime: Quaternion.fromEulerDegrees(0, 0, 60),
+    shape: ParticleSystem.Shape.Sphere({ radius: 0.12 }),
+    bursts: { values: [{ time: 0, count: heavy ? 5 : 3 }] }
+  }, 0.9)
 }
 
 // --- sword swipes ------------------------------------------------------------

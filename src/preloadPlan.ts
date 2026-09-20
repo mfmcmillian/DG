@@ -5,6 +5,7 @@
 
 import { CHARACTERS } from './characterPicker'
 import { fxSoundAssets, fxTextureAssets } from './combatFx'
+import { AMBIENCE_ASSETS } from './dungeon/builder'
 import { kitSrcsForStyle, StyleId, styleTexturesFor, STYLES } from './dungeon/config'
 import { hubFurnitureIds } from './dungeon/hub'
 import { enemyPreloadAssets } from './dungeonEnemies'
@@ -66,6 +67,7 @@ export function planPreload() {
     'models/loot/coin.glb', 'models/loot/heart.glb',
     ...projectileAssets(),
     ...fxSoundAssets(),
+    ...AMBIENCE_ASSETS,
     ...fxTextureAssets()
   ])
   // First realm a new player enters, then the other heroes' default looks

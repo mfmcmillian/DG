@@ -1,4 +1,5 @@
 import {
+  AudioSource,
   CameraModeArea,
   CameraType,
   ColliderLayer,
@@ -71,6 +72,21 @@ function planeUvs(u: number, v = u): number[] {
   return [...face, ...face]
 }
 
+/**
+ * Props that burn: the height of the flame above the piece's base. They join
+ * the wall torches in the light pool (nearest few lit, flickering), and in the
+ * hall each one crackles.
+ */
+const FLAMES: Partial<Record<KitId, number>> = {
+  brazier: 1.15, castle_brazier: 1.0, forge_brazier: 1.0, torch_stand: 1.2,
+  castle_firepit: 0.5, forge_firepit: 0.5, forge_smelting_pot: 1.1
+}
+
+/** Ambient loops; the hall carries them, the fortresses stay tense and quiet. */
+const FIRE_LOOP = 'sounds/fire_loop.wav'
+const HALL_LOOP = 'sounds/hall_loop.wav'
+export const AMBIENCE_ASSETS = [FIRE_LOOP, HALL_LOOP]
+
 export function buildDungeon(dungeon: Dungeon, style: DungeonStyle, options?: LayoutOptions): DungeonInstance {
   const T = style.tile
   const H = style.wallHeight
@@ -136,11 +152,27 @@ export function buildDungeon(dungeon: Dungeon, style: DungeonStyle, options?: La
         if (p.only) modal.push({ entity: e, placement: p, only: p.only })
         if (p.tag) tagged[p.tag] = e
         if (torchSet.has(index)) torches.push({ entity: e, position: Vector3.create(p.x, p.y + 0.5, p.z) })
+        const flame = FLAMES[id]
+        if (flame !== undefined) {
+          torches.push({ entity: e, position: Vector3.create(p.x, p.y + flame, p.z) })
+          if (style.id === 'hall') {
+            // Each fire crackles on its own, a touch off-pitch from the next so they never phase.
+            AudioSource.create(e, { audioClipUrl: FIRE_LOOP, playing: true, loop: true, volume: 0.3, pitch: 0.92 + Math.random() * 0.16 })
+          }
+        }
         break
       }
     }
   })
   for (const m of modal) setPieceEnabled(m, (m.only === 'cutaway') === cutaway, solid)
+
+  if (style.id === 'hall') {
+    // The hall's room tone rides with the player: a draught through stone, no music.
+    const tone = engine.addEntity()
+    entities.push(tone)
+    Transform.create(tone, { position: Vector3.Zero(), parent: engine.PlayerEntity })
+    AudioSource.create(tone, { audioClipUrl: HALL_LOOP, playing: true, loop: true, volume: 0.22 })
+  }
 
   // Roofed styles have no room for the third-person boom, which the Explorer
   // does not collide with geometry, so the whole grid becomes a first-person zone.
@@ -269,10 +301,33 @@ export function setTorchLightTarget(instance: DungeonInstance | undefined) {
 const lightQueue: Array<{ light: Entity; position?: Vector3 }> = []
 /** Which torch each pooled light currently sits on (index into instance.torches), or -1. */
 const lightTorch: number[] = []
+/** Per pooled light: the flicker's current level, where it is heading, and when it picks anew. */
+const flicker: Array<{ level: number; target: number; timer: number }> = []
+
+/**
+ * Firelight: every lit torch wanders between four fifths and full brightness,
+ * each on its own clock, so the walls breathe instead of sitting under a
+ * steady lamp.
+ */
+function flickerLights(dt: number, base: number) {
+  while (flicker.length < lightPool.length) flicker.push({ level: 1, target: 1, timer: 0 })
+  lightPool.forEach((e, i) => {
+    if (lightTorch[i] === undefined || lightTorch[i] < 0) return
+    const f = flicker[i]
+    f.timer -= dt
+    if (f.timer <= 0) {
+      f.target = 0.78 + Math.random() * 0.27
+      f.timer = 0.06 + Math.random() * 0.1
+    }
+    f.level += (f.target - f.level) * Math.min(1, dt * 14)
+    LightSource.getMutable(e).intensity = base * f.level
+  })
+}
 
 function updateTorchLights(dt: number) {
   const instance = activeInstance
   if (!instance) return
+  flickerLights(dt, instance.style.torchLightIntensity)
   // Drain: one relocation or toggle per tick.
   const job = lightQueue.shift()
   if (job) {

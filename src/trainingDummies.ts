@@ -92,7 +92,8 @@ function collect(): Dummy[] {
       rocking: Infinity, rockYaw: 0, rockAmplitude: 0,
       target: {
         position: Vector3.create(t.position.x, t.position.y, t.position.z),
-        scale: TRAINING_TARGETS[tag],
+        scale: TRAINING_TARGETS[tag].scale,
+        material: TRAINING_TARGETS[tag].material,
         onHit: (damage, attacker, _motion, heavy) => onHit(damage, attacker, heavy, d)
       }
     }

@@ -40,6 +40,8 @@ export type ImpactNet = {
   kind: string
   sound: string
   vol: number
+  /** '' for a body; 'wood' or 'straw' when the blow landed on a training dummy (chips instead of sparks). */
+  material: string
 }
 
 /** A hero's shot as the room sees it: who fired what, from where, which way. */

@@ -48,12 +48,16 @@ const ROOMS: Array<Rect & { kind: Room['kind'] }> = [
 export const WAR_TABLE_TAG = 'war-table'
 
 /**
- * The training yard's targets by tag, with each body's size relative to a hero
- * (the projectile hull and the point an arrow aims for). Dummies are hero
- * sized; the round targets on the wall are hit at chest height.
+ * The training yard's targets by tag: each body's size relative to a hero (the
+ * projectile hull and the point an arrow aims for) and what it is made of.
+ * Dummies are hero sized; the round targets on the wall are hit at chest height.
  */
-export const TRAINING_TARGETS: Record<string, number> = {
-  'dummy-0': 1, 'dummy-1': 1, 'dummy-2': 1, 'dummy-3': 0.6, 'dummy-4': 0.6
+export const TRAINING_TARGETS: Record<string, { scale: number; material: 'wood' | 'straw' }> = {
+  'dummy-0': { scale: 1, material: 'wood' },
+  'dummy-1': { scale: 1, material: 'wood' },
+  'dummy-2': { scale: 1, material: 'straw' },
+  'dummy-3': { scale: 0.6, material: 'straw' },
+  'dummy-4': { scale: 0.6, material: 'straw' }
 }
 
 /**

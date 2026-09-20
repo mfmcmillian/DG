@@ -75,7 +75,9 @@ export const Messages = {
     label: Schemas.String,
     kind: Schemas.String,
     sound: Schemas.String,
-    vol: Schemas.Number
+    vol: Schemas.Number,
+    /** '' for a hit on a body; 'wood' or 'straw' for a training dummy, which throws chips instead of sparks. */
+    material: Schemas.String
   }),
   /**
    * Client -> server -> other clients: a hero fired a shot (archer arrow,
