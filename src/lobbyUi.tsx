@@ -242,8 +242,11 @@ function LobbyTools({ scale: s }: { scale: number }) {
       <IconButton id="lobby-inventory" label="Inventory" icon="images/hud/inventory.png" scale={s} tooltip="below"
         onClick={() => swapTo(openInventory)} />
     </UiEntity>
-    <IconButton id="lobby-settings" label="Settings" icon="images/hud/settings.png" scale={s} tooltip="below"
-      onClick={() => swapTo(openSettings)} />
+    <UiEntity uiTransform={{ margin: { right: 22 * s }, pointerFilter: 'none' }}>
+      <IconButton id="lobby-settings" label="Settings" icon="images/hud/settings.png" scale={s} tooltip="below"
+        onClick={() => swapTo(openSettings)} />
+    </UiEntity>
+    <IconButton id="lobby-close" label="Back to the hall" icon="images/hud/close.png" scale={s} tooltip="below" onClick={closeLobby} />
   </UiEntity>
 }
 

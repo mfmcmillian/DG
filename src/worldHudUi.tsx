@@ -19,6 +19,7 @@ import { HUB } from './partyLookup'
 import { openSettings } from './settings'
 import { devToolsOn } from './devAccess'
 import { playerDisplayName } from './heroNameTag'
+import { presence } from './presence'
 import { formatTime, heroLabel, partyTitle } from './lobbyUi'
 import { DIFFICULTIES, LEVELS, MAX_PARTY, nextLevel, realmOfLevel } from './shared/levels'
 
@@ -68,6 +69,36 @@ function heroTitle(): string {
   return name ? `${name}  <color=#a3b3c2>·  ${cls}</color>` : cls
 }
 
+/** Most rows the hall roster shows before folding the rest into "+n more". */
+const ROSTER_ROWS = 8
+
+/**
+ * In the hall, where the health and stamina bars would be: who is in the
+ * realm and where they are. Nobody needs a health bar between fights.
+ */
+function HallRoster({ scale: s }: { scale: number }) {
+  const list = presence()
+  const inHall = list.filter((p) => p.inHall).length
+  const shown = list.slice(0, ROSTER_ROWS)
+  const rowHeight = 18 * s
+  return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', flexShrink: 0, margin: { top: 4 * s }, pointerFilter: 'none' }}>
+    <Label value={`IN THE HALL ${inHall}  ·  ONLINE ${list.length}`} color={gold} font="sans-serif" fontSize={10 * s}
+      textAlign="middle-right" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 16 * s, margin: { bottom: 2 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+    {shown.map((p) => <UiEntity key={p.id} uiTransform={{ width: '100%', height: rowHeight, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', flexShrink: 0, pointerFilter: 'none' }}>
+      <Label value={p.where} color={muted} font="sans-serif" fontSize={10 * s} textAlign="middle-right" textWrap="nowrap"
+        uiTransform={{ width: 96 * s, height: rowHeight, flexShrink: 0, pointerFilter: 'none' }} />
+      <Label value={p.cls ? `${p.name}  <color=#a3b3c2>·  ${p.cls}</color>` : p.name} color={p.me ? gold : white} font="sans-serif" fontSize={12 * s}
+        textAlign="middle-right" textWrap="nowrap"
+        uiTransform={{ width: 116 * s, height: rowHeight, margin: { left: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+      <UiEntity uiTransform={{ width: 6 * s, height: 6 * s, margin: { left: 6 * s }, borderRadius: 3 * s, flexShrink: 0, pointerFilter: 'none' }}
+        uiBackground={{ color: p.inHall ? stamina : p.where === 'at the gate' ? muted : gold }} />
+    </UiEntity>)}
+    {list.length > shown.length && <Label value={`+${list.length - shown.length} more`} color={muted} font="sans-serif" fontSize={10 * s}
+      textAlign="middle-right" textWrap="nowrap" uiTransform={{ width: '100%', height: 16 * s, flexShrink: 0, pointerFilter: 'none' }} />}
+  </UiEntity>
+}
+
 function PlayerVitals({ right, top, scale: s }: { right: number; top: number; scale: number }) {
   const state = getWorldRivalState()
   if (!state.visible) return null
@@ -76,16 +107,18 @@ function PlayerVitals({ right, top, scale: s }: { right: number; top: number; sc
   const health = Math.max(0, Math.min(maximum, vitals.health))
   const staminaRatio = Math.max(0, Math.min(1, vitals.stamina / vitals.maxStamina))
   const coins = getLootState().coins
+  const hall = myPhase() === HUB
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { right, top },
-    width: 224 * s, height: 96 * s, flexDirection: 'column', pointerFilter: 'none' }}>
+    width: 224 * s, flexDirection: 'column', pointerFilter: 'none' }}>
     <UiEntity uiTransform={{ width: '100%', height: 24 * s, flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
-      <Label value={state.party > 1 ? `◆ ${coins}  ·  ${state.party}` : `◆ ${coins}`} color={gold} font="sans-serif" fontSize={13 * s}
+      <Label value={state.party > 1 && !hall ? `◆ ${coins}  ·  ${state.party}` : `◆ ${coins}`} color={gold} font="sans-serif" fontSize={13 * s}
         textAlign="middle-left" textWrap="nowrap"
         uiTransform={{ width: 56 * s, height: 24 * s, flexShrink: 0, pointerFilter: 'none' }} />
       <Label value={heroTitle()} color={white} font="sans-serif" fontSize={15 * s}
         textAlign="middle-right" textWrap="nowrap"
         uiTransform={{ width: 168 * s, height: 24 * s, flexShrink: 0, pointerFilter: 'none' }} />
     </UiEntity>
+    {hall ? <HallRoster scale={s} /> : <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', flexShrink: 0, pointerFilter: 'none' }}>
     <UiEntity uiTransform={{ width: '100%', height: 18 * s, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', flexShrink: 0, pointerFilter: 'none' }}>
       <UiEntity uiTransform={{ width: 184 * s, height: 8 * s, padding: s, borderRadius: 2 * s, flexShrink: 0, flexDirection: 'row', justifyContent: 'flex-end', pointerFilter: 'none' }} uiBackground={{ color: track }}>
         <UiEntity uiTransform={{ width: `${health / maximum * 100}%`, height: '100%', pointerFilter: 'none' }} uiBackground={{ color: red }} />
@@ -109,6 +142,7 @@ function PlayerVitals({ right, top, scale: s }: { right: number; top: number; sc
         textAlign="middle-right" textWrap="nowrap"
         uiTransform={{ width: 120 * s, height: 20 * s, margin: { right: 26 * s }, flexShrink: 0, pointerFilter: 'none' }} />
     </UiEntity>
+    </UiEntity>}
   </UiEntity>
 }
 
