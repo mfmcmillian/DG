@@ -12,6 +12,15 @@ import { onNet, sendNet } from './net'
 
 /** Seconds a downed hero lies before the host stands them back up at the entrance. */
 export const RECOVER_SECONDS = 4
+/** In the Pit a fallen hero waits for an ally this long before the gate takes them. */
+export const RAID_RECOVER_SECONDS = 30
+
+/** How long each hero lies when down; the raid sets a longer wait for its members. */
+let recoverSecondsFor: (id: string) => number = () => RECOVER_SECONDS
+
+export function setRecoverPolicy(policy: (id: string) => number) {
+  recoverSecondsFor = policy
+}
 /** Health restored by one heart. */
 export const HEART_HEAL = 30
 
@@ -42,7 +51,7 @@ export function initializeHeroVitals() {
     if (!context) return
     const id = context.from.toLowerCase()
     const v = vitals.get(id)
-    if (v && v.health <= 0 && v.deadFor >= RECOVER_SECONDS - RESPAWN_SLACK) reviveHero(id)
+    if (v && v.health <= 0 && v.deadFor >= recoverSecondsFor(id) - RESPAWN_SLACK) reviveHero(id)
   })
   engine.addSystem(update)
 }
@@ -102,12 +111,18 @@ export function healHero(id: string, amount: number): number {
   return healed
 }
 
-export function reviveHero(id: string) {
+export function reviveHero(id: string, inPlace = false) {
   const v = record(id)
   if (v.health > 0) return
   v.health = MAX_COMBAT_HEALTH
   v.deadFor = 0
-  sendNet('revive', { id, health: v.health })
+  sendNet('revive', { id, health: v.health, inPlace })
+}
+
+/** Down, and for how long; undefined for a hero on their feet (or unknown). */
+export function heroDownFor(id: string): number | undefined {
+  const v = vitals.get(id)
+  return v && v.health <= 0 ? v.deadFor : undefined
 }
 
 /** Called alongside every `loot` broadcast so pickups can be checked against a real drop. */
@@ -142,7 +157,7 @@ function update(deltaTime: number) {
   for (const [id, v] of vitals) {
     if (v.health > 0) continue
     v.deadFor += dt
-    if (v.deadFor >= RECOVER_SECONDS) reviveHero(id)
+    if (v.deadFor >= recoverSecondsFor(id)) reviveHero(id)
   }
   for (let i = heartDrops.length - 1; i >= 0; i--) {
     heartDrops[i].age += dt

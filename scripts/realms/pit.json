@@ -1,0 +1,51 @@
+{
+  "realm": "pit",
+  "pack": "POLYGON_Dungeons_Realms_SourceFiles_v6.zip",
+  "textures": {
+    "atlas": "Textures/Dungeons_2_Texture_01_A.png",
+    "emissive": "Textures/Dungeons_2_Texture_Emission_01.png",
+    "floorBake": {
+      "fbx": "SM_Env_Dwarf_Floor_Crack_01",
+      "size": 5
+    }
+  },
+  "modules": [
+    { "id": "pit_circle", "fbx": "SM_Env_Hell_Circle_01", "collide": false },
+    { "id": "pit_symbol", "fbx": "SM_Prop_Hell_Circle_01", "collide": false },
+    { "id": "pit_obelisk_a", "fbx": "SM_Env_Hell_Obelisk_01" },
+    { "id": "pit_obelisk_b", "fbx": "SM_Env_Hell_Obelisk_03" },
+    { "id": "pit_obelisk_glow", "fbx": "SM_Env_Obelisk_Glow_01" },
+    { "id": "pit_pillar_a", "fbx": "SM_Env_Hell_Pillar_01" },
+    { "id": "pit_pillar_b", "fbx": "SM_Env_Hell_Pillar_02" },
+    { "id": "pit_ring", "fbx": "SM_Env_Hell_Ring_01", "collide": false },
+    { "id": "pit_ring_chains", "fbx": "SM_Env_Hell_Ring_Chains_01", "collide": false },
+    { "id": "pit_rock_a", "fbx": "SM_Env_Hell_Rock_01" },
+    { "id": "pit_rock_b", "fbx": "SM_Env_Hell_Rock_04" },
+    { "id": "pit_spikes_a", "fbx": "SM_Env_Hell_Spikes_01" },
+    { "id": "pit_spikes_b", "fbx": "SM_Env_Hell_Spikes_03" },
+    { "id": "pit_brazier", "fbx": "SM_Prop_Hell_Brazier_01" },
+    { "id": "pit_brazier_b", "fbx": "SM_Prop_Hell_Brazier_02" },
+    { "id": "pit_fence", "fbx": "SM_Prop_Hell_Fence_01" },
+    { "id": "pit_skull_huge", "fbx": "SM_Env_Skull_Huge_01" },
+    { "id": "pit_bone_hand_l", "fbx": "SM_Env_Hell_Bone_Hand_L_01" },
+    { "id": "pit_bone_hand_r", "fbx": "SM_Env_Hell_Bone_Hand_R_01" },
+    { "id": "pit_rib", "fbx": "SM_Env_Bone_Rib_01", "collide": false },
+    { "id": "pit_lava_plane", "fbx": "SM_Env_Lava_Plane_01", "collide": false },
+    { "id": "pit_lava_line", "fbx": "SM_Env_Lava_Line_01", "collide": false },
+    { "id": "pit_lava_flow", "fbx": "SM_Env_Lava_Flow_01", "collide": false },
+    { "id": "pit_crystals", "fbx": "SM_Env_Crystals_Cluster_Large_01" },
+    { "id": "pit_rubble_slab", "fbx": "SM_Env_Rubble_Slab_01", "collide": false },
+    { "id": "pit_rubble_rocks", "fbx": "SM_Env_Rubble_Rocks_01", "collide": false },
+    { "id": "pit_rubble_pillar", "fbx": "SM_Env_Rubble_Pillar_01" },
+    { "id": "pit_statue_broken", "fbx": "SM_Env_Statue_Broken_01" },
+    { "id": "pit_ruin_arch", "fbx": "SM_Bld_Ruin_Arch_01" },
+    { "id": "pit_ruin_pillar", "fbx": "SM_Bld_Ruin_Pillar_01" },
+    { "id": "pit_ruin_pillar_broken", "fbx": "SM_Bld_Ruin_Pillar_Broken_01" },
+    { "id": "pit_floating_rock_a", "fbx": "SM_Env_Hell_Floating_Rock_Chain_01", "collide": false },
+    { "id": "pit_floating_rock_b", "fbx": "SM_Env_Hell_Floating_Rock_Chain_02", "collide": false },
+    { "id": "pit_chains", "fbx": "SM_Env_Hell_Chains_01", "collide": false, "anchor": "top" },
+    { "id": "pit_hell_ground", "fbx": "SM_Env_Hell_Ground_01", "collide": false },
+    { "id": "pit_debris", "fbx": "SM_Env_Rock_Medium_01", "collide": false },
+    { "id": "pit_hell_symbol", "fbx": "SM_Prop_Hell_Symbol_01", "collide": false }
+  ]
+}

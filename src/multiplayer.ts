@@ -447,7 +447,7 @@ export type HeroHit = {
 let onHitEnemy: ((id: string, i: number, motion: string, finisher: boolean) => void) | undefined
 let onHitPlayer: ((hit: HeroHit) => void) | undefined
 let onHeal: ((id: string, amount: number, health: number) => void) | undefined
-let onRevive: ((id: string, health: number) => void) | undefined
+let onRevive: ((id: string, health: number, inPlace: boolean) => void) | undefined
 let onVitals: ((id: string, health: number) => void) | undefined
 let onImpact: ((p: ImpactNet) => void) | undefined
 let onShot: ((p: ShotNet) => void) | undefined
@@ -489,7 +489,7 @@ export function setMultiplayerHandlers(handlers: {
 function bindClient() {
   onNet('hitPlayer', (msg) => onHitPlayer?.(msg))
   onNet('heal', (msg) => onHeal?.(msg.id, msg.amount, msg.health))
-  onNet('revive', (msg) => onRevive?.(msg.id, msg.health))
+  onNet('revive', (msg) => onRevive?.(msg.id, msg.health, msg.inPlace))
   onNet('vitals', (msg) => onVitals?.(msg.id, msg.health))
   onNet('impact', (msg) => {
     if (msg.id === localAddress()) return

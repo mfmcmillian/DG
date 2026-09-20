@@ -118,6 +118,22 @@ export const HUB_LEVEL: LevelDefinition = {
   health: 1, damage: 1, coins: 1
 }
 
+/**
+ * The Pit of Chains: the realm's one raid, a ring of ruined dwarven stone over
+ * lava where the Chained Colossus stands (src/raid/). Like the hub it is an
+ * authored layout outside LEVELS, reached from the hall's summoning circle
+ * rather than the lobby. One shared arena per realm: the raid party
+ * (RAID_PARTY) never disbands and anyone may drop in while the fight is up.
+ */
+export const RAID_LEVEL: LevelDefinition = {
+  id: -2, realm: 'forge', name: 'The Pit of Chains', seed: 2, style: 'pit',
+  blurb: 'The Chained Colossus. Bring everyone.',
+  health: 1, damage: 2.4, coins: 4
+}
+
+export const RAID_PARTY = 'raid'
+export const MAX_RAID = 8
+
 export function realmById(id: RealmId): RealmDefinition {
   return REALMS.find((r) => r.id === id) ?? REALMS[0]
 }
@@ -144,8 +160,16 @@ export function previousLevel(level: number): LevelDefinition | undefined {
 
 export const MAX_PARTY = 4
 
+/** A level by id, the hub and the raid included (they carry their own ids below zero). */
 export function levelById(id: number): LevelDefinition {
+  if (id === RAID_LEVEL.id) return RAID_LEVEL
+  if (id === HUB_LEVEL.id) return HUB_LEVEL
   return LEVELS[Math.max(0, Math.min(LEVELS.length - 1, Math.floor(id)))]
+}
+
+/** The level's name for the roster and prompts, whatever the id. */
+export function levelNameOf(id: number): string {
+  return levelById(id).name
 }
 
 export function difficultyById(id: number): DifficultyDefinition {

@@ -8,13 +8,15 @@ import { fxSoundAssets, fxTextureAssets } from './combatFx'
 import { AMBIENCE_ASSETS } from './dungeon/builder'
 import { kitSrcsForStyle, StyleId, styleTexturesFor, STYLES } from './dungeon/config'
 import { hubFurnitureIds } from './dungeon/hub'
+import { pitFurnitureIds } from './dungeon/pit'
 import { enemyPreloadAssets } from './dungeonEnemies'
 import { EquipmentLoadout } from './equipmentCatalog'
 import { equipmentModelPaths } from './equipmentAvatar'
 import { getCommittedLoadout } from './equipmentState'
 import { isPreloadComplete, preloadGroup, PreloadGroup } from './preload'
 import { projectileAssets } from './projectiles'
-import { LEVELS, REALMS } from './shared/levels'
+import { partSources } from './raid/colossusPose'
+import { LEVELS, RAID_LEVEL, REALMS } from './shared/levels'
 
 /** The hall the title looks out on, plus the small FX set every run uses. */
 export const PRELOAD_HUB = 'hub'
@@ -37,8 +39,16 @@ export function requestHeroPreload(cid: string, loadout: EquipmentLoadout, urgen
   preloadGroup(heroGroupId(cid), name, equipmentModelPaths(cid, loadout), urgent)
 }
 
-/** A realm's kit and its roster, for the level picked in the lobby. */
+/** A realm's kit and its roster, for the level picked in the lobby. The Pit is authored, with the Colossus in place of a roster. */
 export function requestRealmPreload(style: StyleId, urgent = false) {
+  if (style === RAID_LEVEL.style) {
+    preloadGroup(realmGroupId(style), RAID_LEVEL.name, [
+      ...kitSrcsForStyle(STYLES[style], pitFurnitureIds()),
+      ...styleTexturesFor(STYLES[style]),
+      ...partSources()
+    ], urgent)
+    return
+  }
   preloadGroup(realmGroupId(style), realmLabel(style), [
     ...kitSrcsForStyle(STYLES[style]),
     ...styleTexturesFor(STYLES[style]),
@@ -77,4 +87,5 @@ export function planPreload() {
   if (styles.length) requestRealmPreload(styles[0])
   for (const c of CHARACTERS) requestHeroPreload(c.id, getCommittedLoadout(c.id))
   for (const style of styles.slice(1)) requestRealmPreload(style)
+  requestRealmPreload(RAID_LEVEL.style)
 }

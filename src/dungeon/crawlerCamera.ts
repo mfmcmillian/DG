@@ -114,6 +114,42 @@ export function kickCrawlerCamera(offset: Vector3) {
 let ticks = 0
 let lastError = ''
 
+/** The default boom, and the one a style asked for; the mount glides between them. */
+const DEFAULT_BOOM = { height: CRAWLER_CAMERA.height, pitch: CRAWLER_CAMERA.pitch }
+let boomFrom = { ...DEFAULT_BOOM }
+let boomTarget = { ...DEFAULT_BOOM }
+let boomBlend = 1
+const BOOM_SECONDS = 1.6
+
+/**
+ * Pull the camera back (or bring it home with no argument). While the camera
+ * is on, the change glides over a second and a half; otherwise it applies the
+ * moment the camera next comes on.
+ */
+export function setCrawlerBoom(boom?: { height: number; pitch: number }) {
+  const target = boom ?? DEFAULT_BOOM
+  if (target.height === boomTarget.height && target.pitch === boomTarget.pitch) return
+  boomTarget = { ...target }
+  if (!enabled) {
+    CRAWLER_CAMERA.height = target.height
+    CRAWLER_CAMERA.pitch = target.pitch
+    boomBlend = 1
+    return
+  }
+  boomFrom = { height: CRAWLER_CAMERA.height, pitch: CRAWLER_CAMERA.pitch }
+  boomBlend = 0
+}
+
+/** Advance the boom glide; true while it is still moving. */
+function stepBoom(dt: number): boolean {
+  if (boomBlend >= 1) return false
+  boomBlend = Math.min(1, boomBlend + dt / BOOM_SECONDS)
+  const k = boomBlend < 0.5 ? 2 * boomBlend * boomBlend : 1 - Math.pow(-2 * boomBlend + 2, 2) / 2
+  CRAWLER_CAMERA.height = boomFrom.height + (boomTarget.height - boomFrom.height) * k
+  CRAWLER_CAMERA.pitch = boomFrom.pitch + (boomTarget.pitch - boomFrom.pitch) * k
+  return true
+}
+
 /** Diagnostics for the HUD: frames the follow system has run, rig position, player position, last error. */
 export function crawlerDebug(): string {
   const camera = Transform.getOrNull(engine.CameraEntity)?.position
@@ -244,9 +280,10 @@ function rigidMountPosition(worldKick: Vector3): Vector3 {
 /** Rigid mode per tick: only the hit kick is scene-driven, and only while it lasts. */
 function stepRigid(dt: number) {
   if (mount === undefined) return
+  const booming = stepBoom(dt)
   kick = Vector3.scale(kick, Math.exp(-dt * CRAWLER_CAMERA.kickDecay))
   const kicking = Vector3.length(kick) > 0.002
-  if (!kicking && !mountKicked) return
+  if (!kicking && !mountKicked && !booming) return
   Transform.getMutable(mount).position = rigidMountPosition(kicking ? kick : Vector3.Zero())
   mountKicked = kicking
 }

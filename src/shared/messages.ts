@@ -53,8 +53,8 @@ export const Messages = {
   }),
   /** Server -> all: a hero regained health (heart pickup today; spells later). */
   heal: Schemas.Map({ id: Schemas.String, amount: Schemas.Number, health: Schemas.Number }),
-  /** Server -> all: a downed hero is back on their feet at full health. */
-  revive: Schemas.Map({ id: Schemas.String, health: Schemas.Number }),
+  /** Server -> all: a downed hero is back on their feet at full health; `inPlace` when an ally raised them where they fell. */
+  revive: Schemas.Map({ id: Schemas.String, health: Schemas.Number, inPlace: Schemas.Boolean }),
   /**
    * Server -> all: the ledger's current health for one hero. Sent when the
    * server first meets a hero and every couple of seconds after, so a client
@@ -159,7 +159,46 @@ export const Messages = {
    * added (0 when only telling the room where someone stands), `why` is
    * 'kill', 'clear' or ''.
    */
-  xp: Schemas.Map({ id: Schemas.String, cid: Schemas.String, xp: Schemas.Int, gained: Schemas.Int, why: Schemas.String })
+  xp: Schemas.Map({ id: Schemas.String, cid: Schemas.String, xp: Schemas.Int, gained: Schemas.Int, why: Schemas.String }),
+
+  // --- the raid (src/raid/) ---------------------------------------------------------
+  /**
+   * Server -> all, several times a second while anyone is in the Pit: the
+   * Colossus. Clients pose the body from `act`/`t` with the same curves the
+   * server used to place its blows, so the telegraphs and the stone agree.
+   */
+  raid: Schemas.Map({
+    /** dormant, waking, fighting, stagger, dying, dead. */
+    state: Schemas.String,
+    hp: Schemas.Number,
+    max: Schemas.Number,
+    phase: Schemas.Int,
+    /** Where the torso faces, radians. */
+    yaw: Schemas.Number,
+    /** The attack under way ('' between them) and seconds into it. */
+    act: Schemas.String,
+    t: Schemas.Number,
+    /** The act's ground points: a slam's [x, z]; fissures and debris as [x, z, ...]. */
+    pts: Schemas.Array(Schemas.Number),
+    /** Grounded hands, open to the sword: [left down, x, z, right down, x, z]. */
+    hands: Schemas.Array(Schemas.Number),
+    /** Burning ground: [x, z, seconds left, ...]. */
+    fires: Schemas.Array(Schemas.Number),
+    /** Dead: seconds until it stirs again. */
+    wait: Schemas.Number,
+    /** Downed heroes and how far an ally has raised each (0..1). */
+    down: Schemas.Array(Schemas.String),
+    downT: Schemas.Array(Schemas.Number),
+    /** Heroes in the Pit. */
+    n: Schemas.Int
+  }),
+  /** Client -> server: a hero's blow landed on a part of the Colossus (leg_l, leg_r, hand_l, hand_r, head). */
+  hitRaid: Schemas.Map({ id: Schemas.String, part: Schemas.String, motion: Schemas.String, finisher: Schemas.Boolean }),
+  /**
+   * Server -> all (or one): something the raid HUD announces. `kind` is wake,
+   * phase, stagger, fall, kill (to one hero: their reward, `n` the XP) or leave.
+   */
+  raidEvent: Schemas.Map({ kind: Schemas.String, text: Schemas.String, n: Schemas.Int })
 }
 
 /** Register before `main()` so both the headless server and every client share one room. */

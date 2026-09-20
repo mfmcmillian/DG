@@ -233,7 +233,7 @@ export function layoutDungeon(dungeon: Dungeon, style: DungeonStyle, options: La
     if (f.side) {
       placeAgainstWall(style, f.id, c, f.side, f.yaw ?? 0, collide, kit, f.tag)
     } else {
-      push({ kind: 'kit', id: f.id, x: c.x, y: 0, z: c.z, yaw: f.yaw ?? 0, collide, tag: f.tag }, piece.tris)
+      push({ kind: 'kit', id: f.id, x: c.x, y: f.lift ?? 0, z: c.z, yaw: f.yaw ?? 0, collide, tag: f.tag }, piece.tris)
     }
   }
 

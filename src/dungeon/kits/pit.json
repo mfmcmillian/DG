@@ -1,0 +1,357 @@
+{
+  "realm": "pit",
+  "textures": {
+    "floor": "models/kits/pit/floor.png"
+  },
+  "pieces": {
+    "pit_circle": {
+      "src": "models/kits/pit/pit_circle.gltf",
+      "size": [
+        15.235,
+        2.354,
+        15.233
+      ],
+      "tris": 7430,
+      "collide": false
+    },
+    "pit_symbol": {
+      "src": "models/kits/pit/pit_symbol.gltf",
+      "size": [
+        3.546,
+        1.499,
+        3.546
+      ],
+      "tris": 372,
+      "collide": false
+    },
+    "pit_obelisk_a": {
+      "src": "models/kits/pit/pit_obelisk_a.gltf",
+      "size": [
+        4.26,
+        13.992,
+        4.129
+      ],
+      "tris": 162
+    },
+    "pit_obelisk_b": {
+      "src": "models/kits/pit/pit_obelisk_b.gltf",
+      "size": [
+        4.215,
+        17.111,
+        8.339
+      ],
+      "tris": 190
+    },
+    "pit_obelisk_glow": {
+      "src": "models/kits/pit/pit_obelisk_glow.gltf",
+      "size": [
+        4.54,
+        9.412,
+        4.555
+      ],
+      "tris": 1452
+    },
+    "pit_pillar_a": {
+      "src": "models/kits/pit/pit_pillar_a.gltf",
+      "size": [
+        2.471,
+        28.233,
+        4.659
+      ],
+      "tris": 620
+    },
+    "pit_pillar_b": {
+      "src": "models/kits/pit/pit_pillar_b.gltf",
+      "size": [
+        3.126,
+        28.46,
+        14.293
+      ],
+      "tris": 1262
+    },
+    "pit_ring": {
+      "src": "models/kits/pit/pit_ring.gltf",
+      "size": [
+        25.467,
+        2.441,
+        25.467
+      ],
+      "tris": 232,
+      "collide": false
+    },
+    "pit_ring_chains": {
+      "src": "models/kits/pit/pit_ring_chains.gltf",
+      "size": [
+        36.689,
+        29.062,
+        42.59
+      ],
+      "tris": 4636,
+      "collide": false
+    },
+    "pit_rock_a": {
+      "src": "models/kits/pit/pit_rock_a.gltf",
+      "size": [
+        1.094,
+        2.143,
+        1.126
+      ],
+      "tris": 42
+    },
+    "pit_rock_b": {
+      "src": "models/kits/pit/pit_rock_b.gltf",
+      "size": [
+        1.98,
+        4.163,
+        1.763
+      ],
+      "tris": 60
+    },
+    "pit_spikes_a": {
+      "src": "models/kits/pit/pit_spikes_a.gltf",
+      "size": [
+        16.222,
+        9.333,
+        14.443
+      ],
+      "tris": 1620
+    },
+    "pit_spikes_b": {
+      "src": "models/kits/pit/pit_spikes_b.gltf",
+      "size": [
+        2.886,
+        6.267,
+        2.939
+      ],
+      "tris": 260
+    },
+    "pit_brazier": {
+      "src": "models/kits/pit/pit_brazier.gltf",
+      "size": [
+        2.727,
+        1.962,
+        3.016
+      ],
+      "tris": 516
+    },
+    "pit_brazier_b": {
+      "src": "models/kits/pit/pit_brazier_b.gltf",
+      "size": [
+        4.113,
+        2.038,
+        4.13
+      ],
+      "tris": 540
+    },
+    "pit_fence": {
+      "src": "models/kits/pit/pit_fence.gltf",
+      "size": [
+        0.793,
+        2.396,
+        0.131
+      ],
+      "tris": 114
+    },
+    "pit_skull_huge": {
+      "src": "models/kits/pit/pit_skull_huge.gltf",
+      "size": [
+        4.896,
+        6.239,
+        7.019
+      ],
+      "tris": 1408
+    },
+    "pit_bone_hand_l": {
+      "src": "models/kits/pit/pit_bone_hand_l.gltf",
+      "size": [
+        6.898,
+        6.849,
+        13.597
+      ],
+      "tris": 1466
+    },
+    "pit_bone_hand_r": {
+      "src": "models/kits/pit/pit_bone_hand_r.gltf",
+      "size": [
+        9.617,
+        6.961,
+        7.082
+      ],
+      "tris": 1466
+    },
+    "pit_rib": {
+      "src": "models/kits/pit/pit_rib.gltf",
+      "size": [
+        22.741,
+        24.29,
+        4.235
+      ],
+      "tris": 156,
+      "collide": false
+    },
+    "pit_lava_plane": {
+      "src": "models/kits/pit/pit_lava_plane.gltf",
+      "size": [
+        5.0,
+        0.0,
+        5.0
+      ],
+      "tris": 2,
+      "collide": false
+    },
+    "pit_lava_line": {
+      "src": "models/kits/pit/pit_lava_line.gltf",
+      "size": [
+        1.09,
+        6.378,
+        1.09
+      ],
+      "tris": 112,
+      "collide": false
+    },
+    "pit_lava_flow": {
+      "src": "models/kits/pit/pit_lava_flow.gltf",
+      "size": [
+        1.704,
+        5.41,
+        2.065
+      ],
+      "tris": 112,
+      "collide": false
+    },
+    "pit_crystals": {
+      "src": "models/kits/pit/pit_crystals.gltf",
+      "size": [
+        5.648,
+        7.492,
+        3.863
+      ],
+      "tris": 212
+    },
+    "pit_rubble_slab": {
+      "src": "models/kits/pit/pit_rubble_slab.gltf",
+      "size": [
+        3.757,
+        0.572,
+        3.933
+      ],
+      "tris": 94,
+      "collide": false
+    },
+    "pit_rubble_rocks": {
+      "src": "models/kits/pit/pit_rubble_rocks.gltf",
+      "size": [
+        2.491,
+        0.281,
+        2.093
+      ],
+      "tris": 232,
+      "collide": false
+    },
+    "pit_rubble_pillar": {
+      "src": "models/kits/pit/pit_rubble_pillar.gltf",
+      "size": [
+        4.123,
+        2.091,
+        3.71
+      ],
+      "tris": 734
+    },
+    "pit_statue_broken": {
+      "src": "models/kits/pit/pit_statue_broken.gltf",
+      "size": [
+        1.383,
+        1.634,
+        1.228
+      ],
+      "tris": 2900
+    },
+    "pit_ruin_arch": {
+      "src": "models/kits/pit/pit_ruin_arch.gltf",
+      "size": [
+        8.089,
+        4.021,
+        1.502
+      ],
+      "tris": 1178
+    },
+    "pit_ruin_pillar": {
+      "src": "models/kits/pit/pit_ruin_pillar.gltf",
+      "size": [
+        0.811,
+        3.284,
+        0.811
+      ],
+      "tris": 266
+    },
+    "pit_ruin_pillar_broken": {
+      "src": "models/kits/pit/pit_ruin_pillar_broken.gltf",
+      "size": [
+        0.768,
+        2.057,
+        0.768
+      ],
+      "tris": 158
+    },
+    "pit_floating_rock_a": {
+      "src": "models/kits/pit/pit_floating_rock_a.gltf",
+      "size": [
+        18.329,
+        43.979,
+        13.373
+      ],
+      "tris": 2252,
+      "collide": false
+    },
+    "pit_floating_rock_b": {
+      "src": "models/kits/pit/pit_floating_rock_b.gltf",
+      "size": [
+        24.446,
+        54.866,
+        30.023
+      ],
+      "tris": 2831,
+      "collide": false
+    },
+    "pit_chains": {
+      "src": "models/kits/pit/pit_chains.gltf",
+      "size": [
+        3.555,
+        53.804,
+        3.517
+      ],
+      "tris": 2076,
+      "collide": false
+    },
+    "pit_hell_ground": {
+      "src": "models/kits/pit/pit_hell_ground.gltf",
+      "size": [
+        27.951,
+        3.671,
+        22.248
+      ],
+      "tris": 1620,
+      "collide": false
+    },
+    "pit_debris": {
+      "src": "models/kits/pit/pit_debris.gltf",
+      "size": [
+        1.347,
+        1.351,
+        1.442
+      ],
+      "tris": 94,
+      "collide": false
+    },
+    "pit_hell_symbol": {
+      "src": "models/kits/pit/pit_hell_symbol.gltf",
+      "size": [
+        3.001,
+        2.924,
+        0.131
+      ],
+      "tris": 440,
+      "collide": false
+    }
+  }
+}

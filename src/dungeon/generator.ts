@@ -59,6 +59,8 @@ export interface Furniture {
   yaw?: number
   collide?: boolean
   tag?: string
+  /** Metres above the floor (lava planes ride just over it). */
+  lift?: number
 }
 
 export interface GeneratorOptions {

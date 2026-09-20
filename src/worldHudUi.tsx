@@ -13,8 +13,9 @@ import { isClientSynced, isSoloMode, localAddress, netStatus } from './multiplay
 import { netDebugSummary, recentLogs } from './netDebug'
 import { MenuAction } from './menuUi'
 import {
-  atWarTable, descend, getLobbyState, inRun, leaveParty, myParty, myPhase, openLobby, resultsWait, retryRun, returnToHall, setReady
+  atPitGate, atWarTable, descend, getLobbyState, inRaid, inRun, leaveParty, myParty, myPhase, openLobby, resultsWait, retryRun, returnToHall, setReady
 } from './party'
+import { ColossusBar, RaidPrompt } from './raid/raidHudUi'
 import { HUB } from './partyLookup'
 import { openSettings } from './settings'
 import { devToolsOn } from './devAccess'
@@ -377,6 +378,7 @@ function HubPrompt({ width, bottom, scale: s }: { width: number; bottom: number;
   const party = myParty()
   const near = atWarTable()
   if (!party && !near) return null
+  if (!party && atPitGate()) return null
   const caption = party ? `${partyTitle(party)}  ·  ${party.members.length}/${MAX_PARTY}  ·  ${LEVELS[party.level]?.name ?? ''}`
     : 'The war table: choose a fortress to enter.'
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - 360 * s) / 2, bottom },
@@ -459,13 +461,15 @@ export function WorldHudUi() {
   const inHub = myPhase() === HUB && !getLobbyState().open
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width, height, pointerFilter: 'none' }}>
     {ready && <PlayerVitals right={right} top={vitalsTop} scale={s} />}
-    {ready && inRun() && <RunPanel right={right} top={vitalsTop + 100 * s} scale={s} />}
+    {ready && inRun() && !inRaid() && <RunPanel right={right} top={vitalsTop + 100 * s} scale={s} />}
     {ready && <ResultsOverlay width={width} height={height} scale={s} />}
     {ready && <HubPrompt width={width} bottom={bottom} scale={s} />}
     {ready && <HubNotice width={width} top={vitalsTop - 60 * s} scale={s} />}
     {ready && <TrainingTally width={width} top={vitalsTop - 8 * s} scale={s} />}
     {ready && <LevelUpNotice width={width} top={vitalsTop + 60 * s} scale={s} />}
     {ready && <BossBar width={width} scale={s} />}
+    {ready && <ColossusBar width={width} scale={s} />}
+    {ready && <RaidPrompt width={width} bottom={bottom} scale={s} />}
     {ready && <LootToasts right={right} bottom={bottom} scale={s} />}
     {ready && devToolsOn() && <DungeonDevPanel />}
     {created && <StatusNotice width={width} bottom={bottom} scale={s} />}

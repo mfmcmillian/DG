@@ -1,4 +1,4 @@
-import { BRICK_TEXTURE, CASTLE_TEXTURES, FLOOR_TEXTURE, FORGE_TEXTURES, KIT, KitId } from './kit'
+import { BRICK_TEXTURE, CASTLE_TEXTURES, FLOOR_TEXTURE, FORGE_TEXTURES, KIT, KitId, PIT_TEXTURES } from './kit'
 import { RoomKind } from './generator'
 
 /** Scene is 6 x 6 parcels = 96 m. Every style's grid is centred inside it. */
@@ -10,7 +10,7 @@ export const SCENE_SIZE = 96
  * are the Dark Fortress; every later realm (Synty pack exported through
  * scripts/realms/) is one more entry here.
  */
-export type StyleId = 'tight' | 'open' | 'hall' | 'castle' | 'forge'
+export type StyleId = 'tight' | 'open' | 'hall' | 'castle' | 'forge' | 'pit'
 
 export interface DungeonStyle {
   id: StyleId
@@ -58,6 +58,11 @@ export interface DungeonStyle {
   ceilingTexture?: string
   /** Combat-room floor trap mesh; the generator plants one cell per combat room. */
   trap?: KitId
+  /**
+   * Crawler camera boom for this style (metres up, degrees down) when it needs
+   * to see more than a room: the raid arena pulls back to frame the Colossus.
+   */
+  camera?: { height: number; pitch: number }
 }
 
 export const STYLES: Record<StyleId, DungeonStyle> = {
@@ -260,6 +265,46 @@ export const STYLES: Record<StyleId, DungeonStyle> = {
     floorTexture: FORGE_TEXTURES.floor,
     floorMetres: 5,
     trap: 'forge_saw'
+  },
+  /**
+   * The Pit of Chains, the raid arena under the forge (src/dungeon/pit.ts,
+   * scripts/realms/pit.json): the forge's carved walls around a 70 m ring of
+   * cracked stone, hell braziers and lava, the Colossus in the middle. Lit red
+   * from below; the crawler camera stands back far enough to frame a 13 m boss.
+   */
+  pit: {
+    id: 'pit',
+    label: 'Pit (raid)',
+    tile: 5,
+    size: 14,
+    wallHeight: 5,
+    entranceSize: 3,
+    minLeaf: 4,
+    maxLeaf: 6,
+    minRoom: 2,
+    ceiling: false,
+    firstPerson: false,
+    walls: ['forge_wall_plain', 'forge_wall_broken', 'forge_wall_a', 'forge_wall_plain', 'forge_wall_c', 'forge_wall_broken'],
+    door: 'forge_wall_arch',
+    pillar: 'forge_pillar',
+    torch: 'forge_torch',
+    torchHeight: 2.8,
+    torchEvery: 2,
+    props: {
+      entrance: ['pit_brazier', 'pit_rubble_slab', 'pit_brazier'],
+      boss: ['pit_brazier', 'pit_obelisk_a', 'pit_brazier', 'pit_spikes_a'],
+      treasure: ['pit_crystals', 'pit_rubble_rocks', 'pit_crystals'],
+      combat: ['pit_spikes_a', 'pit_rock_a', 'pit_rubble_slab', 'pit_brazier'],
+      quiet: ['pit_rubble_slab', 'pit_rib', 'pit_rock_b', 'pit_rubble_rocks']
+    },
+    cutawayWall: 'forge_balustrade',
+    torchLightCount: 8,
+    torchLightIntensity: 1100,
+    torchLightRange: 24,
+    torchLightColor: [1, 0.36, 0.14],
+    floorTexture: PIT_TEXTURES.floor,
+    floorMetres: 5,
+    camera: { height: 19, pitch: 52 }
   }
 }
 

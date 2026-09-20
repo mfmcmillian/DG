@@ -37,7 +37,7 @@ import {
   setPlayerAttackContactHandler, setPlayerAttackStartHandler, setPlayerEnemyWithinHandler, setPlayerFacingOverride, setPlayerStepIn
 } from './playerCharacter'
 import { presentRemoteHeal, presentRemoteHit, presentRemoteRevive, presentRemoteShot } from './remotePlayers'
-import { RECOVER_SECONDS, strikeHero } from './heroVitals'
+import { RAID_RECOVER_SECONDS, RECOVER_SECONDS, strikeHero } from './heroVitals'
 import { movePlayerToSpawn } from './playerPlacement'
 import { DungeonState, onDungeonLoaded } from './dungeon'
 import { cellCenter, DungeonStyle, gridOrigin, StyleId, STYLES, styleGeneratorOptions } from './dungeon/config'
@@ -45,8 +45,9 @@ import { DOOR_OPENINGS } from './dungeon/kit'
 import { edgeMidpoint, sideInward, sideYaw } from './dungeon/layout'
 import { Archetype, Roster, rosterFor } from './dungeon/rosters'
 import { Dungeon, generateDungeon, RoomKind, Side } from './dungeon/generator'
+import { authoredLayout } from './dungeon/layouts'
 import {
-  DifficultyDefinition, difficultyById, HUB_LEVEL, LevelDefinition, levelById
+  DifficultyDefinition, difficultyById, HUB_LEVEL, LevelDefinition, levelById, RAID_PARTY
 } from './shared/levels'
 import { HUB, partyOf } from './partyLookup'
 import { heroBonusesFor } from './heroXp'
@@ -219,8 +220,8 @@ export function initializeDungeonEnemies() {
       if (id === localAddress()) healPlayer(amount, health)
       else if (samePhase(id)) presentRemoteHeal(id, amount)
     },
-    revive: (id) => {
-      if (id === localAddress()) recoverPlayer()
+    revive: (id, _health, inPlace) => {
+      if (id === localAddress()) recoverPlayer(inPlace)
       else if (samePhase(id)) presentRemoteRevive(id)
     },
     vitals: (id, health) => {
@@ -277,7 +278,7 @@ export function createRunSim(party: string, levelId: number, diffId: number) {
   destroyRunSim(party)
   const level = levelById(levelId)
   const style = STYLES[level.style]
-  const dungeon = generateDungeon(level.seed, styleGeneratorOptions(style))
+  const dungeon = authoredLayout(style) ?? generateDungeon(level.seed, styleGeneratorOptions(style))
   const s = createSim(party, level, difficultyById(diffId), dungeon, style, true)
   sims.set(party, s)
   console.log(`[Server] run ${party}: level ${level.id + 1} "${level.name}" (${s.diff.name}), ${s.enemies.length} enemies`)
@@ -948,24 +949,55 @@ function updateEnemy(e: Enemy, dt: number, target: NetFighter, fighters: NetFigh
  * no host authority, so the hits stay on the client that threw them.
  */
 export type TrainingTarget = {
+  /** The hull's base: on the floor for a dummy, up the body for the Colossus's head. */
   position: Vector3
   /** Body size relative to a hero, for the projectile hull and the aim point. */
   scale: number
   /** What the blow lands on, for the chips it throws and the sound it makes. */
-  material: 'wood' | 'straw'
-  onHit: (damage: number, attacker: CombatPose, motion: HeroAttackMotion, heavy: boolean) => void
+  material: 'wood' | 'straw' | 'stone'
+  /** Hull radius and height in metres when not a hero-shaped body (the Colossus's parts). */
+  radius?: number
+  height?: number
+  /** Only a shot reaches it (the head): never the sword's fallback, never the vertical-reach test. */
+  rangedOnly?: boolean
+  /** Multiplier on the number shown (weak points); the host applies its own. */
+  damageScale?: number
+  onHit: (damage: number, attacker: CombatPose, motion: HeroAttackMotion, heavy: boolean, finisher: boolean) => void
 }
-let trainingTargets: () => TrainingTarget[] = () => []
+const trainingProviders: Array<() => TrainingTarget[]> = []
 
+/** Add a source of hittable things (the hall's dummies, the raid's Colossus). */
 export function setTrainingTargets(provider: () => TrainingTarget[]) {
-  trainingTargets = provider
+  trainingProviders.push(provider)
+}
+
+function trainingTargets(): TrainingTarget[] {
+  if (trainingProviders.length === 1) return trainingProviders[0]()
+  const out: TrainingTarget[] = []
+  for (const p of trainingProviders) out.push(...p())
+  return out
 }
 
 /** What a hero's blow needs of whatever it lands on; enemies and training targets both fit. */
-type StrikeTarget = CombatPose & { blocking: boolean; archetype: { scale: number } }
+type StrikeTarget = CombatPose & { blocking: boolean; archetype: { scale: number }; aerial?: boolean }
 
-function trainingBody(t: TrainingTarget): StrikeTarget {
-  return { position: t.position, facing: 0, blocking: false, archetype: { scale: t.scale } }
+/**
+ * A training target as a body. Wide hulls (a leg of stone) present their
+ * surface to the attacker: the reach tests are centre-to-centre for a hero-sized
+ * body, so the centre is brought in by the hull's extra radius.
+ */
+function trainingBody(t: TrainingTarget, attacker?: CombatPose): StrikeTarget {
+  const scale = t.height !== undefined ? t.height / 1.85 : t.scale
+  const extra = (t.radius ?? 0.45 * t.scale) - 0.45
+  let position = t.position
+  if (attacker && extra > 0) {
+    const dx = attacker.position.x - t.position.x
+    const dz = attacker.position.z - t.position.z
+    const d = Math.sqrt(dx * dx + dz * dz)
+    const pull = Math.min(extra, Math.max(0, d - 0.3))
+    if (d > 0.0001) position = Vector3.create(t.position.x + (dx / d) * pull, t.position.y, t.position.z + (dz / d) * pull)
+  }
+  return { position, facing: 0, blocking: false, archetype: { scale }, aerial: t.rangedOnly }
 }
 
 /** Indices below zero in the shared target space are training targets. */
@@ -977,21 +1009,30 @@ function strikeTraining(attacker: CombatPose, t: TrainingTarget, motion: HeroAtt
   const heavy = isHeavyMotion(motion) || context.finisher
   const hit = resolveCombatHit(motion, false, context.finisher, localWeapon())
   hit.damage = withMight(hit.damage, localMight())
-  const contact = at ? Vector3.clone(at) : Vector3.create(
-    (attacker.position.x + t.position.x) / 2, t.position.y + 1.15 * t.scale, (attacker.position.z + t.position.z) / 2)
-  // Wood and straw, not flesh: chips and dust, a knock instead of a wet hit.
-  fxWoodHit(contact, heavy, t.material === 'straw')
+  if (t.damageScale) hit.damage = Math.max(1, Math.round(hit.damage * t.damageScale))
+  const stone = t.material === 'stone'
+  const hullRadius = t.radius ?? 0.45 * t.scale
+  const dx = attacker.position.x - t.position.x
+  const dz = attacker.position.z - t.position.z
+  const d = Math.sqrt(dx * dx + dz * dz)
+  // A sword meets a dummy between the two; a wide hull at its surface; a projectile where it landed.
+  const contact = at ? Vector3.clone(at) : stone && d > 0.0001
+    ? Vector3.create(t.position.x + (dx / d) * hullRadius, t.position.y + Math.min(1.3, (t.height ?? 1.85 * t.scale) * 0.4), t.position.z + (dz / d) * hullRadius)
+    : Vector3.create((attacker.position.x + t.position.x) / 2, t.position.y + 1.15 * t.scale, (attacker.position.z + t.position.z) / 2)
+  // Wood and straw, not flesh: chips and dust, a knock instead of a wet hit. Stone throws sparks.
+  if (stone) fxImpact(contact, heavy, false)
+  else fxWoodHit(contact, heavy, t.material === 'straw')
   const label = `${hit.damage}`
   const kind = context.finisher ? 'finisher' : heavy ? 'heavy' : 'damage'
   fxNumber(Vector3.create(contact.x, contact.y + 0.6, contact.z), label, kind)
-  const sound: FxSound = t.material === 'straw' ? 'thud_straw' : 'thunk_wood'
+  const sound: FxSound = stone ? (heavy ? 'hit_heavy' : 'hit_light') : t.material === 'straw' ? 'thud_straw' : 'thunk_wood'
   const vol = heavy ? 1 : 0.85
   fxSound(sound, vol)
   const weight = heavy ? 0.26 : 0.14
   kickCrawlerCamera(Vector3.create(Math.sin(attacker.facing) * weight, -weight * 0.3, Math.cos(attacker.facing) * weight))
   hitStopPlayer(heavy ? 0.08 : 0.05)
   publishImpact({ x: contact.x, y: contact.y, z: contact.z, heavy, blocked: false, label, kind, sound, vol, material: t.material })
-  t.onHit(hit.damage, attacker, motion, heavy)
+  t.onHit(hit.damage, attacker, motion, heavy, context.finisher)
 }
 
 // --- player attacks ----------------------------------------------------------
@@ -1001,14 +1042,16 @@ function strikeTraining(attacker: CombatPose, t: TrainingTarget, motion: HeroAtt
  * `minDot`: near and centred wins. Training targets share the index space
  * below zero.
  */
-function pickHeroTarget(attacker: CombatPose, range: number, minDot: number, verticalSlack = 0): { e: StrikeTarget; index: number } | undefined {
+function pickHeroTarget(attacker: CombatPose, range: number, minDot: number, verticalSlack = 0, shot = false): { e: StrikeTarget; index: number } | undefined {
   if (!sim) return undefined
   let best: { e: StrikeTarget; index: number } | undefined
   let bestScore = Infinity
   const consider = (e: StrikeTarget, index: number) => {
+    // Hulls up a body (the Colossus's head) are for shots only, and the shot's own hull test judges the height.
+    if (e.aerial && !shot) return
     const d = combatDistance(attacker, e)
     if (d > range || !facesCombatant(attacker, e, minDot)) return
-    if (Math.abs(attacker.position.y - e.position.y) > COMBAT_RULES.maximumVerticalReach + verticalSlack) return
+    if (!e.aerial && Math.abs(attacker.position.y - e.position.y) > COMBAT_RULES.maximumVerticalReach + verticalSlack) return
     // Prefer near and centred targets.
     const dx = e.position.x - attacker.position.x
     const dz = e.position.z - attacker.position.z
@@ -1023,7 +1066,7 @@ function pickHeroTarget(attacker: CombatPose, range: number, minDot: number, ver
     if (e.loading !== 'ready' || e.dead) return
     consider(e, index)
   })
-  trainingTargets().forEach((t, i) => consider(trainingBody(t), trainingIndex(i)))
+  trainingTargets().forEach((t, i) => consider(trainingBody(t, attacker), trainingIndex(i)))
   return best
 }
 
@@ -1045,7 +1088,7 @@ function lockOn(motion: HeroAttackMotion, _context: AttackContext) {
   const reach = shot ? shot.range : isHeavyMotion(motion) ? 2.15 : 1.9
   // Only when the enemy is actually there: swinging while running through a room
   // must not yank the body around or teleport the player toward distant targets.
-  const best = pickHeroTarget(attacker, reach + LOCK_MARGIN, shot ? aimCos() : LOCK_COS, shot ? 1.5 : 0)
+  const best = pickHeroTarget(attacker, reach + LOCK_MARGIN, shot ? aimCos() : LOCK_COS, shot ? 1.5 : 0, !!shot)
   if (!best) return
   const dx = best.e.position.x - attacker.position.x
   const dz = best.e.position.z - attacker.position.z
@@ -1072,7 +1115,9 @@ function projectileTargets(): ProjectileTarget[] {
     if (e.loading !== 'ready' || e.dead) return
     out.push({ index, position: e.position, height: 1.85 * e.archetype.scale, radius: 0.45 * e.archetype.scale })
   })
-  trainingTargets().forEach((t, i) => out.push({ index: trainingIndex(i), position: t.position, height: 1.85 * t.scale, radius: 0.45 * t.scale }))
+  trainingTargets().forEach((t, i) => out.push({
+    index: trainingIndex(i), position: t.position, height: t.height ?? 1.85 * t.scale, radius: t.radius ?? 0.45 * t.scale
+  }))
   return out
 }
 
@@ -1101,7 +1146,8 @@ function hitEnemies(motion: HeroAttackMotion, context: AttackContext) {
     let dummy: TrainingTarget | undefined
     let dummyDistance = Infinity
     for (const t of trainingTargets()) {
-      const body = trainingBody(t)
+      if (t.rangedOnly) continue
+      const body = trainingBody(t, attacker)
       if (!attackCanReach(attacker, body, motion)) continue
       const d = combatDistance(attacker, body)
       if (d < dummyDistance) {
@@ -1125,7 +1171,7 @@ function hitEnemies(motion: HeroAttackMotion, context: AttackContext) {
 function shootEnemies(attacker: CombatPose, motion: HeroAttackMotion, context: AttackContext) {
   const profile = shotProfile(getPlayerCharacterState().characterId, motion)
   if (!profile || !sim) return
-  const target = pickHeroTarget(attacker, profile.range + LOCK_MARGIN, aimCos(), 1.5)
+  const target = pickHeroTarget(attacker, profile.range + LOCK_MARGIN, aimCos(), 1.5, true)
   const origin = Vector3.create(
     attacker.position.x + Math.sin(attacker.facing) * 0.35, attacker.position.y + SHOT_HEIGHT, attacker.position.z + Math.cos(attacker.facing) * 0.35)
   let yaw = attacker.facing
@@ -1294,7 +1340,7 @@ function presentPlayerStrike(
 
 function presentImpact(p: ImpactNet) {
   const contact = Vector3.create(p.x, p.y, p.z)
-  if (p.material) fxWoodHit(contact, p.heavy, p.material === 'straw')
+  if (p.material && p.material !== 'stone') fxWoodHit(contact, p.heavy, p.material === 'straw')
   else fxImpact(contact, p.heavy, p.blocked)
   fxNumber(Vector3.create(p.x, p.y + 0.6, p.z), p.label, p.kind as 'damage' | 'heavy' | 'finisher' | 'blocked')
   fxSound(p.sound as FxSound, p.vol)
@@ -1444,13 +1490,16 @@ function onLocalDefeated() {
   defeated = true
   respawnAsked = false
   state.phase = 'defeat'
-  state.respawnSeconds = RECOVER_SECONDS
+  state.respawnSeconds = clientSim?.party === RAID_PARTY ? RAID_RECOVER_SECONDS : RECOVER_SECONDS
   state.telegraph = ''
   setPlayerFacingOverride(undefined)
 }
 
-/** The host stood us back up: full health at the entrance. Living enemies keep fighting anyone still standing. */
-function recoverPlayer() {
+/**
+ * The host stood us back up: full health at the entrance, or where we fell when
+ * an ally raised us. Living enemies keep fighting anyone still standing.
+ */
+function recoverPlayer(inPlace = false) {
   if (!defeated && !isPlayerDown()) return
   defeated = false
   respawnAsked = false
@@ -1460,7 +1509,7 @@ function recoverPlayer() {
   state.respawnSeconds = 0
   state.playerHealth = MAX_COMBAT_HEALTH
   state.message = ''
-  movePlayerToSpawn()
+  if (!inPlace) movePlayerToSpawn()
 }
 
 function applyEnemySnapshots(party: string, list: EnemySnap[]) {

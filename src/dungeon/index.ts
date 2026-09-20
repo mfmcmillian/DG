@@ -3,11 +3,11 @@ import { Vector3 } from '@dcl/sdk/math'
 import { movePlayerTo } from '~system/RestrictedActions'
 import { buildDungeon, destroyDungeon, DungeonInstance, setDungeonCutaway, setSpawnMarkers, setTorchLightTarget } from './builder'
 import { cellCenter, DungeonStyle, gridOrigin, StyleId, styleGeneratorOptions, STYLES } from './config'
-import { setCrawlerCamera } from './crawlerCamera'
+import { setCrawlerBoom, setCrawlerCamera } from './crawlerCamera'
 import { setShoulderCamera } from './shoulderCamera'
 
 import { Dungeon, generateDungeon } from './generator'
-import { hubDungeon } from './hub'
+import { authoredLayout } from './layouts'
 
 export type CameraChoice = 'native' | 'shoulder' | 'crawler'
 
@@ -102,8 +102,8 @@ export function loadDungeon(seed: number, styleId: StyleId = state.style.id) {
   state.seed = seed >>> 0
   state.style = STYLES[styleId]
   const s = state.style
-  // The hall is drawn by hand; every other style is generated from its seed.
-  state.dungeon = s.id === 'hall' ? hubDungeon(s.torchEvery) : generateDungeon(state.seed, styleGeneratorOptions(s))
+  // The hall and the arena are drawn by hand; every other style is generated from its seed.
+  state.dungeon = authoredLayout(s) ?? generateDungeon(state.seed, styleGeneratorOptions(s))
   const crawler = state.camera === 'crawler' && crawlerCameraAvailable(s)
   state.instance = buildDungeon(state.dungeon, s, { cutaway: crawler })
   setTorchLightTarget(state.instance)
@@ -131,6 +131,7 @@ function applyCamera() {
   if (cameraSuspended) return
   const crawler = state.camera === 'crawler' && crawlerCameraAvailable()
   setShoulderCamera(state.camera === 'shoulder')
+  setCrawlerBoom(state.style.camera)
   setCrawlerCamera(crawler)
 }
 

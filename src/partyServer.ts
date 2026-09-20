@@ -15,14 +15,15 @@ import { engine } from '@dcl/sdk/ecs'
 import { Storage } from '@dcl/sdk/server'
 import { MAX_COMBAT_HEALTH } from './combatActions'
 import { createRunSim, destroyRunSim, runStatus } from './dungeonEnemies'
-import { healHero, heroHealth, reviveHero } from './heroVitals'
+import { healHero, heroHealth, RAID_RECOVER_SECONDS, RECOVER_SECONDS, reviveHero, setRecoverPolicy } from './heroVitals'
 import { addXp, setXpRecord, xpRecordOf } from './heroXp'
 import { heroCharacters, isHeadless, onHostStart, setMultiplayerHandlers } from './multiplayer'
 import { onNet, sendNet } from './net'
 import { HUB, setPartyLookup } from './partyLookup'
 import {
-  DIFFICULTIES, difficultyById, LevelDefinition, LEVELS, levelUnlocked, MAX_PARTY, nextLevel, previousLevel
+  DIFFICULTIES, difficultyById, LevelDefinition, LEVELS, levelUnlocked, MAX_PARTY, MAX_RAID, nextLevel, previousLevel, RAID_LEVEL, RAID_PARTY
 } from './shared/levels'
+import { initializeColossusServer } from './raid/colossusServer'
 import { clearXp, killXp, XpRecord } from './shared/progression'
 import { prefsHaveDevTools, prefsOpenAll } from './shared/prefs'
 
@@ -96,7 +97,31 @@ function bind() {
   })
   setMultiplayerHandlers({ leave: leaveParty })
   engine.addSystem(update)
+  ensureRaid()
+  // A hero who falls in the Pit waits for an ally; elsewhere the entrance takes them quickly.
+  setRecoverPolicy((id) => (parties.get(RAID_PARTY)?.members.includes(id) ? RAID_RECOVER_SECONDS : RECOVER_SECONDS))
+  initializeColossusServer({
+    members: () => parties.get(RAID_PARTY)?.members ?? [],
+    awardXp: (id, amount) => awardXp(id, amount, 'clear'),
+    saveXp: saveDirtyXp
+  })
   console.log('[Server] party registry ready')
+}
+
+/**
+ * The raid party: one per realm, always `running` on the arena, no leader, no
+ * readiness. Heroes drop in from the hall's circle and leave the same way;
+ * it never disbands and never reaches a verdict (the Colossus has its own,
+ * in src/raid/colossusServer.ts).
+ */
+function ensureRaid() {
+  if (parties.has(RAID_PARTY)) return
+  const party: Party = {
+    id: RAID_PARTY, leader: '', level: RAID_LEVEL.id, diff: 0, state: 'running',
+    members: [], ready: new Set(), started: elapsed, ended: 0, slain: 0, total: 0, won: false, run: 1
+  }
+  parties.set(RAID_PARTY, party)
+  createRunSim(RAID_PARTY, RAID_LEVEL.id, 0)
 }
 
 // --- saved heroes ------------------------------------------------------------------
@@ -257,6 +282,16 @@ function handleAction(id: string, action: string, partyId: string, level: number
     case 'leave':
       leaveParty(id, false)
       break
+    case 'raid': {
+      ensureRaid()
+      const raid = parties.get(RAID_PARTY)!
+      if (raid.members.includes(id) || raid.members.length >= MAX_RAID) return
+      leaveParty(id, false)
+      raid.members.push(id)
+      restoreHero(id)
+      console.log(`[Server] ${id} descends to the Pit (${raid.members.length} inside)`)
+      break
+    }
     case 'ready':
     case 'unready': {
       const party = partyOfMember(id)
@@ -357,7 +392,9 @@ function leaveParty(id: string, announce = true) {
   party.ready.delete(id)
   // Walking out of a fight (or its results) lands in the hall on your feet.
   if (party.state !== 'open') restoreHero(id)
-  if (party.members.length === 0) {
+  if (party.id === RAID_PARTY) {
+    // The arena stays; the Colossus notices on its own.
+  } else if (party.members.length === 0) {
     destroyRunSim(party.id)
     parties.delete(party.id)
     console.log(`[Server] party ${party.id} disbanded`)
@@ -398,6 +435,7 @@ function update(deltaTime: number) {
   }
   let changed = false
   for (const party of parties.values()) {
+    if (party.id === RAID_PARTY) continue
     if (party.state === 'running') {
       const status = runStatus(party.id)
       if (!status) continue

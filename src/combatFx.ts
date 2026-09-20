@@ -548,7 +548,7 @@ export function fxSound(name: FxSound, volume = 1) {
 
 export type Decal = { entity: Entity; visible: boolean }
 
-export function createDecal(style: 'ring' | 'disc' | 'ritual'): Decal {
+export function createDecal(style: 'ring' | 'disc' | 'ritual' | 'crack'): Decal {
   const entity = engine.addEntity()
   Transform.create(entity, {
     position: Vector3.clone(HIDDEN),
@@ -556,7 +556,7 @@ export function createDecal(style: 'ring' | 'disc' | 'ritual'): Decal {
     scale: Vector3.create(1, 1, 1)
   })
   MeshRenderer.setPlane(entity)
-  const src = style === 'ring' ? TEX.ring : style === 'disc' ? TEX.circle : TEX.ritual
+  const src = style === 'ring' ? TEX.ring : style === 'disc' ? TEX.circle : style === 'crack' ? TEX.crack : TEX.ritual
   Material.setPbrMaterial(entity, {
     texture: Material.Texture.Common({ src }),
     emissiveTexture: Material.Texture.Common({ src }),

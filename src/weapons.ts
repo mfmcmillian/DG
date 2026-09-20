@@ -125,6 +125,17 @@ export function allWeapons(): EquipmentItem[] {
  * restricts the draw to weapon classes somebody in the party can use
  * (src/heroClasses.ts weaponPoolFor); undefined means every class.
  */
+/** The Colossus's reward: a Legendary the hero's class can wield, or the best below it. */
+export function rollRaidDrop(pool: WeaponClass[], rng: () => number = Math.random): string {
+  const usable = allWeapons().filter((item) => pool.includes(item.weapon!.class))
+  let candidates: EquipmentItem[] = []
+  for (let rank = RARITIES.legendary.rank; rank >= 0 && !candidates.length; rank--) {
+    candidates = usable.filter((item) => item.weapon!.rarity === RARITY_ORDER[rank])
+  }
+  if (!candidates.length) return ''
+  return candidates[Math.min(candidates.length - 1, Math.floor(rng() * candidates.length))].id
+}
+
 export function rollWeaponDrop(
   source: DropSource, level: number, diff: number, rng: () => number = Math.random, pool?: WeaponClass[]
 ): string {

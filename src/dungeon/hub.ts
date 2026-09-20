@@ -18,11 +18,10 @@
 // Odd widths put the entrance, the war table and the statue on one axis
 // (cell 5, world x = 45.5), so the first thing a player sees is the hall.
 
-import { Cell, Dungeon, Edge, Furniture, Room, Side } from './generator'
+import { authoredDungeon, Rect } from './authored'
+import { Dungeon, Furniture, Room } from './generator'
 
 const SIZE = 12
-
-type Rect = { x: number; y: number; w: number; h: number }
 
 const GREAT_HALL: Rect = { x: 3, y: 4, w: 5, h: 5 }
 const VESTIBULE: Rect = { x: 4, y: 9, w: 3, h: 2 }
@@ -46,6 +45,10 @@ const ROOMS: Array<Rect & { kind: Room['kind'] }> = [
 
 /** Named placement of the table that opens the dungeon lobby. */
 export const WAR_TABLE_TAG = 'war-table'
+/** The floor circle that leads to (and, in the arena, back from) the Pit of Chains. */
+export const PIT_GATE_TAG = 'pit-gate'
+/** How close to the circle's centre counts as standing on it. */
+export const PIT_GATE_REACH = 2.4
 
 /**
  * The training yard's targets by tag: each body's size relative to a hero (the
@@ -131,6 +134,9 @@ const FURNITURE: Furniture[] = [
   { id: 'forge_shelf', x: 2, y: 5, side: 'e' },
   { id: 'forge_cog_pile', ...m(25, 46) },
   { id: 'rune', x: 1, y: 5, side: 'w' },
+  // The summoning circle the smiths cut into the floor: stand on it to descend to the Pit of Chains.
+  { id: 'pit_symbol', ...m(28.5, 55), tag: PIT_GATE_TAG },
+  { id: 'pit_hell_symbol', x: 2, y: 7, side: 's' },
 
   // --- training yard (east): dummies to swing at, targets to shoot -----------
   // Three dummies in a row across the north half, room to circle each; two
@@ -159,74 +165,11 @@ const FURNITURE: Furniture[] = [
 
 /** The hub as a Dungeon, `torchEvery` as the hall style asks. */
 export function hubDungeon(torchEvery = 1): Dungeon {
-  const cells: Cell[] = new Array(SIZE * SIZE).fill(0)
-  const owner = new Int16Array(SIZE * SIZE).fill(-1)
-  const idx = (x: number, y: number) => y * SIZE + x
-  const inb = (x: number, y: number) => x >= 0 && y >= 0 && x < SIZE && y < SIZE
-  const at = (x: number, y: number): Cell => (inb(x, y) ? cells[idx(x, y)] : 0)
-  const own = (x: number, y: number) => (inb(x, y) ? owner[idx(x, y)] : -1)
-
-  const rooms: Room[] = ROOMS.map((r, id) => {
-    for (let y = r.y; y < r.y + r.h; y++) {
-      for (let x = r.x; x < r.x + r.w; x++) {
-        cells[idx(x, y)] = 1
-        owner[idx(x, y)] = id
-      }
-    }
-    return { id, x: r.x, y: r.y, w: r.w, h: r.h, kind: r.kind, depth: id === 0 ? 0 : 1, enemies: [], props: [], traps: [] }
-  })
-
-  const doorway = new Set(DOORWAYS.flatMap(([[ax, ay], [bx, by]]) => [`${ax},${ay}>${bx},${by}`, `${bx},${by}>${ax},${ay}`]))
-
-  // Walls stand between floor and rock and between two rooms, except where a
-  // doorway is named; each edge is visited once, from the cell that owns it.
-  const walls: Edge[] = []
-  const doors: Edge[] = []
-  for (let y = 0; y < SIZE; y++) {
-    for (let x = 0; x < SIZE; x++) {
-      if (at(x, y) === 0) continue
-      const n: Array<[Side, number, number]> = [['n', x, y - 1], ['s', x, y + 1], ['w', x - 1, y], ['e', x + 1, y]]
-      for (const [side, nx, ny] of n) {
-        if (at(nx, ny) === 0) {
-          walls.push({ x, y, side })
-          continue
-        }
-        if (own(nx, ny) === own(x, y)) continue
-        // The edge between two rooms is built once, from the north / west cell:
-        // as that cell's south wall it faces the crawler camera and drops to a
-        // parapet, so the camera sees over it into the hall.
-        if (side === 'n' || side === 'w') continue
-        if (doorway.has(`${x},${y}>${nx},${ny}`)) doors.push({ x, y, side })
-        else walls.push({ x, y, side })
-      }
-    }
-  }
-
-  // Pillars on every corner of the floor plan, as the generator places them.
-  const pillars: Array<[number, number]> = []
-  for (let vy = 0; vy <= SIZE; vy++) {
-    for (let vx = 0; vx <= SIZE; vx++) {
-      const a = at(vx - 1, vy - 1) !== 0
-      const b = at(vx, vy - 1) !== 0
-      const c = at(vx - 1, vy) !== 0
-      const d = at(vx, vy) !== 0
-      const count = [a, b, c, d].filter(Boolean).length
-      if (count === 1 || count === 3 || (count === 2 && ((a && d) || (b && c)))) pillars.push([vx, vy])
-    }
-  }
-  // Wall-hung pieces take the torch's place on their edge; a torch next to a banner is a fire hazard.
-  const hung = new Set(FURNITURE.filter((f) => f.side && (f.id === 'banner' || f.id === 'castle_banner' || f.id === 'rune')).map((f) => `${f.x},${f.y},${f.side}`))
-  const torches = walls.filter((w, i) => i % torchEvery === 0 && !hung.has(`${w.x},${w.y},${w.side}`))
-
-  const entrance = rooms[0]
-  const boss = rooms[1]
-  return {
-    seed: 1, size: SIZE, cells, rooms,
+  return authoredDungeon({
+    size: SIZE, seed: 1, rooms: ROOMS, doorways: DOORWAYS, furniture: FURNITURE,
     links: [[0, 1], [1, 2], [1, 3]],
-    walls, doors, torches, pillars, arches: [],
-    entrance, boss,
-    furniture: FURNITURE
-  }
+    hung: new Set(['banner', 'castle_banner', 'rune'])
+  }, torchEvery)
 }
 
 /** Every kit piece the hub places, for the preloader. */

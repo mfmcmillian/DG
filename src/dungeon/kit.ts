@@ -7,6 +7,7 @@
 // scripts/realms/, which writes the kit JSON merged here from src/dungeon/kits/.
 import castleKit from './kits/castle.json'
 import forgeKit from './kits/forge.json'
+import pitKit from './kits/pit.json'
 
 export interface KitPiece {
   src: string
@@ -64,7 +65,8 @@ function realmPieces<T extends Record<string, unknown>>(kit: { pieces: T }): { [
 export const KIT = {
   ...DARK_FORTRESS,
   ...realmPieces(castleKit),
-  ...realmPieces(forgeKit)
+  ...realmPieces(forgeKit),
+  ...realmPieces(pitKit)
 } satisfies Record<string, KitPiece>
 
 export type KitId = keyof typeof KIT
@@ -87,6 +89,7 @@ export const BRICK_TEXTURE = 'models/dungeon/Brick_Large_Texture_01.png'
 
 export const CASTLE_TEXTURES = castleKit.textures
 export const FORGE_TEXTURES = forgeKit.textures
+export const PIT_TEXTURES = pitKit.textures
 
 /** Triangle cost of the primitive pieces the builder makes itself. */
 export const PRIMITIVE_TRIS = { plane: 4, box: 12 }

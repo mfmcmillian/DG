@@ -5,7 +5,7 @@
 
 import { engine, InputModifier, PointerLock, Transform } from '@dcl/sdk/ecs'
 import { getDungeonState, loadDungeon } from './dungeon'
-import { WAR_TABLE_TAG } from './dungeon/hub'
+import { PIT_GATE_REACH, PIT_GATE_TAG, WAR_TABLE_TAG } from './dungeon/hub'
 import { setClientRun } from './dungeonEnemies'
 import { getLootState, getRunLoot, resetRunLoot } from './loot'
 import { isClientSynced, localAddress } from './multiplayer'
@@ -15,7 +15,7 @@ import { movePlayerToSpawn } from './playerPlacement'
 import { applyCameraSetting } from './settings'
 import { getPickerState } from './characterPicker'
 import { getPlayerCharacterState } from './playerCharacter'
-import { DIFFICULTIES, difficultyById, HUB_LEVEL, levelById, LEVELS, nextLevel, realmOfLevel } from './shared/levels'
+import { DIFFICULTIES, difficultyById, HUB_LEVEL, levelById, LEVELS, nextLevel, RAID_PARTY, realmOfLevel } from './shared/levels'
 
 /** What the player has picked in the lobby before they have a party of their own. */
 let pickLevel = 0
@@ -224,6 +224,16 @@ export function soloRun(level: number, diff: number) {
   act('start')
 }
 
+/** Down the summoning circle into the Pit of Chains, whoever is already there. */
+export function joinRaid() {
+  act('raid')
+}
+
+/** Standing in the arena with the raid party. */
+export function inRaid(): boolean {
+  return myParty()?.id === RAID_PARTY
+}
+
 // The results screen's ways out (leader only; members mark themselves ready).
 
 export function descend() {
@@ -264,6 +274,23 @@ export function atWarTable(): boolean {
   return dx * dx + dz * dz <= WAR_TABLE_REACH * WAR_TABLE_REACH
 }
 const WAR_TABLE_REACH = 4.5
+
+/**
+ * Standing on the summoning circle: in the hall it leads down to the Pit, in
+ * the arena's gate room it leads home. Both layouts tag the piece the same.
+ */
+export function atPitGate(): boolean {
+  const phase = myPhase()
+  if (phase !== HUB && phase !== RAID_PARTY) return false
+  const gate = getDungeonState().instance?.tagged[PIT_GATE_TAG]
+  if (gate === undefined) return false
+  const t = Transform.getOrNull(gate)
+  const p = Transform.getOrNull(engine.PlayerEntity)
+  if (!t || !p) return false
+  const dx = p.position.x - t.position.x
+  const dz = p.position.z - t.position.z
+  return dx * dx + dz * dz <= PIT_GATE_REACH * PIT_GATE_REACH
+}
 
 /** Put a line over the hall for a while. */
 function notice(text: string) {

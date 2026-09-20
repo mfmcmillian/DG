@@ -79,8 +79,12 @@ function planeUvs(u: number, v = u): number[] {
  */
 const FLAMES: Partial<Record<KitId, number>> = {
   brazier: 1.15, castle_brazier: 1.0, forge_brazier: 1.0, torch_stand: 1.2,
-  castle_firepit: 0.5, forge_firepit: 0.5, forge_smelting_pot: 1.1
+  castle_firepit: 0.5, forge_firepit: 0.5, forge_smelting_pot: 1.1,
+  pit_brazier: 1.7, pit_brazier_b: 1.8
 }
+
+/** Styles whose fires crackle and whose room tone rides with the player: the places heroes linger. */
+const AMBIENT_STYLES = new Set(['hall', 'pit'])
 
 /** Ambient loops; the hall carries them, the fortresses stay tense and quiet. */
 const FIRE_LOOP = 'sounds/fire_loop.wav'
@@ -155,7 +159,7 @@ export function buildDungeon(dungeon: Dungeon, style: DungeonStyle, options?: La
         const flame = FLAMES[id]
         if (flame !== undefined) {
           torches.push({ entity: e, position: Vector3.create(p.x, p.y + flame, p.z) })
-          if (style.id === 'hall') {
+          if (AMBIENT_STYLES.has(style.id)) {
             // Each fire crackles on its own, a touch off-pitch from the next so they never phase.
             AudioSource.create(e, { audioClipUrl: FIRE_LOOP, playing: true, loop: true, volume: 0.3, pitch: 0.92 + Math.random() * 0.16 })
           }
@@ -166,12 +170,13 @@ export function buildDungeon(dungeon: Dungeon, style: DungeonStyle, options?: La
   })
   for (const m of modal) setPieceEnabled(m, (m.only === 'cutaway') === cutaway, solid)
 
-  if (style.id === 'hall') {
-    // The hall's room tone rides with the player: a draught through stone, no music.
+  if (AMBIENT_STYLES.has(style.id)) {
+    // The room tone rides with the player: a draught through stone, no music. The pit's is a deeper, fire-fed roar.
     const tone = engine.addEntity()
     entities.push(tone)
     Transform.create(tone, { position: Vector3.Zero(), parent: engine.PlayerEntity })
-    AudioSource.create(tone, { audioClipUrl: HALL_LOOP, playing: true, loop: true, volume: 0.22 })
+    const pit = style.id === 'pit'
+    AudioSource.create(tone, { audioClipUrl: pit ? FIRE_LOOP : HALL_LOOP, playing: true, loop: true, volume: pit ? 0.16 : 0.22, pitch: pit ? 0.6 : 1 })
   }
 
   // Roofed styles have no room for the third-person boom, which the Explorer

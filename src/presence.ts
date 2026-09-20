@@ -9,7 +9,7 @@ import { heroLevel } from './heroXp'
 import { heroes, heroOwner, localAddress } from './multiplayer'
 import { getLobbyState } from './party'
 import { HUB, partyOf } from './partyLookup'
-import { LEVELS } from './shared/levels'
+import { levelNameOf, RAID_PARTY } from './shared/levels'
 
 export type Presence = {
   id: string
@@ -27,10 +27,11 @@ function whereabouts(id: string): { where: string; inHall: boolean } {
   const phase = partyOf(id)
   const party = getLobbyState().parties.find((p) => p.members.includes(id))
   if (phase === HUB) {
-    return party ? { where: `party · ${LEVELS[party.level]?.name ?? ''}`, inHall: true } : { where: 'in the hall', inHall: true }
+    return party ? { where: `party · ${levelNameOf(party.level)}`, inHall: true } : { where: 'in the hall', inHall: true }
   }
   if (party?.state === 'done') return { where: 'at the results', inHall: false }
-  return { where: `in ${LEVELS[party?.level ?? 0]?.name ?? 'a fortress'}`, inHall: false }
+  if (party?.id === RAID_PARTY) return { where: 'in the Pit of Chains', inHall: false }
+  return { where: `in ${levelNameOf(party?.level ?? 0)}`, inHall: false }
 }
 
 /** Everyone connected, ourselves first, then by name. */
