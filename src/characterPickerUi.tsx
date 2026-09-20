@@ -10,12 +10,13 @@ import { menuColors, MenuAction as Action } from './menuUi'
 import { kitTexture, UI_KIT } from './uiKit'
 import { isSettingsOpen } from './settings'
 import { SettingsUi } from './settingsUi'
-import { isTitleOpen, isTitleReady, isTitleResuming, titleBegin, titleContinue, titleResumeSaved } from './titleScreen'
+import { isSavedHeroReady, isTitleOpen, isTitleReady, isTitleResuming, titleBegin, titleContinue, titleResumeSaved } from './titleScreen'
 import { getHeroSaveState, isHeroSavePending, savedHeroName } from './heroSave'
 import { getLobbyState } from './party'
 import { LobbyUi } from './lobbyUi'
 import { GAME_VERSION } from './version'
-import { getPreloadState } from './preload'
+import { getPreloadGroup, releasePreload } from './preload'
+import { heroGroupId, preloadCaption, PRELOAD_HUB } from './preloadPlan'
 import { BODY_TYPES, HAIR_STYLES, HAIR_COLORS, SKIN_TONES } from './appearance'
 import {
   CHARACTERS, getPickerState, getSelectedCharacter,
@@ -190,6 +191,7 @@ function TitleScreen() {
   const created = getPickerState().hasCreatedCharacter
   const ready = isTitleReady()
   const saved = getHeroSaveState()
+  const heroReady = isSavedHeroReady()
   const resuming = isTitleResuming()
   const top = Math.max(80, screenHeight * 0.18)
   return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}
@@ -205,8 +207,9 @@ function TitleScreen() {
       {ready
         ? <UiEntity uiTransform={{ flexDirection: 'column', alignItems: 'flex-start', pointerFilter: 'none' }}>
           {saved.found && !created && <UiEntity uiTransform={{ margin: { bottom: 12 * s }, pointerFilter: 'none' }}>
-            <Action id="title-resume" text={resuming ? 'Entering the hall…' : `Continue as ${savedHeroName()}`}
-              onClick={titleResumeSaved} disabled={resuming} primary
+            <Action id="title-resume"
+              text={resuming ? 'Entering the hall…' : heroReady ? `Continue as ${savedHeroName()}` : preloadCaption(getPreloadGroup(heroGroupId(saved.cid)), 'Preparing')}
+              onClick={titleResumeSaved} disabled={resuming || !heroReady} primary
               width={340} height={52} scale={s} fontSize={18} />
           </UiEntity>}
           <Action id="title-enter" text={saved.found ? 'New champion' : 'New game'} onClick={titleBegin} disabled={resuming}
@@ -226,15 +229,23 @@ function TitleScreen() {
   </UiEntity>
 }
 
-/** Shown in the buttons' place until the renderer has the dungeon's assets cached. */
+/** Seconds on the title before "Enter anyway" appears under the bar. */
+const ENTER_ANYWAY_SECONDS = 15
+
+function fileName(path: string) {
+  return path.slice(path.lastIndexOf('/') + 1)
+}
+
+/** Shown in the buttons' place until the renderer has the hall cached. */
 function TitleLoading({ scale: s }: { scale: number }) {
-  const load = getPreloadState()
+  const load = getPreloadGroup(PRELOAD_HUB)
   const width = 400
-  const fill = Math.max(0.02, Math.min(1, load.progress))
+  const fill = Math.max(0.02, Math.min(1, load?.progress ?? 0))
   const pct = Math.round(fill * 100)
-  const caption = load.total ? `Preparing the fortress\u2026 ${load.done} / ${load.total}` : 'Preparing the fortress\u2026'
+  const stalled = load?.stalledOn
+  const slow = (load?.elapsed ?? 0) >= ENTER_ANYWAY_SECONDS
   return <UiEntity uiTransform={{ width: width * s, flexDirection: 'column', alignItems: 'flex-start', pointerFilter: 'none' }}>
-    <Label value={caption} color={muted} fontSize={14 * s} textAlign="middle-left" textWrap="nowrap"
+    <Label value={preloadCaption(load)} color={muted} fontSize={14 * s} textAlign="middle-left" textWrap="nowrap"
       uiTransform={{ width: width * s, height: 22 * s, flexShrink: 0, pointerFilter: 'none' }} />
     <UiEntity uiTransform={{ width: width * s, height: 18 * s, margin: { top: 8 * s }, flexShrink: 0, pointerFilter: 'none',
       padding: 3 * s }}
@@ -242,8 +253,16 @@ function TitleLoading({ scale: s }: { scale: number }) {
       <UiEntity uiTransform={{ width: `${fill * 100}%`, height: '100%', pointerFilter: 'none' }}
         uiBackground={{ color: gold }} />
     </UiEntity>
-    <Label value={`${pct}%`} color={gold} fontSize={13 * s} textAlign="middle-right" textWrap="nowrap"
-      uiTransform={{ width: width * s, height: 20 * s, margin: { top: 4 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+    <UiEntity uiTransform={{ width: width * s, height: 20 * s, margin: { top: 4 * s }, flexDirection: 'row', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
+      <Label value={stalled ? `Still waiting on ${fileName(stalled)}` : ''} color={coral} fontSize={12 * s} textAlign="middle-left" textWrap="nowrap"
+        uiTransform={{ width: (width - 60) * s, height: '100%', pointerFilter: 'none' }} />
+      <Label value={`${pct}%`} color={gold} fontSize={13 * s} textAlign="middle-right" textWrap="nowrap"
+        uiTransform={{ width: 60 * s, height: '100%', pointerFilter: 'none' }} />
+    </UiEntity>
+    {slow && <UiEntity uiTransform={{ margin: { top: 14 * s }, pointerFilter: 'none' }}>
+      <Action id="title-enter-anyway" text="Enter anyway" onClick={() => releasePreload(PRELOAD_HUB)} accent="gold"
+        width={200} height={40} scale={s} fontSize={14} />
+    </UiEntity>}
   </UiEntity>
 }
 

@@ -18,8 +18,26 @@ import { openInventory } from './inventory'
 import { IconButton } from './hudButtons'
 import { closeLobby, openLobby } from './party'
 import {
-  DIFFICULTIES, LEVELS, levelUnlocked, MAX_PARTY, previousLevel
+  DIFFICULTIES, levelById, LEVELS, levelUnlocked, MAX_PARTY, previousLevel
 } from './shared/levels'
+import { getPreloadGroup } from './preload'
+import { isRealmPreloaded, preloadCaption, realmGroupId, requestRealmPreload } from './preloadPlan'
+
+let requestedRealm = ''
+
+/**
+ * The run's door waits on its realm: the kit and the roster for the level the
+ * lobby has picked. Picking a realm moves it to the front of the download
+ * queue; the button holds (with counts) until it is in.
+ */
+function realmGate(level: number): { ready: boolean; caption: string } {
+  const style = levelById(level).style
+  if (requestedRealm !== style) {
+    requestedRealm = style
+    requestRealmPreload(style, true)
+  }
+  return { ready: isRealmPreloaded(style), caption: preloadCaption(getPreloadGroup(realmGroupId(style)), 'Preparing') }
+}
 
 const { white, muted, gold, panel, card, line, goldLine, coral, cyan } = menuColors
 const veil = Color4.create(0.01, 0.02, 0.03, 0.62)
@@ -159,6 +177,8 @@ function PartyCard({ scale: s, party }: { scale: number; party: PartyInfo }) {
   const leader = isLeader()
   const allReady = party.members.every((m) => party.ready.includes(m))
   const meReady = party.ready.includes(me)
+  const gate = realmGate(party.level)
+  const startText = !gate.ready ? gate.caption : allReady ? 'Start run' : 'Waiting for the party…'
   return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', flexShrink: 0, margin: { top: 18 * s }, pointerFilter: 'none' }}>
     <Heading title={partyTitle(party).toUpperCase()} scale={s} />
     {party.members.map((m) => {
@@ -180,8 +200,8 @@ function PartyCard({ scale: s, party }: { scale: number; party: PartyInfo }) {
     </UiEntity>)}
     <UiEntity uiTransform={{ width: '100%', height: 44 * s, margin: { top: 12 * s }, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
       {leader
-        ? <Action id="party-start" text={allReady ? 'Start run' : 'Waiting for the party…'} onClick={startRun}
-          width={RIGHT - 150} height={44} scale={s} fontSize={15} primary disabled={!allReady} />
+        ? <Action id="party-start" text={startText} onClick={startRun}
+          width={RIGHT - 150} height={44} scale={s} fontSize={15} primary disabled={!allReady || !gate.ready} />
         : <Action id="party-ready" text={meReady ? 'Not ready' : 'Ready'} onClick={() => setReady(!meReady)}
           width={RIGHT - 150} height={44} scale={s} fontSize={15} primary={!meReady} accent="gold" active={meReady} />}
       <Action id="party-leave" text="Leave party" width={136} height={44} scale={s} fontSize={13} accent="gold" onClick={leaveParty} />
@@ -193,15 +213,16 @@ function PartyCard({ scale: s, party }: { scale: number; party: PartyInfo }) {
 
 function NoParty({ scale: s }: { scale: number }) {
   const synced = isClientSynced()
+  const gate = realmGate(getLobbyPick().level)
   return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', flexShrink: 0, margin: { top: 18 * s }, pointerFilter: 'none' }}>
     <UiEntity uiTransform={{ width: '100%', height: 44 * s, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
       <Action id="lobby-create" text="Make a party" onClick={() => createParty(getLobbyPick().level, getLobbyPick().diff)}
         width={(RIGHT - 10) / 2} height={44} scale={s} fontSize={15} primary disabled={!synced} />
-      <Action id="lobby-solo" text="Go alone" onClick={() => soloRun(getLobbyPick().level, getLobbyPick().diff)}
-        width={(RIGHT - 10) / 2} height={44} scale={s} fontSize={15} accent="gold" disabled={!synced} />
+      <Action id="lobby-solo" text={gate.ready ? 'Go alone' : 'Preparing…'} onClick={() => soloRun(getLobbyPick().level, getLobbyPick().diff)}
+        width={(RIGHT - 10) / 2} height={44} scale={s} fontSize={15} accent="gold" disabled={!synced || !gate.ready} />
     </UiEntity>
-    <Label value={synced ? 'A party holds up to four. Others in the hall can join before you start.' : 'Connecting to the hall…'}
-      color={synced ? muted : coral} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
+    <Label value={!synced ? 'Connecting to the hall…' : !gate.ready ? gate.caption : 'A party holds up to four. Others in the hall can join before you start.'}
+      color={synced && gate.ready ? muted : coral} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 18 * s, margin: { top: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />
     <OpenParties scale={s} />
   </UiEntity>

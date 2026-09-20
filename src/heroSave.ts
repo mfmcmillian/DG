@@ -13,6 +13,7 @@ import { getLootState, setCoins } from './loot'
 import { isClientSynced, localAddress } from './multiplayer'
 import { onNet, sendNet } from './net'
 import { setProgress } from './party'
+import { requestHeroPreload } from './preloadPlan'
 import { loadSettings, serializeSettings } from './settings'
 
 type SaveState = {
@@ -58,6 +59,8 @@ export function initializeHeroSave() {
     }))
     const loadout = parseLoadout(msg.loadout)
     if (loadout) setCommittedLoadout(msg.cid, loadout)
+    // The title's Continue waits on this outfit; fetch it ahead of the queue.
+    requestHeroPreload(msg.cid, getCommittedLoadout(msg.cid), true)
     for (const id of msg.unlocks) unlockInventoryItem(id)
     setCoins(msg.coins)
     loadSettings(msg.prefs)

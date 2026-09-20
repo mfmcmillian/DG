@@ -14,18 +14,14 @@ import { initializeInventory } from './inventory'
 import { getCommittedLoadout } from './equipmentState'
 import { initializeCombat } from './combat'
 import { initializeDungeonEnemies } from './dungeonEnemies'
-import { fxSoundAssets, fxTextureAssets, initializeCombatFx } from './combatFx'
-import { initializeProjectiles, projectileAssets } from './projectiles'
+import { initializeCombatFx } from './combatFx'
+import { initializeProjectiles } from './projectiles'
 import { initializeLoot } from './loot'
 import { initializeMultiplayer } from './multiplayer'
 import { initializeRemotePlayers } from './remotePlayers'
 import { initializeAvatarHiding } from './avatarHiding'
 import { adoptPlayerCharacter, initializePlayerCharacter, setPlayerCharacter } from './playerCharacter'
-import { preloadAssets, warmAssetsLater } from './preload'
-import { kitSrcsForStyle, styleTexturesFor, STYLES } from './dungeon/config'
-import { equipmentModelPaths } from './equipmentAvatar'
-import { enemyPreloadAssets } from './dungeonEnemies'
-import { CHARACTERS } from './characterPicker'
+import { planPreload } from './preloadPlan'
 import { GAME_VERSION } from './version'
 import { installNetDebug } from './netDebug'
 import { initializeParty } from './party'
@@ -52,28 +48,9 @@ function initClient() {
   installNetDebug()
   // Deep night so the torches carry the lighting.
   SkyboxTime.create(engine.RootEntity, { fixedTime: 1800 })
-  // Title waits only on the hall: later realms (castle, forge) download after
-  // the player can enter, so adding a kit does not stall the loading screen.
-  preloadAssets([
-    ...kitSrcsForStyle(STYLES.hall),
-    ...kitSrcsForStyle(STYLES.open),
-    ...styleTexturesFor(STYLES.hall),
-    ...styleTexturesFor(STYLES.open),
-    'models/loot/coin.glb', 'models/loot/heart.glb',
-    ...projectileAssets(),
-    ...fxSoundAssets(),
-    ...fxTextureAssets(),
-    ...enemyPreloadAssets('open'),
-    ...CHARACTERS.flatMap((c) => equipmentModelPaths(c.id, getCommittedLoadout(c.id)))
-  ])
-  warmAssetsLater([
-    ...kitSrcsForStyle(STYLES.castle),
-    ...kitSrcsForStyle(STYLES.forge),
-    ...styleTexturesFor(STYLES.castle),
-    ...styleTexturesFor(STYLES.forge),
-    ...enemyPreloadAssets('castle'),
-    ...enemyPreloadAssets('forge')
-  ])
+  // The title waits only on the hall (see preloadPlan); heroes and realms
+  // download behind it and each door waits on its own group.
+  planPreload()
   // The static spawn point in scene.json sits on the open style's entrance tile for this seed.
   loadDungeon(HUB_LEVEL.seed, HUB_LEVEL.style)
   initializePlayerPlacement()

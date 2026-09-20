@@ -2,7 +2,8 @@ import { executeTask } from '@dcl/sdk/ecs'
 import { closeSceneCamera, openSceneCamera, prepareSceneCameraReturn, SceneCameraSession } from './sceneCamera'
 import { MENU_CAMERA_POSITION, MENU_CAMERA_TARGET } from './menuPreviewStage'
 import { getPickerState, openPicker } from './characterPicker'
-import { getPreloadState } from './preload'
+import { isPreloadComplete } from './preload'
+import { heroGroupId, PRELOAD_HUB } from './preloadPlan'
 import { continueSavedHero, getHeroSaveState } from './heroSave'
 
 let open = false
@@ -22,9 +23,15 @@ export function openTitle() {
   open = true
 }
 
-/** The title doubles as the loading screen: nobody enters until the preload settles. */
+/** The title doubles as the loading screen: nobody enters until the hall is in. */
 export function isTitleReady(): boolean {
-  return getPreloadState().complete
+  return isPreloadComplete(PRELOAD_HUB)
+}
+
+/** "Continue" also waits on the saved champion's outfit, so it does not stand there in pieces. */
+export function isSavedHeroReady(): boolean {
+  const save = getHeroSaveState()
+  return save.found && isPreloadComplete(heroGroupId(save.cid))
 }
 
 export function isTitleResuming(): boolean {
@@ -53,7 +60,7 @@ export function titleContinue() {
  * way the creator hands over, so the follow camera opens on the hero in place.
  */
 export function titleResumeSaved() {
-  if (!open || !isTitleReady() || resuming || !getHeroSaveState().found) return
+  if (!open || !isTitleReady() || resuming || !isSavedHeroReady()) return
   const current = session
   resuming = true
   executeTask(async () => {
