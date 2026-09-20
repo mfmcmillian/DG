@@ -132,11 +132,6 @@ export function qEuler(pitch: number, yaw: number, roll: number): Quat {
 
 const off = (n: PartName): Vec3 => v3(SPEC[n].offset[0], SPEC[n].offset[1], SPEC[n].offset[2])
 
-/** Chest joint height with the feet on the floor, from the export's rest pose. */
-export const REST_ROOT_Y = 7.327
-/** Standing height: head top over the floor at rest. */
-export const STANDING_HEIGHT = REST_ROOT_Y + off('head').y + SPEC.head.max[1]
-
 type Limb = {
   upper: PartName
   lower: PartName
@@ -147,18 +142,32 @@ type Limb = {
   tip: Vec3
 }
 
-function limb(upper: PartName, lower: PartName, tipX: number): Limb {
+/** The fist or sole in the lower segment's frame, measured from the meshes' lowest vertices. */
+function limb(upper: PartName, lower: PartName, tip: Vec3): Limb {
   const elbow = off(lower)
   const l1 = len(elbow)
-  const tip = v3(tipX, SPEC[lower].min[1] + 0.35, 0)
   const l2 = len(tip)
   return { upper, lower, a1: norm(elbow), l1, a2: norm(tip), l2, tip }
 }
 
-export const ARM_L = limb('arm_l_upper', 'arm_l_lower', 0.15)
-export const ARM_R = limb('arm_r_upper', 'arm_r_lower', -0.25)
-export const LEG_L = limb('leg_l_upper', 'leg_l_lower', 0.76)
-export const LEG_R = limb('leg_r_upper', 'leg_r_lower', -0.6)
+export const ARM_L = limb('arm_l_upper', 'arm_l_lower', v3(0.7, -4.1, -1.2))
+export const ARM_R = limb('arm_r_upper', 'arm_r_lower', v3(-0.8, -4.9, 0.1))
+export const LEG_L = limb('leg_l_upper', 'leg_l_lower', v3(0.9, -3.9, 0.3))
+export const LEG_R = limb('leg_r_upper', 'leg_r_lower', v3(-0.65, -3.25, 0.25))
+
+/** How far below the chest joint a leg reaches when straight. */
+function legDrop(leg: Limb): number {
+  return -(off(leg.upper).y + off(leg.lower).y + leg.tip.y)
+}
+
+/**
+ * Chest joint height with both soles on the floor: the shorter leg stands
+ * straight and the longer one bends at the knee (the pack's golem lies with
+ * one leg drawn up, so the two are not the same length).
+ */
+export const REST_ROOT_Y = Math.min(legDrop(LEG_L), legDrop(LEG_R))
+/** Standing height: head top over the floor at rest. */
+export const STANDING_HEIGHT = REST_ROOT_Y + off('head').y + SPEC.head.max[1]
 
 /** Where the soles stand in the root's frame at rest: the legs are solved to hold these. */
 export const REST_FEET: { l: Vec3; r: Vec3 } = (() => {
@@ -169,6 +178,12 @@ export const REST_FEET: { l: Vec3; r: Vec3 } = (() => {
     return v3(tip.x, 0, tip.z)
   }
   return { l: foot(LEG_L), r: foot(LEG_R) }
+})()
+
+/** Where the fists hang at rest, in the root's frame: the stance keeps them near here. */
+export const REST_HANDS: { l: Vec3; r: Vec3 } = (() => {
+  const hand = (arm: Limb) => add(add(add(v3(0, REST_ROOT_Y, 0), off(arm.upper)), off(arm.lower)), arm.tip)
+  return { l: hand(ARM_L), r: hand(ARM_R) }
 })()
 
 // --- poses -----------------------------------------------------------------------------
@@ -368,16 +383,16 @@ export function poseFor(input: PoseInput): Pose {
   const bp = (x: number, y: number, z: number) => bodyPoint(center, yaw, x, y, z)
   const breathe = Math.sin(stateT * 1.1)
   // Stance.
-  let rootY = REST_ROOT_Y - 0.5 + 0.1 * breathe
-  let chestPitch = 16 + 2 * breathe
+  let rootY = REST_ROOT_Y - 0.35 + 0.1 * breathe
+  let chestPitch = 10 + 2 * breathe
   let chestYaw = 0
   let chestRoll = 0
   let headPitch = -6
   let headYaw = 0
-  let handL = bp(4.0, 3.4 + 0.15 * breathe, 2.2)
-  let handR = bp(-4.0, 3.4 + 0.15 * breathe, 2.2)
-  let bendL = bp(6, 5, -3)
-  let bendR = bp(-6, 5, -3)
+  let handL = bp(REST_HANDS.l.x - 0.2, REST_HANDS.l.y - 0.3 + 0.15 * breathe, REST_HANDS.l.z + 1.2)
+  let handR = bp(REST_HANDS.r.x + 0.2, REST_HANDS.r.y - 0.3 + 0.15 * breathe, REST_HANDS.r.z + 1.2)
+  let bendL = bp(7, 6, -4)
+  let bendR = bp(-7, 6, -4)
   let footL = bodyPoint(center, yaw, REST_FEET.l.x, 0, REST_FEET.l.z)
   let footR = bodyPoint(center, yaw, REST_FEET.r.x, 0, REST_FEET.r.z)
 

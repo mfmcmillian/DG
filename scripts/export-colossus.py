@@ -42,7 +42,8 @@ PARTS = {
     'leg_l_upper': ('SM_Env_GiantGolem_Leg_L_Upper_01', [4.49, -1.56, -0.42]),
     'leg_l_lower': ('SM_Env_GiantGolem_Leg_L_Lower_01', [10.05, -16.35, -1.77]),
     'leg_r_upper': ('SM_Env_GiantGolem_Leg_R_Upper_01', [-4.02, -2.33, 0.45]),
-    'leg_r_lower': ('SM_Env_GiantGolem_Leg_R_Lower_01', [-5.95, -22.97, 1.53]),
+    # The right knee: the matcher put it a metre too low (28 thigh vertices near it); set from the thigh's end.
+    'leg_r_lower': ('SM_Env_GiantGolem_Leg_R_Lower_01', [-5.67, -17.33, 0.63]),
 }
 PARENT = {
     'head': 'chest', 'arm_l_upper': 'chest', 'arm_r_upper': 'chest', 'leg_l_upper': 'chest', 'leg_r_upper': 'chest',

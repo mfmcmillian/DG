@@ -185,9 +185,9 @@
       "src": "models/raid/colossus/leg_r_lower.gltf",
       "parent": "leg_r_upper",
       "offset": [
-        -0.328,
-        -3.509,
-        0.184
+        -0.28,
+        -2.55,
+        0.03
       ],
       "min": [
         -2.038,
