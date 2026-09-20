@@ -1610,11 +1610,11 @@ function canCross(x0: number, z0: number, x1: number, z1: number): boolean {
     const style = sim.style
     const opening = DOOR_OPENINGS[style.door]
     const half = (opening?.width ?? style.tile) / 2 - BODY_RADIUS
-    // Lateral offset from the door's centre line, which runs through the cell centre.
-    const T = style.tile
-    const lateral = side === 'n' || side === 's'
-      ? x1 - (Math.floor(x1 / T) * T + T / 2)
-      : z1 - (Math.floor(z1 / T) * T + T / 2)
+    // Lateral offset from the door's centre line, which runs through the centre
+    // of the cell being entered. The grid does not start at world 0, so the
+    // centre comes from cellCenter (gridOrigin-aware), not from flooring x.
+    const centre = cellCenter(style, b.cx, b.cy)
+    const lateral = side === 'n' || side === 's' ? x1 - centre.x : z1 - centre.z
     return Math.abs(lateral) <= half
   }
   return true
@@ -1629,6 +1629,10 @@ function separate(e: Enemy, target: CombatPose) {
         (distance > 0.0001 ? (e.position.z - target.position.z) / distance : Math.cos(e.facing + Math.PI)) * push)
     }
   }
+  // Bodies filing through a doorway are left to overlap for the moment it
+  // takes: shoving them apart there pushes them out of the opening's band and
+  // the whole queue jams against the jambs.
+  if (nearDoor(e.position)) return
   for (const other of sim?.enemies ?? []) {
     if (other === e || other.dead || other.loading !== 'ready') continue
     const distance = combatDistance(e, other)
@@ -1636,6 +1640,22 @@ function separate(e: Enemy, target: CombatPose) {
     const push = (COMBAT_RULES.bodySeparation - distance) / 2
     move(e, ((e.position.x - other.position.x) / distance) * push, ((e.position.z - other.position.z) / distance) * push)
   }
+}
+
+/** Whether a point stands within a body's reach of one of its cell's doorways. */
+function nearDoor(p: Vector3): boolean {
+  if (!sim) return false
+  const style = sim.style
+  const T = style.tile
+  const o = gridOrigin(style)
+  const { cx, cy } = simCell(p.x, p.z)
+  const reach = BODY_RADIUS + 0.3
+  const edges: Array<[Side, number]> = [
+    ['n', p.z - (o.z + cy * T)], ['s', o.z + (cy + 1) * T - p.z],
+    ['w', p.x - (o.x + cx * T)], ['e', o.x + (cx + 1) * T - p.x]
+  ]
+  for (const [side, gap] of edges) if (gap <= reach && sim.doorEdges.has(`${cx},${cy},${side}`)) return true
+  return false
 }
 
 // --- presentation ------------------------------------------------------------
