@@ -96,7 +96,7 @@ export const HERO_CLASSES: Record<HeroClass, HeroClassDefinition> = {
     id: 'magic',
     label: 'Magic',
     blurb: 'Bolts from the staff; a slow orb that bursts for the heavy, the staff\'s heel up close.',
-    weaponClasses: ['staff'],
+    weaponClasses: ['staff', 'sceptre'],
     starterWeapon: 'dr-staff-01',
     light: ['cast_bolt', 'cast_bolt', 'cast_bolt'],
     heavy: 'cast_nova',

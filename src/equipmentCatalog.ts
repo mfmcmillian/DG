@@ -7,7 +7,7 @@ export type EquipmentLoadout = Record<EquipmentSlot, string>
 
 /** Loot weapons (scripts/build-weapons.py writes src/weaponCatalog.json from the manifest). */
 export type WeaponInfo = {
-  class: 'sword' | 'dagger' | 'axe' | 'mace' | 'hammer' | 'club' | 'great' | 'bow' | 'staff'
+  class: 'sword' | 'dagger' | 'axe' | 'mace' | 'hammer' | 'club' | 'great' | 'bow' | 'staff' | 'sceptre'
   rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
   /** Which Synty pack the mesh came from, for the inventory line. */
   pack: string

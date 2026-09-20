@@ -105,7 +105,9 @@ bake = load_module('bake_sword_clips', os.path.join(ROOT, 'scripts', 'bake-sword
 # ------------------------------------------------------------------ sources ---
 
 def extract(zip_name, member):
-    """Pull one file out of a pack zip (cached under WORK)."""
+    """Pull one file out of a pack zip or .unitypackage (cached under WORK)."""
+    if zip_name.endswith('.unitypackage'):
+        return extract_unity(zip_name, member)
     out = os.path.join(WORK, zip_name.replace('.zip', ''), member.replace('/', os.sep))
     if os.path.exists(out):
         return out
@@ -117,6 +119,46 @@ def extract(zip_name, member):
             raise FileNotFoundError(f'{member} not in {zip_name}')
         with z.open(hit) as src, open(out, 'wb') as dst:
             shutil.copyfileobj(src, dst)
+    return out
+
+
+def extract_unity(package, member):
+    """
+    Pull one asset out of a .unitypackage (a gzipped tar of <guid>/asset +
+    <guid>/pathname). `member` is the Unity asset path ("Assets/Synty/.../X.fbx").
+    The first call for a package unpacks every .fbx and .png under a Models or
+    Textures folder into WORK, since the tar has to be streamed end to end anyway.
+    """
+    root = os.path.join(WORK, package.replace('.unitypackage', ''))
+    out = os.path.join(root, member.replace('/', os.sep))
+    if os.path.exists(out):
+        return out
+    if os.path.exists(os.path.join(root, '.unpacked')):
+        raise FileNotFoundError(f'{member} not in {package}')
+    import tarfile
+    os.makedirs(root, exist_ok=True)
+    src_path = os.path.join(DOWNLOADS, package)
+    # Two forward-only passes (seeking backwards in a gzip re-inflates from the start).
+    wanted = {}   # guid -> asset path
+    with tarfile.open(src_path, 'r|gz') as tar:
+        for entry in tar:
+            parts = entry.name.split('/')
+            if len(parts) == 2 and parts[1] == 'pathname':
+                path = tar.extractfile(entry).read().decode('utf-8', 'replace').split('\n')[0]
+                lower = path.lower()
+                if (lower.endswith('.fbx') or lower.endswith('.png')) and ('/models/' in lower or '/textures/' in lower):
+                    wanted[parts[0]] = path
+    with tarfile.open(src_path, 'r|gz') as tar:
+        for entry in tar:
+            parts = entry.name.split('/')
+            if len(parts) == 2 and parts[1] == 'asset' and parts[0] in wanted:
+                dest = os.path.join(root, wanted[parts[0]].replace('/', os.sep))
+                os.makedirs(os.path.dirname(dest), exist_ok=True)
+                with tar.extractfile(entry) as src, open(dest, 'wb') as dst:
+                    shutil.copyfileobj(src, dst)
+    open(os.path.join(root, '.unpacked'), 'w').close()
+    if not os.path.exists(out):
+        raise FileNotFoundError(f'{member} not in {package}')
     return out
 
 

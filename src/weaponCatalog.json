@@ -1126,14 +1126,14 @@
    "id": "fk-sceptre-01",
    "name": "Iron Sceptre",
    "slot": "weapon",
-   "description": "An officer's baton, heavier than it looks.",
+   "description": "An officer's baton with a rough crystal set in the head. The apprentice's focus.",
    "icon": "images/weapons/fk-sceptre-01.png",
    "models": [
     "models/roaming/weapons/fk-sceptre-01.glb"
    ],
    "weapon": {
-    "class": "mace",
-    "rarity": "rare",
+    "class": "sceptre",
+    "rarity": "common",
     "pack": "Fantasy Kingdom"
    }
   },
@@ -1141,14 +1141,14 @@
    "id": "fk-sceptre-02",
    "name": "Bishop's Sceptre",
    "slot": "weapon",
-   "description": "A jewelled head on a dark shaft.",
+   "description": "A jewelled cross-head on a dark shaft. It was blessed once, and it remembers.",
    "icon": "images/weapons/fk-sceptre-02.png",
    "models": [
     "models/roaming/weapons/fk-sceptre-02.glb"
    ],
    "weapon": {
-    "class": "mace",
-    "rarity": "rare",
+    "class": "sceptre",
+    "rarity": "uncommon",
     "pack": "Fantasy Kingdom"
    }
   },
@@ -1156,14 +1156,14 @@
    "id": "fk-sceptre-03",
    "name": "Herald's Rod",
    "slot": "weapon",
-   "description": "Announces. Also concludes.",
+   "description": "A plain gold rod. Announces the bolt. Also concludes it.",
    "icon": "images/weapons/fk-sceptre-03.png",
    "models": [
     "models/roaming/weapons/fk-sceptre-03.glb"
    ],
    "weapon": {
-    "class": "mace",
-    "rarity": "uncommon",
+    "class": "sceptre",
+    "rarity": "common",
     "pack": "Fantasy Kingdom"
    }
   },
@@ -1171,14 +1171,14 @@
    "id": "fk-sceptre-04",
    "name": "Sceptre of the Crown",
    "slot": "weapon",
-   "description": "Gold cross, gold head, iron heart.",
+   "description": "Gold cross, gold head, iron heart. The crown's own casting focus.",
    "icon": "images/weapons/fk-sceptre-04.png",
    "models": [
     "models/roaming/weapons/fk-sceptre-04.glb"
    ],
    "weapon": {
-    "class": "mace",
-    "rarity": "epic",
+    "class": "sceptre",
+    "rarity": "rare",
     "pack": "Fantasy Kingdom"
    }
   },
@@ -1186,13 +1186,13 @@
    "id": "fk-sceptre-05",
    "name": "Sunburst Sceptre",
    "slot": "weapon",
-   "description": "The high priest's mace, gilded and blessed.",
+   "description": "The high priest's sceptre, gilded and blessed. The nova it casts is warm.",
    "icon": "images/weapons/fk-sceptre-05.png",
    "models": [
     "models/roaming/weapons/fk-sceptre-05.glb"
    ],
    "weapon": {
-    "class": "mace",
+    "class": "sceptre",
     "rarity": "epic",
     "pack": "Fantasy Kingdom"
    }
@@ -1201,13 +1201,13 @@
    "id": "fk-sceptre-06",
    "name": "Steward's Rod",
    "slot": "weapon",
-   "description": "A plain sceptre for a plain office.",
+   "description": "A brass orb on a plain handle for a plain office. Warm to hold before it fires.",
    "icon": "images/weapons/fk-sceptre-06.png",
    "models": [
     "models/roaming/weapons/fk-sceptre-06.glb"
    ],
    "weapon": {
-    "class": "mace",
+    "class": "sceptre",
     "rarity": "uncommon",
     "pack": "Fantasy Kingdom"
    }
@@ -1216,14 +1216,14 @@
    "id": "fk-sceptre-07",
    "name": "Orb Sceptre",
    "slot": "weapon",
-   "description": "A silver orb on a red-wrapped shaft.",
+   "description": "A spiked blue crystal on a red-wrapped shaft. The bolt comes out jagged.",
    "icon": "images/weapons/fk-sceptre-07.png",
    "models": [
     "models/roaming/weapons/fk-sceptre-07.glb"
    ],
    "weapon": {
-    "class": "mace",
-    "rarity": "uncommon",
+    "class": "sceptre",
+    "rarity": "rare",
     "pack": "Fantasy Kingdom"
    }
   },
@@ -1231,14 +1231,14 @@
    "id": "fk-sceptre-08",
    "name": "Regent's Sceptre",
    "slot": "weapon",
-   "description": "Carried in the king's absence. Swung in his name.",
+   "description": "A cluster of blue crystal carried in the king's absence. It frosts the hand.",
    "icon": "images/weapons/fk-sceptre-08.png",
    "models": [
     "models/roaming/weapons/fk-sceptre-08.glb"
    ],
    "weapon": {
-    "class": "mace",
-    "rarity": "rare",
+    "class": "sceptre",
+    "rarity": "epic",
     "pack": "Fantasy Kingdom"
    }
   },
@@ -1246,14 +1246,14 @@
    "id": "fk-sceptre-09",
    "name": "Chancellor's Sceptre",
    "slot": "weapon",
-   "description": "Signs decrees. Ends arguments.",
+   "description": "A smooth blue sphere that does not reflect the torches. It reflects something else.",
    "icon": "images/weapons/fk-sceptre-09.png",
    "models": [
     "models/roaming/weapons/fk-sceptre-09.glb"
    ],
    "weapon": {
-    "class": "mace",
-    "rarity": "rare",
+    "class": "sceptre",
+    "rarity": "legendary",
     "pack": "Fantasy Kingdom"
    }
   },
@@ -2932,6 +2932,805 @@
     "class": "staff",
     "rarity": "legendary",
     "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "bw-recurve-02",
+   "name": "Hedge Recurve",
+   "slot": "weapon",
+   "description": "Short limbs, plain grip. The bow a village keeps behind the door.",
+   "icon": "images/weapons/bw-recurve-02.png",
+   "models": [
+    "models/roaming/weapons/bw-recurve-02.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "common",
+    "pack": "Bow Combat",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "bw-recurve-04",
+   "name": "Bone-Tipped Recurve",
+   "slot": "weapon",
+   "description": "Antler nocks and a leather-bound riser. Made by someone who hunted to eat.",
+   "icon": "images/weapons/bw-recurve-04.png",
+   "models": [
+    "models/roaming/weapons/bw-recurve-04.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "uncommon",
+    "pack": "Bow Combat",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "bw-recurve-07",
+   "name": "Winged Recurve",
+   "slot": "weapon",
+   "description": "Broad carved limbs that flare like wings. Loud to draw, louder to land.",
+   "icon": "images/weapons/bw-recurve-07.png",
+   "models": [
+    "models/roaming/weapons/bw-recurve-07.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "epic",
+    "pack": "Bow Combat",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "bw-recurve-08",
+   "name": "Crescent Recurve",
+   "slot": "weapon",
+   "description": "Deep-curled limbs shaped like a waning moon. Draws smooth to the ear.",
+   "icon": "images/weapons/bw-recurve-08.png",
+   "models": [
+    "models/roaming/weapons/bw-recurve-08.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "rare",
+    "pack": "Bow Combat",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "bw-longbow-04",
+   "name": "Tawny Longbow",
+   "slot": "weapon",
+   "description": "Sun-bleached yew with a red wrap. The tanner's son shot this for years.",
+   "icon": "images/weapons/bw-longbow-04.png",
+   "models": [
+    "models/roaming/weapons/bw-longbow-04.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "common",
+    "pack": "Bow Combat",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "bw-longbow-05",
+   "name": "Nightwood Longbow",
+   "slot": "weapon",
+   "description": "Dark-stained limbs that vanish in a doorway. The string is the only pale thing on it.",
+   "icon": "images/weapons/bw-longbow-05.png",
+   "models": [
+    "models/roaming/weapons/bw-longbow-05.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "uncommon",
+    "pack": "Bow Combat",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "bw-longbow-06",
+   "name": "Blackwarden Longbow",
+   "slot": "weapon",
+   "description": "The Warden longbow reforged in black. Heavier draw, harder arrow.",
+   "icon": "images/weapons/bw-longbow-06.png",
+   "models": [
+    "models/roaming/weapons/bw-longbow-06.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "epic",
+    "pack": "Bow Combat",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "bw-recurve-09",
+   "name": "Dune Recurve",
+   "slot": "weapon",
+   "description": "Steppe laminate with a sand-and-blue wrap. Built for wind.",
+   "icon": "images/weapons/bw-recurve-09.png",
+   "models": [
+    "models/roaming/weapons/bw-recurve-09.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "rare",
+    "pack": "Bow Combat",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "bw-recurve-10",
+   "name": "Wyrmscale Recurve",
+   "slot": "weapon",
+   "description": "Green-scaled limbs banded in red gold. The one recurve every archer in the fortress has heard of.",
+   "icon": "images/weapons/bw-recurve-10.png",
+   "models": [
+    "models/roaming/weapons/bw-recurve-10.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "legendary",
+    "pack": "Bow Combat",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "pr-bow-02",
+   "name": "Rose Pride Bow",
+   "slot": "weapon",
+   "description": "Pink and violet along the limbs. A proud draw in the colors of dawn.",
+   "icon": "images/weapons/pr-bow-02.png",
+   "models": [
+    "models/roaming/weapons/pr-bow-02.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "common",
+    "pack": "Pride Weapons",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "pr-bow-03",
+   "name": "Twilight Pride Bow",
+   "slot": "weapon",
+   "description": "Blue into purple, tip to tip. Every arrow leaves at dusk.",
+   "icon": "images/weapons/pr-bow-03.png",
+   "models": [
+    "models/roaming/weapons/pr-bow-03.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "uncommon",
+    "pack": "Pride Weapons",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "pr-bow-04",
+   "name": "Violet Pride Bow",
+   "slot": "weapon",
+   "description": "Deep purple with a glow at the tips. Carried with the head up.",
+   "icon": "images/weapons/pr-bow-04.png",
+   "models": [
+    "models/roaming/weapons/pr-bow-04.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "rare",
+    "pack": "Pride Weapons",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "pr-bow-05",
+   "name": "Tide Pride Bow",
+   "slot": "weapon",
+   "description": "Cyan and sea-blue, bright as a flag. Hard to miss and harder to dodge.",
+   "icon": "images/weapons/pr-bow-05.png",
+   "models": [
+    "models/roaming/weapons/pr-bow-05.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "epic",
+    "pack": "Pride Weapons",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "fk-staff-07",
+   "name": "Rosewood Staff",
+   "slot": "weapon",
+   "description": "A rose-carved head on a straight shaft. Pretty, and it hits.",
+   "icon": "images/weapons/fk-staff-07.png",
+   "models": [
+    "models/roaming/weapons/fk-staff-07.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "common",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-staff-08",
+   "name": "Bishop's Staff",
+   "slot": "weapon",
+   "description": "A gilt cross on a long pole. Blesses what it strikes, briefly.",
+   "icon": "images/weapons/fk-staff-08.png",
+   "models": [
+    "models/roaming/weapons/fk-staff-08.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-staff-09",
+   "name": "Seer's Crook",
+   "slot": "weapon",
+   "description": "A curled crook with a crystal in its hook. Sees the bolt land before it flies.",
+   "icon": "images/weapons/fk-staff-09.png",
+   "models": [
+    "models/roaming/weapons/fk-staff-09.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "rare",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-staff-10",
+   "name": "Quarterstaff",
+   "slot": "weapon",
+   "description": "Plain oak, iron-shod. Every apprentice's first staff and some masters' last.",
+   "icon": "images/weapons/fk-staff-10.png",
+   "models": [
+    "models/roaming/weapons/fk-staff-10.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "common",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-staff-11",
+   "name": "Frostwood Staff",
+   "slot": "weapon",
+   "description": "The hedge wizard's staff wrapped in blue. The crystal runs cold.",
+   "icon": "images/weapons/fk-staff-11.png",
+   "models": [
+    "models/roaming/weapons/fk-staff-11.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "common",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-staff-12",
+   "name": "Gilt Acolyte Staff",
+   "slot": "weapon",
+   "description": "An acolyte staff dressed in gold thread for the high festival.",
+   "icon": "images/weapons/fk-staff-12.png",
+   "models": [
+    "models/roaming/weapons/fk-staff-12.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-staff-13",
+   "name": "Azure Court Staff",
+   "slot": "weapon",
+   "description": "Court mage's staff in the queen's blue. Polished for the throne room.",
+   "icon": "images/weapons/fk-staff-13.png",
+   "models": [
+    "models/roaming/weapons/fk-staff-13.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "rare",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-staff-14",
+   "name": "Goldstone Staff",
+   "slot": "weapon",
+   "description": "A sunstone set in gold. The orb it casts bursts warm.",
+   "icon": "images/weapons/fk-staff-14.png",
+   "models": [
+    "models/roaming/weapons/fk-staff-14.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "rare",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-staff-15",
+   "name": "Sapphire Archmage Staff",
+   "slot": "weapon",
+   "description": "Three blue crystals in a crown of silver. It does not miss.",
+   "icon": "images/weapons/fk-staff-15.png",
+   "models": [
+    "models/roaming/weapons/fk-staff-15.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "epic",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-staff-16",
+   "name": "Gilded Crown Staff",
+   "slot": "weapon",
+   "description": "The crown staff remade in gold for a king who never got to carry it.",
+   "icon": "images/weapons/fk-staff-16.png",
+   "models": [
+    "models/roaming/weapons/fk-staff-16.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "legendary",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "dr-staff-07",
+   "name": "Ironshod Walking Staff",
+   "slot": "weapon",
+   "description": "A miner's staff banded in black iron. The stone still hums.",
+   "icon": "images/weapons/dr-staff-07.png",
+   "models": [
+    "models/roaming/weapons/dr-staff-07.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "common",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-staff-08",
+   "name": "Silver Tunnel Rod",
+   "slot": "weapon",
+   "description": "A tunnel rod in polished silver. The bolt it throws is plain white light.",
+   "icon": "images/weapons/dr-staff-08.png",
+   "models": [
+    "models/roaming/weapons/dr-staff-08.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "uncommon",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-staff-09",
+   "name": "Iron Lantern Staff",
+   "slot": "weapon",
+   "description": "A caged glow in dark iron. Lights the way and burns what stands in it.",
+   "icon": "images/weapons/dr-staff-09.png",
+   "models": [
+    "models/roaming/weapons/dr-staff-09.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "uncommon",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-staff-10",
+   "name": "Silver Cog Staff",
+   "slot": "weapon",
+   "description": "Dwarven gearwork in bright silver, wound round a crystal core.",
+   "icon": "images/weapons/dr-staff-10.png",
+   "models": [
+    "models/roaming/weapons/dr-staff-10.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "rare",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-staff-11",
+   "name": "Cold Forge Staff",
+   "slot": "weapon",
+   "description": "A forge staff quenched in iron and never reheated.",
+   "icon": "images/weapons/dr-staff-11.png",
+   "models": [
+    "models/roaming/weapons/dr-staff-11.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "epic",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-staff-12",
+   "name": "Silver King's Staff",
+   "slot": "weapon",
+   "description": "The Deep King's sceptre in silver. The mountain answers a little quieter.",
+   "icon": "images/weapons/dr-staff-12.png",
+   "models": [
+    "models/roaming/weapons/dr-staff-12.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "epic",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "fk-sceptre-10",
+   "name": "Azure Sceptre",
+   "slot": "weapon",
+   "description": "The iron sceptre wrapped in the queen's blue. Runs colder than it looks.",
+   "icon": "images/weapons/fk-sceptre-10.png",
+   "models": [
+    "models/roaming/weapons/fk-sceptre-10.glb"
+   ],
+   "weapon": {
+    "class": "sceptre",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-sceptre-11",
+   "name": "Golden Sun Sceptre",
+   "slot": "weapon",
+   "description": "The crown sceptre in full gold. Every bolt is a decree.",
+   "icon": "images/weapons/fk-sceptre-11.png",
+   "models": [
+    "models/roaming/weapons/fk-sceptre-11.glb"
+   ],
+   "weapon": {
+    "class": "sceptre",
+    "rarity": "rare",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-sceptre-12",
+   "name": "Blazing Star Sceptre",
+   "slot": "weapon",
+   "description": "The orb sceptre gold-banded, the orb lit. The bolt comes out blazing.",
+   "icon": "images/weapons/fk-sceptre-12.png",
+   "models": [
+    "models/roaming/weapons/fk-sceptre-12.glb"
+   ],
+   "weapon": {
+    "class": "sceptre",
+    "rarity": "epic",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "er-bow-01",
+   "name": "Moonwood Bow",
+   "slot": "weapon",
+   "description": "Pale wood cut under a full moon, a gem set in the riser. It hums on the draw.",
+   "icon": "images/weapons/er-bow-01.png",
+   "models": [
+    "models/roaming/weapons/er-bow-01.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "rare",
+    "pack": "Elven Realm",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "er-bow-02",
+   "name": "Duskwood Bow",
+   "slot": "weapon",
+   "description": "Moonwood stained the colour of the hour after sunset. The gem burns violet.",
+   "icon": "images/weapons/er-bow-02.png",
+   "models": [
+    "models/roaming/weapons/er-bow-02.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "epic",
+    "pack": "Elven Realm",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "er-bow-03",
+   "name": "Sylvan Recurve",
+   "slot": "weapon",
+   "description": "Curled limbs wound with living vine. It grew this shape.",
+   "icon": "images/weapons/er-bow-03.png",
+   "models": [
+    "models/roaming/weapons/er-bow-03.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "uncommon",
+    "pack": "Elven Realm",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "er-bow-04",
+   "name": "Autumn Recurve",
+   "slot": "weapon",
+   "description": "Sylvan wood turned red and gold. It sheds a leaf with every arrow.",
+   "icon": "images/weapons/er-bow-04.png",
+   "models": [
+    "models/roaming/weapons/er-bow-04.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "rare",
+    "pack": "Elven Realm",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "er-bow-05",
+   "name": "Warden's Bow",
+   "slot": "weapon",
+   "description": "The forest wardens' war bow, gilt at the tips. Its arrows do not lose height.",
+   "icon": "images/weapons/er-bow-05.png",
+   "models": [
+    "models/roaming/weapons/er-bow-05.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "epic",
+    "pack": "Elven Realm",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "er-bow-06",
+   "name": "Starlight Bow",
+   "slot": "weapon",
+   "description": "A warden's bow strung with something that is not string. It glows blue before it fires.",
+   "icon": "images/weapons/er-bow-06.png",
+   "models": [
+    "models/roaming/weapons/er-bow-06.glb"
+   ],
+   "weapon": {
+    "class": "bow",
+    "rarity": "legendary",
+    "pack": "Elven Realm",
+    "hand": "l"
+   }
+  },
+  {
+   "id": "er-staff-01",
+   "name": "Crescent Staff",
+   "slot": "weapon",
+   "description": "A silver crescent cradling a gem. The bolt leaves in an arc.",
+   "icon": "images/weapons/er-staff-01.png",
+   "models": [
+    "models/roaming/weapons/er-staff-01.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "rare",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "er-staff-02",
+   "name": "Moonrise Staff",
+   "slot": "weapon",
+   "description": "The crescent staff with a blue moonstone. The nova it casts is silver.",
+   "icon": "images/weapons/er-staff-02.png",
+   "models": [
+    "models/roaming/weapons/er-staff-02.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "epic",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "er-staff-03",
+   "name": "Bough Staff",
+   "slot": "weapon",
+   "description": "A forked branch, still green at the tips, with a gem caught in the fork.",
+   "icon": "images/weapons/er-staff-03.png",
+   "models": [
+    "models/roaming/weapons/er-staff-03.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "uncommon",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "er-staff-04",
+   "name": "Autumn Bough",
+   "slot": "weapon",
+   "description": "The bough staff in red and gold. The leaves never fall.",
+   "icon": "images/weapons/er-staff-04.png",
+   "models": [
+    "models/roaming/weapons/er-staff-04.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "rare",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "dk-staff-01",
+   "name": "Gravewarden Staff",
+   "slot": "weapon",
+   "description": "Iron and bone on a grave-black shaft. Things stay down when it says so.",
+   "icon": "images/weapons/dk-staff-01.png",
+   "models": [
+    "models/roaming/weapons/dk-staff-01.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "rare",
+    "pack": "Dark Fantasy"
+   }
+  },
+  {
+   "id": "dk-staff-02",
+   "name": "Bloodletter Staff",
+   "slot": "weapon",
+   "description": "The gravewarden staff bound in red. The bolt it throws does not stop bleeding.",
+   "icon": "images/weapons/dk-staff-02.png",
+   "models": [
+    "models/roaming/weapons/dk-staff-02.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "epic",
+    "pack": "Dark Fantasy"
+   }
+  },
+  {
+   "id": "fc-staff-01",
+   "name": "Druid's Staff",
+   "slot": "weapon",
+   "description": "A gnarled branch with leaves and berries still on it. The forest lent it.",
+   "icon": "images/weapons/fc-staff-01.png",
+   "models": [
+    "models/roaming/weapons/fc-staff-01.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "uncommon",
+    "pack": "Fantasy Characters"
+   }
+  },
+  {
+   "id": "fc-staff-02",
+   "name": "Thornwood Staff",
+   "slot": "weapon",
+   "description": "A druid's staff gone to thorn. It draws blood from the hand and gives it back as bolts.",
+   "icon": "images/weapons/fc-staff-02.png",
+   "models": [
+    "models/roaming/weapons/fc-staff-02.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "rare",
+    "pack": "Fantasy Characters"
+   }
+  },
+  {
+   "id": "fc-staff-03",
+   "name": "Wizard's Staff",
+   "slot": "weapon",
+   "description": "A tall staff with a curled gold head. The one on every tower's coat of arms.",
+   "icon": "images/weapons/fc-staff-03.png",
+   "models": [
+    "models/roaming/weapons/fc-staff-03.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "rare",
+    "pack": "Fantasy Characters"
+   }
+  },
+  {
+   "id": "fc-staff-04",
+   "name": "Grey Wizard's Staff",
+   "slot": "weapon",
+   "description": "A wizard's staff worn grey by a long road. It has been to the mountain and back.",
+   "icon": "images/weapons/fc-staff-04.png",
+   "models": [
+    "models/roaming/weapons/fc-staff-04.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "epic",
+    "pack": "Fantasy Characters"
+   }
+  },
+  {
+   "id": "fc-sceptre-01",
+   "name": "Gilded Sceptre",
+   "slot": "weapon",
+   "description": "A long gold sceptre with a jewelled head. A king's, once; a caster's now.",
+   "icon": "images/weapons/fc-sceptre-01.png",
+   "models": [
+    "models/roaming/weapons/fc-sceptre-01.glb"
+   ],
+   "weapon": {
+    "class": "sceptre",
+    "rarity": "uncommon",
+    "pack": "Fantasy Characters"
+   }
+  },
+  {
+   "id": "fc-sceptre-02",
+   "name": "Rose Sceptre",
+   "slot": "weapon",
+   "description": "The gilded sceptre with a rose-red stone. The bolt comes out warm.",
+   "icon": "images/weapons/fc-sceptre-02.png",
+   "models": [
+    "models/roaming/weapons/fc-sceptre-02.glb"
+   ],
+   "weapon": {
+    "class": "sceptre",
+    "rarity": "rare",
+    "pack": "Fantasy Characters"
+   }
+  },
+  {
+   "id": "fc-wand-01",
+   "name": "Apprentice Wand",
+   "slot": "weapon",
+   "description": "A plain wand of pale wood. The first thing every caster is handed.",
+   "icon": "images/weapons/fc-wand-01.png",
+   "models": [
+    "models/roaming/weapons/fc-wand-01.glb"
+   ],
+   "weapon": {
+    "class": "sceptre",
+    "rarity": "common",
+    "pack": "Fantasy Characters"
+   }
+  },
+  {
+   "id": "fc-wand-02",
+   "name": "Hazel Wand",
+   "slot": "weapon",
+   "description": "A hazel wand with a dark grip. Quick to point, quick to fire.",
+   "icon": "images/weapons/fc-wand-02.png",
+   "models": [
+    "models/roaming/weapons/fc-wand-02.glb"
+   ],
+   "weapon": {
+    "class": "sceptre",
+    "rarity": "uncommon",
+    "pack": "Fantasy Characters"
    }
   }
  ]
