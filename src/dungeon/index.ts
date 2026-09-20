@@ -7,6 +7,7 @@ import { setCrawlerCamera } from './crawlerCamera'
 import { setShoulderCamera } from './shoulderCamera'
 
 import { Dungeon, generateDungeon } from './generator'
+import { hubDungeon } from './hub'
 
 export type CameraChoice = 'native' | 'shoulder' | 'crawler'
 
@@ -101,7 +102,8 @@ export function loadDungeon(seed: number, styleId: StyleId = state.style.id) {
   state.seed = seed >>> 0
   state.style = STYLES[styleId]
   const s = state.style
-  state.dungeon = generateDungeon(state.seed, styleGeneratorOptions(s))
+  // The hall is drawn by hand; every other style is generated from its seed.
+  state.dungeon = s.id === 'hall' ? hubDungeon(s.torchEvery) : generateDungeon(state.seed, styleGeneratorOptions(s))
   const crawler = state.camera === 'crawler' && crawlerCameraAvailable(s)
   state.instance = buildDungeon(state.dungeon, s, { cutaway: crawler })
   setTorchLightTarget(state.instance)

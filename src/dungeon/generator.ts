@@ -1,6 +1,8 @@
 // Seeded dungeon generator. Pure data, no engine calls, so the same seed
 // produces the same layout on every client and on a server.
 
+import type { KitId } from './kit'
+
 export type Cell = 0 | 1 | 2 // 0 rock, 1 room floor, 2 corridor floor
 export type RoomKind = 'entrance' | 'boss' | 'treasure' | 'combat' | 'quiet'
 export type Side = 'n' | 's' | 'w' | 'e'
@@ -39,6 +41,24 @@ export interface Dungeon {
   arches: Array<{ x: number; y: number; along: 'x' | 'z' }>
   entrance: Room
   boss: Room
+  /** Hand-placed pieces (the authored hub); generated dungeons have none. */
+  furniture?: Furniture[]
+}
+
+/**
+ * One authored piece. `x`/`y` are cell coordinates (fractional allowed) of the
+ * piece's centre; with `side` set it is pushed against that wall of the cell
+ * (wall-hung pieces hang there) the way generated props are. `tag` names the
+ * placement so the scene can find its entity (the war table).
+ */
+export interface Furniture {
+  id: KitId
+  x: number
+  y: number
+  side?: Side
+  yaw?: number
+  collide?: boolean
+  tag?: string
 }
 
 export interface GeneratorOptions {

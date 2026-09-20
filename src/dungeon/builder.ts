@@ -35,6 +35,8 @@ export interface DungeonInstance {
   swapWalls: Array<{ entity: Entity; full: KitId; low: KitId }>
   /** Pieces that exist in one mode only, with what they are so they can be switched on and off. */
   modal: Array<{ entity: Entity; placement: Placement; only: PieceMode }>
+  /** Named pieces (authored furniture such as the hub's war table). */
+  tagged: Record<string, Entity>
 }
 
 function floorMaterial(style: DungeonStyle): PBMaterial_PbrMaterial {
@@ -79,6 +81,7 @@ export function buildDungeon(dungeon: Dungeon, style: DungeonStyle, options?: La
   const torches: DungeonInstance['torches'] = []
   const swapWalls: DungeonInstance['swapWalls'] = []
   const modal: DungeonInstance['modal'] = []
+  const tagged: DungeonInstance['tagged'] = {}
   const cutaway = !!options?.cutaway && style.cutawayWall !== undefined
   const torchSet = new Set(layout.torchIndices)
   // Real geometry also sits on CAMERA_LAYER so the shoulder camera's boom ray can
@@ -131,6 +134,7 @@ export function buildDungeon(dungeon: Dungeon, style: DungeonStyle, options?: La
         })
         if (p.lowId) swapWalls.push({ entity: e, full: p.id, low: p.lowId })
         if (p.only) modal.push({ entity: e, placement: p, only: p.only })
+        if (p.tag) tagged[p.tag] = e
         if (torchSet.has(index)) torches.push({ entity: e, position: Vector3.create(p.x, p.y + 0.5, p.z) })
         break
       }
@@ -149,7 +153,7 @@ export function buildDungeon(dungeon: Dungeon, style: DungeonStyle, options?: La
     CameraModeArea.create(zone, { area: Vector3.create(span + 4, H + 2, span + 4), mode: CameraType.CT_FIRST_PERSON })
   }
 
-  return { style, root, entities, torches, spawns: layout.spawns, markers: [], stats: layout.stats, cutaway, swapWalls, modal }
+  return { style, root, entities, torches, spawns: layout.spawns, markers: [], stats: layout.stats, cutaway, swapWalls, modal, tagged }
 }
 
 /**

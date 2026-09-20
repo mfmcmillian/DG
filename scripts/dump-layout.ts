@@ -3,13 +3,15 @@
 import { writeFileSync } from 'fs'
 import { StyleId, STYLES, styleGeneratorOptions } from '../src/dungeon/config'
 import { generateDungeon } from '../src/dungeon/generator'
+import { hubDungeon } from '../src/dungeon/hub'
 import { KIT } from '../src/dungeon/kit'
 import { layoutDungeon } from '../src/dungeon/layout'
 
 const seed = Number(process.argv[2] ?? 1337)
 const out = process.argv[3] ?? 'layout.json'
 const style = STYLES[(process.argv[4] as StyleId) ?? 'tight']
-const dungeon = generateDungeon(seed, styleGeneratorOptions(style))
+// The hall is the authored hub, whatever the seed.
+const dungeon = style.id === 'hall' ? hubDungeon(style.torchEvery) : generateDungeon(seed, styleGeneratorOptions(style))
 const cutaway = process.argv[5] === 'cutaway' && style.cutawayWall !== undefined
 const layout = layoutDungeon(dungeon, style, { cutaway })
 // The layout carries both camera modes; resolve to the one asked for, as the builder does.

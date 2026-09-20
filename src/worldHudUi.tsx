@@ -13,7 +13,7 @@ import { isClientSynced, isSoloMode, localAddress, netStatus } from './multiplay
 import { netDebugSummary, recentLogs } from './netDebug'
 import { MenuAction } from './menuUi'
 import {
-  descend, getLobbyState, inRun, leaveParty, myParty, myPhase, openLobby, resultsWait, retryRun, returnToHall, setReady
+  atWarTable, descend, getLobbyState, inRun, leaveParty, myParty, myPhase, openLobby, resultsWait, retryRun, returnToHall, setReady
 } from './party'
 import { HUB } from './partyLookup'
 import { openSettings } from './settings'
@@ -314,17 +314,37 @@ function ResultsOverlay({ width, height, scale: s }: { width: number; height: nu
   </UiEntity>
 }
 
-/** In the hall: the way to the dungeons, and where the party stands. */
+/**
+ * In the hall: where the party stands, and, at the war table, the way to the
+ * dungeons. Away from the table the hall is just a place to be; the HUD's
+ * Dungeons button is always there.
+ */
 function HubPrompt({ width, bottom, scale: s }: { width: number; bottom: number; scale: number }) {
   if (myPhase() !== HUB || getLobbyState().open) return null
   const party = myParty()
+  const near = atWarTable()
+  if (!party && !near) return null
   const caption = party ? `${partyTitle(party)}  ·  ${party.members.length}/${MAX_PARTY}  ·  ${LEVELS[party.level]?.name ?? ''}`
-    : 'Choose a fortress to enter.'
-  return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - 300 * s) / 2, bottom },
-    width: 300 * s, flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
+    : 'The war table: choose a fortress to enter.'
+  return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - 360 * s) / 2, bottom },
+    width: 360 * s, flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
     <Label value={caption} color={party ? gold : muted} font="sans-serif" fontSize={12 * s} textWrap="nowrap"
       uiTransform={{ width: '100%', height: 24 * s, margin: { bottom: 6 * s }, pointerFilter: 'none' }} />
-    <TextAction id="open-lobby" text={party ? 'Party' : 'Dungeons'} onClick={openLobby} scale={s} width={200} />
+    {(near || party) && <TextAction id="open-lobby" text={party ? 'Party' : 'Dungeons'} onClick={openLobby} scale={s} width={200} />}
+  </UiEntity>
+}
+
+/** A line over the hall for a few seconds: the welcome, or what the last run changed. */
+function HubNotice({ width, top, scale: s }: { width: number; top: number; scale: number }) {
+  const { notice, noticeFor, open } = getLobbyState()
+  if (!notice || open || myPhase() !== HUB) return null
+  const alpha = Math.min(1, noticeFor / 0.6)
+  const noticeWidth = Math.min(720 * s, width * 0.8)
+  return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - noticeWidth) / 2, top },
+    width: noticeWidth, height: 40 * s, borderRadius: 8 * s, alignItems: 'center', justifyContent: 'center', pointerFilter: 'none' }}
+    uiBackground={{ color: Color4.create(panel.r, panel.g, panel.b, panel.a * alpha) }}>
+    <Label value={notice} color={Color4.create(gold.r, gold.g, gold.b, alpha)} font="sans-serif" fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} />
   </UiEntity>
 }
 
@@ -333,11 +353,13 @@ export function WorldHudUi() {
   const created = getPickerState().hasCreatedCharacter
   const player = getPlayerCharacterState()
   const ready = created && player.active && player.loading === 'ready'
+  const inHub = myPhase() === HUB && !getLobbyState().open
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width, height, pointerFilter: 'none' }}>
     {ready && <PlayerVitals right={right} top={vitalsTop} scale={s} />}
     {ready && inRun() && <RunPanel right={right} top={vitalsTop + 100 * s} scale={s} />}
     {ready && <ResultsOverlay width={width} height={height} scale={s} />}
     {ready && <HubPrompt width={width} bottom={bottom} scale={s} />}
+    {ready && <HubNotice width={width} top={vitalsTop - 60 * s} scale={s} />}
     {ready && <BossBar width={width} scale={s} />}
     {ready && <LootToasts right={right} bottom={bottom} scale={s} />}
     {ready && devToolsOn() && <DungeonDevPanel />}
@@ -350,7 +372,8 @@ export function WorldHudUi() {
         uiTransform={{ width: '100%', height: 12 * s, pointerFilter: 'none' }} />)}
     </UiEntity>}
     {created && <UiEntity uiTransform={{ positionType: 'absolute', position: { right, bottom },
-      width: 168 * s, height: 48 * s, flexDirection: 'row', justifyContent: 'space-between', pointerFilter: 'none' }}>
+      width: (inHub ? 228 : 168) * s, height: 48 * s, flexDirection: 'row', justifyContent: 'space-between', pointerFilter: 'none' }}>
+      {inHub && <IconButton id="dungeons" label={myParty() ? 'Party' : 'Dungeons'} icon="images/hud/dungeons.png" scale={s} disabled={!ready} onClick={openLobby} />}
       <IconButton id="inventory" label="Inventory" icon="images/hud/inventory.png" scale={s} disabled={!ready} onClick={openInventory} />
       <IconButton id="character" label="Edit character" icon="images/hud/character.png" scale={s} onClick={openPicker} />
       <IconButton id="settings" label="Settings" icon="images/hud/settings.png" scale={s} onClick={openSettings} />

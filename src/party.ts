@@ -3,8 +3,9 @@
 // out which phase we are in (our running party, or the hub) and, when that
 // changes, rebuilds the dungeon for it and puts the player on the entrance.
 
-import { engine, InputModifier, PointerLock } from '@dcl/sdk/ecs'
-import { loadDungeon } from './dungeon'
+import { engine, InputModifier, PointerLock, Transform } from '@dcl/sdk/ecs'
+import { getDungeonState, loadDungeon } from './dungeon'
+import { WAR_TABLE_TAG } from './dungeon/hub'
 import { setClientRun } from './dungeonEnemies'
 import { getLootState, getRunLoot, resetRunLoot } from './loot'
 import { isClientSynced, localAddress } from './multiplayer'
@@ -87,15 +88,18 @@ type LobbyState = {
   levelId: number
   /** One line for the lobby's header after a run: what the last fight opened, or took. */
   banner: string
+  /** A line over the hall for a few seconds: the welcome, or what the last run changed. */
+  notice: string
+  noticeFor: number
 }
 
-const state: LobbyState = { parties: [], open: false, silence: 0, progress: [], result: undefined, levelId: HUB_LEVEL.id, banner: '' }
+const state: LobbyState = { parties: [], open: false, silence: 0, progress: [], result: undefined, levelId: HUB_LEVEL.id, banner: '', notice: '', noticeFor: 0 }
 /** The phase the built dungeon is for, and the party's run counter it was built for. */
 let appliedPhase = HUB
 let appliedRun = -1
 let appliedState: PartyInfo['state'] | undefined = undefined
-/** Back from a fortress: the lobby reopens on its own once the hero is standing in the hall. */
-let reopenLobbyIn = 0
+/** How long a hall notice stays up. */
+const NOTICE_SECONDS = 9
 /** Coins when the run began, to show what the run paid. */
 let coinsAtStart = 0
 let initialized = false
@@ -241,18 +245,46 @@ export function resultsWait(): number {
   return Math.max(0, party.wait - state.silence)
 }
 
+// --- the hall ---------------------------------------------------------------------------
+
+/**
+ * Standing at the war table (within reach of the hall's centrepiece), which is
+ * where the in-world prompt to choose a dungeon appears. The HUD's Dungeons
+ * button works from anywhere in the hall.
+ */
+export function atWarTable(): boolean {
+  if (myPhase() !== HUB) return false
+  const table = getDungeonState().instance?.tagged[WAR_TABLE_TAG]
+  if (table === undefined) return false
+  const t = Transform.getOrNull(table)
+  const p = Transform.getOrNull(engine.PlayerEntity)
+  if (!t || !p) return false
+  const dx = p.position.x - t.position.x
+  const dz = p.position.z - t.position.z
+  return dx * dx + dz * dz <= WAR_TABLE_REACH * WAR_TABLE_REACH
+}
+const WAR_TABLE_REACH = 4.5
+
+/** Put a line over the hall for a while. */
+function notice(text: string) {
+  state.notice = text
+  state.noticeFor = text ? NOTICE_SECONDS : 0
+}
+
 // --- following the host ---------------------------------------------------------------
 
-/** The lobby opens by itself the first time the hero stands ready in the hall. */
+/** The hall says hello the first time the hero stands in it; the lobby waits to be asked. */
 let greeted = false
 let standingFor = 0
 const GREET_AFTER_SECONDS = 0.8
-/** Long enough for the hall to build and the hero to land on its entrance. */
-const REOPEN_AFTER_SECONDS = 1.2
 
 function update(dt: number) {
   const span = Number.isFinite(dt) && dt > 0 ? dt : 0
   state.silence += span
+  if (state.noticeFor > 0) {
+    state.noticeFor -= span
+    if (state.noticeFor <= 0) state.notice = ''
+  }
   const party = myParty()
   const phase = myPhase()
   if (!greeted && phase === HUB && !party) {
@@ -261,7 +293,7 @@ function update(dt: number) {
     standingFor = getPlayerCharacterState().visible ? standingFor + span : 0
     if (standingFor >= GREET_AFTER_SECONDS) {
       greeted = true
-      openLobby()
+      notice('Welcome to the Hall of Antrom. The war table, or the Dungeons button, leads to the fortresses.')
     }
   }
   if (phase !== appliedPhase) {
@@ -280,10 +312,6 @@ function update(dt: number) {
   }
   appliedState = party?.state
   if (state.open && phase !== HUB) closeLobby()
-  if (reopenLobbyIn > 0 && phase === HUB) {
-    reopenLobbyIn -= span
-    if (reopenLobbyIn <= 0) openLobby()
-  }
 }
 
 function enterRun(party: PartyInfo) {
@@ -291,7 +319,7 @@ function enterRun(party: PartyInfo) {
   appliedRun = party.run
   state.result = undefined
   state.banner = ''
-  reopenLobbyIn = 0
+  notice('')
   coinsAtStart = getLootState().coins
   resetRunLoot()
   const level = levelById(party.level)
@@ -314,11 +342,11 @@ function enterHub() {
   loadDungeon(HUB_LEVEL.seed, HUB_LEVEL.style)
   movePlayerToSpawn()
   if (fromRun) {
-    // Back from a fortress: say what it changed and put the lobby straight up,
-    // with the party's (already advanced) pick lit, so the next fight is one click.
+    // Back from a fortress: say what it changed, over the hall now and again in
+    // the lobby's header when it is next opened (with the party's advanced pick lit).
     state.banner = bannerFor(state.result)
+    notice(state.banner)
     state.result = undefined
-    reopenLobbyIn = REOPEN_AFTER_SECONDS
   }
   console.log('[DG] back in the hall')
 }

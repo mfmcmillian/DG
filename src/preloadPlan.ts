@@ -6,6 +6,7 @@
 import { CHARACTERS } from './characterPicker'
 import { fxSoundAssets, fxTextureAssets } from './combatFx'
 import { kitSrcsForStyle, StyleId, styleTexturesFor, STYLES } from './dungeon/config'
+import { hubFurnitureIds } from './dungeon/hub'
 import { enemyPreloadAssets } from './dungeonEnemies'
 import { EquipmentLoadout } from './equipmentCatalog'
 import { equipmentModelPaths } from './equipmentAvatar'
@@ -57,8 +58,10 @@ export function preloadCaption(group: Readonly<PreloadGroup> | undefined, verb =
 
 /** Kick off the whole plan at start-up. Groups download two at a time in this order. */
 export function planPreload() {
+  // The hall is authored: its own furniture (some from the castle and forge
+  // kits) rather than the style's generated prop lists.
   preloadGroup(PRELOAD_HUB, 'the hall', [
-    ...kitSrcsForStyle(STYLES.hall),
+    ...kitSrcsForStyle(STYLES.hall, hubFurnitureIds()),
     ...styleTexturesFor(STYLES.hall),
     'models/loot/coin.glb', 'models/loot/heart.glb',
     ...projectileAssets(),

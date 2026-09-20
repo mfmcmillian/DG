@@ -125,11 +125,11 @@ export const STYLES: Record<StyleId, DungeonStyle> = {
     floorTexture: FLOOR_TEXTURE
   },
   /**
-   * The hub between runs: a 60 m keep of three rooms, nobody to fight. Same
-   * kit as `open` so it reads as the same fortress, but lit like a home:
-   * windows on every wall, a torch on every edge, tables where the dungeons
-   * have cages and bones. The generator's room roles still come through; the
-   * "boss" room is the throne hall with the statue, "combat" the mess hall.
+   * The hub between runs: the Hall of Antrom, drawn by hand in ./hub.ts on
+   * this 60 m grid, nobody to fight. Same kit as `open` so it reads as the
+   * same fortress, but lit like a home: windows on every wall, a torch on
+   * every edge. The prop lists below are only a fallback should the hall ever
+   * be generated; the hub places its own furniture.
    */
   hall: {
     id: 'hall',
@@ -284,19 +284,27 @@ export function styleTexturesFor(style: DungeonStyle): string[] {
   return out
 }
 
-/** Kit GLTFs a style can place — not every piece in every realm's zip. */
-export function kitSrcsForStyle(style: DungeonStyle): string[] {
+/**
+ * Kit GLTFs a style can place — not every piece in every realm's zip. Pass
+ * `furniture` for an authored layout (the hall), whose pieces replace the
+ * style's generated prop lists.
+ */
+export function kitSrcsForStyle(style: DungeonStyle, furniture?: KitId[]): string[] {
   const ids = new Set<KitId>([
     ...style.walls,
     style.door,
     style.pillar,
     style.torch
   ])
-  if (style.bossCentrepiece) ids.add(style.bossCentrepiece)
   if (style.cutawayWall) ids.add(style.cutawayWall)
   if (style.trap) ids.add(style.trap)
-  for (const list of Object.values(style.props)) {
-    for (const id of list) ids.add(id)
+  if (furniture) {
+    for (const id of furniture) ids.add(id)
+  } else {
+    if (style.bossCentrepiece) ids.add(style.bossCentrepiece)
+    for (const list of Object.values(style.props)) {
+      for (const id of list) ids.add(id)
+    }
   }
   return [...ids].map((id) => KIT[id].src)
 }

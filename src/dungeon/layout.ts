@@ -20,7 +20,7 @@ export type Placement =
   /** One plane over a `w` x `d` cell rectangle (texture repeats per cell), centred on x/z. */
   | { kind: 'floor' | 'ceiling'; x: number; y: number; z: number; w: number; d: number }
   /** `lowId`: the cutaway wall this camera-facing wall becomes for the overhead camera. */
-  | { kind: 'kit'; id: KitId; x: number; y: number; z: number; yaw: number; collide: boolean; lowId?: KitId; only?: PieceMode }
+  | { kind: 'kit'; id: KitId; x: number; y: number; z: number; yaw: number; collide: boolean; lowId?: KitId; only?: PieceMode; tag?: string }
   /** Invisible box collider (door jambs and lintels). */
   | { kind: 'box'; x: number; y: number; z: number; yaw: number; sx: number; sy: number; sz: number; only?: PieceMode }
 
@@ -124,8 +124,8 @@ export function layoutDungeon(dungeon: Dungeon, style: DungeonStyle, options: La
     stats.triangles += tris
     return placements.length - 1
   }
-  const kit = (id: KitId, x: number, y: number, z: number, yaw: number, collide = true) =>
-    push({ kind: 'kit', id, x, y, z, yaw, collide }, KIT[id].tris)
+  const kit = (id: KitId, x: number, y: number, z: number, yaw: number, collide = true, tag?: string) =>
+    push({ kind: 'kit', id, x, y, z, yaw, collide, tag }, KIT[id].tris)
   // Styles with a cutaway wall get both variants laid out on camera-facing
   // edges; the builder shows one. Styles without never cut away.
   const cutaway = style.cutawayWall !== undefined
@@ -226,31 +226,60 @@ export function layoutDungeon(dungeon: Dungeon, style: DungeonStyle, options: La
     }
   }
 
+  for (const f of dungeon.furniture ?? []) {
+    const piece: KitPiece = KIT[f.id]
+    const c = cellCenter(style, f.x, f.y)
+    const collide = f.collide ?? piece.collide !== false
+    if (f.side) {
+      placeAgainstWall(style, f.id, c, f.side, f.yaw ?? 0, collide, kit, f.tag)
+    } else {
+      push({ kind: 'kit', id: f.id, x: c.x, y: 0, z: c.z, yaw: f.yaw ?? 0, collide, tag: f.tag }, piece.tris)
+    }
+  }
+
   return { placements, stats, torchIndices, spawns }
+}
+
+/**
+ * Stand (or hang) a piece against the `side` wall of the cell centred at `c`:
+ * wall-hung pieces at their anchor height, kept under the wall top; the rest
+ * pushed back to the wall with a hand's breadth to spare.
+ */
+function placeAgainstWall(
+  style: DungeonStyle,
+  id: KitId,
+  c: { x: number; z: number },
+  side: Side,
+  yawOffset: number,
+  collide: boolean,
+  kit: (id: KitId, x: number, y: number, z: number, yaw: number, collide?: boolean, tag?: string) => number,
+  tag?: string
+) {
+  const T = style.tile
+  const H = style.wallHeight
+  const piece: KitPiece = KIT[id]
+  const inward = sideInward(side)
+  const yaw = sideYaw(side) + yawOffset
+  if (piece.wall) {
+    const inset = T / 2 - piece.wall.inset
+    kit(id, c.x - inward.x * inset, Math.min(H - 0.15, piece.wall.height), c.z - inward.z * inset, yaw, false, tag)
+  } else {
+    const gap = T / 2 - piece.size[2] / 2 - 0.12
+    kit(id, c.x - inward.x * gap, 0, c.z - inward.z * gap, yaw, collide, tag)
+  }
 }
 
 function decorateRoom(
   style: DungeonStyle,
   room: Room,
-  kit: (id: KitId, x: number, y: number, z: number, yaw: number, collide?: boolean) => number
+  kit: (id: KitId, x: number, y: number, z: number, yaw: number, collide?: boolean, tag?: string) => number
 ) {
-  const T = style.tile
-  const H = style.wallHeight
   const list = style.props[room.kind]
   room.props.forEach(([px, py, side], i) => {
     const id = list[(i + Math.floor(tileHash(px, py, 7) * list.length)) % list.length]
     const piece: KitPiece = KIT[id]
-    const c = cellCenter(style, px, py)
-    const inward = sideInward(side)
-    const yaw = sideYaw(side) + (piece.wall ? 0 : (tileHash(px, py, 11) - 0.5) * 20)
-    if (piece.wall) {
-      // Hung on the wall: its anchor at the piece's height, kept under the wall top.
-      const inset = T / 2 - piece.wall.inset
-      kit(id, c.x - inward.x * inset, Math.min(H - 0.15, piece.wall.height), c.z - inward.z * inset, yaw, false)
-    } else {
-      // Push the prop back against the wall it was assigned to.
-      const gap = T / 2 - piece.size[2] / 2 - 0.12
-      kit(id, c.x - inward.x * gap, 0, c.z - inward.z * gap, yaw, piece.collide !== false)
-    }
+    // Floor props sit a little askew; hung pieces stay square to the wall.
+    const skew = piece.wall ? 0 : (tileHash(px, py, 11) - 0.5) * 20
+    placeAgainstWall(style, id, cellCenter(style, px, py), side, skew, piece.collide !== false, kit)
   })
 }
