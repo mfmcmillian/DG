@@ -5,6 +5,7 @@
 import { engine, PlayerIdentityData } from '@dcl/sdk/ecs'
 import { CHARACTERS } from './characterPicker'
 import { heroTagText } from './heroNameTag'
+import { heroLevel } from './heroXp'
 import { heroes, heroOwner, localAddress } from './multiplayer'
 import { getLobbyState } from './party'
 import { HUB, partyOf } from './partyLookup'
@@ -13,7 +14,7 @@ import { LEVELS } from './shared/levels'
 export type Presence = {
   id: string
   name: string
-  /** Character name ("Scout"); empty for a player still at the title. */
+  /** Character name and level ("Scout 7"); empty for a player still at the title. */
   cls: string
   /** "in the hall", "party · The Vaults", "in The Deep Keep", "at the results", "at the gate". */
   where: string
@@ -39,7 +40,8 @@ export function presence(): Presence[] {
   for (const [entity, hero] of heroes()) {
     const id = heroOwner(entity, hero)
     if (seen.has(id)) continue
-    const cls = CHARACTERS.find((c) => c.id === hero.cid)?.name ?? ''
+    const name = CHARACTERS.find((c) => c.id === hero.cid)?.name ?? ''
+    const cls = name ? `${name} ${heroLevel(id, hero.cid)}` : ''
     seen.set(id, { id, name: heroTagText(id), cls, me: id === me, ...whereabouts(id) })
   }
   // Players in the scene without a hero body yet: on the title or making a champion.

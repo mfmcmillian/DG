@@ -148,10 +148,18 @@ export const Messages = {
     coins: Schemas.Int,
     unlocks: Schemas.Array(Schemas.String),
     prefs: Schemas.String,
-    progress: Schemas.Array(Schemas.Int)
+    progress: Schemas.Array(Schemas.Int),
+    /** Experience per champion as JSON ({ cid: xp }); the server owns and awards it. */
+    xp: Schemas.String
   }),
   /** Server -> all: a hero's level progress changed (a run was cleared). */
-  progress: Schemas.Map({ id: Schemas.String, progress: Schemas.Array(Schemas.Int) })
+  progress: Schemas.Map({ id: Schemas.String, progress: Schemas.Array(Schemas.Int) }),
+  /**
+   * Server -> all: a champion's experience. `gained` is what this message
+   * added (0 when only telling the room where someone stands), `why` is
+   * 'kill', 'clear' or ''.
+   */
+  xp: Schemas.Map({ id: Schemas.String, cid: Schemas.String, xp: Schemas.Int, gained: Schemas.Int, why: Schemas.String })
 }
 
 /** Register before `main()` so both the headless server and every client share one room. */

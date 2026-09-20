@@ -7,9 +7,9 @@ import { COURTYARD, isInCourtyard } from './courtyard'
 import { EquipmentLoadout } from './equipmentCatalog'
 import {
   AttackContext, createRoamingCombat, healRoamingCharacter, hitRoamingCharacter, isRoamingBlocking, isRoamingInvulnerable,
-  isRoamingRooted, resetRoamingCombat, restoreRoamingHealth, RoamingCombatHooks, setRoamingClass, setRoamingHealth, updateRoamingCombat
+  isRoamingRooted, maxStamina, resetRoamingCombat, restoreRoamingHealth, RoamingCombatHooks, setRoamingClass, setRoamingHealth, updateRoamingCombat
 } from './roamingCombat'
-import { CombatPose, HeroAttackMotion, isRangedAttack, MAX_COMBAT_HEALTH, STAMINA } from './combatActions'
+import { CombatPose, HeroAttackMotion, isRangedAttack, MAX_COMBAT_HEALTH } from './combatActions'
 import { getCommittedAppearance } from './appearance'
 import {
   destroyEquipmentAvatar, EquipmentAvatarOptions, EquipmentLoading, EquipmentMotion,
@@ -101,7 +101,7 @@ export function getPlayerWeapon(): string {
 
 export function getPlayerVitals(): PlayerVitals {
   return {
-    health: roamingCombat.health, maxHealth: MAX_COMBAT_HEALTH, stamina: roamingCombat.stamina, maxStamina: STAMINA.max,
+    health: roamingCombat.health, maxHealth: MAX_COMBAT_HEALTH, stamina: roamingCombat.stamina, maxStamina: maxStamina(),
     comboStep: roamingCombat.comboStep, dodging: !!roamingCombat.dodge, blocking: roamingCombat.blocking,
     exhausted: exhaustedNotice > 0
   }

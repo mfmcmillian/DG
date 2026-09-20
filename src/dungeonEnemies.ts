@@ -49,6 +49,7 @@ import {
   DifficultyDefinition, difficultyById, HUB_LEVEL, LevelDefinition, levelById
 } from './shared/levels'
 import { HUB, partyOf } from './partyLookup'
+import { heroBonusesFor } from './heroXp'
 import {
   createDecal, Decal, destroyDecal, fxDeathPuff, fxGlitter, fxImpact, fxNumber, fxSlam, fxSlash, fxSound, FxSound, fxWoodHit, updateDecal
 } from './combatFx'
@@ -975,6 +976,7 @@ function trainingIndex(i: number) {
 function strikeTraining(attacker: CombatPose, t: TrainingTarget, motion: HeroAttackMotion, context: { finisher: boolean }, at?: Vector3) {
   const heavy = isHeavyMotion(motion) || context.finisher
   const hit = resolveCombatHit(motion, false, context.finisher, localWeapon())
+  hit.damage = withMight(hit.damage, localMight())
   const contact = at ? Vector3.clone(at) : Vector3.create(
     (attacker.position.x + t.position.x) / 2, t.position.y + 1.15 * t.scale, (attacker.position.z + t.position.z) / 2)
   // Wood and straw, not flesh: chips and dust, a knock instead of a wet hit.
@@ -1111,7 +1113,7 @@ function hitEnemies(motion: HeroAttackMotion, context: AttackContext) {
     return
   }
   presentPlayerStrike(attacker, best, motion, context)
-  if (isHost()) applyPlayerHit(attacker, best, motion, { finisher: context.finisher, weapon: localWeapon() })
+  if (isHost()) applyPlayerHit(attacker, best, motion, { finisher: context.finisher, weapon: localWeapon(), might: localMight() })
   else publishHitEnemy(bestIndex, motion, context.finisher)
 }
 
@@ -1161,7 +1163,7 @@ function shootEnemies(attacker: CombatPose, motion: HeroAttackMotion, context: A
       const dz = e.position.z - shooter.position.z
       const from: CombatPose = { position: shooter.position, facing: dx * dx + dz * dz > 0.0001 ? Math.atan2(dx, dz) : shooter.facing }
       presentPlayerStrike(from, e, motion, context, at)
-      if (isHost()) applyPlayerHit(from, e, motion, { finisher: context.finisher, weapon: localWeapon() })
+      if (isHost()) applyPlayerHit(from, e, motion, { finisher: context.finisher, weapon: localWeapon(), might: localMight() })
       else publishHitEnemy(t.index, motion, context.finisher)
     }
   })
@@ -1186,14 +1188,25 @@ function applyRemoteHit(id: string, index: number, motion: string, finisher: boo
   if (Math.abs(attacker.position.y - e.position.y) > COMBAT_RULES.maximumVerticalReach + (shot ? 2 : 0.5)) return
   if (combatDistance(attacker, e) > attackRange(attack) + 1.5) return
   // Only the class that owns the motion may claim it: a blade cannot report a volley.
-  if (!heroClassMotionAllowed(id, attack)) return
+  const cid = heroCharacters((owner) => owner === id)[0]
+  if (!heroClassMotionAllowed(cid, attack)) return
   // The weapon is read off the hero's synced body: the client never states its own damage.
-  applyPlayerHit(attacker, e, attack, { finisher, weapon: weaponStats(heroWeapon(id)) })
+  applyPlayerHit(attacker, e, attack, { finisher, weapon: weaponStats(heroWeapon(id)), might: heroBonusesFor(id, cid ?? '').might })
 }
 
 /** The local hero's weapon, for the numbers it shows and the hits it hosts. */
 function localWeapon(): WeaponModifiers {
   return weaponStats(getPlayerWeapon())
+}
+
+/** The local hero's level bonus on damage dealt (src/heroXp.ts). */
+function localMight(): number {
+  return heroBonusesFor(localAddress(), getPlayerCharacterState().characterId ?? '').might
+}
+
+/** A blow's damage after the hero's level; a blow that landed never rounds to nothing. */
+function withMight(damage: number, might: number): number {
+  return damage > 0 ? Math.max(1, Math.round(damage * might)) : 0
 }
 
 function enemySnaps(): EnemySnap[] {
@@ -1202,15 +1215,14 @@ function enemySnaps(): EnemySnap[] {
   }))
 }
 
-/** Whether the hero's class fights with this motion (the host trusts no client's word for it). */
-function heroClassMotionAllowed(id: string, motion: HeroAttackMotion): boolean {
-  const cid = heroCharacters((owner) => owner === id)[0]
+/** Whether the champion's class fights with this motion (the host trusts no client's word for it). */
+function heroClassMotionAllowed(cid: string | undefined, motion: HeroAttackMotion): boolean {
   const cls = heroClassOf(cid)
   return cls.light.includes(motion) || cls.heavy === motion || cls.pointBlank?.motion === motion
 }
 
 function applyPlayerHit(
-  attacker: CombatPose, e: Enemy, motion: HeroAttackMotion, context: { finisher: boolean; weapon: WeaponModifiers }
+  attacker: CombatPose, e: Enemy, motion: HeroAttackMotion, context: { finisher: boolean; weapon: WeaponModifiers; might: number }
 ) {
   // A blow from inside the territory starts the fight. One from beyond the leash (an
   // arrow from the next room) only provokes: the enemy answers at its edge, and the
@@ -1225,7 +1237,8 @@ function applyPlayerHit(
   const guarded = e.blocking && facesCombatant(e, attacker, 0.1)
   const hit = resolveCombatHit(motion, guarded, context.finisher, context.weapon)
   const armored = e.hyperArmor && !context.finisher && !heavy
-  const damage = armored ? Math.max(1, Math.round(hit.damage * 0.55)) : hit.damage
+  const dealt = withMight(hit.damage, context.might)
+  const damage = armored ? Math.max(1, Math.round(dealt * 0.55)) : dealt
   e.health = Math.max(0, e.health - damage)
   const freeze = heavy || context.finisher ? 0.09 : 0.06
   e.hitStop = freeze
@@ -1259,6 +1272,7 @@ function presentPlayerStrike(
   const heavy = isHeavyMotion(motion)
   const guarded = e.blocking && facesCombatant(e, attacker, 0.1)
   const hit = resolveCombatHit(motion, guarded, context.finisher, localWeapon())
+  hit.damage = withMight(hit.damage, localMight())
   // A sword meets the body between the two; a projectile where it landed.
   const contact = at ? Vector3.clone(at) : Vector3.create(
     (attacker.position.x + e.position.x) / 2, e.position.y + 1.15 * e.archetype.scale, (attacker.position.z + e.position.z) / 2)

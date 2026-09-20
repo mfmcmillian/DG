@@ -21,6 +21,8 @@ import { devToolsOn } from './devAccess'
 import { playerDisplayName } from './heroNameTag'
 import { presence } from './presence'
 import { trainingActive, trainingTally } from './trainingDummies'
+import { localXp } from './heroXp'
+import { bonusLines, MAX_LEVEL } from './shared/progression'
 import { formatTime, heroLabel, partyTitle } from './lobbyUi'
 import { DIFFICULTIES, LEVELS, MAX_PARTY, nextLevel, realmOfLevel } from './shared/levels'
 
@@ -63,11 +65,26 @@ function hudLayout() {
   return { width, height, scale, left, right, bottom, vitalsTop }
 }
 
-/** "Ada · Vanguard": the display name (no tag over our own head) with the class dimmed after it. */
+/** "Ada · Vanguard 7": the display name (no tag over our own head) with the class and level dimmed after it. */
 function heroTitle(): string {
   const name = playerDisplayName(localAddress())
-  const cls = getEquippedCharacter().name
+  const cls = `${getEquippedCharacter().name} ${localXp().level}`
   return name ? `${name}  <color=#a3b3c2>·  ${cls}</color>` : cls
+}
+
+/** The thin gold bar under the title: experience into the level, and the step to the next. */
+function XpBar({ scale: s }: { scale: number }) {
+  const x = localXp()
+  const capped = x.span <= 0
+  const ratio = capped ? 1 : Math.max(0, Math.min(1, x.into / x.span))
+  const caption = capped ? `LV ${x.level}  ·  MAX` : `LV ${x.level}  ·  ${x.into} / ${x.span}`
+  return <UiEntity uiTransform={{ width: '100%', height: 12 * s, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', flexShrink: 0, pointerFilter: 'none' }}>
+    <Label value={caption} color={muted} font="sans-serif" fontSize={9 * s} textAlign="middle-right" textWrap="nowrap"
+      uiTransform={{ width: 110 * s, height: 12 * s, margin: { right: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+    <UiEntity uiTransform={{ width: 108 * s, height: 3 * s, borderRadius: 1.5 * s, flexShrink: 0, flexDirection: 'row', pointerFilter: 'none' }} uiBackground={{ color: track }}>
+      <UiEntity uiTransform={{ width: `${ratio * 100}%`, height: '100%', pointerFilter: 'none' }} uiBackground={{ color: gold }} />
+    </UiEntity>
+  </UiEntity>
 }
 
 /** Most rows the hall roster shows before folding the rest into "+n more". */
@@ -119,6 +136,7 @@ function PlayerVitals({ right, top, scale: s }: { right: number; top: number; sc
         textAlign="middle-right" textWrap="nowrap"
         uiTransform={{ width: 168 * s, height: 24 * s, flexShrink: 0, pointerFilter: 'none' }} />
     </UiEntity>
+    <XpBar scale={s} />
     {hall ? <HallRoster scale={s} /> : <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', flexShrink: 0, pointerFilter: 'none' }}>
     <UiEntity uiTransform={{ width: '100%', height: 18 * s, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', flexShrink: 0, pointerFilter: 'none' }}>
       <UiEntity uiTransform={{ width: 184 * s, height: 8 * s, padding: s, borderRadius: 2 * s, flexShrink: 0, flexDirection: 'row', justifyContent: 'flex-end', pointerFilter: 'none' }} uiBackground={{ color: track }}>
@@ -323,7 +341,7 @@ function ResultsOverlay({ width, height, scale: s }: { width: number; height: nu
       uiTransform={{ width: '100%', height: 40 * s, flexShrink: 0, pointerFilter: 'none' }} />
     <Label value={`${level?.name ?? ''}  ·  ${diff?.name ?? ''}`} color={white} font="sans-serif" fontSize={15 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 26 * s, margin: { top: 4 * s }, flexShrink: 0, pointerFilter: 'none' }} />
-    <Label value={`Time ${formatTime(result.time)}   ·   Slain ${result.slain} / ${result.total}   ·   Coins +${Math.max(0, result.coins)}`}
+    <Label value={`Time ${formatTime(result.time)}   ·   Slain ${result.slain} / ${result.total}   ·   Coins +${Math.max(0, result.coins)}   ·   XP +${localXp().runGain}`}
       color={muted} font="sans-serif" fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 24 * s, margin: { top: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />
     <FoundThisRun found={result.found} salvaged={result.salvaged} width={cardWidth - 48 * s} scale={s} />
@@ -415,6 +433,24 @@ function TrainingTally({ width, top, scale: s }: { width: number; top: number; s
   </UiEntity>
 }
 
+/** "LEVEL 7": the local hero climbed; what the level brings, then it fades. */
+function LevelUpNotice({ width, top, scale: s }: { width: number; top: number; scale: number }) {
+  const x = localXp()
+  if (!x.levelUp || getLobbyState().open) return null
+  const alpha = Math.min(1, x.levelUpFor / 0.4, Math.max(0, (6 - x.levelUpFor) / 1.2))
+  const boxWidth = Math.min(420 * s, width * 0.6)
+  const cid = getEquippedCharacter().id
+  const line = bonusLines(cid).join('   ·   ')
+  return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - boxWidth) / 2, top },
+    width: boxWidth, flexDirection: 'column', alignItems: 'center', padding: { top: 8 * s, bottom: 10 * s }, borderRadius: 8 * s, pointerFilter: 'none' }}
+    uiBackground={{ color: Color4.create(panel.r, panel.g, panel.b, panel.a * alpha) }}>
+    <Label value={`LEVEL ${x.levelUp}${x.levelUp >= MAX_LEVEL ? '  ·  THE SUMMIT' : ''}`} color={Color4.create(gold.r, gold.g, gold.b, alpha)} font="serif" fontSize={26 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 32 * s, pointerFilter: 'none' }} />
+    <Label value={`${getEquippedCharacter().name}  ·  ${line}`} color={Color4.create(white.r, white.g, white.b, alpha)} font="sans-serif" fontSize={11 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 16 * s, pointerFilter: 'none' }} />
+  </UiEntity>
+}
+
 export function WorldHudUi() {
   const { width, height, scale: s, right, bottom, vitalsTop } = hudLayout()
   const created = getPickerState().hasCreatedCharacter
@@ -428,6 +464,7 @@ export function WorldHudUi() {
     {ready && <HubPrompt width={width} bottom={bottom} scale={s} />}
     {ready && <HubNotice width={width} top={vitalsTop - 60 * s} scale={s} />}
     {ready && <TrainingTally width={width} top={vitalsTop - 8 * s} scale={s} />}
+    {ready && <LevelUpNotice width={width} top={vitalsTop + 60 * s} scale={s} />}
     {ready && <BossBar width={width} scale={s} />}
     {ready && <LootToasts right={right} bottom={bottom} scale={s} />}
     {ready && devToolsOn() && <DungeonDevPanel />}

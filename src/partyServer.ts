@@ -16,12 +16,14 @@ import { Storage } from '@dcl/sdk/server'
 import { MAX_COMBAT_HEALTH } from './combatActions'
 import { createRunSim, destroyRunSim, runStatus } from './dungeonEnemies'
 import { healHero, heroHealth, reviveHero } from './heroVitals'
-import { isHeadless, onHostStart, setMultiplayerHandlers } from './multiplayer'
+import { addXp, setXpRecord, xpRecordOf } from './heroXp'
+import { heroCharacters, isHeadless, onHostStart, setMultiplayerHandlers } from './multiplayer'
 import { onNet, sendNet } from './net'
 import { HUB, setPartyLookup } from './partyLookup'
 import {
-  DIFFICULTIES, LevelDefinition, LEVELS, levelUnlocked, MAX_PARTY, nextLevel, previousLevel
+  DIFFICULTIES, difficultyById, LevelDefinition, LEVELS, levelUnlocked, MAX_PARTY, nextLevel, previousLevel
 } from './shared/levels'
+import { clearXp, killXp, XpRecord } from './shared/progression'
 import { prefsHaveDevTools, prefsOpenAll } from './shared/prefs'
 
 type PartyState = 'open' | 'running' | 'done'
@@ -56,6 +58,11 @@ const BROADCAST_SECONDS = 3
 const parties = new Map<string, Party>()
 const heroes = new Map<string, SavedHero>()
 const progress = new Map<string, number[]>()
+/** Wallets whose experience is loaded into src/heroXp.ts; those with unsaved gains. */
+const xpLoaded = new Set<string>()
+const xpDirty = new Set<string>()
+const XP_SAVE_SECONDS = 8
+let xpSaveAge = 0
 let elapsed = 0
 let broadcastAge = 0
 let counter = 0
@@ -123,6 +130,41 @@ async function progressOf(id: string): Promise<number[]> {
   return p
 }
 
+async function xpOf(id: string): Promise<XpRecord> {
+  if (!xpLoaded.has(id)) {
+    xpLoaded.add(id)
+    setXpRecord(id, (await fetch<XpRecord>(id, 'xp')) ?? {})
+  }
+  return xpRecordOf(id)
+}
+
+/** The champion a wallet is playing right now: the synced body first, the save as a fallback. */
+function championOf(id: string): string {
+  return heroCharacters((owner) => owner === id)[0] ?? heroes.get(id)?.cid ?? ''
+}
+
+/** Award experience to whichever champion the wallet is playing and tell the room. */
+function awardXp(id: string, amount: number, why: 'kill' | 'clear') {
+  if (amount <= 0 || !xpLoaded.has(id)) return
+  const cid = championOf(id)
+  if (!cid) return
+  const xp = addXp(id, cid, amount)
+  xpDirty.add(id)
+  sendNet('xp', { id, cid, xp, gained: Math.round(amount), why })
+}
+
+/** Where a wallet's champions stand, told to `to` (or the whole room). */
+function tellXp(id: string, to?: string[]) {
+  for (const [cid, xp] of Object.entries(xpRecordOf(id))) {
+    sendNet('xp', { id, cid, xp, gained: 0, why: '' }, to ? { to } : undefined)
+  }
+}
+
+function saveDirtyXp() {
+  for (const id of xpDirty) void persist(id, 'xp', xpRecordOf(id))
+  xpDirty.clear()
+}
+
 async function answerLoad(from: string) {
   const id = from.toLowerCase()
   let hero = heroes.get(id)
@@ -131,6 +173,7 @@ async function answerLoad(from: string) {
     if (hero) heroes.set(id, hero)
   }
   const p = await progressOf(id)
+  const xp = await xpOf(id)
   sendNet('savedHero', {
     id,
     found: !!hero,
@@ -143,8 +186,12 @@ async function answerLoad(from: string) {
     coins: hero?.coins ?? 0,
     unlocks: hero?.unlocks ?? [],
     prefs: hero?.prefs ?? '',
-    progress: p
+    progress: p,
+    xp: JSON.stringify(xp)
   }, { to: [from] })
+  // The room learns this wallet's levels; the newcomer learns everyone else's.
+  tellXp(id)
+  for (const other of xpLoaded) if (other !== id) tellXp(other, [from])
   console.log(`[Server] hero load for ${id}: ${hero ? `found (${hero.cid})` : 'nothing saved'}`)
 }
 
@@ -327,19 +374,41 @@ function finishRun(party: Party, won: boolean) {
   // Going deeper is a fresh pick for every member; the leader's click counts as theirs.
   party.ready = new Set()
   console.log(`[Server] party ${party.id} ${won ? 'cleared' : 'fell in'} level ${party.level + 1} after ${(elapsed - party.started).toFixed(0)}s`)
-  if (won) for (const member of party.members) void recordClear(member, party.level, party.diff)
+  if (won) {
+    const level = LEVELS[party.level]
+    const diff = difficultyById(party.diff)
+    for (const member of party.members) {
+      // A first clear at this difficulty pays double; the clear itself is recorded after.
+      const first = (progress.get(member)?.[party.level] ?? 0) < party.diff + 1
+      if (level) awardXp(member, clearXp(level, diff, first), 'clear')
+      void recordClear(member, party.level, party.diff)
+    }
+  }
+  saveDirtyXp()
   broadcast()
 }
 
 function update(deltaTime: number) {
   const dt = Number.isFinite(deltaTime) && deltaTime > 0 ? deltaTime : 0
   elapsed += dt
+  xpSaveAge += dt
+  if (xpSaveAge >= XP_SAVE_SECONDS && xpDirty.size) {
+    xpSaveAge = 0
+    saveDirtyXp()
+  }
   let changed = false
   for (const party of parties.values()) {
     if (party.state === 'running') {
       const status = runStatus(party.id)
       if (!status) continue
       if (status.slain !== party.slain || status.total !== party.total) {
+        // Every member earns each kill, whoever landed it: tanks and archers alike.
+        const level = LEVELS[party.level]
+        const fresh = status.slain - party.slain
+        if (level && fresh > 0) {
+          const each = killXp(level, difficultyById(party.diff)) * fresh
+          for (const member of party.members) awardXp(member, each, 'kill')
+        }
         party.slain = status.slain
         party.total = status.total
         changed = true

@@ -70,8 +70,9 @@ export function heroTagText(address: string): string {
   return address.length > 10 ? `${address.slice(0, 6)}…${address.slice(-4)}` : address
 }
 
-export function updateHeroNameTag(tag: Entity, address: string, visible: boolean) {
-  const name = heroTagText(address)
+export function updateHeroNameTag(tag: Entity, address: string, visible: boolean, level = 0) {
+  const base = heroTagText(address)
+  const name = base && level > 1 ? `${base}  ${level}` : base
   const show = visible && !!name
   const shape = TextShape.getMutable(tag)
   if (shape.text !== name) shape.text = name

@@ -9,6 +9,17 @@ import { CombatControlAction, createCombatControls, readCombatControls, resetCom
 import { getEquipmentJumpMotion, setEquipmentMotion } from './equipmentAvatar'
 import { HERO_CLASSES, heroClassOf, HeroClassDefinition } from './heroClasses'
 
+/** Stamina the hero's level adds to the bar (src/heroXp.ts keeps it current). */
+let staminaBonus = 0
+
+export function setStaminaBonus(amount: number) {
+  staminaBonus = Math.max(0, Math.round(amount))
+}
+
+export function maxStamina(): number {
+  return STAMINA.max + staminaBonus
+}
+
 type NativeJump = {
   motion: JumpMotion
   phase: 'air' | 'land'
@@ -85,7 +96,7 @@ export function createRoamingCombat() {
     /** The move set: what light/heavy/guard come out as (src/heroClasses.ts). */
     cls: HERO_CLASSES.blade as HeroClassDefinition,
     health: MAX_COMBAT_HEALTH, stagger: 0,
-    stamina: STAMINA.max as number, staminaDelay: 0,
+    stamina: maxStamina(), staminaDelay: 0,
     elapsed: 0, recovery: 0,
     /** Index of the next light in the string (0..2); the third is the finisher. */
     comboStep: 0, comboWindow: 0,
@@ -128,7 +139,7 @@ export function resetRoamingCombat(combat: RoamingCombat) {
 export function restoreRoamingHealth(combat: RoamingCombat) {
   resetRoamingCombat(combat)
   combat.health = MAX_COMBAT_HEALTH
-  combat.stamina = STAMINA.max
+  combat.stamina = maxStamina()
   combat.staminaDelay = 0
 }
 
@@ -209,8 +220,8 @@ export function updateRoamingCombat(
 
   // Stamina regenerates after a short pause following any spend.
   combat.staminaDelay = Math.max(0, combat.staminaDelay - dt)
-  if (combat.staminaDelay === 0 && combat.stamina < STAMINA.max) {
-    combat.stamina = Math.min(STAMINA.max, combat.stamina + STAMINA.regenPerSecond * dt)
+  if (combat.staminaDelay === 0 && combat.stamina < maxStamina()) {
+    combat.stamina = Math.min(maxStamina(), combat.stamina + STAMINA.regenPerSecond * dt)
   }
 
   const { action, blockHeld, dodgePressed } = readCombatControls(combat.controls, dt)

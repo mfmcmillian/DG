@@ -27,6 +27,7 @@ import { GAME_VERSION } from './version'
 import { installNetDebug } from './netDebug'
 import { initializeParty } from './party'
 import { initializeHeroSave } from './heroSave'
+import { initializeHeroXp } from './heroXp'
 import { initializePartyServer } from './partyServer'
 import { HUB_LEVEL } from './shared/levels'
 export async function main() {
@@ -83,6 +84,7 @@ function initClient() {
   // hosts the party registry itself (see partyServer's onHostStart binding).
   initializeParty()
   initializeHeroSave()
+  initializeHeroXp()
   initializePartyServer()
   setupCharacterPickerUi()
   openTitle()

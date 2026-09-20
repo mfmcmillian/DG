@@ -14,6 +14,7 @@ import {
   remoteHeroes
 } from './multiplayer'
 import { createHeroNameTag, destroyHeroNameTag, updateHeroNameTag } from './heroNameTag'
+import { heroLevel } from './heroXp'
 import { partyOf } from './partyLookup'
 import { HeroView } from './shared/heroBody'
 
@@ -272,7 +273,7 @@ function updateRemotePlayers(dt: number) {
     // party's run share these 96 m with us but are in their own phase: unseen.
     const shown = loaded && !!reported && replicaByAddress(id) === replica && partyOf(id) === myPhase
     setEquipmentVisible(replica.root, shown)
-    updateHeroNameTag(replica.nameTag, id, shown)
+    updateHeroNameTag(replica.nameTag, id, shown, heroLevel(id, hero.cid))
     // The anchor turns with the native avatar, which the renderer interpolates
     // smoothly; the body normally adds nothing, so a turn shows the instant the
     // avatar makes it. Only while the owner is locked on does the body take the
