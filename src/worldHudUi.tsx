@@ -16,14 +16,20 @@ import {
   descend, getLobbyState, inRun, leaveParty, myParty, myPhase, openLobby, resultsWait, retryRun, returnToHall, setReady
 } from './party'
 import { HUB } from './partyLookup'
-import { getSettings, openSettings } from './settings'
+import { openSettings } from './settings'
+import { devToolsOn } from './devAccess'
 import { playerDisplayName } from './heroNameTag'
 import { formatTime, heroLabel, partyTitle } from './lobbyUi'
 import { DIFFICULTIES, LEVELS, MAX_PARTY, nextLevel, realmOfLevel } from './shared/levels'
 
-/** The handshake log is for the wait; once the fight runs (server or solo) it goes. */
-function showNetLog() {
+/** Still shaking hands with the party server (solo play never waits). */
+function joining() {
   return !isSoloMode() && !isClientSynced()
+}
+
+/** The handshake log and the network readout are for us, with the developer panel on. */
+function showNetLog() {
+  return devToolsOn() && joining()
 }
 import { DungeonDevPanel } from './dungeon/ui'
 
@@ -152,6 +158,8 @@ function StatusNotice({ width, bottom, scale: s }: { width: number; bottom: numb
     retry = retryWorldRival
   } else if (rival.visible && rival.phase === 'defeat') {
     message = `Recovering in ${Math.ceil(rival.respawnSeconds)}s`
+  } else if (joining()) {
+    message = 'Joining the realm…'
   }
   // Routine combat, telegraphs, approach prompts and respawn counters stay off the HUD.
   if (!message) return null
@@ -332,9 +340,9 @@ export function WorldHudUi() {
     {ready && <HubPrompt width={width} bottom={bottom} scale={s} />}
     {ready && <BossBar width={width} scale={s} />}
     {ready && <LootToasts right={right} bottom={bottom} scale={s} />}
-    {ready && getSettings().devTools && <DungeonDevPanel />}
+    {ready && devToolsOn() && <DungeonDevPanel />}
     {created && <StatusNotice width={width} bottom={bottom} scale={s} />}
-    {created && <Label value={`${netStatus()} | ${netDebugSummary()}`} color={muted} font="sans-serif" fontSize={10 * s} textAlign="bottom-left" textWrap="nowrap"
+    {created && devToolsOn() && <Label value={`${netStatus()} | ${netDebugSummary()}`} color={muted} font="sans-serif" fontSize={10 * s} textAlign="bottom-left" textWrap="nowrap"
       uiTransform={{ positionType: 'absolute', position: { left: 12 * s, bottom: 4 * s }, width: width - 140 * s, height: 16 * s, pointerFilter: 'none' }} />}
     {created && showNetLog() && <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 12 * s, top: height * 0.32 }, width: 520 * s,
       flexDirection: 'column', padding: 6 * s, pointerFilter: 'none' }} uiBackground={{ color: Color4.create(0, 0, 0, 0.55) }}>

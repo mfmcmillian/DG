@@ -6,18 +6,25 @@
     "0xfe2d424af0df49bb3316cb2e9f574b0d09cf98ad"
   ],
   "display": {
-    "title": "Sidekick Demo — Dark Fortress Dungeon",
-    "description": "A procedurally generated Dark Fortress dungeon with roaming enemies and a boss, explored with a top-down crawler camera.",
+    "title": "Kingdom of Antrom",
+    "description": "Co-op dungeon crawler. Pick a hero — Vanguard, Berserker, Scout or Striker — and fight down through the Dark Fortress, the Fallen Crown and the Dwarven Forge with your party. Every run is a new layout; every boss drops a weapon to keep.",
     "navmapThumbnail": "images/scene-thumbnail.png",
     "favicon": "favicon_asset"
   },
   "owner": "",
   "contact": {
-    "name": "SDK",
+    "name": "Kingdom of Antrom",
     "email": ""
   },
   "main": "bin/index.js",
-  "tags": [],
+  "tags": [
+    "game",
+    "dungeon",
+    "co-op",
+    "rpg",
+    "fantasy",
+    "multiplayer"
+  ],
   "scene": {
     "base": "-17,123",
     "parcels": [

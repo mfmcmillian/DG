@@ -7,6 +7,7 @@ import { Color4 } from '@dcl/sdk/math'
 import { menuColors, MenuAction as Action } from './menuUi'
 import { CAMERA_OPTIONS, closeSettings, getSettings, setCameraPreference, setDevTools } from './settings'
 import { getUnlockedItems, relockAllWeapons, unlockAllWeapons } from './inventory'
+import { isDeveloper } from './devAccess'
 import { flushHeroSave } from './heroSave'
 import { cycleLobbyPickLevel, getLobbyPick } from './party'
 import { LEVELS } from './shared/levels'
@@ -40,8 +41,11 @@ function Heading({ title, scale: s }: { title: string; scale: number }) {
 
 export function SettingsUi() {
   const settings = getSettings()
-  // The armoury and open-dungeons rows only show with the developer panel on.
-  const { scale: s, width, height, x, y } = layout(settings.devTools ? 100 : 0)
+  // The DEVELOPER heading is ours alone (preview or a listed wallet); its
+  // jump and armoury rows only show with the panel switched on.
+  const developer = isDeveloper()
+  const dev = developer && settings.devTools
+  const { scale: s, width, height, x, y } = layout(developer ? (dev ? 100 : 0) : -80)
   const inner = FRAME.width - 80
   return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}
     uiBackground={{ color: veil }}>
@@ -83,10 +87,10 @@ export function SettingsUi() {
         </UiEntity>
       })}
 
-      <UiEntity uiTransform={{ width: '100%', height: 20 * s, margin: { top: 10 * s }, flexShrink: 0, pointerFilter: 'none' }}>
+      {developer && <UiEntity uiTransform={{ width: '100%', height: 20 * s, margin: { top: 10 * s }, flexShrink: 0, pointerFilter: 'none' }}>
         <Heading title="DEVELOPER" scale={s} />
-      </UiEntity>
-      <UiEntity uiTransform={{ width: '100%', height: 44 * s, margin: { top: 6 * s }, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
+      </UiEntity>}
+      {developer && <UiEntity uiTransform={{ width: '100%', height: 44 * s, margin: { top: 6 * s }, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
         <Label value="Dungeon panel: seed, room counts, spawn markers and the native camera." color={muted} fontSize={11.5 * s} textAlign="middle-left" textWrap="nowrap"
           uiTransform={{ width: (inner - 150) * s, height: '100%', pointerFilter: 'none' }} />
         <Action id="settings-dev" text={settings.devTools ? 'Shown' : 'Hidden'} onClick={() => {
@@ -94,9 +98,9 @@ export function SettingsUi() {
           flushHeroSave()
         }}
           width={136} height={38} scale={s} fontSize={13} accent="gold" active={settings.devTools} />
-      </UiEntity>
+      </UiEntity>}
 
-      {settings.devTools && <UiEntity uiTransform={{ width: '100%', height: 44 * s, margin: { top: 6 * s }, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
+      {dev && <UiEntity uiTransform={{ width: '100%', height: 44 * s, margin: { top: 6 * s }, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
         <Label value={`Jump: ${LEVELS[getLobbyPick().level]?.name ?? ''} (does not write clears).`} color={muted} fontSize={11.5 * s} textAlign="middle-left" textWrap="nowrap"
           uiTransform={{ width: (inner - 200) * s, height: '100%', pointerFilter: 'none' }} />
         <UiEntity uiTransform={{ flexDirection: 'row', pointerFilter: 'none' }}>
@@ -106,7 +110,7 @@ export function SettingsUi() {
         </UiEntity>
       </UiEntity>}
 
-      {settings.devTools && <UiEntity uiTransform={{ width: '100%', height: 44 * s, margin: { top: 6 * s }, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
+      {dev && <UiEntity uiTransform={{ width: '100%', height: 44 * s, margin: { top: 6 * s }, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
         <Label value={`Armoury: ${getUnlockedItems().length} loot weapon(s) owned.`} color={muted} fontSize={11.5 * s} textAlign="middle-left" textWrap="nowrap"
           uiTransform={{ width: (inner - 290) * s, height: '100%', pointerFilter: 'none' }} />
         <UiEntity uiTransform={{ flexDirection: 'row', pointerFilter: 'none' }}>

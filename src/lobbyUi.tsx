@@ -12,7 +12,8 @@ import {
   createParty, getLobbyPick, getLobbyState, isLeader, joinParty, leaveParty, myParty, openParties, PartyInfo,
   setLobbyPickDiff, setLobbyPickLevel, setReady, soloRun, startRun
 } from './party'
-import { getSettings, openSettings } from './settings'
+import { devToolsOn } from './devAccess'
+import { openSettings } from './settings'
 import { openInventory } from './inventory'
 import { IconButton } from './hudButtons'
 import { closeLobby, openLobby } from './party'
@@ -69,7 +70,7 @@ function Heading({ title, scale: s }: { title: string; scale: number }) {
 
 /** Is this level open to the player: cleared up to it, or the developer panel. */
 function isOpen(progress: readonly number[], level: number): boolean {
-  return getSettings().devTools || levelUnlocked(progress, level)
+  return devToolsOn() || levelUnlocked(progress, level)
 }
 
 /** The one linear ladder. Locked-via-dev rows show a gold Dev mark. */
