@@ -37,7 +37,7 @@ export const CHARACTERS: CharacterDefinition[] = [
     id: 'vanguard',
     name: 'Vanguard',
     role: 'Blade',
-    description: 'Heavy plate and a sword. A steady presence. Meet the original Sidekick knight.',
+    description: 'White plate, a lion helm and a sword. The steady one at the front of the line.',
     model: 'models/knight.glb',
     portrait: 'images/characters/vanguard-idle.png',
     clips: SIDEKICK_CLIPS
@@ -62,9 +62,9 @@ export const CHARACTERS: CharacterDefinition[] = [
   },
   {
     id: 'brute',
-    name: 'Brute',
-    role: 'Blade',
-    description: 'A grinning pumpkin mask, a playful, stripped-back outfit and a sword. Impossible to miss.',
+    name: 'Berserker',
+    role: 'Heavy',
+    description: 'Horned helm, hide and iron, and an axe. Hits harder than anyone and does not much care about the reply.',
     model: 'models/characters/brute-animated.glb',
     portrait: 'images/characters/brute-idle.png',
     clips: SIDEKICK_CLIPS

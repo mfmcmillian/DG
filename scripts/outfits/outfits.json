@@ -50,16 +50,6 @@
       },
       "extras": [
         {
-          "id": "elf-head-warhelm",
-          "slot": "head",
-          "parts": [
-            "SK_ELVN_WARR_01_22AHED_HU01"
-          ],
-          "palette": "ElvenWarriors_03",
-          "name": "Antlered War Helm",
-          "description": "A closed helm crowned with gilded antlers. The forest's answer to plate."
-        },
-        {
           "id": "elf-head-bramble",
           "slot": "head",
           "parts": [
@@ -79,6 +69,50 @@
           "palette": "ElvenWarriors_06",
           "name": "Stag Mask",
           "description": "A stag's face carved in dark wood, antlers and all. The hunt looks back."
+        }
+      ],
+      "collectibles": [
+        {
+          "preset": "ElvenWarriors_03",
+          "set": "sentinel",
+          "label": "Sentinel",
+          "names": {
+            "head": "Antlered War Helm",
+            "chest": "Sentinel Plate",
+            "shoulders": "Sentinel Pauldrons",
+            "hands": "Sentinel Gauntlets",
+            "legs": "Sentinel Greaves",
+            "boots": "Sentinel Boots"
+          },
+          "descriptions": {
+            "head": "A closed helm crowned with gilded antlers. The forest's answer to plate.",
+            "chest": "Gold-chased elven plate shaped like layered leaves.",
+            "shoulders": "Leaf-plate pauldrons that curl up like young ferns.",
+            "hands": "Fitted gauntlets in gold and bone.",
+            "legs": "Plated leggings with a hanging leaf skirt.",
+            "boots": "Gilded boots that somehow make no sound."
+          }
+        },
+        {
+          "preset": "ElvenWarriors_02",
+          "set": "dusk",
+          "label": "Dusk Warden",
+          "names": {
+            "head": "Dusk Hood",
+            "chest": "Dusk Jerkin",
+            "shoulders": "Dusk Mantle",
+            "hands": "Dusk Bracers",
+            "legs": "Dusk Leggings",
+            "boots": "Dusk Boots"
+          },
+          "descriptions": {
+            "head": "A hood dyed the blue of the hour after sunset.",
+            "chest": "Dark blue leathers with gold thread at every seam.",
+            "shoulders": "Small gilt pauldrons over a night-blue mantle.",
+            "hands": "Blue-black bracers laced tight for the draw.",
+            "legs": "Dark leggings for moving through moonless woods.",
+            "boots": "Soft boots, dyed to vanish in shadow."
+          }
         }
       ]
     },
@@ -145,6 +179,226 @@
           "palette": "FantasySorcerers_04",
           "name": "Toad Familiar",
           "description": "A toad in a very small hat, riding the off shoulder. It has opinions about your spells."
+        }
+      ],
+      "collectibles": [
+        {
+          "preset": "FantasySorcerers_02",
+          "set": "hexer",
+          "label": "Hexer",
+          "names": {
+            "head": "Horned Skull",
+            "chest": "Hexer's Robe",
+            "shoulders": "Bone Pauldrons",
+            "hands": "Hexer's Gloves",
+            "legs": "Hexer's Skirts",
+            "boots": "Hexer's Boots"
+          },
+          "descriptions": {
+            "head": "A horned bone mask that the wearer swears is not their own skull.",
+            "chest": "Dark teal robes worked with a ribcage of bone.",
+            "shoulders": "Skull-and-bone pauldrons with a green glow in the sockets.",
+            "hands": "Gloves with bone plates over the knuckles.",
+            "legs": "Tattered skirts over dark breeches.",
+            "boots": "Iron-toed boots for the crypt floor."
+          }
+        },
+        {
+          "preset": "FantasySorcerers_03",
+          "set": "druid",
+          "label": "Grove Keeper",
+          "names": {
+            "head": "Keeper's Hood",
+            "chest": "Keeper's Robe",
+            "shoulders": "Keeper's Mantle",
+            "hands": "Keeper's Gloves",
+            "legs": "Keeper's Skirts",
+            "boots": "Keeper's Boots"
+          },
+          "descriptions": {
+            "head": "A deep green hood with a curl of living wood.",
+            "chest": "Moss-green robes with a satchel of roots and vials.",
+            "shoulders": "Leaf and bark laid over the shoulders.",
+            "hands": "Fingerless gloves stained by a hundred herbs.",
+            "legs": "Layered green skirts over travel breeches.",
+            "boots": "Mud-brown boots that have never been dry."
+          }
+        }
+      ]
+    },
+    "vanguard": {
+      "pack": "SIDEKICK_Fantasy_Knights_Unity_2021_3_v1_0_7.unitypackage",
+      "preset": "FantasyKnights_01",
+      "set": "paladin",
+      "label": "Paladin",
+      "names": {
+        "head": "Lion Helm",
+        "chest": "Lion Cuirass",
+        "shoulders": "Lion Pauldrons",
+        "hands": "Paladin Gauntlets",
+        "legs": "Paladin Tassets",
+        "boots": "Paladin Sabatons"
+      },
+      "descriptions": {
+        "head": "A closed helm worked into a roaring lion. The visor is the jaw.",
+        "chest": "White plate over gold trim, the lion's head hammered across the breast.",
+        "shoulders": "Broad gilt pauldrons, each with a mane of steel.",
+        "hands": "Articulated gauntlets polished until they show the torches.",
+        "legs": "Skirted plate over mail, cut for the long march.",
+        "boots": "Heavy sabatons that ring on the flagstones."
+      },
+      "collectibles": [
+        {
+          "preset": "FantasyKnights_02",
+          "set": "blackguard",
+          "label": "Blackguard",
+          "names": {
+            "head": "Blackguard Helm",
+            "chest": "Blackguard Plate",
+            "shoulders": "Fur Mantle",
+            "hands": "Blackguard Gauntlets",
+            "legs": "Blackguard Greaves",
+            "boots": "Blackguard Boots"
+          },
+          "descriptions": {
+            "head": "A blackened helm with a slit visor and nothing behind it you'd want to meet.",
+            "chest": "Dark plate, dented and re-forged more than once.",
+            "shoulders": "A wolf pelt thrown over the pauldrons against the cold of the deep halls.",
+            "hands": "Black steel gauntlets with the knuckles filed to points.",
+            "legs": "Layered dark plate over riding leathers.",
+            "boots": "Iron-shod boots that have kicked in a few doors."
+          }
+        },
+        {
+          "preset": "FantasyKnights_04",
+          "set": "crusader",
+          "label": "Crusader",
+          "names": {
+            "head": "Spired Helm",
+            "chest": "Crusader Plate",
+            "shoulders": "Crusader Pauldrons",
+            "hands": "Crusader Gauntlets",
+            "legs": "Crusader Tabard",
+            "boots": "Crusader Sabatons"
+          },
+          "descriptions": {
+            "head": "A tall spired helm, the kind seen across a battlefield.",
+            "chest": "Grey plate under a red tabard, the cross long faded.",
+            "shoulders": "Plain steel pauldrons; the crusader spends on the sword.",
+            "hands": "Mail-backed gauntlets for a long grip.",
+            "legs": "A red tabard split over plate greaves.",
+            "boots": "Steel sabatons scuffed white at the toes."
+          }
+        }
+      ],
+      "extras": [
+        {
+          "id": "paladin-head-crown",
+          "slot": "head",
+          "parts": [
+            "SK_FANT_KNGT_03_22AHED_HU01"
+          ],
+          "palette": "FantasyKnights_03",
+          "name": "Sovereign Crown",
+          "description": "A gold crown over a mail coif. Someone in the dungeon used to be somebody."
+        },
+        {
+          "id": "paladin-head-plume",
+          "slot": "head",
+          "parts": [
+            "SK_FANT_KNGT_11_22AHED_HU01"
+          ],
+          "palette": "FantasyKnights_06",
+          "name": "Plumed Bascinet",
+          "description": "A visored bascinet with a blue plume, for the knight who wants to be seen."
+        },
+        {
+          "id": "paladin-head-hood",
+          "slot": "head",
+          "parts": [
+            "SK_FANT_KNGT_06_22AHED_HU01"
+          ],
+          "palette": "FantasyKnights_05",
+          "name": "Mail Hood",
+          "description": "A mail coif under a hood. Quiet, warm and stops a glancing blow."
+        }
+      ]
+    },
+    "brute": {
+      "pack": "SIDEKICK_Viking_Warriors_Unity_2021_3_v1_0_7.unitypackage",
+      "preset": "VikingWarrior_01",
+      "set": "viking",
+      "label": "Northman",
+      "names": {
+        "head": "Horned Helm",
+        "chest": "Hide Hauberk",
+        "shoulders": "Norse Pauldrons",
+        "hands": "Norse Bracers",
+        "legs": "Norse Breeches",
+        "boots": "Norse Boots"
+      },
+      "descriptions": {
+        "head": "A riveted helm with two horns, because a helm without horns is a bucket.",
+        "chest": "Boiled hide over a wool tunic, with a knife and a horn on the belt.",
+        "shoulders": "Iron-studded leather pauldrons.",
+        "hands": "Wrapped leather bracers, worn thin at the axe hand.",
+        "legs": "Wool breeches cross-bound with leather.",
+        "boots": "Fur-topped boots for the frozen shore."
+      },
+      "collectibles": [
+        {
+          "preset": "VikingWarrior_04",
+          "set": "jarl",
+          "label": "Jarl",
+          "names": {
+            "head": "Antlered Helm",
+            "chest": "Jarl's Scale",
+            "shoulders": "Wolf Pelt",
+            "hands": "Jarl's Bracers",
+            "legs": "Jarl's Greaves",
+            "boots": "Jarl's Boots"
+          },
+          "descriptions": {
+            "head": "A great helm crowned with antlers. The hall goes quiet when it enters.",
+            "chest": "Scale armour over a green tunic, the jarl's own.",
+            "shoulders": "A wolf's pelt across the shoulders, head and all.",
+            "hands": "Riveted bracers with a ring of gold at each wrist.",
+            "legs": "Fur-trimmed greaves over scale.",
+            "boots": "Heavy boots bound in fur and iron."
+          }
+        },
+        {
+          "preset": "VikingWarrior_06",
+          "set": "raider",
+          "label": "Raider",
+          "names": {
+            "head": "Raven Helm",
+            "chest": "Raider's Coat",
+            "shoulders": "Raven Perch",
+            "hands": "Raider's Bracers",
+            "legs": "Raider's Breeches",
+            "boots": "Raider's Boots"
+          },
+          "descriptions": {
+            "head": "A grim iron helm with a raven riding on it, cawing at the wrong moments.",
+            "chest": "A dark red war coat under a mail collar.",
+            "shoulders": "Studded pauldrons with a raven's roost on the left.",
+            "hands": "Black leather bracers with an iron cuff.",
+            "legs": "Dark breeches with a coin purse that never stays full.",
+            "boots": "Boots wrapped in fur against the sea spray."
+          }
+        }
+      ],
+      "extras": [
+        {
+          "id": "viking-head-crested",
+          "slot": "head",
+          "parts": [
+            "SK_VIKG_WARR_07_22AHED_HU01"
+          ],
+          "palette": "VikingWarrior_05",
+          "name": "Crested Helm",
+          "description": "A nasal helm with a bronze crest. Less horn, more head."
         }
       ]
     }

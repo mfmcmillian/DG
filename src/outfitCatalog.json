@@ -51,13 +51,113 @@
       ]
     },
     {
-      "id": "elf-head-warhelm",
+      "id": "sentinel-head",
       "name": "Antlered War Helm",
       "slot": "head",
       "description": "A closed helm crowned with gilded antlers. The forest's answer to plate.",
-      "icon": "images/equipment/elf-head-warhelm.png",
+      "icon": "images/equipment/sentinel-head.png",
       "models": [
-        "models/roaming/combat/equipment/elf-head-warhelm.glb"
+        "models/roaming/combat/equipment/sentinel-head.glb"
+      ]
+    },
+    {
+      "id": "sentinel-chest",
+      "name": "Sentinel Plate",
+      "slot": "chest",
+      "description": "Gold-chased elven plate shaped like layered leaves.",
+      "icon": "images/equipment/sentinel-chest.png",
+      "models": [
+        "models/roaming/customization/armor/warm/sentinel-chest.glb"
+      ]
+    },
+    {
+      "id": "sentinel-shoulders",
+      "name": "Sentinel Pauldrons",
+      "slot": "shoulders",
+      "description": "Leaf-plate pauldrons that curl up like young ferns.",
+      "icon": "images/equipment/sentinel-shoulders.png",
+      "models": [
+        "models/roaming/combat/equipment/sentinel-shoulders.glb"
+      ]
+    },
+    {
+      "id": "sentinel-hands",
+      "name": "Sentinel Gauntlets",
+      "slot": "hands",
+      "description": "Fitted gauntlets in gold and bone.",
+      "icon": "images/equipment/sentinel-hands.png",
+      "models": [
+        "models/roaming/customization/armor/warm/sentinel-hands.glb"
+      ]
+    },
+    {
+      "id": "sentinel-legs",
+      "name": "Sentinel Greaves",
+      "slot": "legs",
+      "description": "Plated leggings with a hanging leaf skirt.",
+      "icon": "images/equipment/sentinel-legs.png",
+      "models": [
+        "models/roaming/combat/equipment/sentinel-legs.glb"
+      ]
+    },
+    {
+      "id": "sentinel-boots",
+      "name": "Sentinel Boots",
+      "slot": "boots",
+      "description": "Gilded boots that somehow make no sound.",
+      "icon": "images/equipment/sentinel-boots.png",
+      "models": [
+        "models/roaming/combat/equipment/sentinel-boots.glb"
+      ]
+    },
+    {
+      "id": "dusk-chest",
+      "name": "Dusk Jerkin",
+      "slot": "chest",
+      "description": "Dark blue leathers with gold thread at every seam.",
+      "icon": "images/equipment/dusk-chest.png",
+      "models": [
+        "models/roaming/customization/armor/warm/dusk-chest.glb"
+      ]
+    },
+    {
+      "id": "dusk-shoulders",
+      "name": "Dusk Mantle",
+      "slot": "shoulders",
+      "description": "Small gilt pauldrons over a night-blue mantle.",
+      "icon": "images/equipment/dusk-shoulders.png",
+      "models": [
+        "models/roaming/combat/equipment/dusk-shoulders.glb"
+      ]
+    },
+    {
+      "id": "dusk-hands",
+      "name": "Dusk Bracers",
+      "slot": "hands",
+      "description": "Blue-black bracers laced tight for the draw.",
+      "icon": "images/equipment/dusk-hands.png",
+      "models": [
+        "models/roaming/customization/armor/warm/dusk-hands.glb"
+      ]
+    },
+    {
+      "id": "dusk-legs",
+      "name": "Dusk Leggings",
+      "slot": "legs",
+      "description": "Dark leggings for moving through moonless woods.",
+      "icon": "images/equipment/dusk-legs.png",
+      "models": [
+        "models/roaming/combat/equipment/dusk-legs.glb"
+      ]
+    },
+    {
+      "id": "dusk-boots",
+      "name": "Dusk Boots",
+      "slot": "boots",
+      "description": "Soft boots, dyed to vanish in shadow.",
+      "icon": "images/equipment/dusk-boots.png",
+      "models": [
+        "models/roaming/combat/equipment/dusk-boots.glb"
       ]
     },
     {
@@ -131,6 +231,116 @@
       ]
     },
     {
+      "id": "hexer-head",
+      "name": "Horned Skull",
+      "slot": "head",
+      "description": "A horned bone mask that the wearer swears is not their own skull.",
+      "icon": "images/equipment/hexer-head.png",
+      "models": [
+        "models/roaming/combat/equipment/hexer-head.glb"
+      ]
+    },
+    {
+      "id": "hexer-chest",
+      "name": "Hexer's Robe",
+      "slot": "chest",
+      "description": "Dark teal robes worked with a ribcage of bone.",
+      "icon": "images/equipment/hexer-chest.png",
+      "models": [
+        "models/roaming/customization/armor/warm/hexer-chest.glb"
+      ]
+    },
+    {
+      "id": "hexer-shoulders",
+      "name": "Bone Pauldrons",
+      "slot": "shoulders",
+      "description": "Skull-and-bone pauldrons with a green glow in the sockets.",
+      "icon": "images/equipment/hexer-shoulders.png",
+      "models": [
+        "models/roaming/combat/equipment/hexer-shoulders.glb"
+      ]
+    },
+    {
+      "id": "hexer-hands",
+      "name": "Hexer's Gloves",
+      "slot": "hands",
+      "description": "Gloves with bone plates over the knuckles.",
+      "icon": "images/equipment/hexer-hands.png",
+      "models": [
+        "models/roaming/customization/armor/warm/hexer-hands.glb"
+      ]
+    },
+    {
+      "id": "hexer-legs",
+      "name": "Hexer's Skirts",
+      "slot": "legs",
+      "description": "Tattered skirts over dark breeches.",
+      "icon": "images/equipment/hexer-legs.png",
+      "models": [
+        "models/roaming/combat/equipment/hexer-legs.glb"
+      ]
+    },
+    {
+      "id": "hexer-boots",
+      "name": "Hexer's Boots",
+      "slot": "boots",
+      "description": "Iron-toed boots for the crypt floor.",
+      "icon": "images/equipment/hexer-boots.png",
+      "models": [
+        "models/roaming/combat/equipment/hexer-boots.glb"
+      ]
+    },
+    {
+      "id": "druid-head",
+      "name": "Keeper's Hood",
+      "slot": "head",
+      "description": "A deep green hood with a curl of living wood.",
+      "icon": "images/equipment/druid-head.png",
+      "models": [
+        "models/roaming/combat/equipment/druid-head.glb"
+      ]
+    },
+    {
+      "id": "druid-chest",
+      "name": "Keeper's Robe",
+      "slot": "chest",
+      "description": "Moss-green robes with a satchel of roots and vials.",
+      "icon": "images/equipment/druid-chest.png",
+      "models": [
+        "models/roaming/customization/armor/warm/druid-chest.glb"
+      ]
+    },
+    {
+      "id": "druid-hands",
+      "name": "Keeper's Gloves",
+      "slot": "hands",
+      "description": "Fingerless gloves stained by a hundred herbs.",
+      "icon": "images/equipment/druid-hands.png",
+      "models": [
+        "models/roaming/customization/armor/warm/druid-hands.glb"
+      ]
+    },
+    {
+      "id": "druid-legs",
+      "name": "Keeper's Skirts",
+      "slot": "legs",
+      "description": "Layered green skirts over travel breeches.",
+      "icon": "images/equipment/druid-legs.png",
+      "models": [
+        "models/roaming/combat/equipment/druid-legs.glb"
+      ]
+    },
+    {
+      "id": "druid-boots",
+      "name": "Keeper's Boots",
+      "slot": "boots",
+      "description": "Mud-brown boots that have never been dry.",
+      "icon": "images/equipment/druid-boots.png",
+      "models": [
+        "models/roaming/combat/equipment/druid-boots.glb"
+      ]
+    },
+    {
       "id": "sorc-shoulders",
       "name": "Sorcerer's Pauldrons",
       "slot": "shoulders",
@@ -169,13 +379,426 @@
       "models": [
         "models/roaming/combat/equipment/sorc-shoulders-toad.glb"
       ]
+    },
+    {
+      "id": "paladin-head",
+      "name": "Lion Helm",
+      "slot": "head",
+      "description": "A closed helm worked into a roaring lion. The visor is the jaw.",
+      "icon": "images/equipment/paladin-head.png",
+      "models": [
+        "models/roaming/combat/equipment/paladin-head.glb"
+      ]
+    },
+    {
+      "id": "paladin-chest",
+      "name": "Lion Cuirass",
+      "slot": "chest",
+      "description": "White plate over gold trim, the lion's head hammered across the breast.",
+      "icon": "images/equipment/paladin-chest.png",
+      "models": [
+        "models/roaming/combat/equipment/paladin-chest.glb"
+      ]
+    },
+    {
+      "id": "paladin-shoulders",
+      "name": "Lion Pauldrons",
+      "slot": "shoulders",
+      "description": "Broad gilt pauldrons, each with a mane of steel.",
+      "icon": "images/equipment/paladin-shoulders.png",
+      "models": [
+        "models/roaming/combat/equipment/paladin-shoulders.glb"
+      ]
+    },
+    {
+      "id": "paladin-hands",
+      "name": "Paladin Gauntlets",
+      "slot": "hands",
+      "description": "Articulated gauntlets polished until they show the torches.",
+      "icon": "images/equipment/paladin-hands.png",
+      "models": [
+        "models/roaming/combat/equipment/paladin-hands.glb"
+      ]
+    },
+    {
+      "id": "paladin-legs",
+      "name": "Paladin Tassets",
+      "slot": "legs",
+      "description": "Skirted plate over mail, cut for the long march.",
+      "icon": "images/equipment/paladin-legs.png",
+      "models": [
+        "models/roaming/combat/equipment/paladin-legs.glb"
+      ]
+    },
+    {
+      "id": "paladin-boots",
+      "name": "Paladin Sabatons",
+      "slot": "boots",
+      "description": "Heavy sabatons that ring on the flagstones.",
+      "icon": "images/equipment/paladin-boots.png",
+      "models": [
+        "models/roaming/combat/equipment/paladin-boots.glb"
+      ]
+    },
+    {
+      "id": "blackguard-head",
+      "name": "Blackguard Helm",
+      "slot": "head",
+      "description": "A blackened helm with a slit visor and nothing behind it you'd want to meet.",
+      "icon": "images/equipment/blackguard-head.png",
+      "models": [
+        "models/roaming/combat/equipment/blackguard-head.glb"
+      ]
+    },
+    {
+      "id": "blackguard-chest",
+      "name": "Blackguard Plate",
+      "slot": "chest",
+      "description": "Dark plate, dented and re-forged more than once.",
+      "icon": "images/equipment/blackguard-chest.png",
+      "models": [
+        "models/roaming/combat/equipment/blackguard-chest.glb"
+      ]
+    },
+    {
+      "id": "blackguard-shoulders",
+      "name": "Fur Mantle",
+      "slot": "shoulders",
+      "description": "A wolf pelt thrown over the pauldrons against the cold of the deep halls.",
+      "icon": "images/equipment/blackguard-shoulders.png",
+      "models": [
+        "models/roaming/combat/equipment/blackguard-shoulders.glb"
+      ]
+    },
+    {
+      "id": "blackguard-hands",
+      "name": "Blackguard Gauntlets",
+      "slot": "hands",
+      "description": "Black steel gauntlets with the knuckles filed to points.",
+      "icon": "images/equipment/blackguard-hands.png",
+      "models": [
+        "models/roaming/combat/equipment/blackguard-hands.glb"
+      ]
+    },
+    {
+      "id": "blackguard-legs",
+      "name": "Blackguard Greaves",
+      "slot": "legs",
+      "description": "Layered dark plate over riding leathers.",
+      "icon": "images/equipment/blackguard-legs.png",
+      "models": [
+        "models/roaming/combat/equipment/blackguard-legs.glb"
+      ]
+    },
+    {
+      "id": "blackguard-boots",
+      "name": "Blackguard Boots",
+      "slot": "boots",
+      "description": "Iron-shod boots that have kicked in a few doors.",
+      "icon": "images/equipment/blackguard-boots.png",
+      "models": [
+        "models/roaming/combat/equipment/blackguard-boots.glb"
+      ]
+    },
+    {
+      "id": "crusader-head",
+      "name": "Spired Helm",
+      "slot": "head",
+      "description": "A tall spired helm, the kind seen across a battlefield.",
+      "icon": "images/equipment/crusader-head.png",
+      "models": [
+        "models/roaming/combat/equipment/crusader-head.glb"
+      ]
+    },
+    {
+      "id": "crusader-chest",
+      "name": "Crusader Plate",
+      "slot": "chest",
+      "description": "Grey plate under a red tabard, the cross long faded.",
+      "icon": "images/equipment/crusader-chest.png",
+      "models": [
+        "models/roaming/combat/equipment/crusader-chest.glb"
+      ]
+    },
+    {
+      "id": "crusader-shoulders",
+      "name": "Crusader Pauldrons",
+      "slot": "shoulders",
+      "description": "Plain steel pauldrons; the crusader spends on the sword.",
+      "icon": "images/equipment/crusader-shoulders.png",
+      "models": [
+        "models/roaming/combat/equipment/crusader-shoulders.glb"
+      ]
+    },
+    {
+      "id": "crusader-hands",
+      "name": "Crusader Gauntlets",
+      "slot": "hands",
+      "description": "Mail-backed gauntlets for a long grip.",
+      "icon": "images/equipment/crusader-hands.png",
+      "models": [
+        "models/roaming/combat/equipment/crusader-hands.glb"
+      ]
+    },
+    {
+      "id": "crusader-legs",
+      "name": "Crusader Tabard",
+      "slot": "legs",
+      "description": "A red tabard split over plate greaves.",
+      "icon": "images/equipment/crusader-legs.png",
+      "models": [
+        "models/roaming/combat/equipment/crusader-legs.glb"
+      ]
+    },
+    {
+      "id": "crusader-boots",
+      "name": "Crusader Sabatons",
+      "slot": "boots",
+      "description": "Steel sabatons scuffed white at the toes.",
+      "icon": "images/equipment/crusader-boots.png",
+      "models": [
+        "models/roaming/combat/equipment/crusader-boots.glb"
+      ]
+    },
+    {
+      "id": "paladin-head-crown",
+      "name": "Sovereign Crown",
+      "slot": "head",
+      "description": "A gold crown over a mail coif. Someone in the dungeon used to be somebody.",
+      "icon": "images/equipment/paladin-head-crown.png",
+      "models": [
+        "models/roaming/combat/equipment/paladin-head-crown.glb"
+      ]
+    },
+    {
+      "id": "paladin-head-plume",
+      "name": "Plumed Bascinet",
+      "slot": "head",
+      "description": "A visored bascinet with a blue plume, for the knight who wants to be seen.",
+      "icon": "images/equipment/paladin-head-plume.png",
+      "models": [
+        "models/roaming/combat/equipment/paladin-head-plume.glb"
+      ]
+    },
+    {
+      "id": "paladin-head-hood",
+      "name": "Mail Hood",
+      "slot": "head",
+      "description": "A mail coif under a hood. Quiet, warm and stops a glancing blow.",
+      "icon": "images/equipment/paladin-head-hood.png",
+      "models": [
+        "models/roaming/combat/equipment/paladin-head-hood.glb"
+      ]
+    },
+    {
+      "id": "viking-head",
+      "name": "Horned Helm",
+      "slot": "head",
+      "description": "A riveted helm with two horns, because a helm without horns is a bucket.",
+      "icon": "images/equipment/viking-head.png",
+      "models": [
+        "models/roaming/combat/equipment/viking-head.glb"
+      ]
+    },
+    {
+      "id": "viking-chest",
+      "name": "Hide Hauberk",
+      "slot": "chest",
+      "description": "Boiled hide over a wool tunic, with a knife and a horn on the belt.",
+      "icon": "images/equipment/viking-chest.png",
+      "models": [
+        "models/roaming/combat/equipment/viking-chest.glb"
+      ]
+    },
+    {
+      "id": "viking-shoulders",
+      "name": "Norse Pauldrons",
+      "slot": "shoulders",
+      "description": "Iron-studded leather pauldrons.",
+      "icon": "images/equipment/viking-shoulders.png",
+      "models": [
+        "models/roaming/combat/equipment/viking-shoulders.glb"
+      ]
+    },
+    {
+      "id": "viking-hands",
+      "name": "Norse Bracers",
+      "slot": "hands",
+      "description": "Wrapped leather bracers, worn thin at the axe hand.",
+      "icon": "images/equipment/viking-hands.png",
+      "models": [
+        "models/roaming/customization/armor/warm/viking-hands.glb"
+      ]
+    },
+    {
+      "id": "viking-legs",
+      "name": "Norse Breeches",
+      "slot": "legs",
+      "description": "Wool breeches cross-bound with leather.",
+      "icon": "images/equipment/viking-legs.png",
+      "models": [
+        "models/roaming/combat/equipment/viking-legs.glb"
+      ]
+    },
+    {
+      "id": "viking-boots",
+      "name": "Norse Boots",
+      "slot": "boots",
+      "description": "Fur-topped boots for the frozen shore.",
+      "icon": "images/equipment/viking-boots.png",
+      "models": [
+        "models/roaming/combat/equipment/viking-boots.glb"
+      ]
+    },
+    {
+      "id": "jarl-head",
+      "name": "Antlered Helm",
+      "slot": "head",
+      "description": "A great helm crowned with antlers. The hall goes quiet when it enters.",
+      "icon": "images/equipment/jarl-head.png",
+      "models": [
+        "models/roaming/combat/equipment/jarl-head.glb"
+      ]
+    },
+    {
+      "id": "jarl-chest",
+      "name": "Jarl's Scale",
+      "slot": "chest",
+      "description": "Scale armour over a green tunic, the jarl's own.",
+      "icon": "images/equipment/jarl-chest.png",
+      "models": [
+        "models/roaming/customization/armor/warm/jarl-chest.glb"
+      ]
+    },
+    {
+      "id": "jarl-shoulders",
+      "name": "Wolf Pelt",
+      "slot": "shoulders",
+      "description": "A wolf's pelt across the shoulders, head and all.",
+      "icon": "images/equipment/jarl-shoulders.png",
+      "models": [
+        "models/roaming/combat/equipment/jarl-shoulders.glb"
+      ]
+    },
+    {
+      "id": "jarl-hands",
+      "name": "Jarl's Bracers",
+      "slot": "hands",
+      "description": "Riveted bracers with a ring of gold at each wrist.",
+      "icon": "images/equipment/jarl-hands.png",
+      "models": [
+        "models/roaming/customization/armor/warm/jarl-hands.glb"
+      ]
+    },
+    {
+      "id": "jarl-legs",
+      "name": "Jarl's Greaves",
+      "slot": "legs",
+      "description": "Fur-trimmed greaves over scale.",
+      "icon": "images/equipment/jarl-legs.png",
+      "models": [
+        "models/roaming/combat/equipment/jarl-legs.glb"
+      ]
+    },
+    {
+      "id": "jarl-boots",
+      "name": "Jarl's Boots",
+      "slot": "boots",
+      "description": "Heavy boots bound in fur and iron.",
+      "icon": "images/equipment/jarl-boots.png",
+      "models": [
+        "models/roaming/combat/equipment/jarl-boots.glb"
+      ]
+    },
+    {
+      "id": "raider-head",
+      "name": "Raven Helm",
+      "slot": "head",
+      "description": "A grim iron helm with a raven riding on it, cawing at the wrong moments.",
+      "icon": "images/equipment/raider-head.png",
+      "models": [
+        "models/roaming/combat/equipment/raider-head.glb"
+      ]
+    },
+    {
+      "id": "raider-chest",
+      "name": "Raider's Coat",
+      "slot": "chest",
+      "description": "A dark red war coat under a mail collar.",
+      "icon": "images/equipment/raider-chest.png",
+      "models": [
+        "models/roaming/customization/armor/warm/raider-chest.glb"
+      ]
+    },
+    {
+      "id": "raider-shoulders",
+      "name": "Raven Perch",
+      "slot": "shoulders",
+      "description": "Studded pauldrons with a raven's roost on the left.",
+      "icon": "images/equipment/raider-shoulders.png",
+      "models": [
+        "models/roaming/combat/equipment/raider-shoulders.glb"
+      ]
+    },
+    {
+      "id": "raider-hands",
+      "name": "Raider's Bracers",
+      "slot": "hands",
+      "description": "Black leather bracers with an iron cuff.",
+      "icon": "images/equipment/raider-hands.png",
+      "models": [
+        "models/roaming/customization/armor/warm/raider-hands.glb"
+      ]
+    },
+    {
+      "id": "raider-legs",
+      "name": "Raider's Breeches",
+      "slot": "legs",
+      "description": "Dark breeches with a coin purse that never stays full.",
+      "icon": "images/equipment/raider-legs.png",
+      "models": [
+        "models/roaming/combat/equipment/raider-legs.glb"
+      ]
+    },
+    {
+      "id": "raider-boots",
+      "name": "Raider's Boots",
+      "slot": "boots",
+      "description": "Boots wrapped in fur against the sea spray.",
+      "icon": "images/equipment/raider-boots.png",
+      "models": [
+        "models/roaming/combat/equipment/raider-boots.glb"
+      ]
+    },
+    {
+      "id": "viking-head-crested",
+      "name": "Crested Helm",
+      "slot": "head",
+      "description": "A nasal helm with a bronze crest. Less horn, more head.",
+      "icon": "images/equipment/viking-head-crested.png",
+      "models": [
+        "models/roaming/combat/equipment/viking-head-crested.glb"
+      ]
     }
   ],
   "skinVariants": [
+    "druid-chest",
+    "druid-hands",
+    "dusk-chest",
+    "dusk-hands",
     "elf-chest",
     "elf-hands",
+    "hexer-chest",
+    "hexer-hands",
+    "jarl-chest",
+    "jarl-hands",
+    "raider-chest",
+    "raider-hands",
+    "sentinel-chest",
+    "sentinel-hands",
     "sorc-chest",
-    "sorc-hands"
+    "sorc-hands",
+    "viking-hands"
   ],
   "defaults": {
     "scout": {
@@ -193,6 +816,22 @@
       "hands": "sorc-hands",
       "legs": "sorc-legs",
       "boots": "sorc-boots"
+    },
+    "vanguard": {
+      "head": "paladin-head",
+      "chest": "paladin-chest",
+      "shoulders": "paladin-shoulders",
+      "hands": "paladin-hands",
+      "legs": "paladin-legs",
+      "boots": "paladin-boots"
+    },
+    "brute": {
+      "head": "viking-head",
+      "chest": "viking-chest",
+      "shoulders": "viking-shoulders",
+      "hands": "viking-hands",
+      "legs": "viking-legs",
+      "boots": "viking-boots"
     }
   },
   "note": "Generated by scripts/build-hero-outfits.py from scripts/outfits/outfits.json; do not edit."

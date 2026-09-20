@@ -11,6 +11,7 @@
 
 import { StyleId } from './config'
 import { RivalProfile } from '../rivalBrain'
+import { EquipmentLoadout } from '../equipmentCatalog'
 
 export type EnemyRole = 'grunt' | 'elite' | 'boss'
 
@@ -28,6 +29,24 @@ export type Archetype = {
   role: EnemyRole
   /** Castle: hold a doorway instead of chasing across the room. */
   posted?: boolean
+  /** Armor to wear instead of the character's current default outfit (fortress looks are pinned to the Starter sets). */
+  armor?: Omit<EquipmentLoadout, 'weapon'>
+}
+
+// The Starter-pack outfits the fortress rosters were built with. Hero defaults
+// have since moved to the class packs (Paladin, Northman, Warden, Sorcerer), so
+// the enemies keep these explicitly rather than follow the player's wardrobe.
+const STARTER_KNIGHT: Omit<EquipmentLoadout, 'weapon'> = {
+  head: 'knight-head', chest: 'knight-chest', shoulders: 'knight-shoulders', hands: 'knight-hands', legs: 'knight-legs', boots: 'knight-boots'
+}
+const STARTER_SCOUT: Omit<EquipmentLoadout, 'weapon'> = {
+  head: 'scout-head', chest: 'scout-chest', shoulders: 'scout-shoulders', hands: 'scout-hands', legs: 'scout-legs', boots: 'scout-boots'
+}
+const STARTER_STRIKER: Omit<EquipmentLoadout, 'weapon'> = {
+  head: 'striker-head', chest: 'striker-chest', shoulders: 'striker-shoulders', hands: 'striker-hands', legs: 'striker-legs', boots: 'striker-boots'
+}
+const PUMPKIN_BRUTE: Omit<EquipmentLoadout, 'weapon'> = {
+  head: 'brute-head', chest: 'none-chest', shoulders: 'none-shoulders', hands: 'none-hands', legs: 'none-legs', boots: 'none-boots'
 }
 
 export type Roster = {
@@ -41,21 +60,21 @@ export type Roster = {
 const FORTRESS: Roster = {
   striker: {
     name: 'Striker', characterId: 'striker', weapon: 'fk-axe-06', health: 90, scale: 1, damageScale: 1,
-    aggro: 6.5, leash: 11, speed: 1.15, profile: { blockChance: 0.15, pace: 0.8 }, role: 'grunt'
+    aggro: 6.5, leash: 11, speed: 1.15, profile: { blockChance: 0.15, pace: 0.8 }, role: 'grunt', armor: STARTER_STRIKER
   },
   scout: {
     name: 'Scout', characterId: 'scout', weapon: 'gb-sword-02', health: 75, scale: 0.95, damageScale: 0.85,
-    aggro: 7.5, leash: 11, speed: 1.2, profile: { blockChance: 0.2, pace: 0.9 }, role: 'grunt'
+    aggro: 7.5, leash: 11, speed: 1.2, profile: { blockChance: 0.2, pace: 0.9 }, role: 'grunt', armor: STARTER_SCOUT
   },
   guard: {
     name: 'Vault Guard', characterId: 'vanguard', weapon: 'dr-warhammer-large-02', health: 150, scale: 1.08, damageScale: 1.15,
-    aggro: 5, leash: 10, speed: 0.9, profile: { blockChance: 0.5, pace: 1.1 }, role: 'elite'
+    aggro: 5, leash: 10, speed: 0.9, profile: { blockChance: 0.5, pace: 1.1 }, role: 'elite', armor: STARTER_KNIGHT
   },
   boss: {
     name: 'Warlord', characterId: 'brute', weapon: 'df-sword-02', health: 460, scale: 1.48,
     damageScale: 1.7, aggro: 11, leash: 18, speed: 1.08,
     profile: { blockChance: 0.08, pace: 0.82, pattern: ['attack_light', 'attack_light2', 'attack_heavy', 'slam'], slamRange: 3.6 },
-    role: 'boss'
+    role: 'boss', armor: PUMPKIN_BRUTE
   }
 }
 

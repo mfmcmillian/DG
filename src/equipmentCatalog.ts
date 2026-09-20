@@ -426,7 +426,7 @@ const ASSETS = {
       "hands": "none-hands",
       "legs": "none-legs",
       "boots": "none-boots",
-      "weapon": "pride-sword"
+      "weapon": "vk-axe-01"
     }
   },
   "frame": "All modular GLBs share the supplied models/knight.glb bind frame, scale and origin. Never resize individual slots.",

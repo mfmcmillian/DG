@@ -117,7 +117,7 @@ const BOSS_APPEARANCE: CharacterAppearance = { bodyType: 'male', hairStyle: 'sho
 
 function archetypeLoadout(archetype: Archetype): EquipmentLoadout {
   // One-piece realm bodies have no Sidekick defaults; the armor slots are unused for them anyway.
-  return { ...(DEFAULT_LOADOUTS[archetype.characterId] ?? DEFAULT_LOADOUTS.vanguard), weapon: archetype.weapon }
+  return { ...(DEFAULT_LOADOUTS[archetype.characterId] ?? DEFAULT_LOADOUTS.vanguard), ...archetype.armor, weapon: archetype.weapon }
 }
 
 /** GLBs one realm's roster will request. Defaults to the fortress so the title does not wait on later realms. */

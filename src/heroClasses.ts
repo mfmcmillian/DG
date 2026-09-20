@@ -1,6 +1,7 @@
-// Hero classes. A class is tied to the character: Vanguard and Brute fight
-// with the blade set every sword clip was made for, Scout is the archer and
-// Striker the spellblade. The class decides which weapons the hero may carry,
+// Hero classes. A class is tied to the character: the Vanguard fights with
+// the blade set every sword clip was made for, the Berserker swings the heavy
+// iron (same clips, the weapon classes carry the weight), Scout is the archer
+// and Striker the spellblade. The class decides which weapons the hero may carry,
 // what the light string / heavy / guard play as, and whether an attack is a
 // swing (hits at the contact frame) or a shot (spawns a projectile at it).
 //
@@ -11,7 +12,7 @@ import type { EquipmentMotion } from './combatAnimations'
 import type { HeroAttackMotion } from './combatActions'
 import type { WeaponClass } from './weapons'
 
-export type HeroClass = 'blade' | 'bow' | 'magic'
+export type HeroClass = 'blade' | 'heavy' | 'bow' | 'magic'
 
 export type ProjectileKind = 'arrow' | 'bolt' | 'orb'
 
@@ -55,8 +56,20 @@ export const HERO_CLASSES: Record<HeroClass, HeroClassDefinition> = {
     id: 'blade',
     label: 'Blade',
     blurb: 'Steel in hand. Light strings, heavy blows and a guard to hide behind.',
-    weaponClasses: ['sword', 'dagger', 'axe', 'mace', 'hammer', 'club', 'great'],
+    weaponClasses: ['sword', 'dagger', 'mace'],
     starterWeapon: 'pride-sword',
+    light: ['attack_light', 'attack_light2', 'attack_light'],
+    heavy: 'attack_heavy',
+    block: 'block',
+    aimCone: 40,
+    ranged: {}
+  },
+  heavy: {
+    id: 'heavy',
+    label: 'Heavy',
+    blurb: 'Axes, hammers and two-handed iron. Slower to shove, harder to stop.',
+    weaponClasses: ['axe', 'hammer', 'club', 'great'],
+    starterWeapon: 'vk-axe-01',
     light: ['attack_light', 'attack_light2', 'attack_light'],
     heavy: 'attack_heavy',
     block: 'block',
@@ -99,7 +112,7 @@ export const HERO_CLASSES: Record<HeroClass, HeroClassDefinition> = {
 
 const CLASS_OF_CHARACTER: Record<string, HeroClass> = {
   vanguard: 'blade',
-  brute: 'blade',
+  brute: 'heavy',
   scout: 'bow',
   striker: 'magic'
 }

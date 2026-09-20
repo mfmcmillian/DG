@@ -18,9 +18,10 @@ modular hero (same rig, same bind frame, same clips):
 
 Head, hair, eyes, ears, teeth and the like stay the player's own body parts.
 
-A hero's `extras` list adds more items from the same pack (parts named
-explicitly, usually lifted from the pack's other presets, with that preset's
-palette), so a class has several heads or shoulders to pick from.
+A hero's `collectibles` list builds further presets of the same pack as
+full sets under their own prefix (the class's outfits to find), and its
+`extras` list adds single items from named parts (usually another preset's
+helmet or pauldrons, with that preset's palette).
 
 How the GLB is made (no Blender exporter involved, so nothing can drift):
 every Sidekick part is skinned to the one shared bind pose, and every
@@ -398,29 +399,48 @@ def build_glb(reference, clips, vertices, tex_tris, skin_tris, palette_png, set_
 
 def build_hero(hero_id, hero, config, reference, joint_index):
     pack = UnityPackage(DOWNLOADS / hero['pack'])
-    preset = hero['preset']
-    set_id = hero['set']
-    parts = pack.preset_parts(preset)
-    palette = pack.palette(preset)
     items = []
     skin_variants = []
-    print(f'== {hero_id}: {preset} ({len(parts)} parts) -> {set_id}-*')
-    for slot in SLOTS:
-        names = [name for kind, name in parts if kind in SLOT_PARTS[slot]]
-        if not names:
-            print(f'   {slot}: preset has no parts for this slot')
-            continue
-        build_item(pack, f'{set_id}-{slot}', slot, names, palette, hero['names'][slot], hero['descriptions'][slot],
-                   set_id, config, reference, joint_index, items, skin_variants)
+    build_set(pack, hero_id, hero['preset'], hero['set'], hero['names'], hero['descriptions'], config, reference, joint_index, items, skin_variants)
+    # Further presets of the same pack become collectible sets with their own
+    # prefix, so a class has two more full outfits to find beyond its basic one.
+    for coll in hero.get('collectibles', []):
+        build_set(pack, hero_id, coll['preset'], coll['set'], coll['names'], coll['descriptions'], config, reference, joint_index, items, skin_variants)
     # Extra pieces from the pack's other presets, so a class has a pool to
     # collect from rather than one fixed look. An extra whose id is exactly
     # `<set>-<slot>` fills a slot the main preset left empty and becomes the
     # hero's default for it.
+    palette = pack.palette(hero['preset'])
     for extra in hero.get('extras', []):
         pal = pack.palette(extra['palette']) if extra.get('palette') else palette
         build_item(pack, extra['id'], extra['slot'], extra['parts'], pal, extra['name'], extra['description'],
-                   set_id, config, reference, joint_index, items, skin_variants)
+                   hero['set'], config, reference, joint_index, items, skin_variants)
     return items, skin_variants
+
+
+def hero_prefixes(hero):
+    """Every item-id prefix this hero's build owns (its set, its collectible sets)."""
+    return [hero['set'] + '-'] + [c['set'] + '-' for c in hero.get('collectibles', [])]
+
+
+def build_set(pack, hero_id, preset, set_id, names, descriptions, config, reference, joint_index, items, skin_variants):
+    """One preset -> up to six slot items prefixed `set_id-`."""
+    parts = pack.preset_parts(preset)
+    palette = pack.palette(preset)
+    print(f'== {hero_id}: {preset} ({len(parts)} parts) -> {set_id}-*')
+    for slot in SLOTS:
+        wanted = [name for kind, name in parts if kind in SLOT_PARTS[slot]]
+        # Presets may borrow a part from another Sidekick pack (a Knights preset
+        # wears a Viking face piece); only what this pack ships can be built.
+        missing = [name for name in wanted if name + '.fbx' not in pack.index]
+        for name in missing:
+            print(f'   {slot}: {name} is not in this pack, skipped')
+        wanted = [name for name in wanted if name not in missing]
+        if not wanted:
+            print(f'   {slot}: preset has no parts for this slot')
+            continue
+        build_item(pack, f'{set_id}-{slot}', slot, wanted, palette, names[slot], descriptions[slot],
+                   set_id, config, reference, joint_index, items, skin_variants)
 
 
 def build_item(pack, item_id, slot, names, palette, name, description, set_id, config, reference, joint_index, items, skin_variants):
@@ -477,6 +497,10 @@ def render_previews(config, only):
             reset_scene()
             meshes = []
             for kind, name in pack.preset_parts(preset):
+                if name + '.fbx' not in pack.index:
+                    # Presets may borrow a body part (a nose, say) from another Sidekick pack; the preview does without it.
+                    print(f'   {preset}: {name} is not in this pack, skipped')
+                    continue
                 meshes += import_part(pack.extract(name + '.fbx'))
             apply_material(meshes, palette_material(pack.palette(preset)))
             path = out / f'{preset}.png'
@@ -504,9 +528,9 @@ def main():
             continue
         items, skin_variants = build_hero(hero_id, hero, config, reference, joint_index)
         built = {i['id'] for i in items}
-        prefix = hero['set'] + '-'
-        catalog['items'] = [i for i in catalog['items'] if not i['id'].startswith(prefix)] + items
-        catalog['skinVariants'] = sorted((set(catalog['skinVariants']) - {i for i in catalog['skinVariants'] if i.startswith(prefix)}) | set(skin_variants))
+        prefixes = tuple(hero_prefixes(hero))
+        catalog['items'] = [i for i in catalog['items'] if not i['id'].startswith(prefixes)] + items
+        catalog['skinVariants'] = sorted((set(catalog['skinVariants']) - {i for i in catalog['skinVariants'] if i.startswith(prefixes)}) | set(skin_variants))
         catalog['defaults'][hero_id] = {slot: (f'{hero["set"]}-{slot}' if f'{hero["set"]}-{slot}' in built else f'none-{slot}') for slot in SLOTS}
     catalog['note'] = 'Generated by scripts/build-hero-outfits.py from scripts/outfits/outfits.json; do not edit.'
     CATALOG.write_text(json.dumps(catalog, indent=2) + '\n', encoding='utf-8')
