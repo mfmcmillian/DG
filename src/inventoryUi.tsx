@@ -1,16 +1,16 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { Color4 } from '@dcl/sdk/math'
 import {
-  getInventoryState, getInventoryCharacter, getInventoryItems,
+  getInventoryState, getInventoryCharacter, getInventoryItems, getOwnedInventoryCount, isInventoryItemLocked,
   getPreviewLoadout, getCommittedLoadout, getInventoryIsDirty,
   selectInventorySlot, selectInventoryItem, setInventoryFilter, setInventoryPage,
   equipSelectedItem, unequipSelectedSlot, revertInventoryPreview,
   retryInventoryPreview, rotateInventoryPreview, closeInventory
 } from './inventory'
-import { EquipmentItem, EquipmentSlot, EQUIPMENT_SLOTS, getEquipmentItem, getUnequippedItem } from './equipmentCatalog'
+import { armorSourceLabel, EquipmentItem, EquipmentSlot, EQUIPMENT_SLOTS, getEquipmentItem, getUnequippedItem } from './equipmentCatalog'
 import { getMenuLayout } from './menuLayout'
 import { menuColors, MenuAction as Action } from './menuUi'
-import { RARITIES, weaponStatLine, weaponSubtitle } from './weapons'
+import { RARITIES, rarityOf, weaponStatLine, weaponSubtitle } from './weapons'
 
 const { white, muted, gold, line, panel, card, selectedGold, goldLine, coral } = menuColors
 /** The lobby's sheet, shared by every full-screen panel. */
@@ -28,6 +28,16 @@ function slotLabel(slot: EquipmentSlot) {
 
 function isEmptyItem(item?: EquipmentItem) {
   return !!item && item.id === getUnequippedItem(item.slot).id
+}
+
+/** The line under an item's name: a weapon's class and rarity, or an armor piece's set and where it is found. */
+function itemSubtitle(item: EquipmentItem): string {
+  if (item.weapon) return weaponSubtitle(item)
+  if (item.setLabel) {
+    const where = armorSourceLabel(item.realm)
+    return `${slotLabel(item.slot)} · ${item.setLabel} set${where ? ` · ${RARITIES[rarityOf(item.id)].label} · found in ${where}` : ''}`
+  }
+  return slotLabel(item.slot)
 }
 
 function ItemIcon({ item, size, scale: s }: { item?: EquipmentItem, size: number, scale: number }) {
@@ -76,10 +86,11 @@ function BackpackCard({ item, index, scale: s }: { key?: string, item?: Equipmen
   const equipped = !!item && getCommittedLoadout(state.characterId)[item.slot] === item.id
   const id = item ? `item-${item.id}` : `empty-${index}`
   const hover = hovered === id && !!item
-  const rarity = item?.weapon ? RARITIES[item.weapon.rarity] : undefined
+  const locked = !!item && isInventoryItemLocked(item.id)
+  const rarity = item && !isEmptyItem(item) ? RARITIES[rarityOf(item.id)] : undefined
   return <UiEntity uiTransform={{ ...rect(666 + (index % 4) * 145, 205 + Math.floor(index / 4) * 109, 133, 98, s),
-    borderRadius: 4 * s, borderWidth: (selected ? 2 : 1) * s, borderColor: selected ? gold : hover ? goldLine : rarity && rarity.rank > 0 ? rarity.color : line,
-    alignItems: 'center', justifyContent: 'center', opacity: item ? 1 : 0.25,
+    borderRadius: 4 * s, borderWidth: (selected ? 2 : 1) * s, borderColor: selected ? gold : hover ? goldLine : rarity && rarity.rank > 0 && !locked ? rarity.color : line,
+    alignItems: 'center', justifyContent: 'center', opacity: !item ? 0.25 : locked ? 0.55 : 1,
     pointerFilter: item ? 'block' : 'none' }}
     uiBackground={{ color: selected ? selectedGold : hover ? card : panel }}
     onMouseEnter={item ? () => { hovered = id } : undefined}
@@ -88,9 +99,14 @@ function BackpackCard({ item, index, scale: s }: { key?: string, item?: Equipmen
     {item && <ItemIcon item={item} size={88} scale={s} />}
     {isEmptyItem(item) && <Label value="Remove" color={muted} fontSize={11 * s} textWrap="nowrap"
       uiTransform={rect(0, 68, 133, 21, s)} />}
+    {locked && <UiEntity uiTransform={{ ...rect(0, 74, 133, 24, s), alignItems: 'center', justifyContent: 'center' }}
+      uiBackground={{ color: Color4.create(0, 0, 0, 0.55) }}>
+      <Label value="NOT YET FOUND" color={muted} fontSize={9 * s} textWrap="nowrap"
+        uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} />
+    </UiEntity>}
     {equipped && !isEmptyItem(item) && <Label value="✓" color={gold} fontSize={16 * s}
       uiTransform={rect(108, 3, 21, 23, s)} />}
-    {rarity && <UiEntity uiTransform={rect(4, 4, 6, 6, s)} uiBackground={{ color: rarity.color }} />}
+    {rarity && rarity.rank > 0 && <UiEntity uiTransform={rect(4, 4, 6, 6, s)} uiBackground={{ color: rarity.color }} />}
     {selected && <UiEntity uiTransform={rect(18, 94, 97, 2, s)} uiBackground={{ color: gold }} />}
   </UiEntity>
 }
@@ -110,10 +126,14 @@ export function InventoryUi() {
   const canUnequip = committed[state.selectedSlot] !== getUnequippedItem(state.selectedSlot).id
   const loading = state.loading === 'loading'
   const error = state.loading === 'error'
+  const locked = isInventoryItemLocked(selected.id)
+  const owned = getOwnedInventoryCount()
   const otherActive = state.filter !== 'all' && state.filter !== 'head' && state.filter !== 'chest' && state.filter !== 'weapon'
+  const source = armorSourceLabel(selected.realm)
   const status = error ? 'Preview unavailable. Please try again.' : loading ? 'Preparing equipment…' :
+    locked ? (selected.weapon ? 'Not yet found · weapons drop from the dungeons\' enemies' : `Not yet found · a piece of this set drops in ${source}`) :
     dirty ? 'Previewing · equip to keep this change' : isEmptyItem(selected) ? 'Nothing equipped in this slot' : 'Currently equipped'
-  const showAction = error || !equipped || canUnequip
+  const showAction = error || (!locked && (!equipped || canUnequip))
   const actionText = error ? 'Retry preview' : equipped ? 'Unequip' : isEmptyItem(selected) ? 'Remove item' : 'Equip item'
   const action = error ? retryInventoryPreview : equipped ? unequipSelectedSlot : equipSelectedItem
   const category = state.filter === 'all' ? 'All equipment' : state.filter === 'other' ? 'More armor' : slotLabel(state.filter)
@@ -150,7 +170,7 @@ export function InventoryUi() {
       <UiEntity uiTransform={{ ...rect(642, 84, 638, 654, s), borderRadius: 6 * s, borderWidth: s, borderColor: goldLine }} uiBackground={{ color: sheet }} />
       <Label value="BACKPACK" color={gold} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={rect(666, 104, 330, 20, s)} />
-      <Label value={`${items.length} ${items.length === 1 ? 'item' : 'items'}`} color={muted} fontSize={11 * s}
+      <Label value={`${owned} of ${items.length} found`} color={muted} fontSize={11 * s}
         textAlign="middle-right" textWrap="nowrap" uiTransform={rect(1100, 104, 134, 20, s)} />
       <UiEntity uiTransform={{ ...rect(666, 132, 568, 36, s), flexDirection: 'row', justifyContent: 'space-between' }}>
         {(['all', 'weapon', 'head', 'chest', 'other'] as const).map((filter) => <Action key={filter} id={`filter-${filter}`}
@@ -175,15 +195,15 @@ export function InventoryUi() {
       <UiEntity uiTransform={{ ...rect(666, 584, 62, 62, s), alignItems: 'center', justifyContent: 'center' }}>
         <ItemIcon item={selected} size={60} scale={s} />
       </UiEntity>
-      <Label value={selected.weapon ? weaponSubtitle(selected).toUpperCase() : slotLabel(selected.slot).toUpperCase()}
-        color={selected.weapon ? RARITIES[selected.weapon.rarity].color : gold} fontSize={10 * s}
+      <Label value={itemSubtitle(selected).toUpperCase()}
+        color={selected.weapon || selected.realm ? RARITIES[rarityOf(selected.id)].color : gold} fontSize={10 * s}
         textAlign="middle-left" textWrap="nowrap" uiTransform={rect(744, 579, 488, 22, s)} />
       <Label value={selected.name} font="serif" color={white} fontSize={25 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={rect(744, 601, 490, 34, s)} />
       <Label value={selected.weapon ? `${selected.description}  ${weaponStatLine(selected)}` : selected.description}
         color={muted} fontSize={12 * s} textAlign="middle-left"
         uiTransform={rect(744, 637, 490, 35, s)} />
-      <Label value={status} color={error ? coral : dirty ? gold : muted} fontSize={11 * s} textAlign="middle-left"
+      <Label value={status} color={error || locked ? coral : dirty ? gold : muted} fontSize={11 * s} textAlign="middle-left"
         uiTransform={rect(666, 683, showAction ? 364 : 568, 26, s)} />
       {dirty && <UiEntity uiTransform={rect(666, 706, 128, 28, s)}>
         <Action id="inventory-revert" text="Revert preview" onClick={revertInventoryPreview} width={128} height={27} scale={s} fontSize={11} accent="gold" />

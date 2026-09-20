@@ -8,7 +8,7 @@ import { getCommittedAppearance, normalizeAppearance, setCommittedAppearance } f
 import { adoptSavedCharacter, CHARACTERS, getEquippedCharacter, getPickerState } from './characterPicker'
 import { EQUIPMENT_SLOTS, EquipmentLoadout } from './equipmentCatalog'
 import { getCommittedLoadout, setCommittedLoadout } from './equipmentState'
-import { getUnlockedItems, unlockInventoryItem } from './inventory'
+import { enforceOwnedLoadout, getUnlockedItems, unlockInventoryItem } from './inventory'
 import { getLootState, setCoins } from './loot'
 import { isClientSynced, localAddress } from './multiplayer'
 import { onNet, sendNet } from './net'
@@ -59,9 +59,11 @@ export function initializeHeroSave() {
     }))
     const loadout = parseLoadout(msg.loadout)
     if (loadout) setCommittedLoadout(msg.cid, loadout)
+    for (const id of msg.unlocks) unlockInventoryItem(id)
+    // Armor from before it had to be earned comes off; the class default goes back on.
+    enforceOwnedLoadout(msg.cid)
     // The title's Continue waits on this outfit; fetch it ahead of the queue.
     requestHeroPreload(msg.cid, getCommittedLoadout(msg.cid), true)
-    for (const id of msg.unlocks) unlockInventoryItem(id)
     setCoins(msg.coins)
     loadSettings(msg.prefs)
     // What came back is what is stored; do not write it straight back.

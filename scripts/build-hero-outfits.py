@@ -39,7 +39,8 @@ clips are not needed), and scripts/slim-roaming-clips.py's passes run on
 the result so each file only carries animation for the joints it uses.
 
 Also written: images/equipment/<set>-<slot>.png icons, src/outfitCatalog.json
-(items, skin-variant ids and the hero defaults the game reads), and with
+(items with their `hero`, `set` and `realm`, skin-variant ids and the hero
+defaults the game reads), and with
 --previews a render of all six presets of each pack to .tmp-outfits/previews/.
 """
 import importlib.util
@@ -389,6 +390,7 @@ def build_glb(reference, clips, vertices, tex_tris, skin_tris, palette_png, set_
     slim.repair_inputs(gltf, bin_)
     slim.prune_unposed(gltf, bin_)
     slim.slim(gltf, bin_)
+    slim.decimate(gltf, bin_)
     bin_ = slim.repack(gltf, bin_)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     sb.save_glb(out_path, gltf, bin_)
@@ -415,6 +417,20 @@ def build_hero(hero_id, hero, config, reference, joint_index):
         pal = pack.palette(extra['palette']) if extra.get('palette') else palette
         build_item(pack, extra['id'], extra['slot'], extra['parts'], pal, extra['name'], extra['description'],
                    hero['set'], config, reference, joint_index, items, skin_variants)
+    # Who wears it and where it is found: the game filters the wardrobe by class
+    # and drops a set's pieces in its realm. The hero's own set has no realm: it
+    # is the starter, always owned.
+    realm_of = {hero['set']: ''}
+    label_of = {hero['set']: hero['label']}
+    for coll in hero.get('collectibles', []):
+        realm_of[coll['set']] = coll.get('realm', 'fortress')
+        label_of[coll['set']] = coll['label']
+    for item in items:
+        set_id = max((s for s in realm_of if item['id'].startswith(s + '-')), key=len)
+        item['hero'] = hero_id
+        item['set'] = set_id
+        item['setLabel'] = label_of[set_id]
+        item['realm'] = realm_of[set_id]
     return items, skin_variants
 
 

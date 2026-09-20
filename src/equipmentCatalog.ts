@@ -1,6 +1,7 @@
 import weaponCatalog from './weaponCatalog.json'
 import outfitCatalog from './outfitCatalog.json'
-import { classAllowsWeapon } from './heroClasses'
+import { classAllowsArmor, classAllowsWeapon } from './heroClasses'
+import { REALMS } from './shared/levels'
 
 export type EquipmentSlot = 'head' | 'chest' | 'shoulders' | 'hands' | 'legs' | 'boots' | 'weapon'
 export type EquipmentLoadout = Record<EquipmentSlot, string>
@@ -15,6 +16,9 @@ export type WeaponInfo = {
   hand?: 'l' | 'r'
 }
 
+/** Where a set's pieces are found: a realm's dungeons, the Pit, or nowhere because it is the class's starter. */
+export type ArmorRealm = '' | 'fortress' | 'castle' | 'forge' | 'raid'
+
 export interface EquipmentItem {
   id: string
   name: string
@@ -24,6 +28,13 @@ export interface EquipmentItem {
   models: string[]
   modelsByCharacter?: Record<string, string[]>
   weapon?: WeaponInfo
+  /** Armor: the character whose class wears this piece (unset: anyone, e.g. the empty slots). */
+  hero?: string
+  /** Armor: the set prefix, e.g. 'jarl', and how the set is named. */
+  set?: string
+  setLabel?: string
+  /** Armor: where its pieces drop; '' is the always-owned starter set. */
+  realm?: ArmorRealm
 }
 
 export const EQUIPMENT_SLOTS: Array<{ id: EquipmentSlot; label: string }> = [
@@ -466,9 +477,41 @@ const ASSETS = {
 } as EquipmentAssets
 
 /** Armor and the empty slots from the Sidekick export, the class outfit sets, then every loot weapon. */
+/** The original hand-built sets, by id prefix: whose they are and where they drop now that armor is earned. */
+const BUILT_IN_SETS: Record<string, { hero: string; label: string; realm: ArmorRealm }> = {
+  knight: { hero: 'vanguard', label: 'Knight', realm: 'fortress' },
+  scout: { hero: 'scout', label: 'Pathfinder', realm: 'fortress' },
+  striker: { hero: 'striker', label: 'Adept', realm: 'fortress' },
+  brute: { hero: 'brute', label: 'Brute', realm: 'fortress' }
+}
+function annotateBuiltIn(item: EquipmentItem): EquipmentItem {
+  const set = item.id.split('-')[0]
+  const owner = BUILT_IN_SETS[set]
+  return owner ? { ...item, hero: owner.hero, set, setLabel: owner.label, realm: owner.realm } : item
+}
+
+/** Where a piece of armor is found, for the wardrobe: the realm's name, or the Pit. */
+export function armorSourceLabel(realm: ArmorRealm | undefined): string {
+  if (realm === 'raid') return 'The Pit of Chains'
+  return REALMS.find((r) => r.id === realm)?.name ?? ''
+}
+
 export const EQUIPMENT_ITEMS: EquipmentItem[] = [
-  ...ASSETS.items, ...(outfitCatalog.items as EquipmentItem[]), ...(weaponCatalog.items as EquipmentItem[])
+  ...(ASSETS.items as EquipmentItem[]).map(annotateBuiltIn), ...(outfitCatalog.items as EquipmentItem[]), ...(weaponCatalog.items as EquipmentItem[])
 ]
+
+/**
+ * Ids that no longer exist, and what they became: the single "extra" pieces
+ * were folded into the full sets they came from when every preset became a set.
+ */
+const RENAMED: Record<string, string> = {
+  'paladin-head-crown': 'sovereign-head', 'paladin-head-plume': 'chevalier-head', 'paladin-head-hood': 'ironclad-head',
+  'viking-head-crested': 'ulfhednar-head', 'elf-head-bramble': 'thorn-head', 'elf-head-stag': 'stag-head',
+  'sorc-shoulders-toad': 'witch-shoulders', 'sorc-shoulders-spectral': 'spectral-shoulders', 'sorc-shoulders-familiars': 'sage-shoulders'
+}
+export function currentItemId(id: string): string {
+  return RENAMED[id] ?? id
+}
 export const EQUIPMENT_CORES: Record<string, string[]> = ASSETS.cores
 /** Sidekick defaults, with the armor slots of heroes that have an outfit set (scripts/build-hero-outfits.py) replaced. */
 export const DEFAULT_LOADOUTS: Record<string, EquipmentLoadout> = Object.fromEntries(
@@ -509,8 +552,11 @@ export function sanitizeLoadout(loadout: EquipmentLoadout, characterId: string):
   const defaults = DEFAULT_LOADOUTS[characterId] ?? DEFAULT_LOADOUTS.vanguard
   const out = { ...loadout }
   for (const slot of EQUIPMENT_SLOTS) {
+    out[slot.id] = currentItemId(out[slot.id])
     const item = byId.get(out[slot.id])
     if (!item || item.slot !== slot.id) out[slot.id] = defaults[slot.id]
+    // Another class's armor (a save from before the wardrobes were divided) comes off.
+    else if (item.hero && !classAllowsArmor(characterId, item.hero)) out[slot.id] = defaults[slot.id]
   }
   // A weapon of another class (a save from before the archer had a bow) becomes the class starter.
   const weapon = byId.get(out.weapon)

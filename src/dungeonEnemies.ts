@@ -9,7 +9,7 @@
 import { EasingFunction, engine, Entity, Transform, Tween } from '@dcl/sdk/ecs'
 import { Color3, Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
 import { COURTYARD } from './courtyard'
-import { DEFAULT_LOADOUTS, EquipmentLoadout } from './equipmentCatalog'
+import { ArmorRealm, DEFAULT_LOADOUTS, EquipmentLoadout, getEquipmentItemOrNull } from './equipmentCatalog'
 import { CharacterAppearance } from './appearance'
 import {
   destroyEquipmentAvatar, equipmentModelPaths, getEquipmentLoading, setEquipmentAvatar,
@@ -55,8 +55,8 @@ import {
   createDecal, Decal, destroyDecal, fxDeathPuff, fxGlitter, fxImpact, fxNumber, fxSlam, fxSlash, fxSound, FxSound, fxWoodHit, updateDecal
 } from './combatFx'
 import { kickCrawlerCamera } from './dungeon/crawlerCamera'
-import { clearLoot, spawnLoot } from './loot'
-import { rollWeaponDrop, weaponStats } from './weapons'
+import { clearLoot, lootKindOf, spawnLoot } from './loot'
+import { rollArmorDrop, rollWeaponDrop, weaponStats } from './weapons'
 import { AttackContext } from './roamingCombat'
 import {
   allFighters, EnemySnap, heroCharacters, HeroHit, heroWeapon, ImpactNet, isHeadless, isHost, localAddress, NetFighter, publishEnemies, publishHitEnemy,
@@ -1379,6 +1379,23 @@ function kill(e: Enemy) {
   }
   if (e.boss && item) sim.bossDropGiven = true
   publishLoot(sim.party, e.position.x, e.position.z, coin, heart, item, e.boss)
+  // Armor: a piece of one of this realm's sets, cut for someone in the party. The
+  // boss always leaves one; the rest only when they left no weapon.
+  if (e.boss || !item) {
+    const source = e.boss ? 'boss' : e.archetype.role === 'elite' ? 'elite' : 'grunt'
+    const armor = rollArmorDrop(source, sim.level.realm as ArmorRealm, partyCharacters(sim.party))
+    if (armor) publishLoot(sim.party, e.position.x + 0.4, e.position.z - 0.4, 0, 0, armor, e.boss)
+  }
+}
+
+/** The champions in a party, the host's own included (heroCharacters knows only the synced bodies). */
+function partyCharacters(party: string): string[] {
+  const characters = heroCharacters((id) => partyOf(id) === party)
+  if (!isHeadless() && partyOf(localAddress()) === party) {
+    const mine = getPlayerCharacterState().characterId
+    if (mine) characters.push(mine)
+  }
+  return characters
 }
 
 function grantLoot(party: string, x: number, z: number, coin: number, heart: number, item: string, boss: boolean) {
@@ -1386,7 +1403,8 @@ function grantLoot(party: string, x: number, z: number, coin: number, heart: num
   const origin = Vector3.create(x, COURTYARD.characterFloorY, z)
   if (coin > 0) spawnLoot(origin, 'coin', coin)
   if (heart > 0) spawnLoot(origin, 'heart', heart)
-  if (item) spawnLoot(origin, 'weapon', 1, item, boss)
+  const gear = item ? getEquipmentItemOrNull(item) : undefined
+  if (gear) spawnLoot(origin, lootKindOf(gear), 1, item, boss)
 }
 
 function presentDeath(e: Enemy) {

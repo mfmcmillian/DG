@@ -151,6 +151,12 @@ export function classAllowsWeapon(characterId: string | undefined, weaponClass: 
   return heroClassOf(characterId).weaponClasses.includes(weaponClass)
 }
 
+/** Whether this hero may wear a piece made for `ownerCharacterId`'s class (armor without an owner fits anyone). */
+export function classAllowsArmor(characterId: string | undefined, ownerCharacterId: string | undefined): boolean {
+  if (!ownerCharacterId) return true
+  return classOfCharacter(characterId) === classOfCharacter(ownerCharacterId)
+}
+
 /** Weapon classes any of these characters can use; the loot pool for a party. */
 export function weaponPoolFor(characterIds: Iterable<string>): WeaponClass[] {
   const out = new Set<WeaponClass>()

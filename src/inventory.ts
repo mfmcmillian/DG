@@ -18,11 +18,13 @@ import {
   getEquippedCharacter
 } from './characterPicker'
 import {
+  DEFAULT_LOADOUTS,
   EQUIPMENT_ITEMS,
   EQUIPMENT_SLOTS,
   EquipmentItem,
   EquipmentLoadout,
   EquipmentSlot,
+  getEquipmentItemOrNull,
   getUnequippedItem
 } from './equipmentCatalog'
 import {
@@ -37,7 +39,7 @@ import {
   getCommittedLoadout as readCommittedLoadout,
   setCommittedLoadout
 } from './equipmentState'
-import { classAllowsWeapon, HERO_CLASSES, heroClassOf } from './heroClasses'
+import { classAllowsArmor, classAllowsWeapon, HERO_CLASSES } from './heroClasses'
 
 export type InventoryFilter = 'all' | 'other' | EquipmentSlot
 
@@ -107,16 +109,39 @@ export function getInventoryIsDirty(): boolean {
   return EQUIPMENT_SLOTS.some((slot) => previewLoadout![slot.id] !== committed[slot.id])
 }
 
-// Loot-gated gear: hidden from the inventory until the dungeon hands it over.
-// Every loot weapon but the class starters (sword, bow, staff) is earned.
+// Loot-gated gear: locked until the dungeon hands it over. Every loot weapon
+// but the class starters (sword, axe, bow, staff) is earned, and so is every
+// armor set but the class's own: a set's pieces drop in its realm.
 export const STARTER_WEAPON = HERO_CLASSES.blade.starterWeapon
 const STARTER_WEAPONS = new Set<string>(Object.values(HERO_CLASSES).map((c) => c.starterWeapon))
-const GATED_ITEMS = EQUIPMENT_ITEMS.filter((item) => !!item.weapon && !STARTER_WEAPONS.has(item.id)).map((item) => item.id)
+const GATED_ITEMS = EQUIPMENT_ITEMS.filter((item) => item.weapon ? !STARTER_WEAPONS.has(item.id) : !!item.realm).map((item) => item.id)
 const lockedItems = new Set<string>(GATED_ITEMS)
 
-/** A weapon the hero's class can carry (armor and empty slots always pass). */
+/** Gear the hero's class can use: a weapon of its classes, armor cut for it (empty slots always pass). */
 function usableByHero(item: EquipmentItem, characterId: string = getEquippedCharacter().id): boolean {
-  return classAllowsWeapon(characterId, item.weapon?.class)
+  if (item.weapon) return classAllowsWeapon(characterId, item.weapon.class)
+  return classAllowsArmor(characterId, item.hero)
+}
+
+/** Whether this hero's class could ever wear or wield the item (locked or not). */
+export function isUsableByHero(id: string, characterId: string = getEquippedCharacter().id): boolean {
+  const item = getEquipmentItemOrNull(id)
+  return !!item && usableByHero(item, characterId)
+}
+
+/** A slot that holds gear the hero has not earned (a save from before armor was) goes back to the class default. */
+export function enforceOwnedLoadout(characterId: string): boolean {
+  const committed = readCommittedLoadout(characterId)
+  const defaults = DEFAULT_LOADOUTS[characterId] ?? DEFAULT_LOADOUTS.vanguard
+  let changed = false
+  for (const slot of EQUIPMENT_SLOTS) {
+    if (lockedItems.has(committed[slot.id])) {
+      committed[slot.id] = defaults[slot.id]
+      changed = true
+    }
+  }
+  if (changed) setCommittedLoadout(characterId, committed)
+  return changed
 }
 
 export function isInventoryItemLocked(id: string): boolean {
@@ -128,23 +153,18 @@ export function unlockInventoryItem(id: string): boolean {
   return lockedItems.delete(id)
 }
 
-/** Developer: hand over every loot weapon so they can be inspected on the hero. Saved with the hero like any unlock. */
+/** Developer: hand over every loot weapon and armor piece so they can be inspected on the hero. Saved with the hero like any unlock. */
 export function unlockAllWeapons(): number {
   let granted = 0
   for (const id of GATED_ITEMS) if (lockedItems.delete(id)) granted++
   return granted
 }
 
-/** Developer: back to the starter saber only. Unequips a weapon that is no longer owned. */
+/** Developer: back to the starter gear only. Unequips anything that is no longer owned. */
 export function relockAllWeapons() {
   for (const id of GATED_ITEMS) lockedItems.add(id)
   const character = getEquippedCharacter()
-  const committed = readCommittedLoadout(character.id)
-  if (lockedItems.has(committed.weapon)) {
-    committed.weapon = heroClassOf(character.id).starterWeapon
-    setCommittedLoadout(character.id, committed)
-    onApply(character)
-  }
+  if (enforceOwnedLoadout(character.id)) onApply(character)
 }
 
 /** Gated items the hero has earned; what a saved hero carries between sessions. */
@@ -157,14 +177,25 @@ export function ownedWeaponIds(characterId: string = getEquippedCharacter().id):
   return EQUIPMENT_ITEMS.filter((item) => item.slot === 'weapon' && !lockedItems.has(item.id) && usableByHero(item, characterId)).map((item) => item.id)
 }
 
+/**
+ * The backpack: what the hero owns first, then the class's gear still to be
+ * found (dimmed, with where it drops), so the wardrobe reads as something to
+ * fill out. Locked pieces can be previewed but not equipped.
+ */
 export function getInventoryItems(): EquipmentItem[] {
   const characterId = getInventoryCharacter().id
-  const available = EQUIPMENT_ITEMS.filter((item) => !lockedItems.has(item.id) && usableByHero(item, characterId))
+  const mine = EQUIPMENT_ITEMS.filter((item) => usableByHero(item, characterId))
+  const available = [...mine.filter((item) => !lockedItems.has(item.id)), ...mine.filter((item) => lockedItems.has(item.id))]
   if (state.filter === 'all') return available
   if (state.filter === 'other') {
     return available.filter((item) => item.slot !== 'head' && item.slot !== 'chest' && item.slot !== 'weapon')
   }
   return available.filter((item) => item.slot === state.filter)
+}
+
+/** Owned gear only, for counts. */
+export function getOwnedInventoryCount(): number {
+  return getInventoryItems().filter((item) => !lockedItems.has(item.id)).length
 }
 
 /** Runs once when the inventory closes (the lobby uses it to come back). */
@@ -261,7 +292,7 @@ export function setInventoryPage(page: number) {
 export function equipSelectedItem() {
   if (!state.open || state.loading !== 'ready' || !getInventoryIsDirty()) return
   const item = EQUIPMENT_ITEMS.find((entry) => entry.id === state.selectedItemId && entry.slot === state.selectedSlot)
-  if (!item || previewLoadout?.[item.slot] !== item.id) return
+  if (!item || previewLoadout?.[item.slot] !== item.id || lockedItems.has(item.id)) return
   const readyPreview = candidatePreview ?? committedPreview
   if (readyPreview === undefined || getEquipmentLoading(readyPreview) !== 'ready') return
   if (candidatePreview === undefined && item.slot !== 'weapon') return

@@ -6,7 +6,8 @@
 // decides its flat damage bonus and how often the dungeon hands one over.
 
 import { Color4 } from '@dcl/sdk/math'
-import { EQUIPMENT_ITEMS, EquipmentItem, getEquipmentItemOrNull } from './equipmentCatalog'
+import { ArmorRealm, EQUIPMENT_ITEMS, EquipmentItem, getEquipmentItemOrNull } from './equipmentCatalog'
+import { classAllowsArmor } from './heroClasses'
 
 export type WeaponClass = 'sword' | 'dagger' | 'axe' | 'mace' | 'hammer' | 'club' | 'great' | 'bow' | 'staff' | 'sceptre'
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
@@ -46,6 +47,8 @@ export const RARITIES: Record<Rarity, { label: string; rank: number; bonus: numb
 
 export const RARITY_ORDER: Rarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary']
 
+export type DropSource = 'grunt' | 'elite' | 'boss'
+
 const SWORD_STATS: WeaponStats = { damage: 1, stagger: 1, knockback: 1, bonus: 0 }
 
 export function weaponInfo(id: string): EquipmentItem['weapon'] | undefined {
@@ -60,8 +63,34 @@ export function weaponStats(id: string | undefined, withBonus = true): WeaponSta
   return { damage: cls.damage, stagger: cls.stagger, knockback: cls.knockback, bonus: withBonus ? RARITIES[info.rarity].bonus : 0 }
 }
 
+/** An armor set's rank follows where it is found: the deeper the realm, the rarer the piece. */
+export const ARMOR_RARITY: Record<Exclude<ArmorRealm, ''>, Rarity> = { fortress: 'uncommon', castle: 'rare', forge: 'epic', raid: 'legendary' }
+
+/** How rare a loot item is: a weapon's own rarity, or an armor piece's by its realm. Starter gear is common. */
 export function rarityOf(id: string): Rarity {
-  return weaponInfo(id)?.rarity ?? 'common'
+  const item = getEquipmentItemOrNull(id)
+  if (item?.weapon) return item.weapon.rarity
+  return item?.realm ? ARMOR_RARITY[item.realm] : 'common'
+}
+
+/** Armor pieces of every set found in `realm`, for a class (by its character id). */
+export function armorDropsFor(characterId: string, realm: Exclude<ArmorRealm, ''>): EquipmentItem[] {
+  return EQUIPMENT_ITEMS.filter((item) => !item.weapon && item.realm === realm && classAllowsArmor(characterId, item.hero))
+}
+
+/** How often a slain enemy leaves a piece of armor when it left no weapon. The boss always does. */
+const ARMOR_CHANCE: Record<DropSource, number> = { grunt: 0.04, elite: 0.14, boss: 1 }
+
+/**
+ * Roll an armor drop for a slain enemy: a piece of one of the realm's sets for
+ * a random character present, or '' for nothing.
+ */
+export function rollArmorDrop(source: DropSource, realm: ArmorRealm, characterIds: string[], rng: () => number = Math.random): string {
+  if (!realm || !characterIds.length || rng() >= ARMOR_CHANCE[source]) return ''
+  const cid = characterIds[Math.min(characterIds.length - 1, Math.floor(rng() * characterIds.length))]
+  const pieces = armorDropsFor(cid, realm)
+  if (!pieces.length) return ''
+  return pieces[Math.min(pieces.length - 1, Math.floor(rng() * pieces.length))].id
 }
 
 export function rarityColor(id: string): Color4 {
@@ -89,7 +118,6 @@ export function weaponStatLine(item: EquipmentItem): string {
 
 // --- drop tables (host) --------------------------------------------------------------
 
-export type DropSource = 'grunt' | 'elite' | 'boss'
 
 /** Chance that a slain enemy of this kind drops a weapon at all. */
 const DROP_CHANCE: Record<DropSource, number> = { grunt: 0.05, elite: 0.3, boss: 1 }

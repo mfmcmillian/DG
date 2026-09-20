@@ -30,6 +30,13 @@ Lossless passes:
      input accessor.
 The binary buffer is then repacked with only the referenced bufferViews.
 
+One lossy pass, within a tolerance nobody can see:
+  5. Keyframe decimation. The clips are baked at 30 fps, so most keys lie on
+     the straight line between their neighbours: a key that linear
+     interpolation reproduces within the tolerance (rotation 0.0015 per
+     quaternion component, about 0.17 degrees; translation 0.5 mm; scale 0.001)
+     is dropped. Inputs are per sampler afterwards; identical ones are shared.
+
 Run it after splice-boss-clips.py / bake-sword-clips.py re-inflate a file; it is
 idempotent. --check reports the savings without writing.
 """
@@ -39,6 +46,8 @@ import json
 import struct
 import sys
 from pathlib import Path
+
+import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 _spec = importlib.util.spec_from_file_location('swordbake', ROOT / 'scripts/bake-sword-clips.py')
@@ -251,6 +260,94 @@ def slim(gltf, bin_):
     return dropped
 
 
+DECIMATE_EPS = {'rotation': 0.0015, 'translation': 0.0005, 'scale': 0.001, 'weights': 0.002}
+DECIMATE_PASSES = 4
+
+
+def _append_f32(gltf, bin_, arr, gltf_type, minmax):
+    data = np.ascontiguousarray(arr, dtype='<f4').tobytes()
+    while len(bin_) % 4:
+        bin_ += b'\x00'
+    gltf['bufferViews'].append({'buffer': 0, 'byteOffset': len(bin_), 'byteLength': len(data)})
+    bin_ += data
+    acc = {'bufferView': len(gltf['bufferViews']) - 1, 'componentType': 5126, 'count': int(arr.shape[0]), 'type': gltf_type}
+    if minmax:
+        acc['min'] = [float(x) for x in arr.min(axis=0)]
+        acc['max'] = [float(x) for x in arr.max(axis=0)]
+    gltf['accessors'].append(acc)
+    return len(gltf['accessors']) - 1
+
+
+def _keep_mask(t, v, path):
+    """Keys of one sampler that linear interpolation cannot reproduce within tolerance."""
+    eps = DECIMATE_EPS[path]
+    n = len(t)
+    keep = np.ones(n, dtype=bool)
+    for _ in range(DECIMATE_PASSES):
+        idx = np.nonzero(keep)[0]
+        if len(idx) < 3:
+            break
+        prev, cur, nxt = idx[:-2], idx[1:-1], idx[2:]
+        a = ((t[cur] - t[prev]) / (t[nxt] - t[prev]))[:, None]
+        q0, q1, qc = v[prev], v[nxt], v[cur]
+        if path == 'rotation':
+            flip = np.sign(np.sum(q0 * q1, axis=1, keepdims=True))
+            flip[flip == 0] = 1
+            interp = q0 * (1 - a) + q1 * flip * a
+            interp /= np.linalg.norm(interp, axis=1, keepdims=True)
+            sgn = np.sign(np.sum(interp * qc, axis=1, keepdims=True))
+            sgn[sgn == 0] = 1
+            err = np.max(np.abs(interp - qc * sgn), axis=1)
+        else:
+            interp = q0 * (1 - a) + q1 * a
+            err = np.max(np.abs(interp - qc), axis=1)
+        cand = err <= eps
+        drop = np.zeros(len(cur), dtype=bool)
+        last = False
+        for i in range(len(cur)):
+            if cand[i] and not last:
+                drop[i] = True
+                last = True
+            else:
+                last = False
+        if not drop.any():
+            break
+        keep[cur[drop]] = False
+    return keep
+
+
+def decimate(gltf, bin_):
+    """
+    Drop keys that linear interpolation between their neighbours reproduces
+    within DECIMATE_EPS, per sampler: a finger's track keeps a handful of keys
+    while the arm keeps most of its own. Each decimated sampler gets its own
+    timeline (identical ones are shared). Returns (keys before, keys after).
+    """
+    anims = gltf.get('animations', [])
+    before = after = 0
+    for an in anims:
+        path_of = {ch['sampler']: ch['target']['path'] for ch in an['channels']}
+        cache = {}
+        for si, smp in enumerate(an['samplers']):
+            if smp.get('interpolation', 'LINEAR') != 'LINEAR' or si not in path_of:
+                continue
+            t = np.array(accessor_values(gltf, bin_, smp['input']), dtype=np.float64)[:, 0]
+            v = np.array(accessor_values(gltf, bin_, smp['output']), dtype=np.float64)
+            n = len(t)
+            before += n
+            keep = _keep_mask(t, v, path_of[si])
+            kept = int(keep.sum())
+            after += kept
+            if kept == n:
+                continue
+            key = hashlib.md5(t[keep].astype('<f4').tobytes()).hexdigest()
+            if key not in cache:
+                cache[key] = _append_f32(gltf, bin_, t[keep][:, None], 'SCALAR', True)
+            smp['input'] = cache[key]
+            smp['output'] = _append_f32(gltf, bin_, v[keep], gltf['accessors'][smp['output']]['type'], False)
+    return before, after
+
+
 def repack(gltf, bin_):
     """Keep only the accessors and bufferViews something still points at; renumber everything."""
     used_acc = set()
@@ -323,7 +420,10 @@ def process(path, check):
     clips = drop_other_gender_clips(gltf, path)
     unposed = prune_unposed(gltf, bin_)
     dropped = slim(gltf, bin_) + unposed
+    keys_before, keys_after = decimate(gltf, bin_)
     notes = []
+    if keys_after < keys_before:
+        notes.append(f'keys {keys_before} -> {keys_after}')
     if repaired:
         notes.append(f'repaired {repaired} sampler(s) with duplicate key times')
     if clips:

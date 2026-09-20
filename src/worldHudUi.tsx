@@ -8,7 +8,7 @@ import { getPlayerCharacterState, getPlayerVitals, retryPlayerCharacter } from '
 import { getWorldRivalState, retryWorldRival } from './dungeonEnemies'
 import { getLootState, getLootToasts, TOAST_SECONDS } from './loot'
 import { getEquipmentItemOrNull } from './equipmentCatalog'
-import { RARITIES, WEAPON_CLASSES } from './weapons'
+import { RARITIES, rarityOf, WEAPON_CLASSES } from './weapons'
 import { isClientSynced, isSoloMode, localAddress, netStatus } from './multiplayer'
 import { netDebugSummary, recentLogs } from './netDebug'
 import { MenuAction } from './menuUi'
@@ -266,11 +266,12 @@ function LootToasts({ right, bottom, scale: s }: { right: number; bottom: number
     width: cardWidth, flexDirection: 'column-reverse', pointerFilter: 'none' }}>
     {toasts.map((t, i) => {
       const fade = Math.max(0, Math.min(1, (TOAST_SECONDS - t.age) / 0.9))
-      const rarity = t.item.weapon ? RARITIES[t.item.weapon.rarity] : undefined
-      const rarityColor = rarity ? rarity.color : white
+      const rarity = RARITIES[rarityOf(t.item.id)]
+      const rarityColor = rarity.color
       const subtitle = t.salvaged > 0
-        ? `Already owned  ·  salvaged for ${t.salvaged} coins`
-        : t.item.weapon ? `${rarity?.label ?? ''}  ·  ${WEAPON_CLASSES[t.item.weapon.class].label}  ·  now in your inventory` : ''
+        ? `${t.wrongClass ? 'Cut for another class' : 'Already owned'}  ·  salvaged for ${t.salvaged} coins`
+        : t.item.weapon ? `${rarity.label}  ·  ${WEAPON_CLASSES[t.item.weapon.class].label}  ·  now in your inventory`
+        : `${rarity.label}  ·  ${t.item.setLabel ?? ''} set  ·  now in your wardrobe`
       return <UiEntity key={`${t.item.id}-${i}`} uiTransform={{ width: cardWidth, height: cardHeight, margin: { top: 6 * s },
         padding: 7 * s, borderRadius: 8 * s, borderWidth: s, borderColor: withAlpha(t.salvaged > 0 ? line : rarityColor, fade * 0.9),
         flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: withAlpha(panel, fade) }}>
@@ -294,14 +295,14 @@ function FoundThisRun({ found, salvaged, width, scale: s }: { found: string[]; s
   const more = items.length - shown.length
   const salvageText = salvaged > 0 ? `${salvaged} duplicate${salvaged === 1 ? '' : 's'} salvaged for coin` : ''
   const caption = items.length
-    ? `Found this run  ·  ${items.length} new weapon${items.length === 1 ? '' : 's'}${salvageText ? `  ·  ${salvageText}` : ''}`
-    : salvageText ? `No new weapons  ·  ${salvageText}` : 'No weapons dropped this run'
+    ? `Found this run  ·  ${items.length} new item${items.length === 1 ? '' : 's'}${salvageText ? `  ·  ${salvageText}` : ''}`
+    : salvageText ? `Nothing new  ·  ${salvageText}` : 'No gear dropped this run'
   return <UiEntity uiTransform={{ width, margin: { top: 12 * s }, flexDirection: 'column', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
     <Label value={caption} color={items.length ? gold : muted} font="sans-serif" fontSize={12 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 20 * s, flexShrink: 0, pointerFilter: 'none' }} />
     {shown.length > 0 && <UiEntity uiTransform={{ width: '100%', height: 56 * s, margin: { top: 4 * s }, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
       {shown.map((item, i) => {
-        const color = item.weapon ? RARITIES[item.weapon.rarity].color : line
+        const color = RARITIES[rarityOf(item.id)].color
         return <UiEntity key={`${item.id}-${i}`} uiTransform={{ width: 48 * s, height: 48 * s, margin: { left: 3 * s, right: 3 * s }, padding: 2 * s,
           borderRadius: 6 * s, borderWidth: 1.5 * s, borderColor: color, flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: track }}>
           <UiEntity uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }}
