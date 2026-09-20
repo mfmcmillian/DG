@@ -1,6 +1,6 @@
 // Hero classes. A class is tied to the character: the Vanguard fights with
 // the blade set every sword clip was made for, the Berserker swings the heavy
-// iron (same clips, the weapon classes carry the weight), Scout is the archer
+// iron (the Warlord's slower cuts and his leap; the weapon classes add the weight), Scout is the archer
 // and Striker the spellblade. The class decides which weapons the hero may carry,
 // what the light string / heavy / guard play as, and whether an attack is a
 // swing (hits at the contact frame) or a shot (spawns a projectile at it).
@@ -67,11 +67,12 @@ export const HERO_CLASSES: Record<HeroClass, HeroClassDefinition> = {
   heavy: {
     id: 'heavy',
     label: 'Heavy',
-    blurb: 'Axes, hammers and two-handed iron. Slower to shove, harder to stop.',
+    blurb: 'Axes, hammers and two-handed iron. A cross-cut, an overhead smash to end the string, and a leap that lands on them.',
     weaponClasses: ['axe', 'hammer', 'club', 'great'],
     starterWeapon: 'vk-axe-01',
-    light: ['attack_light', 'attack_light2', 'attack_light'],
-    heavy: 'attack_heavy',
+    // Slower than the blade's string (3.1 s to the Knight's 2.3) and every blow lands heavier; the leap covers 3 m.
+    light: ['attack_light', 'attack_light3', 'heavy_combo_c'],
+    heavy: 'leap',
     block: 'block',
     aimCone: 40,
     ranged: {}

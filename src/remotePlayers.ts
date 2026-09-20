@@ -1,7 +1,7 @@
 import { AvatarAnchorPointType, AvatarAttach, engine, Entity, PlayerIdentityData, Transform } from '@dcl/sdk/ecs'
 import { Quaternion, Vector3 } from '@dcl/sdk/math'
 import { rearmAvatarHiding } from './avatarHiding'
-import { AttackMotion, HeroAttackMotion, isRangedAttack } from './combatActions'
+import { HeroAttackMotion, isHeavyMotion, isRangedAttack } from './combatActions'
 import { shotProfile, shotProfileForMotion } from './heroClasses'
 import { launchShot } from './projectiles'
 import { EquipmentMotion } from './combatAnimations'
@@ -68,10 +68,10 @@ const RETRY_SECONDS = 3
 const DIAG_SECONDS = 10
 
 const RESET_MOTIONS = new Set<EquipmentMotion>([
-  'attack_light', 'attack_light2', 'attack_heavy', 'hit', 'death', 'block', 'dodge_roll',
+  'attack_light', 'attack_light2', 'attack_heavy', 'attack_light3', 'heavy_combo_c', 'leap', 'hit', 'death', 'block', 'dodge_roll',
   'bow_shoot', 'bow_volley', 'bow_bash', 'bow_block', 'cast_bolt', 'cast_nova'
 ])
-const MELEE_MOTIONS = new Set<EquipmentMotion>(['attack_light', 'attack_light2', 'attack_heavy'])
+const MELEE_MOTIONS = new Set<EquipmentMotion>(['attack_light', 'attack_light2', 'attack_heavy', 'attack_light3', 'heavy_combo_c', 'leap'])
 
 /** Keyed by the synced hero entity. */
 const replicas = new Map<Entity, Replica>()
@@ -253,8 +253,8 @@ function updateRemotePlayers(dt: number) {
       if (!(replica.echoGrace > 0 && motion === replica.motion)) {
         applyMotion(replica, motion, restart && RESET_MOTIONS.has(motion))
         if (restart && MELEE_MOTIONS.has(motion)) {
-          fxSlash(replica.root, motion as AttackMotion)
-          fxSound(motion === 'attack_heavy' ? 'swing_heavy' : 'swing_light', 0.55)
+          fxSlash(replica.root, motion as HeroAttackMotion)
+          fxSound(isHeavyMotion(motion as HeroAttackMotion) ? 'swing_heavy' : 'swing_light', 0.55)
         } else if (restart && motion === 'bow_bash') {
           fxSound('swing_light', 0.55)
         }

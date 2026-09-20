@@ -1085,7 +1085,8 @@ function lockOn(motion: HeroAttackMotion, _context: AttackContext) {
   if (!attacker || attacker.health <= 0 || !clientSim || clientSim.paused || defeated) return
   sim = clientSim
   const shot = shotProfile(getPlayerCharacterState().characterId, motion)
-  const reach = shot ? shot.range : isHeavyMotion(motion) ? 2.15 : 1.9
+  // A leap locks on from three metres: it is the one swing that travels to its mark.
+  const reach = shot ? shot.range : attackRange(motion)
   // Only when the enemy is actually there: swinging while running through a room
   // must not yank the body around or teleport the player toward distant targets.
   const best = pickHeroTarget(attacker, reach + LOCK_MARGIN, shot ? aimCos() : LOCK_COS, shot ? 1.5 : 0, !!shot)
@@ -1354,6 +1355,7 @@ function asAttack(motion: string): AttackMotion | undefined {
 function asHeroAttack(motion: string): HeroAttackMotion | undefined {
   if (asAttack(motion)) return motion as AttackMotion
   if (motion === 'bow_shoot' || motion === 'bow_volley' || motion === 'bow_bash' || motion === 'cast_bolt' || motion === 'cast_nova') return motion
+  if (motion === 'attack_light3' || motion === 'heavy_combo_c' || motion === 'leap') return motion
 }
 
 function kill(e: Enemy) {

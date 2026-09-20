@@ -15,7 +15,7 @@ const BLEND_ADD = 1 as PBParticleSystem_BlendMode
 const PLAYING = 0 as PBParticleSystem_PlaybackState
 const STOPPED = 2 as PBParticleSystem_PlaybackState
 import { Color3, Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
-import { AttackMotion } from './combatActions'
+import { WeaponMotion } from './combatActions'
 import { COMBAT_CLIPS } from './combatAnimations'
 import { playerEntityByAddress } from './multiplayer'
 
@@ -246,7 +246,7 @@ function slashUvs(frame: number): number[] {
  * frame. Lights sweep a flat arc across the front (the second light mirrored,
  * as the return stroke); heavies drop a tall arc turned toward the camera.
  */
-export function fxSlash(anchor: Entity, motion: AttackMotion) {
+export function fxSlash(anchor: Entity, motion: WeaponMotion) {
   const clip = COMBAT_CLIPS[motion]
   const contact = clip.contact ?? clip.duration * 0.45
   let slot = slashes.find((x) => x.life >= x.duration)
@@ -275,8 +275,8 @@ export function fxSlash(anchor: Entity, motion: AttackMotion) {
   slot.life = 0
   slot.frame = -1
   slot.anchor = anchor
-  slot.heavy = motion === 'attack_heavy'
-  slot.mirror = motion === 'attack_light2'
+  slot.heavy = motion === 'attack_heavy' || motion === 'heavy_combo_c' || motion === 'leap' || motion === 'flourish_heavy'
+  slot.mirror = motion === 'attack_light2' || motion === 'attack_light3'
   VisibilityComponent.getMutable(slot.entity).visible = false
 }
 

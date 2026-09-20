@@ -9,7 +9,7 @@ import {
   AttackContext, createRoamingCombat, healRoamingCharacter, hitRoamingCharacter, isRoamingBlocking, isRoamingInvulnerable,
   isRoamingRooted, maxStamina, resetRoamingCombat, restoreRoamingHealth, RoamingCombatHooks, setRoamingClass, setRoamingHealth, updateRoamingCombat
 } from './roamingCombat'
-import { CombatPose, HeroAttackMotion, isRangedAttack, MAX_COMBAT_HEALTH } from './combatActions'
+import { CombatPose, HeroAttackMotion, isHeavyMotion, isRangedAttack, isSlashMotion, MAX_COMBAT_HEALTH } from './combatActions'
 import { getCommittedAppearance } from './appearance'
 import {
   destroyEquipmentAvatar, EquipmentAvatarOptions, EquipmentLoading, EquipmentMotion,
@@ -166,20 +166,25 @@ function glidePlayer(direction: Vector3, distance: number, seconds: number) {
  */
 const LUNGE_DISTANCE: Record<HeroAttackMotion, number> = {
   attack_light: 0.45, attack_light2: 0.4, attack_heavy: 0.7,
+  // The Berserker: the cross-cut steps like a light, the smash plants, the leap flies.
+  attack_light3: 0.45, heavy_combo_c: 0.5, leap: 2.4,
   // Shots are fired from a standstill; the bow bash is a short shove forward.
   bow_shoot: 0, bow_volley: 0, bow_bash: 0.35, cast_bolt: 0, cast_nova: 0
 }
 const LUNGE_MAX = 1.3
+/** The leap is the one swing meant to cover ground: up to three metres to land at reach. */
+const LEAP_MAX = 3.0
 let stepIn: number | undefined
 
-/** Distance the next swing's wind-up should carry the hero (clamped; 0 = stand and swing). */
+/** Distance the next swing's wind-up should carry the hero (clamped per motion; 0 = stand and swing). */
 export function setPlayerStepIn(distance: number) {
-  stepIn = Math.min(LUNGE_MAX, Math.max(0, distance))
+  stepIn = Math.max(0, distance)
 }
 
 /** The wind-up carries the body toward where it faces, arriving as the blow lands. */
 function lungePlayer(motion: HeroAttackMotion, seconds: number) {
-  const distance = isRangedAttack(motion) ? 0 : stepIn ?? LUNGE_DISTANCE[motion]
+  const max = motion === 'leap' ? LEAP_MAX : LUNGE_MAX
+  const distance = isRangedAttack(motion) ? 0 : Math.min(max, stepIn ?? LUNGE_DISTANCE[motion])
   stepIn = undefined
   const player = Transform.getOrNull(engine.PlayerEntity)
   if (!player || distance < 0.05) return
@@ -342,10 +347,8 @@ const combatHooks: RoamingCombatHooks = {
     attackStartHandler?.(motion, context)
     // Swings announce themselves; a shot's sound is the projectile leaving at the contact frame.
     if (!isRangedAttack(motion)) {
-      if (characterRoot !== undefined && (motion === 'attack_light' || motion === 'attack_light2' || motion === 'attack_heavy')) {
-        fxSlash(characterRoot, motion)
-      }
-      fxSound(motion === 'attack_heavy' ? 'swing_heavy' : 'swing_light', 0.7)
+      if (characterRoot !== undefined && isSlashMotion(motion)) fxSlash(characterRoot, motion)
+      fxSound(isHeavyMotion(motion) ? 'swing_heavy' : 'swing_light', 0.7)
     }
     motionEvent = true
   },

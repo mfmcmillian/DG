@@ -5,9 +5,17 @@ import { COMBAT_CLIPS } from './combatAnimations'
 export type AttackMotion = 'attack_light' | 'attack_light2' | 'attack_heavy'
 /** Archer and spellblade actions, heroes only (src/heroClasses.ts). */
 export type ClassAttackMotion = 'bow_shoot' | 'bow_volley' | 'bow_bash' | 'cast_bolt' | 'cast_nova'
+/** The Berserker's iron: a low cross-cut, an overhead smash to end the string, and a leap that closes the gap. */
+export type HeavyAttackMotion = 'attack_light3' | 'heavy_combo_c' | 'leap'
 /** What a hero's light/heavy can come out as. */
-export type HeroAttackMotion = AttackMotion | ClassAttackMotion
-export type WeaponMotion = HeroAttackMotion | 'attack_light3' | 'flourish_heavy' | 'stab' | 'heavy_combo_a' | 'heavy_combo_b' | 'heavy_combo_c' | 'leap' | 'fencing'
+export type HeroAttackMotion = AttackMotion | ClassAttackMotion | HeavyAttackMotion
+export type WeaponMotion = HeroAttackMotion | 'flourish_heavy' | 'stab' | 'heavy_combo_a' | 'heavy_combo_b' | 'fencing'
+
+/** Swings that draw a slash arc: everything a hand-held blade does, shots and the bow's shove excepted. */
+export function isSlashMotion(motion: WeaponMotion): boolean {
+  return motion === 'attack_light' || motion === 'attack_light2' || motion === 'attack_heavy' ||
+    motion === 'attack_light3' || motion === 'heavy_combo_c' || motion === 'leap'
+}
 
 const RANGED_MOTIONS: ReadonlySet<WeaponMotion> = new Set<WeaponMotion>(['bow_shoot', 'bow_volley', 'cast_bolt', 'cast_nova'])
 

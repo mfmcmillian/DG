@@ -24,7 +24,10 @@
     "bow_bash",
     "bow_block",
     "cast_bolt",
-    "cast_nova"
+    "cast_nova",
+    "attack_light3",
+    "heavy_combo_c",
+    "leap"
   ],
   "heroes": {
     "scout": {
