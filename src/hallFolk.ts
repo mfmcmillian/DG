@@ -45,6 +45,15 @@ type Role = {
   patrol?: { path: Array<[number, number]>; speed: number; pause: [number, number] }
 }
 
+/**
+ * Off while the folk wear hero wardrobe: eight modular outfits are ~70 GLBs
+ * and ~2,200 animation clips on entering the hall, and the first day they were
+ * live remote heroes started dropping out (bodies hidden, names falling back to
+ * wallet ids), which is what the renderer does under that load. Back on once
+ * each folk is baked to a single GLB with only the clips they use.
+ */
+const FOLK_ENABLED = false
+
 const FLOOR_Y = COURTYARD.characterFloorY
 /** The walk cycle is authored for about this ground speed. */
 const WALK_CLIP_SPEED = 1.5
@@ -342,7 +351,7 @@ export function initializeHallFolk() {
   if (isHeadless()) return
   onDungeonLoaded((state) => {
     clear()
-    if (state.style.id !== 'hall') return
+    if (!FOLK_ENABLED || state.style.id !== 'hall') return
     queue = [...ROLES]
     queueIn = STAGGER_SECONDS * 2
   })

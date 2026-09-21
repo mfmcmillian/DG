@@ -81,15 +81,16 @@ export function updateHeroNameTag(tag: Entity, address: string, visible: boolean
 /** Any text over any head (the hall's folk use it for their titles), with the camera-facing rule. */
 export function setNameTagText(tag: Entity, name: string, visible: boolean, color?: Color4) {
   const show = visible && !!name
-  const shape = TextShape.getMutable(tag)
-  if (color && shape.textColor !== color) shape.textColor = color
-  if (shape.text !== name) shape.text = name
-  const vis = VisibilityComponent.getMutable(tag)
-  if (vis.visible !== show) vis.visible = show
+  // Read first, write only on a change: getMutable marks the component dirty and
+  // it goes out over the wire that tick whether or not anything in it moved.
+  const shape = TextShape.get(tag)
+  const have = shape.textColor ?? GOLD
+  if (color && (have.r !== color.r || have.g !== color.g || have.b !== color.b || have.a !== color.a)) TextShape.getMutable(tag).textColor = color
+  if (shape.text !== name) TextShape.getMutable(tag).text = name
+  if (VisibilityComponent.get(tag).visible !== show) VisibilityComponent.getMutable(tag).visible = show
   // Rigid crawler camera: face its fixed direction. Any other camera: face the camera itself.
   const target = isCrawlerCameraOn() && CRAWLER_CAMERA.mode === 'rigid' ? farCameraTarget() : undefined
-  const billboard = Billboard.getMutable(tag)
-  if (billboard.targetEntity !== target) billboard.targetEntity = target
+  if (Billboard.get(tag).targetEntity !== target) Billboard.getMutable(tag).targetEntity = target
 }
 
 export function destroyHeroNameTag(tag: Entity) {
