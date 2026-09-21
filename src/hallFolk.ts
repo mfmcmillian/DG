@@ -139,6 +139,33 @@ let folk: Folk[] = []
 let queue: Role[] = []
 let queueIn = 0
 let systemAdded = false
+/** The one a hero is talking to (src/hallTalk.ts): they face the hero and a walker stops. */
+let attended: Folk | undefined
+
+/** One of the folk as the talk system sees them. */
+export type FolkView = { key: number; title: string; x: number; z: number }
+
+/** The nearest loaded character within `reach` metres of (x, z), if any. */
+export function hallFolkNear(x: number, z: number, reach: number): FolkView | undefined {
+  let best: Folk | undefined
+  let bestD = reach * reach
+  for (const f of folk) {
+    if (!f.loaded) continue
+    const dx = f.x - x
+    const dz = f.z - z
+    const d = dx * dx + dz * dz
+    if (d < bestD) {
+      bestD = d
+      best = f
+    }
+  }
+  return best ? { key: folk.indexOf(best), title: best.role.title, x: best.x, z: best.z } : undefined
+}
+
+/** Hold (or release, with undefined) a character's attention while a hero talks to them. */
+export function attendHallFolk(key: number | undefined) {
+  attended = key === undefined ? undefined : folk[key]
+}
 
 const TITLE_COLOR = Color4.create(0.78, 0.8, 0.86, 1)
 
@@ -185,6 +212,7 @@ function clear() {
   }
   folk = []
   queue = []
+  attended = undefined
 }
 
 function pickGesture(role: Role): EquipmentMotion {
@@ -218,11 +246,11 @@ function turnToward(f: Folk, dt: number) {
 
 function stand(f: Folk, dt: number, hero: Vector3 | undefined) {
   const role = f.role
-  // Face a hero who comes close; back to the post when they go.
-  if (role.greets > 0 && hero) {
+  // Face a hero who comes close, or who is talking to them; back to the post when they go.
+  if ((role.greets > 0 || f === attended) && hero) {
     const dx = hero.x - f.x
     const dz = hero.z - f.z
-    f.wantYaw = dx * dx + dz * dz <= role.greets * role.greets ? Math.atan2(dx, dz) : role.yaw
+    f.wantYaw = f === attended || dx * dx + dz * dz <= role.greets * role.greets ? Math.atan2(dx, dz) : role.yaw
   }
   if (f.gesturing > 0) {
     f.gesturing -= dt
@@ -241,8 +269,18 @@ function stand(f: Folk, dt: number, hero: Vector3 | undefined) {
   }
 }
 
-function patrol(f: Folk, dt: number) {
+function patrol(f: Folk, dt: number, hero: Vector3 | undefined) {
   const p = f.role.patrol!
+  // Stopped for a word: stand and face the hero; the round resumes when they are done.
+  if (f === attended) {
+    if (f.walking) {
+      f.walking = false
+      f.pausing = 0.5
+      setEquipmentMotion(f.root, f.role.rest, true)
+    }
+    if (hero) f.wantYaw = Math.atan2(hero.x - f.x, hero.z - f.z)
+    return
+  }
   if (!f.walking) {
     f.pausing -= dt
     if (f.pausing > 0) return
@@ -290,7 +328,7 @@ function update(dt: number) {
       setEquipmentVisible(f.root, true)
       setNameTagText(f.tag, f.role.title, true, TITLE_COLOR)
     }
-    if (f.role.patrol) patrol(f, span)
+    if (f.role.patrol) patrol(f, span, hero)
     else stand(f, span, hero)
     turnToward(f, span)
     const t = Transform.getMutableOrNull(f.root)

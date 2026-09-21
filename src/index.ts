@@ -16,6 +16,7 @@ import { initializeCombat } from './combat'
 import { initializeDungeonEnemies } from './dungeonEnemies'
 import { initializeTrainingDummies } from './trainingDummies'
 import { initializeHallFolk } from './hallFolk'
+import { initializeHallTalk } from './hallTalk'
 import { initializeColossusClient } from './raid/colossusClient'
 import { initializeCombatFx } from './combatFx'
 import { initializeProjectiles } from './projectiles'
@@ -84,6 +85,7 @@ function initClient() {
   initializeDungeonEnemies()
   initializeTrainingDummies()
   initializeHallFolk()
+  initializeHallTalk()
   initializeColossusClient()
   // Lobby mirror and saved hero ride on the room; a client that goes solo also
   // hosts the party registry itself (see partyServer's onHostStart binding).

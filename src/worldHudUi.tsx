@@ -22,6 +22,7 @@ import { devToolsOn } from './devAccess'
 import { playerDisplayName } from './heroNameTag'
 import { presence } from './presence'
 import { trainingActive, trainingTally } from './trainingDummies'
+import { closeTalk, getTalkState, nextLine, openTalk } from './hallTalk'
 import { localXp } from './heroXp'
 import { bonusLines, MAX_LEVEL } from './shared/progression'
 import { heroClassOf } from './heroClasses'
@@ -399,17 +400,45 @@ function ResultsOverlay({ width, height, scale: s }: { width: number; height: nu
  */
 function HubPrompt({ width, bottom, scale: s }: { width: number; bottom: number; scale: number }) {
   if (myPhase() !== HUB || getLobbyState().open) return null
+  const talk = getTalkState()
+  if (talk.open) return <TalkPanel width={width} bottom={bottom} scale={s} open={talk.open} />
   const party = myParty()
   const near = atWarTable()
-  if (!party && !near) return null
-  if (!party && atPitGate()) return null
+  const who = talk.near
+  if (!party && !near && !who) return null
+  if (!party && !who && atPitGate()) return null
   const caption = party ? `${partyTitle(party)}  ·  ${party.members.length}/${MAX_PARTY}  ·  ${LEVELS[party.level]?.name ?? ''}`
-    : 'The war table: choose a fortress to enter.'
-  return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - 360 * s) / 2, bottom },
-    width: 360 * s, flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
+    : near ? 'The war table: choose a fortress to enter.' : `The ${who?.title ?? ''} looks your way.`
+  return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - 460 * s) / 2, bottom },
+    width: 460 * s, flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
     <Label value={caption} color={party ? gold : muted} font="sans-serif" fontSize={12 * s} textWrap="nowrap"
       uiTransform={{ width: '100%', height: 24 * s, margin: { bottom: 6 * s }, pointerFilter: 'none' }} />
-    {(near || party) && <TextAction id="open-lobby" text={party ? 'Party' : 'Dungeons'} onClick={openLobby} scale={s} width={200} />}
+    <UiEntity uiTransform={{ flexDirection: 'row', justifyContent: 'center', pointerFilter: 'none' }}>
+      {(near || party) && <TextAction id="open-lobby" text={party ? 'Party' : 'Dungeons'} onClick={openLobby} scale={s} width={who ? 140 : 200} />}
+      {who && <UiEntity uiTransform={{ margin: { left: near || party ? 8 * s : 0 }, pointerFilter: 'none' }}>
+        <TextAction id="talk" text={`Talk to the ${who.title}`} onClick={openTalk} scale={s} width={220} />
+      </UiEntity>}
+    </UiEntity>
+  </UiEntity>
+}
+
+/** A word with one of the hall's folk: their title, the line they are on, and the way on or out. */
+function TalkPanel({ width, bottom, scale: s, open }: { width: number; bottom: number; scale: number; open: { title: string; lines: string[]; index: number } }) {
+  const panelWidth = Math.min(600 * s, width * 0.72)
+  const last = open.index + 1 >= open.lines.length
+  return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - panelWidth) / 2, bottom },
+    width: panelWidth, flexDirection: 'column', alignItems: 'center', padding: { top: 10 * s, bottom: 10 * s, left: 16 * s, right: 16 * s },
+    borderRadius: 8 * s, borderWidth: s, borderColor: line, pointerFilter: 'block' }} uiBackground={{ color: panel }}>
+    <Label value={open.title} color={gold} font="serif" fontSize={15 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 20 * s, pointerFilter: 'none' }} />
+    <Label value={open.lines[open.index] ?? ''} color={white} font="sans-serif" fontSize={13 * s} textAlign="middle-center" textWrap="wrap"
+      uiTransform={{ width: '100%', height: 66 * s, margin: { top: 4 * s, bottom: 8 * s }, pointerFilter: 'none' }} />
+    <UiEntity uiTransform={{ flexDirection: 'row', justifyContent: 'center', pointerFilter: 'none' }}>
+      <TextAction id="talk-next" text={last ? 'Farewell' : `Go on  (${open.index + 1}/${open.lines.length})`} onClick={nextLine} scale={s} width={150} />
+      {!last && <UiEntity uiTransform={{ margin: { left: 8 * s }, pointerFilter: 'none' }}>
+        <TextAction id="talk-leave" text="Enough" onClick={closeTalk} scale={s} width={100} />
+      </UiEntity>}
+    </UiEntity>
   </UiEntity>
 }
 

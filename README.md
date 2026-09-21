@@ -15,6 +15,7 @@ Live at **SpaceMatt.dcl.eth** (6×6 parcels).
 - WASD move · E light attack (3-hit combo) · F heavy attack
 - Space hold to block · Ctrl dodge roll (brief invulnerability)
 - 1–4 skills: four per class, opened at levels 2, 5, 9 and 14; each costs stamina and then cools down
+- In the hall, walk up to one of its folk and the prompt offers a word: each explains one part of the game
 
 ## Run locally
 
