@@ -181,10 +181,20 @@ export function closeLobby() {
 
 // --- actions --------------------------------------------------------------------------
 
-function act(action: string, party = '', level = 0, diff = 0) {
-  if (!isClientSynced()) return
+function act(action: string, party = '', level = 0, diff = 0): boolean {
+  if (!isClientSynced()) return false
   sendNet('party', { action, party, level, diff })
+  return true
 }
+
+/**
+ * Seconds left in which our `leave` is in flight. If the leader's descend is
+ * handled first, the next snapshot still lists us in the party with a new run;
+ * without this we would build the next fortress and teleport into it for a
+ * frame before the snapshot that drops us sends us to the hall.
+ */
+let leaving = 0
+const LEAVE_IN_FLIGHT_SECONDS = 4
 
 export function createParty(level = 0, diff = 0) {
   act('create', '', level, diff)
@@ -195,7 +205,7 @@ export function joinParty(id: string) {
 }
 
 export function leaveParty() {
-  act('leave')
+  if (act('leave') && myParty()) leaving = LEAVE_IN_FLIGHT_SECONDS
 }
 
 export function setReady(ready: boolean) {
@@ -323,12 +333,15 @@ function update(dt: number) {
       notice('Welcome to the Hall of Antrom. The war table, or the Dungeons button, leads to the fortresses.')
     }
   }
+  if (leaving > 0) leaving = phase === HUB ? 0 : leaving - span
   if (phase !== appliedPhase) {
     if (phase === HUB) enterHub()
     else if (party) enterRun(party)
   } else if (party && phase !== HUB && party.run !== appliedRun) {
     // Same party, new run: the leader chose to descend or retry from the results.
-    enterRun(party)
+    // Not for us if we have just asked to leave: the hall is a snapshot away
+    // (and if that snapshot never comes, the wait runs out and we follow after all).
+    if (leaving <= 0) enterRun(party)
   }
   if (party && phase !== HUB && party.state === 'done' && appliedState !== 'done') {
     state.result = {

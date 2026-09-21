@@ -75,8 +75,14 @@ export function heroTagText(address: string): string {
 export function updateHeroNameTag(tag: Entity, address: string, visible: boolean, level = 0) {
   const base = heroTagText(address)
   const name = base && level > 1 ? `${base}  ${level}` : base
+  setNameTagText(tag, name, visible)
+}
+
+/** Any text over any head (the hall's folk use it for their titles), with the camera-facing rule. */
+export function setNameTagText(tag: Entity, name: string, visible: boolean, color?: Color4) {
   const show = visible && !!name
   const shape = TextShape.getMutable(tag)
+  if (color && shape.textColor !== color) shape.textColor = color
   if (shape.text !== name) shape.text = name
   const vis = VisibilityComponent.getMutable(tag)
   if (vis.visible !== show) vis.visible = show
