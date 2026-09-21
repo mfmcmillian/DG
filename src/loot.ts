@@ -214,6 +214,53 @@ function toast(item: EquipmentItem, salvaged: number, wrongClass = false) {
   toasts.push({ item, salvaged, wrongClass, age: 0 })
 }
 
+/** Gear changes hands: unlocked if new to this hero, sold on the spot if owned or another class's. */
+function award(id: string, at: Vector3) {
+  const item = getEquipmentItemOrNull(id)
+  const rarity = RARITIES[rarityOf(id)]
+  fxGlitter(at, rarity.color)
+  fxGlitter(Vector3.add(at, Vector3.create(0, 0.6, 0)), rarity.color)
+  if (!item) {
+    // Nothing to hand over (an item since removed from the catalog).
+  } else if (!isUsableByHero(item.id)) {
+    // Another class's gear (dropped for a party-mate): sold on the spot.
+    state.coins += rarity.coins
+    run.salvaged++
+    fxSound('coin', 0.7)
+    fxNumber(Vector3.add(at, Vector3.create(0, 0.9, 0)), `+${rarity.coins}`, 'coin')
+    toast(item, rarity.coins, true)
+  } else if (unlockInventoryItem(item.id)) {
+    fxSound('heal', 0.9)
+    fxNumber(Vector3.add(at, Vector3.create(0, 0.9, 0)), item.name, 'note')
+    run.found.push(item.id)
+    toast(item, 0)
+  } else {
+    // Already owned: salvaged for coin on the spot.
+    state.coins += rarity.coins
+    run.salvaged++
+    fxSound('coin', 0.7)
+    fxNumber(Vector3.add(at, Vector3.create(0, 0.9, 0)), `+${rarity.coins}`, 'coin')
+    toast(item, rarity.coins)
+  }
+}
+
+/**
+ * A boss's reward goes straight to the hero the moment it falls: the coins
+ * counted and the gear handed over where they stand, nothing to walk back
+ * for. (Hearts still land on the floor; a heal is only worth taking when hurt.)
+ */
+export function grantLootDirect(coin: number, item: string | undefined) {
+  const player = Transform.getOrNull(engine.PlayerEntity)
+  const at = player ? Vector3.add(player.position, Vector3.create(0, 1.3, 0)) : Vector3.create(0, 1.3, 0)
+  if (coin > 0) {
+    state.coins += coin
+    fxSound('coin', 0.8)
+    fxGlitter(at, Color4.create(1, 0.85, 0.3, 1))
+    fxNumber(at, `+${coin}`, 'coin')
+  }
+  if (item) award(item, Vector3.add(at, Vector3.create(0, 0.4, 0)))
+}
+
 function collect(d: Drop) {
   const at = Vector3.add(d.to, Vector3.create(0, 0.6, 0))
   if (d.kind === 'coin') {
@@ -222,32 +269,7 @@ function collect(d: Drop) {
     fxGlitter(at, Color4.create(1, 0.85, 0.3, 1))
     fxNumber(at, '+1', 'coin')
   } else if ((d.kind === 'weapon' || d.kind === 'armor') && d.item) {
-    const item = getEquipmentItemOrNull(d.item)
-    const rarity = RARITIES[rarityOf(d.item)]
-    fxGlitter(at, rarity.color)
-    fxGlitter(Vector3.add(at, Vector3.create(0, 0.6, 0)), rarity.color)
-    if (!item) {
-      // Nothing to hand over (an item since removed from the catalog).
-    } else if (!isUsableByHero(item.id)) {
-      // Another class's gear (dropped for a party-mate): sold on the spot.
-      state.coins += rarity.coins
-      run.salvaged++
-      fxSound('coin', 0.7)
-      fxNumber(Vector3.add(at, Vector3.create(0, 0.9, 0)), `+${rarity.coins}`, 'coin')
-      toast(item, rarity.coins, true)
-    } else if (unlockInventoryItem(item.id)) {
-      fxSound('heal', 0.9)
-      fxNumber(Vector3.add(at, Vector3.create(0, 0.9, 0)), item.name, 'note')
-      run.found.push(item.id)
-      toast(item, 0)
-    } else {
-      // Already owned: salvaged for coin on the spot.
-      state.coins += rarity.coins
-      run.salvaged++
-      fxSound('coin', 0.7)
-      fxNumber(Vector3.add(at, Vector3.create(0, 0.9, 0)), `+${rarity.coins}`, 'coin')
-      toast(item, rarity.coins)
-    }
+    award(d.item, at)
   } else {
     // The host owns hero health: it checks the heart against its own drop
     // record and answers with `heal`, which plays the +N. The sparkle is local.

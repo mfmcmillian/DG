@@ -1,7 +1,7 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { Color4 } from '@dcl/sdk/math'
 import {
-  getInventoryState, getInventoryCharacter, getInventoryItems, getOwnedInventoryCount, isInventoryItemLocked,
+  getInventoryState, getInventoryCharacter, getInventoryItems, getInventoryTotalCount, isInventoryItemLocked,
   getPreviewLoadout, getCommittedLoadout, getInventoryIsDirty,
   selectInventorySlot, selectInventoryItem, setInventoryFilter, setInventoryPage,
   equipSelectedItem, unequipSelectedSlot, revertInventoryPreview,
@@ -127,7 +127,7 @@ export function InventoryUi() {
   const loading = state.loading === 'loading'
   const error = state.loading === 'error'
   const locked = isInventoryItemLocked(selected.id)
-  const owned = getOwnedInventoryCount()
+  const total = getInventoryTotalCount()
   const otherActive = state.filter !== 'all' && state.filter !== 'head' && state.filter !== 'chest' && state.filter !== 'weapon'
   const source = armorSourceLabel(selected.realm)
   const status = error ? 'Preview unavailable. Please try again.' : loading ? 'Preparing equipment…' :
@@ -170,7 +170,7 @@ export function InventoryUi() {
       <UiEntity uiTransform={{ ...rect(642, 84, 638, 654, s), borderRadius: 6 * s, borderWidth: s, borderColor: goldLine }} uiBackground={{ color: sheet }} />
       <Label value="BACKPACK" color={gold} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={rect(666, 104, 330, 20, s)} />
-      <Label value={`${owned} of ${items.length} found`} color={muted} fontSize={11 * s}
+      <Label value={`${items.length} of ${total} found`} color={muted} fontSize={11 * s}
         textAlign="middle-right" textWrap="nowrap" uiTransform={rect(1100, 104, 134, 20, s)} />
       <UiEntity uiTransform={{ ...rect(666, 132, 568, 36, s), flexDirection: 'row', justifyContent: 'space-between' }}>
         {(['all', 'weapon', 'head', 'chest', 'other'] as const).map((filter) => <Action key={filter} id={`filter-${filter}`}

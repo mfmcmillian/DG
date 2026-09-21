@@ -182,20 +182,25 @@ export function ownedWeaponIds(characterId: string = getEquippedCharacter().id):
  * found (dimmed, with where it drops), so the wardrobe reads as something to
  * fill out. Locked pieces can be previewed but not equipped.
  */
+/** The backpack shows what the hero owns: the class's gear that has been earned (or never needed earning). */
 export function getInventoryItems(): EquipmentItem[] {
-  const characterId = getInventoryCharacter().id
-  const mine = EQUIPMENT_ITEMS.filter((item) => usableByHero(item, characterId))
-  const available = [...mine.filter((item) => !lockedItems.has(item.id)), ...mine.filter((item) => lockedItems.has(item.id))]
-  if (state.filter === 'all') return available
-  if (state.filter === 'other') {
-    return available.filter((item) => item.slot !== 'head' && item.slot !== 'chest' && item.slot !== 'weapon')
-  }
-  return available.filter((item) => item.slot === state.filter)
+  return filtered(wardrobe().filter((item) => !lockedItems.has(item.id)))
 }
 
-/** Owned gear only, for counts. */
-export function getOwnedInventoryCount(): number {
-  return getInventoryItems().filter((item) => !lockedItems.has(item.id)).length
+/** Everything the class could ever own under the current filter, for the "N of M found" count. */
+export function getInventoryTotalCount(): number {
+  return filtered(wardrobe()).length
+}
+
+function wardrobe(): EquipmentItem[] {
+  const characterId = getInventoryCharacter().id
+  return EQUIPMENT_ITEMS.filter((item) => usableByHero(item, characterId))
+}
+
+function filtered(items: EquipmentItem[]): EquipmentItem[] {
+  if (state.filter === 'all') return items
+  if (state.filter === 'other') return items.filter((item) => item.slot !== 'head' && item.slot !== 'chest' && item.slot !== 'weapon')
+  return items.filter((item) => item.slot === state.filter)
 }
 
 /** Runs once when the inventory closes (the lobby uses it to come back). */

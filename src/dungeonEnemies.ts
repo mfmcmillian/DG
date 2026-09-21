@@ -55,7 +55,7 @@ import {
   createDecal, Decal, destroyDecal, fxDeathPuff, fxGlitter, fxImpact, fxNumber, fxSlam, fxSlash, fxSound, FxSound, fxWoodHit, updateDecal
 } from './combatFx'
 import { kickCrawlerCamera } from './dungeon/crawlerCamera'
-import { clearLoot, lootKindOf, spawnLoot } from './loot'
+import { clearLoot, grantLootDirect, lootKindOf, spawnLoot } from './loot'
 import { rollArmorDrop, rollWeaponDrop, weaponStats } from './weapons'
 import { AttackContext } from './roamingCombat'
 import {
@@ -1402,9 +1402,14 @@ function partyCharacters(party: string): string[] {
 function grantLoot(party: string, x: number, z: number, coin: number, heart: number, item: string, boss: boolean) {
   if (!clientSim || party !== clientSim.party) return
   const origin = Vector3.create(x, COURTYARD.characterFloorY, z)
-  if (coin > 0) spawnLoot(origin, 'coin', coin)
   if (heart > 0) spawnLoot(origin, 'heart', heart)
   const gear = item ? getEquipmentItemOrNull(item) : undefined
+  if (boss) {
+    // The boss's reward is the run's prize: it goes straight to every hero in the party.
+    grantLootDirect(coin, gear?.id)
+    return
+  }
+  if (coin > 0) spawnLoot(origin, 'coin', coin)
   if (gear) spawnLoot(origin, lootKindOf(gear), 1, item, boss)
 }
 
