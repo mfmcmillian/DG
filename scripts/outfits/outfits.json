@@ -27,7 +27,12 @@
     "cast_nova",
     "attack_light3",
     "heavy_combo_c",
-    "leap"
+    "leap",
+    "fencing",
+    "flourish_heavy",
+    "flourish",
+    "heavy_combo_a",
+    "menace_enter"
   ],
   "heroes": {
     "scout": {

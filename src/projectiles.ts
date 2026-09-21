@@ -12,7 +12,7 @@
 import { Billboard, BillboardMode, engine, Entity, GltfContainer, Material, MaterialTransparencyMode, MeshRenderer, Transform, VisibilityComponent } from '@dcl/sdk/ecs'
 import { Color3, Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
 import { HeroAttackMotion } from './combatActions'
-import { fxImpact, fxMagicBurst, fxSound } from './combatFx'
+import { fxImpact, fxMagicBurst, fxSlam, fxSound } from './combatFx'
 import { COURTYARD } from './courtyard'
 import { isDungeonFloor } from './dungeon'
 import { ProjectileKind, ShotProfile } from './heroClasses'
@@ -46,6 +46,9 @@ type Projectile = {
   range: number
   radius: number
   burst?: number
+  /** Piercing: keeps flying; the bodies already hit, not to be hit again. */
+  pierce: boolean
+  pierced: Set<number>
   motion: HeroAttackMotion
   finisher: boolean
   onHit?: Shot['onHit']
@@ -97,6 +100,8 @@ export function launchShot(shot: Shot) {
     p.range = profile.range
     p.radius = profile.radius
     p.burst = profile.burst
+    p.pierce = !!profile.pierce
+    p.pierced.clear()
     p.motion = shot.motion
     p.finisher = shot.finisher
     p.onHit = shot.onHit
@@ -176,7 +181,7 @@ function create(kind: ProjectileKind): Projectile {
   if (glow !== undefined) VisibilityComponent.create(glow, { visible: false })
   return {
     entity, glow, kind, position: Vector3.Zero(), velocity: Vector3.Zero(), travelled: 0, range: 0, radius: 0,
-    motion: 'attack_light', finisher: false, live: false
+    pierce: false, pierced: new Set<number>(), motion: 'attack_light', finisher: false, live: false
   }
 }
 
@@ -212,9 +217,14 @@ function updateProjectiles(dt: number) {
     for (let s = 1; s <= samples && !stopped; s++) {
       const at = Vector3.add(p.position, Vector3.scale(stride, s / samples))
       if (!targets) targets = targetsFn()
-      const hit = firstHit(at, p.radius, targets)
+      const hit = firstHit(at, p.radius, targets, p.pierce ? p.pierced : undefined)
       if (hit) {
         land(p, at, hit, targets)
+        // A piercing shot notes the body and flies on; the rest stop here.
+        if (p.pierce) {
+          p.pierced.add(hit.index)
+          continue
+        }
         stopped = true
         break
       }
@@ -242,10 +252,11 @@ function updateProjectiles(dt: number) {
 }
 
 /** The nearest target whose body the sphere at `at` overlaps. */
-function firstHit(at: Vector3, radius: number, targets: ProjectileTarget[]): ProjectileTarget | undefined {
+function firstHit(at: Vector3, radius: number, targets: ProjectileTarget[], skip?: Set<number>): ProjectileTarget | undefined {
   let best: ProjectileTarget | undefined
   let bestD = Infinity
   for (const t of targets) {
+    if (skip?.has(t.index)) continue
     const dx = at.x - t.position.x
     const dz = at.z - t.position.z
     const d = Math.sqrt(dx * dx + dz * dz)
@@ -262,7 +273,13 @@ function firstHit(at: Vector3, radius: number, targets: ProjectileTarget[]): Pro
 /** The projectile found a body. Orbs go off and take everyone nearby with them. */
 function land(p: Projectile, at: Vector3, hit: ProjectileTarget, targets: ProjectileTarget[]) {
   if (p.kind === 'arrow') {
-    fxImpact(at, p.finisher, false)
+    fxImpact(at, p.finisher || !!p.burst, false)
+    // An explosive arrow: the blast, dust and all.
+    if (p.burst) {
+      fxSlam(Vector3.create(at.x, Math.max(COURTYARD.characterFloorY, at.y - 1), at.z), p.burst)
+      fxMagicBurst(at, Color4.create(1, 0.6, 0.25, 1), p.burst)
+      fxSound('slam', 0.6)
+    }
   } else {
     fxMagicBurst(at, p.kind === 'orb' ? ORB_COLOR : BOLT_COLOR, p.burst ?? 0.4)
     if (p.kind === 'orb') fxSound('slam', 0.5)

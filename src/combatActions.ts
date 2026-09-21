@@ -9,12 +9,15 @@ export type ClassAttackMotion = 'bow_shoot' | 'bow_volley' | 'bow_bash' | 'cast_
 export type HeavyAttackMotion = 'attack_light3' | 'heavy_combo_c' | 'leap'
 /** What a hero's light/heavy can come out as. */
 export type HeroAttackMotion = AttackMotion | ClassAttackMotion | HeavyAttackMotion
-export type WeaponMotion = HeroAttackMotion | 'flourish_heavy' | 'stab' | 'heavy_combo_a' | 'heavy_combo_b' | 'fencing'
+export type WeaponMotion = HeroAttackMotion | 'flourish_heavy' | 'stab' | 'heavy_combo_a' | 'heavy_combo_b' | 'fencing' | SkillOnlyMotion
+/** Clips only a skill plays: the war cry's stance and the sword flourish (src/shared/skills.ts). */
+export type SkillOnlyMotion = 'menace_enter' | 'flourish'
 
 /** Swings that draw a slash arc: everything a hand-held blade does, shots and the bow's shove excepted. */
 export function isSlashMotion(motion: WeaponMotion): boolean {
   return motion === 'attack_light' || motion === 'attack_light2' || motion === 'attack_heavy' ||
-    motion === 'attack_light3' || motion === 'heavy_combo_c' || motion === 'leap'
+    motion === 'attack_light3' || motion === 'heavy_combo_c' || motion === 'leap' ||
+    motion === 'fencing' || motion === 'flourish_heavy' || motion === 'heavy_combo_a'
 }
 
 const RANGED_MOTIONS: ReadonlySet<WeaponMotion> = new Set<WeaponMotion>(['bow_shoot', 'bow_volley', 'cast_bolt', 'cast_nova'])
@@ -112,8 +115,28 @@ export function resolveCombatHit(motion: WeaponMotion, guarded: boolean, finishe
   }
 }
 
+/**
+ * A skill's blow: measured against a heavy (28) by the skill's multiplier,
+ * then the weapon in hand as for any swing. Skills break guards; a guarded
+ * enemy still takes the full hit but the reel is capped like a blocked blow.
+ */
+export function resolveSkillHit(
+  mult: number, stagger: number, knockback: number, guarded: boolean, weapon: WeaponModifiers = PLAIN_SWORD
+): { damage: number; stagger: number; knockback: number; interrupt: boolean } {
+  const raw = Math.round(28 * mult * weapon.damage + weapon.bonus)
+  const reel = COMBAT_CLIPS.hit.duration * stagger
+  return {
+    damage: Math.max(1, raw),
+    stagger: guarded ? Math.min(0.32, reel) : Math.min(COMBAT_CLIPS.hit.duration * 1.5, reel * weapon.stagger),
+    knockback: guarded ? Math.min(0.15, knockback) : knockback * weapon.knockback,
+    interrupt: true
+  }
+}
+
 export type Swing = {
   motion: WeaponMotion
+  /** The skill this swing casts, if it is one (src/shared/skills.ts); its effect fires at contact. */
+  skill?: string
   elapsed: number
   startedAt: number
   duration: number
@@ -131,12 +154,14 @@ export function canStartAttack(actor: { swing?: Swing; recovery: number; health?
 }
 
 /** Arena and roaming share animation, contact and recovery timing. */
-export function createSwing(motion: WeaponMotion, now: number, finisher = false): Swing {
+export function createSwing(
+  motion: WeaponMotion, now: number, finisher = false, timing: { rate?: number; contact?: number; skill?: string } = {}
+): Swing {
   const clip = COMBAT_CLIPS[motion]
   // Timing is in real seconds: a clip shown at `rate` reaches its frames sooner.
-  const rate = clip.rate ?? 1
-  return { motion, elapsed: 0, startedAt: now, duration: clip.duration / rate,
-    contact: (clip.contact ?? clip.duration * 0.45) / rate, contacted: false, finisher }
+  const rate = timing.rate ?? clip.rate ?? 1
+  return { motion, skill: timing.skill, elapsed: 0, startedAt: now, duration: clip.duration / rate,
+    contact: (timing.contact ?? clip.contact ?? clip.duration * 0.45) / rate, contacted: false, finisher }
 }
 
 export function advanceAttack(swing: Swing, now: number, dt: number, onContact: () => void): boolean {

@@ -20,6 +20,7 @@ import { fxNumber, fxSlash, fxSound } from './combatFx'
 import { rearmAvatarHiding } from './avatarHiding'
 import { localAddress, publishHero, withdrawHero } from './multiplayer'
 import { CRAWLER_CAMERA, isCrawlerCameraOn, kickCrawlerCamera } from './dungeon/crawlerCamera'
+import { SkillDef } from './shared/skills'
 
 type Locomotion = 'idle' | 'walk' | 'run'
 export type PlayerCharacterState = {
@@ -64,6 +65,9 @@ let attackContactHandler: ((motion: HeroAttackMotion, context: AttackContext) =>
 let attackStartHandler: ((motion: HeroAttackMotion, context: AttackContext) => void) | undefined
 /** Whether an enemy stands within reach in front (the world answers); a ranged class strikes instead of shooting. */
 let enemyWithinHandler: ((range: number) => boolean) | undefined
+/** The skill bar's side of the fight: what is in each slot, and why a tap did nothing. */
+let skillInSlotHandler: ((slot: number) => SkillDef | undefined) | undefined
+let skillRefusedHandler: ((slot: number, why: 'locked' | 'cooldown' | 'stamina') => void) | undefined
 /** World yaw the body is turned to while locked on (soft lock-on); undefined = native yaw. */
 let facingOverride: number | undefined
 let hitStopSeconds = 0
@@ -82,6 +86,10 @@ const ONE_SHOT_MOTIONS = new Set<EquipmentMotion>([
 export type PlayerVitals = {
   health: number; maxHealth: number; stamina: number; maxStamina: number
   comboStep: number; dodging: boolean; blocking: boolean; exhausted: boolean
+  /** Seconds left on each skill slot (0..3). */
+  cooldowns: readonly number[]
+  /** The skill being cast right now, if any. */
+  casting: string | undefined
 }
 
 /** World combat reads the native pose; it never takes over the player transform. */
@@ -103,8 +111,16 @@ export function getPlayerVitals(): PlayerVitals {
   return {
     health: roamingCombat.health, maxHealth: MAX_COMBAT_HEALTH, stamina: roamingCombat.stamina, maxStamina: maxStamina(),
     comboStep: roamingCombat.comboStep, dodging: !!roamingCombat.dodge, blocking: roamingCombat.blocking,
-    exhausted: exhaustedNotice > 0
+    exhausted: exhaustedNotice > 0, cooldowns: roamingCombat.cooldowns, casting: roamingCombat.swing?.skill
   }
+}
+
+/** The world decides what the skill keys hold (class and level) and hears when one is refused. */
+export function setPlayerSkillHandlers(
+  inSlot: (slot: number) => SkillDef | undefined, refused: (slot: number, why: 'locked' | 'cooldown' | 'stamina') => void
+) {
+  skillInSlotHandler = inSlot
+  skillRefusedHandler = refused
 }
 
 export function setPlayerAttackContactHandler(handler: (motion: HeroAttackMotion, context: AttackContext) => void) {
@@ -183,8 +199,10 @@ export function setPlayerStepIn(distance: number) {
 
 /** The wind-up carries the body toward where it faces, arriving as the blow lands. */
 function lungePlayer(motion: HeroAttackMotion, seconds: number) {
-  const max = motion === 'leap' ? LEAP_MAX : LUNGE_MAX
-  const distance = isRangedAttack(motion) ? 0 : Math.min(max, stepIn ?? LUNGE_DISTANCE[motion])
+  // A skill's clip has no authored step: the lock-on sets its carry, up to a leap's reach.
+  const authored = LUNGE_DISTANCE[motion] as number | undefined
+  const max = motion === 'leap' || authored === undefined ? LEAP_MAX : LUNGE_MAX
+  const distance = isRangedAttack(motion) ? 0 : Math.min(max, stepIn ?? authored ?? 0)
   stepIn = undefined
   const player = Transform.getOrNull(engine.PlayerEntity)
   if (!player || distance < 0.05) return
@@ -335,6 +353,8 @@ function moveDirection(): Vector3 | undefined {
 
 const combatHooks: RoamingCombatHooks = {
   moveDirection,
+  skillInSlot: (slot) => skillInSlotHandler?.(slot),
+  onSkillRefused: (slot, why) => skillRefusedHandler?.(slot, why),
   retreatDirection: () => {
     const player = Transform.getOrNull(engine.PlayerEntity)
     if (!player) return undefined
@@ -346,9 +366,11 @@ const combatHooks: RoamingCombatHooks = {
     stepIn = undefined
     attackStartHandler?.(motion, context)
     // Swings announce themselves; a shot's sound is the projectile leaving at the contact frame.
-    if (!isRangedAttack(motion)) {
+    if (context.skill?.effect.kind === 'aura') {
+      fxSound('roar', 0.55)
+    } else if (!isRangedAttack(motion)) {
       if (characterRoot !== undefined && isSlashMotion(motion)) fxSlash(characterRoot, motion)
-      fxSound(isHeavyMotion(motion) ? 'swing_heavy' : 'swing_light', 0.7)
+      fxSound(isHeavyMotion(motion) || !!context.skill ? 'swing_heavy' : 'swing_light', 0.7)
     }
     motionEvent = true
   },

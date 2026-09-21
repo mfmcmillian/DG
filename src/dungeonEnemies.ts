@@ -19,9 +19,10 @@ import { EquipmentMotion } from './combatAnimations'
 import {
   advanceAttack, attackCanReach, attackRange, attackRecovery, AttackMotion, canStartAttack,
   combatDistance, CombatPose, COMBAT_RULES, createSwing, facesCombatant, HeroAttackMotion, isHeavyMotion, isRangedAttack,
-  MAX_COMBAT_HEALTH, resolveCombatHit, Swing, WeaponModifiers, WeaponMotion
+  MAX_COMBAT_HEALTH, resolveCombatHit, resolveSkillHit, Swing, WeaponModifiers, WeaponMotion
 } from './combatActions'
-import { heroClassOf, shotProfile, weaponPoolFor } from './heroClasses'
+import { heroClassOf, shotProfile, skillShotProfile, weaponPoolFor } from './heroClasses'
+import { SkillDef, skillById } from './shared/skills'
 import { clearProjectiles, launchShot, ProjectileTarget, setProjectileTargets, SHOT_HEIGHT } from './projectiles'
 import { createRivalBrain, resetRivalBrain, RivalBrain, updateRivalBrain } from './rivalBrain'
 import {
@@ -37,7 +38,9 @@ import {
   setPlayerAttackContactHandler, setPlayerAttackStartHandler, setPlayerEnemyWithinHandler, setPlayerFacingOverride, setPlayerStepIn
 } from './playerCharacter'
 import { presentRemoteHeal, presentRemoteHit, presentRemoteRevive, presentRemoteShot } from './remotePlayers'
-import { RAID_RECOVER_SECONDS, RECOVER_SECONDS, strikeHero } from './heroVitals'
+import { applyBuff, buffMight, healHero, noteBuff, RAID_RECOVER_SECONDS, RECOVER_SECONDS, strikeHero } from './heroVitals'
+import { isDungeonFloor } from './dungeon'
+import { sendNet } from './net'
 import { movePlayerToSpawn } from './playerPlacement'
 import { DungeonState, onDungeonLoaded } from './dungeon'
 import { cellCenter, DungeonStyle, gridOrigin, StyleId, STYLES, styleGeneratorOptions } from './dungeon/config'
@@ -50,17 +53,17 @@ import {
   DifficultyDefinition, difficultyById, HUB_LEVEL, LevelDefinition, levelById, RAID_PARTY
 } from './shared/levels'
 import { HUB, partyOf } from './partyLookup'
-import { heroBonusesFor } from './heroXp'
+import { heroBonusesFor, heroLevel } from './heroXp'
 import {
-  createDecal, Decal, destroyDecal, fxDeathPuff, fxGlitter, fxImpact, fxNumber, fxSlam, fxSlash, fxSound, FxSound, fxWoodHit, updateDecal
+  createDecal, Decal, destroyDecal, fxDeathPuff, fxGlitter, fxImpact, fxMagicBurst, fxNumber, fxSlam, fxSlash, fxSound, FxSound, fxWoodHit, updateDecal
 } from './combatFx'
 import { kickCrawlerCamera } from './dungeon/crawlerCamera'
 import { clearLoot, grantLootDirect, lootKindOf, spawnLoot } from './loot'
 import { rollArmorDrop, rollWeaponDrop, weaponStats } from './weapons'
 import { AttackContext } from './roamingCombat'
 import {
-  allFighters, EnemySnap, heroCharacters, HeroHit, heroWeapon, ImpactNet, isHeadless, isHost, localAddress, NetFighter, publishEnemies, publishHitEnemy,
-  publishImpact, publishLoot, publishRespawn, publishShot, setMultiplayerHandlers
+  allFighters, EnemySnap, heroCharacters, HeroHit, heroPosition, heroWeapon, ImpactNet, isHeadless, isHost, localAddress, NetFighter, publishEnemies,
+  publishHitEnemy, publishHitSkill, publishImpact, publishLoot, publishRespawn, publishShot, publishSkillCast, setMultiplayerHandlers
 } from './multiplayer'
 
 type WorldPhase = 'loading' | 'idle' | 'fighting' | 'victory' | 'defeat' | 'error'
@@ -184,7 +187,30 @@ type Sim = {
   lost: boolean
   /** Host-owned floor traps (forge). Visuals come from the layout. */
   traps: Array<{ x: number; z: number; radius: number; damage: number; cool: number }>
+  /** Host-owned skill zones (a slam's ring, burning ground, falling arrows) still delivering blows. */
+  zones: Zone[]
 }
+
+/** A zone skill the host is resolving: the ground it covers and the blows it has left. */
+type Zone = {
+  def: SkillDef
+  x: number
+  z: number
+  ticksLeft: number
+  interval: number
+  timer: number
+  caster: string
+  weapon: WeaponModifiers
+  might: number
+}
+
+/** A skill a hero cast, as the host remembers it: when, and how many blows it has claimed since. */
+type CastRecord = { at: number; hits: number }
+const casts = new Map<string, CastRecord>()
+/** A blow may be claimed this long after the cast that threw it (a shot's flight, a chain's jumps). */
+const CAST_CLAIM_SECONDS = 4
+/** Clients report cooldowns a little early at times (their clock, the wire): this much is forgiven. */
+const COOLDOWN_SLACK = 1.5
 
 export type RunStatus = { slain: number; total: number; won: boolean; lost: boolean }
 
@@ -232,6 +258,18 @@ export function initializeDungeonEnemies() {
     },
     // Another party's blows, landed in these same metres but in their own run, stay unseen and unheard.
     impact: (p, from) => { if (samePhase(from)) presentImpact(p) },
+    hitSkill: applyRemoteSkillHit,
+    skillCast: (id, skill, x, z, yaw) => {
+      const def = skillById(skill)
+      if (!def) return
+      if (isHost()) hostSkillCast(id, def, x, z, yaw)
+      // Our own cast was played as it happened; another hero's plays now, if they fight beside us.
+      if (!isHeadless() && id !== localAddress() && samePhase(id)) presentSkillCast(id, def, Vector3.create(x, COURTYARD.characterFloorY, z))
+    },
+    buff: (id, skill, might, toughness, seconds) => {
+      noteBuff(id, skill, might, toughness, seconds)
+      if (!isHeadless() && seconds > 0 && samePhase(id)) presentBuff(id, skill)
+    },
     enemies: applyEnemySnapshots,
     loot: grantLoot,
     join: () => {
@@ -251,7 +289,10 @@ export function getWorldRivalState(): Readonly<WorldRivalState> {
 
 /** Client: another hero is in our party (or with us in the hub), so their fight is ours to show. */
 function samePhase(id: string): boolean {
-  return partyOf(id) === (clientSim?.party ?? HUB)
+  const mine = clientSim?.party ?? HUB
+  // The host's own blows (a zone's ticks) are stamped with the party they fell in.
+  if (id.startsWith('zone:')) return id.slice(5) === mine
+  return partyOf(id) === mine
 }
 
 /** Re-spawn any enemy whose avatar failed to load. */
@@ -345,6 +386,7 @@ function populate(dungeon: Readonly<DungeonState>) {
   }
   clearLoot()
   clearProjectiles()
+  clearZoneFx()
   defeated = false
   respawnAsked = false
   state.respawnSeconds = 0
@@ -367,7 +409,7 @@ function createSim(
     blockedEdges: new Set(), doorEdges: new Set(),
     graceSeconds: 1.2, paused: true, bossDropGiven: false, snapshotAge: 0,
     damageScale: level.damage * diff.damage, coinScale: level.coins * diff.coins,
-    slain: 0, won: false, lost: false, traps: []
+    slain: 0, won: false, lost: false, traps: [], zones: []
   }
   indexEdges(s)
   if (!withEnemies) return s
@@ -546,6 +588,12 @@ function stepSim(dt: number, fighters: NetFighter[], local: ReturnType<typeof ge
       const f = fighters[0]
       console.log(`[Server] run ${sim.party} live: ${fighters.length} hero(es); first at ${f.position.x.toFixed(1)}, ${f.position.z.toFixed(1)} health ${f.health}`)
     }
+  }
+
+  if (isHost() && sim.zones.length) tickZones(dt)
+  if (!isHeadless()) {
+    tickZoneFx(dt)
+    tickAuraRings(dt)
   }
 
   if (isHost() && sim.traps.length && sim.graceSeconds === 0) {
@@ -1006,9 +1054,9 @@ function trainingIndex(i: number) {
   return -1 - i
 }
 
-function strikeTraining(attacker: CombatPose, t: TrainingTarget, motion: HeroAttackMotion, context: { finisher: boolean }, at?: Vector3) {
-  const heavy = isHeavyMotion(motion) || context.finisher
-  const hit = resolveCombatHit(motion, false, context.finisher, localWeapon())
+function strikeTraining(attacker: CombatPose, t: TrainingTarget, motion: HeroAttackMotion, context: { finisher: boolean; skill?: SkillDef }, at?: Vector3) {
+  const heavy = isHeavyMotion(motion) || context.finisher || !!context.skill
+  const hit = context.skill ? skillHit(context.skill, false, localWeapon()) : resolveCombatHit(motion, false, context.finisher, localWeapon())
   hit.damage = withMight(hit.damage, localMight())
   if (t.damageScale) hit.damage = Math.max(1, Math.round(hit.damage * t.damageScale))
   const stone = t.material === 'stone'
@@ -1081,10 +1129,14 @@ function aimCos(): number {
  * just out of reach. A shot locks over the class's range and cone and never
  * steps: the archer stands and looses.
  */
-function lockOn(motion: HeroAttackMotion, _context: AttackContext) {
+function lockOn(motion: HeroAttackMotion, context: AttackContext) {
   const attacker = getPlayerCombatPose()
   if (!attacker || attacker.health <= 0 || !clientSim || clientSim.paused || defeated) return
   sim = clientSim
+  if (context.skill) {
+    lockOnSkill(attacker, context.skill)
+    return
+  }
   const shot = shotProfile(getPlayerCharacterState().characterId, motion)
   // A leap locks on from three metres: it is the one swing that travels to its mark.
   const reach = shot ? shot.range : attackRange(motion)
@@ -1127,6 +1179,10 @@ function hitEnemies(motion: HeroAttackMotion, context: AttackContext) {
   const attacker = getPlayerCombatPose()
   if (!attacker || attacker.health <= 0 || !clientSim || clientSim.paused || defeated) return
   sim = clientSim
+  if (context.skill) {
+    castSkill(context.skill, attacker)
+    return
+  }
   if (isRangedAttack(motion)) {
     shootEnemies(attacker, motion, context)
     return
@@ -1239,7 +1295,12 @@ function applyRemoteHit(id: string, index: number, motion: string, finisher: boo
   const cid = heroCharacters((owner) => owner === id)[0]
   if (!heroClassMotionAllowed(cid, attack)) return
   // The weapon is read off the hero's synced body: the client never states its own damage.
-  applyPlayerHit(attacker, e, attack, { finisher, weapon: weaponStats(heroWeapon(id)), might: heroBonusesFor(id, cid ?? '').might })
+  applyPlayerHit(attacker, e, attack, { finisher, weapon: weaponStats(heroWeapon(id)), might: hostMight(id, cid) })
+}
+
+/** A hero's multiplier on damage dealt as the host applies it: their level, and any buff on them. */
+function hostMight(id: string, cid: string | undefined): number {
+  return heroBonusesFor(id, cid ?? '').might * buffMight(id)
 }
 
 /** The local hero's weapon, for the numbers it shows and the hits it hosts. */
@@ -1249,7 +1310,7 @@ function localWeapon(): WeaponModifiers {
 
 /** The local hero's level bonus on damage dealt (src/heroXp.ts). */
 function localMight(): number {
-  return heroBonusesFor(localAddress(), getPlayerCharacterState().characterId ?? '').might
+  return heroBonusesFor(localAddress(), getPlayerCharacterState().characterId ?? '').might * buffMight(localAddress())
 }
 
 /** A blow's damage after the hero's level; a blow that landed never rounds to nothing. */
@@ -1315,11 +1376,11 @@ function applyPlayerHit(
 }
 
 function presentPlayerStrike(
-  attacker: CombatPose, e: StrikeTarget, motion: HeroAttackMotion, context: { finisher: boolean }, at?: Vector3
+  attacker: CombatPose, e: StrikeTarget, motion: HeroAttackMotion, context: { finisher: boolean; skill?: SkillDef }, at?: Vector3
 ) {
-  const heavy = isHeavyMotion(motion)
+  const heavy = isHeavyMotion(motion) || !!context.skill
   const guarded = e.blocking && facesCombatant(e, attacker, 0.1)
-  const hit = resolveCombatHit(motion, guarded, context.finisher, localWeapon())
+  const hit = context.skill ? skillHit(context.skill, guarded, localWeapon()) : resolveCombatHit(motion, guarded, context.finisher, localWeapon())
   hit.damage = withMight(hit.damage, localMight())
   // A sword meets the body between the two; a projectile where it landed.
   const contact = at ? Vector3.clone(at) : Vector3.create(
@@ -1338,6 +1399,531 @@ function presentPlayerStrike(
     x: contact.x, y: contact.y, z: contact.z, heavy: heavy || context.finisher,
     blocked: hit.damage === 0, label, kind, sound, vol, material: ''
   })
+}
+
+// --- skills (src/shared/skills.ts) -----------------------------------------------------
+//
+// A skill fires at its clip's contact frame like any swing. Strikes and shots
+// find their bodies on the client and report each blow (`hitSkill`), which
+// the host validates against the class, the level, the reach and the cast it
+// belongs to. Zones and auras are the host's alone: the client says where
+// (`skillCast`), the host delivers the ticks and the buffs, and every client
+// in the party draws the ground and the glow from the same message.
+
+/** The numbers a skill's blow is measured by; shots stagger and shove a little, like a heavy arrow. */
+function skillBlow(def: SkillDef): { mult: number; stagger: number; knockback: number } {
+  const e = def.effect
+  if (e.kind === 'strike' || e.kind === 'zone') return { mult: e.mult, stagger: e.stagger, knockback: e.knockback }
+  if (e.kind === 'shot') return { mult: e.mult, stagger: 0.7, knockback: 0.2 }
+  return { mult: 0, stagger: 0, knockback: 0 }
+}
+
+function skillHit(def: SkillDef, guarded: boolean, weapon: WeaponModifiers) {
+  const blow = skillBlow(def)
+  return resolveSkillHit(blow.mult, blow.stagger, blow.knockback, guarded, weapon)
+}
+
+/** A pose at `from` turned toward `to`: knockback goes the way the blow came. */
+function poseToward(from: Vector3, to: Vector3): CombatPose {
+  const dx = to.x - from.x
+  const dz = to.z - from.z
+  return { position: from, facing: dx * dx + dz * dz > 0.0001 ? Math.atan2(dx, dz) : 0 }
+}
+
+/** Skill lock-on: a strike turns to the best body in its arc and steps in by its carry; an aimed skill locks like a shot. */
+function lockOnSkill(attacker: CombatPose, def: SkillDef) {
+  const e = def.effect
+  if (e.kind === 'strike') {
+    const cos = Math.cos((Math.min(90, e.arc) * Math.PI) / 180)
+    const best = pickHeroTarget(attacker, e.range + e.carry + LOCK_MARGIN, Math.min(LOCK_COS, cos))
+    if (best) {
+      const dx = best.e.position.x - attacker.position.x
+      const dz = best.e.position.z - attacker.position.z
+      const distance = Math.sqrt(dx * dx + dz * dz)
+      if (distance > 0.0001 && e.arc < 180) setPlayerFacingOverride(Math.atan2(dx, dz))
+      setPlayerStepIn(Math.min(e.carry, Math.max(0, distance - STEP_TO)))
+    } else {
+      // Nobody there: the lunge still covers its ground, a turning cut stays put.
+      setPlayerStepIn(e.carry)
+    }
+    return
+  }
+  setPlayerStepIn(0)
+  const range = e.kind === 'shot' ? e.range : e.kind === 'zone' && e.at === 'aim' ? e.aimRange : 0
+  if (range <= 0) return
+  const best = pickHeroTarget(attacker, range + LOCK_MARGIN, aimCos(), 1.5, true)
+  if (!best) return
+  const dx = best.e.position.x - attacker.position.x
+  const dz = best.e.position.z - attacker.position.z
+  if (dx * dx + dz * dz > 0.0001) setPlayerFacingOverride(Math.atan2(dx, dz))
+}
+
+/** The contact frame of a skill: deliver what the client delivers, and tell the host where it went. */
+function castSkill(def: SkillDef, attacker: CombatPose) {
+  const e = def.effect
+  switch (e.kind) {
+    case 'strike':
+      // The cast goes first so the host has it on record when the blows arrive.
+      publishSkillCast(def.id, attacker.position.x, attacker.position.z, attacker.facing)
+      strikeWithSkill(def, e, attacker)
+      break
+    case 'zone': {
+      const at = e.at === 'self' ? Vector3.create(attacker.position.x, COURTYARD.characterFloorY, attacker.position.z) : zoneAim(attacker, e.aimRange)
+      publishSkillCast(def.id, at.x, at.z, attacker.facing)
+      presentZone(def, at, true)
+      break
+    }
+    case 'shot':
+      publishSkillCast(def.id, attacker.position.x, attacker.position.z, attacker.facing)
+      shootWithSkill(def, e, attacker)
+      break
+    case 'aura':
+      publishSkillCast(def.id, attacker.position.x, attacker.position.z, attacker.facing)
+      presentAura(def, attacker.position)
+      break
+  }
+}
+
+/** Where an aimed zone lands: on the locked target, else `range` ahead, pulled back onto the floor. */
+function zoneAim(attacker: CombatPose, range: number): Vector3 {
+  const target = pickHeroTarget(attacker, range + LOCK_MARGIN, aimCos(), 1.5, true)
+  if (target) return Vector3.create(target.e.position.x, COURTYARD.characterFloorY, target.e.position.z)
+  const sx = Math.sin(attacker.facing)
+  const sz = Math.cos(attacker.facing)
+  let d = range
+  while (d > 0.5 && !isDungeonFloor(attacker.position.x + sx * d, attacker.position.z + sz * d)) d -= 0.5
+  return Vector3.create(attacker.position.x + sx * d, COURTYARD.characterFloorY, attacker.position.z + sz * d)
+}
+
+/** A strike skill: every body in the arc (or the nearest), enemies and training targets alike. */
+function strikeWithSkill(def: SkillDef, e: Extract<SkillDef['effect'], { kind: 'strike' }>, attacker: CombatPose) {
+  if (!sim) return
+  const cos = Math.cos((e.arc * Math.PI) / 180)
+  const inArc = (body: CombatPose, scale: number) => {
+    const d = combatDistance(attacker, body)
+    if (d > e.range + 0.45 * scale) return undefined
+    if (e.arc < 180 && !facesCombatant(attacker, body, cos)) return undefined
+    if (Math.abs(attacker.position.y - body.position.y) > COMBAT_RULES.maximumVerticalReach) return undefined
+    return d
+  }
+  const found: Array<{ d: number; enemy?: Enemy; index: number; dummy?: TrainingTarget }> = []
+  sim.enemies.forEach((en, index) => {
+    if (en.loading !== 'ready' || en.dead || en.returningHome) return
+    const d = inArc(en, en.archetype.scale)
+    if (d !== undefined) found.push({ d, enemy: en, index })
+  })
+  for (const t of trainingTargets()) {
+    if (t.rangedOnly) continue
+    const d = inArc(trainingBody(t, attacker), t.scale)
+    if (d !== undefined) found.push({ d, index: -1, dummy: t })
+  }
+  found.sort((a, b) => a.d - b.d)
+  const hits = e.all ? found : found.slice(0, 1)
+  for (const h of hits) {
+    if (h.dummy) {
+      strikeTraining(poseToward(attacker.position, h.dummy.position), h.dummy, 'attack_heavy', { finisher: false, skill: def })
+      continue
+    }
+    const en = h.enemy!
+    const from = poseToward(attacker.position, en.position)
+    presentPlayerStrike(from, en, def.motion as HeroAttackMotion, { finisher: false, skill: def })
+    if (isHost()) applySkillHit(from, en, def, { weapon: localWeapon(), might: localMight() })
+    else publishHitSkill(h.index, def.id)
+  }
+  if (e.all && hits.length) {
+    fxSlam(Vector3.create(attacker.position.x, COURTYARD.characterFloorY, attacker.position.z), e.range * 0.6)
+  }
+}
+
+/** A shot skill: the class's missile with the skill's twist, landing through the same path as a sword. */
+function shootWithSkill(def: SkillDef, e: Extract<SkillDef['effect'], { kind: 'shot' }>, attacker: CombatPose) {
+  const profile = skillShotProfile(def)
+  if (!profile || !sim) return
+  const target = pickHeroTarget(attacker, profile.range + LOCK_MARGIN, aimCos(), 1.5, true)
+  const origin = Vector3.create(
+    attacker.position.x + Math.sin(attacker.facing) * 0.35, attacker.position.y + SHOT_HEIGHT, attacker.position.z + Math.cos(attacker.facing) * 0.35)
+  let yaw = attacker.facing
+  let pitch = 0
+  if (target) {
+    const aimAt = Vector3.create(target.e.position.x, target.e.position.y + 1.1 * target.e.archetype.scale, target.e.position.z)
+    const dx = aimAt.x - origin.x
+    const dz = aimAt.z - origin.z
+    const flat = Math.sqrt(dx * dx + dz * dz)
+    if (flat > 0.0001) yaw = Math.atan2(dx, dz)
+    pitch = Math.atan2(aimAt.y - origin.y, Math.max(0.5, flat))
+  }
+  const simAtLaunch = sim
+  const chained = new Set<number>()
+  launchShot({
+    origin, yaw, pitch, profile, motion: def.motion as HeroAttackMotion, finisher: false,
+    onHit: (t, at) => {
+      if (simAtLaunch !== clientSim || !clientSim || clientSim.paused || defeated) return
+      sim = clientSim
+      landSkillShot(def, t, at, attacker)
+      if (e.variant === 'chain' && !chained.size) {
+        chained.add(t.index)
+        chainFrom(def, e, t, at, attacker, chained)
+      }
+    }
+  })
+  publishShot({ motion: `skill:${def.id}`, x: origin.x, y: origin.y, z: origin.z, yaw, pitch })
+}
+
+/** A skill's projectile reached a body: present the blow and put it on the host's path. */
+function landSkillShot(def: SkillDef, t: ProjectileTarget, at: Vector3, attacker: CombatPose) {
+  if (!sim) return
+  const shooter = getPlayerCombatPose() ?? attacker
+  if (t.index < 0) {
+    const dummy = trainingTargets()[trainingIndex(t.index)]
+    if (dummy) strikeTraining(poseToward(shooter.position, dummy.position), dummy, 'attack_heavy', { finisher: false, skill: def }, at)
+    return
+  }
+  const en = sim.enemies[t.index]
+  if (!en || en.dead || en.loading !== 'ready') return
+  const from = poseToward(shooter.position, en.position)
+  presentPlayerStrike(from, en, def.motion as HeroAttackMotion, { finisher: false, skill: def }, at)
+  if (isHost()) applySkillHit(from, en, def, { weapon: localWeapon(), might: localMight() })
+  else publishHitSkill(t.index, def.id)
+}
+
+/** The chain bolt: from the first body, arc to the nearest unhit body within reach, and again. */
+function chainFrom(
+  def: SkillDef, e: Extract<SkillDef['effect'], { kind: 'shot' }>, first: ProjectileTarget, at: Vector3, attacker: CombatPose, hit: Set<number>
+) {
+  let last = first
+  let lastAt = at
+  const reach = e.reach ?? 4
+  for (let n = 0; n < (e.chain ?? 0); n++) {
+    let best: ProjectileTarget | undefined
+    let bestD = Infinity
+    for (const t of projectileTargets()) {
+      if (hit.has(t.index)) continue
+      const dx = t.position.x - last.position.x
+      const dz = t.position.z - last.position.z
+      const d = Math.sqrt(dx * dx + dz * dz)
+      if (d <= reach && d < bestD) {
+        bestD = d
+        best = t
+      }
+    }
+    if (!best) break
+    hit.add(best.index)
+    const to = Vector3.create(best.position.x, best.position.y + Math.min(1.2, best.height * 0.6), best.position.z)
+    fxChainArc(lastAt, to)
+    landSkillShot(def, best, to, attacker)
+    last = best
+    lastAt = to
+  }
+}
+
+/** The arc between two chained bodies: a run of sparks along the line. */
+function fxChainArc(from: Vector3, to: Vector3) {
+  const steps = Math.max(2, Math.ceil(Vector3.distance(from, to) / 0.7))
+  for (let i = 1; i <= steps; i++) {
+    const t = i / steps
+    fxMagicBurst(Vector3.create(from.x + (to.x - from.x) * t, from.y + (to.y - from.y) * t + Math.sin(t * Math.PI) * 0.3, from.z + (to.z - from.z) * t),
+      Color4.create(0.55, 0.75, 1, 1), 0.3)
+  }
+  fxSound('swing_heavy', 0.35)
+}
+
+/** Host: a skill's blow on an enemy, from a strike's arc, a shot, or a zone's tick. */
+function applySkillHit(attacker: CombatPose, e: Enemy, def: SkillDef, context: { weapon: WeaponModifiers; might: number }) {
+  if (inTerritory(e, attacker)) e.engaged = true
+  else if (!e.engaged) {
+    e.provoked = PROVOKED_SECONDS
+    e.provokedFrom = { position: Vector3.clone(attacker.position), facing: attacker.facing }
+    e.returningHome = false
+  }
+  const guarded = e.blocking && facesCombatant(e, attacker, 0.1)
+  const hit = skillHit(def, guarded, context.weapon)
+  // Skills carry a heavy's weight: hyper armour does not blunt them.
+  e.health = Math.max(0, e.health - withMight(hit.damage, context.might))
+  e.hitStop = 0.09
+  setEquipmentTimeScale(e.body, 0.02)
+  const committed = e.swing?.motion === 'leap' || e.rollSeconds > 0
+  if (e.boss && committed && e.health > 0) return
+  e.swing = undefined
+  e.slamming = false
+  e.blocking = false
+  hideDecals(e)
+  resetRivalBrain(e.brain, 0.1, false)
+  if (e.health === 0) {
+    kill(e)
+    return
+  }
+  e.stagger = hit.stagger
+  playMotion(e, 'hit', true)
+  move(e, Math.sin(attacker.facing) * hit.knockback, Math.cos(attacker.facing) * hit.knockback)
+  syncTransform(e)
+}
+
+/** Whether this hero may use the skill at all: their class owns it and their level has reached it. */
+function skillAllowed(id: string, cid: string | undefined, def: SkillDef): boolean {
+  return heroClassOf(cid).id === def.cls && heroLevel(id, cid ?? '') >= def.level
+}
+
+/** Host: another client's report that a skill's blow landed on enemy `i`. */
+function applyRemoteSkillHit(id: string, index: number, skill: string) {
+  if (!isHost()) return
+  const def = skillById(skill)
+  const s = simFor(partyOf(id))
+  if (!def || !s) return
+  sim = s
+  const e = s.enemies[index]
+  if (!e || e.dead || e.loading !== 'ready') return
+  const attacker = allFighters().find((f) => f.address === id)
+  if (!attacker) return
+  const cid = heroCharacters((owner) => owner === id)[0]
+  if (!skillAllowed(id, cid, def)) return
+  // Only strikes and shots report their blows; zones are the host's own, auras hurt no one.
+  const eff = def.effect
+  const reach = eff.kind === 'strike' ? eff.range + 1.5 : eff.kind === 'shot' ? eff.range + 1.5 : 0
+  if (reach === 0 || combatDistance(attacker, e) > reach) return
+  if (Math.abs(attacker.position.y - e.position.y) > COMBAT_RULES.maximumVerticalReach + (eff.kind === 'shot' ? 2 : 0.5)) return
+  if (!claimSkillHit(id, def)) return
+  applySkillHit(poseToward(attacker.position, e.position), e, def, { weapon: weaponStats(heroWeapon(id)), might: hostMight(id, cid) })
+}
+
+/** Host: a blow belongs to a cast the hero made recently, and that cast has blows left to give. */
+function claimSkillHit(id: string, def: SkillDef): boolean {
+  const rec = casts.get(`${id}|${def.id}`)
+  if (!rec || elapsed - rec.at > CAST_CLAIM_SECONDS) return false
+  const eff = def.effect
+  const limit = eff.kind === 'strike' ? (eff.all ? 16 : 2) : eff.kind === 'shot' ? (eff.variant === 'chain' ? (eff.chain ?? 0) + 1 : 16) : 0
+  if (rec.hits >= limit) return false
+  rec.hits++
+  return true
+}
+
+/** Host: a hero's skill fired. Record the cast; deliver auras and zones. */
+function hostSkillCast(id: string, def: SkillDef, x: number, z: number, _yaw: number) {
+  const cid = heroCharacters((owner) => owner === id)[0]
+  if (!skillAllowed(id, cid, def)) return
+  const key = `${id}|${def.id}`
+  const prev = casts.get(key)
+  if (prev && elapsed - prev.at < def.cooldown - COOLDOWN_SLACK) return
+  casts.set(key, { at: elapsed, hits: 0 })
+  const e = def.effect
+  if (e.kind === 'aura') {
+    const targets = e.target === 'self' ? [id] : partyNear(id, e.radius)
+    for (const t of targets) {
+      if (e.heal > 0) healHero(t, e.heal)
+      if (e.seconds > 0 && (e.might !== 1 || e.toughness !== 1)) applyBuff(t, def.id, e.might, e.toughness, e.seconds)
+    }
+  } else if (e.kind === 'zone') {
+    const s = simFor(partyOf(id))
+    if (!s) return
+    const here = heroPosition(id)
+    // The circle lands within the skill's aim of the caster, or not at all.
+    if (here && Math.hypot(x - here.x, z - here.z) > e.aimRange + 3) return
+    s.zones.push({
+      def, x, z, ticksLeft: e.ticks, interval: e.ticks > 1 ? e.seconds / (e.ticks - 1) : 0,
+      // An aimed circle is a telegraph first; a slam lands with the blow.
+      timer: e.at === 'aim' ? ZONE_TELEGRAPH : 0,
+      caster: id, weapon: weaponStats(heroWeapon(id)), might: hostMight(id, cid)
+    })
+  }
+}
+
+/** The caster and the standing members of their party within `radius` of them. */
+function partyNear(id: string, radius: number): string[] {
+  const here = heroPosition(id)
+  const party = partyOf(id)
+  const out = [id]
+  if (!here) return out
+  for (const f of allFighters()) {
+    if (f.address === id || partyOf(f.address) !== party || f.health <= 0) continue
+    if (Math.hypot(f.position.x - here.x, f.position.z - here.z) <= radius) out.push(f.address)
+  }
+  return out
+}
+
+/** Host: deliver the zones' blows as their timers come due. */
+function tickZones(dt: number) {
+  if (!sim) return
+  for (let i = sim.zones.length - 1; i >= 0; i--) {
+    const z = sim.zones[i]
+    z.timer -= dt
+    if (z.timer > 0) continue
+    zoneTick(z)
+    z.ticksLeft--
+    if (z.ticksLeft <= 0) sim.zones.splice(i, 1)
+    else z.timer = z.interval
+  }
+}
+
+function zoneTick(z: Zone) {
+  if (!sim || z.def.effect.kind !== 'zone') return
+  const radius = z.def.effect.radius
+  for (const e of sim.enemies) {
+    if (e.loading !== 'ready' || e.dead) continue
+    const dx = e.position.x - z.x
+    const dz = e.position.z - z.z
+    if (Math.sqrt(dx * dx + dz * dz) > radius + 0.45 * e.archetype.scale) continue
+    if (Math.abs(e.position.y - COURTYARD.characterFloorY) > 1.5) continue
+    const before = e.health
+    applySkillHit(poseToward(Vector3.create(z.x, e.position.y, z.z), e.position), e, z.def, { weapon: z.weapon, might: z.might })
+    presentHostHit(sim.party, Vector3.create(e.position.x, e.position.y + 1.15 * e.archetype.scale, e.position.z), before - e.health)
+  }
+}
+
+/** A blow the host landed itself (a zone's tick): the number and the hit, for every client in the party. */
+function presentHostHit(party: string, at: Vector3, damage: number) {
+  const p = {
+    id: `zone:${party}`, x: at.x, y: at.y, z: at.z, heavy: true, blocked: false,
+    label: `${damage}`, kind: 'heavy', sound: 'hit_heavy' as FxSound, vol: 0.7, material: ''
+  }
+  if (isHeadless()) sendNet('impact', p)
+  else if (samePhase(p.id)) presentImpact(p)
+}
+
+// --- skills: what the clients see -----------------------------------------------------------------
+
+/** Seconds an aimed circle shows before its first blow. */
+const ZONE_TELEGRAPH = 0.35
+
+type ZoneFx = {
+  def: SkillDef
+  at: Vector3
+  decal: Decal
+  age: number
+  ticked: number
+  /** Ours: the blows on training targets (the yard's dummies, the Colossus) are delivered here. */
+  mine: boolean
+}
+const zoneFx: ZoneFx[] = []
+
+function clearZoneFx() {
+  for (const z of zoneFx) destroyDecal(z.decal)
+  zoneFx.length = 0
+}
+
+/** Another hero's cast, from the host's relay: the ground or the glow, where they put it. */
+function presentSkillCast(id: string, def: SkillDef, at: Vector3) {
+  if (def.effect.kind === 'zone') presentZone(def, at, false)
+  else if (def.effect.kind === 'aura') presentAura(def, heroPosition(id) ?? at)
+}
+
+function skillColor(def: SkillDef): Color4 {
+  return Color4.create(def.color[0], def.color[1], def.color[2], 1)
+}
+
+function presentZone(def: SkillDef, at: Vector3, mine: boolean) {
+  if (def.effect.kind !== 'zone') return
+  const decal = createDecal(def.id === 'fire_circle' ? 'crack' : def.effect.at === 'self' ? 'disc' : 'ring')
+  zoneFx.push({ def, at: Vector3.clone(at), decal, age: 0, ticked: 0, mine })
+  if (def.effect.at === 'self') fxSound('slam', 0.8)
+}
+
+/** Draw the zones and play each tick as the host's clock would land it. */
+function tickZoneFx(dt: number) {
+  for (let i = zoneFx.length - 1; i >= 0; i--) {
+    const z = zoneFx[i]
+    const e = z.def.effect
+    if (e.kind !== 'zone') continue
+    z.age += dt
+    const start = e.at === 'aim' ? ZONE_TELEGRAPH : 0
+    const interval = e.ticks > 1 ? e.seconds / (e.ticks - 1) : 0
+    const total = start + interval * (e.ticks - 1) + 0.6
+    while (z.ticked < e.ticks && z.age >= start + interval * z.ticked) {
+      zoneTickFx(z)
+      z.ticked++
+    }
+    const c = skillColor(z.def)
+    updateDecal(z.decal, z.age < total, z.at, e.radius, Math.min(1, z.age / Math.max(0.01, total - 0.6)), Color3.create(c.r, c.g, c.b))
+    if (z.age >= total) {
+      destroyDecal(z.decal)
+      zoneFx.splice(i, 1)
+    }
+  }
+}
+
+function zoneTickFx(z: ZoneFx) {
+  const e = z.def.effect
+  if (e.kind !== 'zone') return
+  const c = skillColor(z.def)
+  switch (z.def.id) {
+    case 'ground_slam':
+      fxSlam(z.at, e.radius)
+      kickCrawlerCamera(Vector3.create(0, -0.35, 0))
+      break
+    case 'arrow_rain': {
+      // A volley out of the sky: arrows for show, falling onto the circle.
+      const profile = shotProfile('scout', 'bow_shoot')
+      for (let n = 0; n < 5 && profile; n++) {
+        const a = Math.random() * Math.PI * 2
+        const r = Math.random() * e.radius * 0.9
+        const from = Vector3.create(z.at.x + Math.sin(a) * r, Math.min(COURTYARD.wallHeight - 0.2, z.at.y + 5), z.at.z + Math.cos(a) * r)
+        launchShot({ origin: from, yaw: a, pitch: -Math.PI / 2 + 0.02, profile: { ...profile, range: 6, speed: 24 }, motion: 'bow_shoot', finisher: false })
+      }
+      break
+    }
+    case 'fire_circle':
+      for (let n = 0; n < 6; n++) {
+        const a = Math.random() * Math.PI * 2
+        const r = Math.random() * e.radius
+        fxMagicBurst(Vector3.create(z.at.x + Math.sin(a) * r, z.at.y + 0.2, z.at.z + Math.cos(a) * r), Color4.create(1, 0.45, 0.1, 1), 0.7)
+      }
+      fxSound('slam', 0.35)
+      break
+    default:
+      fxMagicBurst(Vector3.add(z.at, Vector3.create(0, 0.3, 0)), c, e.radius * 0.5)
+  }
+  if (!z.mine) return
+  // Our own circle strikes the yard's dummies and the Colossus's parts where the host has no enemies to hit.
+  for (const t of trainingTargets()) {
+    if (t.rangedOnly && z.def.id === 'ground_slam') continue
+    const hull = t.radius ?? 0.45 * t.scale
+    const dx = t.position.x - z.at.x
+    const dz = t.position.z - z.at.z
+    if (Math.sqrt(dx * dx + dz * dz) > e.radius + hull) continue
+    const from = poseToward(z.at, t.position)
+    const at = Vector3.create(t.position.x - (dx / Math.max(0.01, Math.hypot(dx, dz))) * hull, t.position.y + Math.min(1.2, (t.height ?? 1.85 * t.scale) * 0.4), t.position.z - (dz / Math.max(0.01, Math.hypot(dx, dz))) * hull)
+    strikeTraining(from, t, 'attack_heavy', { finisher: false, skill: z.def }, at)
+  }
+}
+
+/** An aura going up: a burst of light on the caster (and a ring for a party-wide one). */
+function presentAura(def: SkillDef, at: Vector3) {
+  if (def.effect.kind !== 'aura') return
+  const c = skillColor(def)
+  const chest = Vector3.create(at.x, at.y + 1.2, at.z)
+  fxGlitter(chest, c)
+  fxMagicBurst(chest, c, def.effect.target === 'party' ? 1.2 : 0.7)
+  fxSound(def.effect.heal > 0 ? 'heal' : 'roar', def.effect.heal > 0 ? 0.8 : 0.5)
+  if (def.effect.target === 'party') {
+    const ring = createDecal('ring')
+    const z: ZoneFx = { def, at: Vector3.create(at.x, COURTYARD.characterFloorY, at.z), decal: ring, age: 0, ticked: 1, mine: false }
+    auraRings.push(z)
+  }
+}
+
+/** Party auras' rings: shown for a moment, then gone. */
+const auraRings: ZoneFx[] = []
+const AURA_RING_SECONDS = 0.9
+
+function tickAuraRings(dt: number) {
+  for (let i = auraRings.length - 1; i >= 0; i--) {
+    const r = auraRings[i]
+    r.age += dt
+    if (r.def.effect.kind !== 'aura' || r.age >= AURA_RING_SECONDS) {
+      destroyDecal(r.decal)
+      auraRings.splice(i, 1)
+      continue
+    }
+    const c = skillColor(r.def)
+    const t = r.age / AURA_RING_SECONDS
+    updateDecal(r.decal, true, r.at, r.def.effect.radius * (0.3 + 0.7 * t), 1, Color3.create(c.r, c.g, c.b))
+  }
+}
+
+/** A buff landed on a hero in our phase: a glint on them. */
+function presentBuff(id: string, skill: string) {
+  const def = skillById(skill)
+  const at = id === localAddress() ? getPlayerCombatPose()?.position : heroPosition(id)
+  if (!def || !at) return
+  fxGlitter(Vector3.create(at.x, at.y + 1.3, at.z), skillColor(def))
 }
 
 function presentImpact(p: ImpactNet) {

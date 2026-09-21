@@ -1,6 +1,9 @@
 import { engine, InputAction, inputSystem, PointerEventType, PointerLock } from '@dcl/sdk/ecs'
 
-export type CombatControlAction = 'light' | 'heavy' | 'jump'
+export type CombatControlAction = 'light' | 'heavy' | 'jump' | 'skill'
+
+/** Keys 1–4: the skill bar. */
+const SKILL_KEYS = [InputAction.IA_ACTION_3, InputAction.IA_ACTION_4, InputAction.IA_ACTION_5, InputAction.IA_ACTION_6] as const
 
 export type CombatControls = {
   armed: boolean
@@ -34,6 +37,8 @@ export function readCombatControls(controls: CombatControls, dt: number): {
   /** IA_WALK tapped (Ctrl in the Unity Explorer): dodge roll (dungeon). */
   dodgePressed: boolean
   action?: CombatControlAction
+  /** With action 'skill': which slot (0..3) was tapped. */
+  slot?: number
 } {
   const locked = PointerLock.getOrNull(engine.CameraEntity)?.isPointerLocked ?? false
   if (locked !== controls.previousPointerLock) {
@@ -56,6 +61,10 @@ export function readCombatControls(controls: CombatControls, dt: number): {
   const dodgePressed = acceptsKeys && inputSystem.isTriggered(InputAction.IA_WALK, PointerEventType.PET_DOWN)
   if (!acceptsKeys) return { acceptsKeys, jumpPressed, blockHeld, dodgePressed }
   if (jumpPressed) return { acceptsKeys, jumpPressed, blockHeld, dodgePressed, action: 'jump' }
+  // A skill key is a tap, never a hold: one press, one cast.
+  for (let slot = 0; slot < SKILL_KEYS.length; slot++) {
+    if (inputSystem.isTriggered(SKILL_KEYS[slot], PointerEventType.PET_DOWN)) return { acceptsKeys, jumpPressed, blockHeld, dodgePressed, action: 'skill', slot }
+  }
   // Holding an attack key keeps requesting the attack; the fighter only accepts
   // it once the current swing and its recovery are over, so a held key chains
   // strikes back to back. A fresh press still wins over a key that was held.

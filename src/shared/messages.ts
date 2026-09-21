@@ -93,6 +93,18 @@ export const Messages = {
     yaw: Schemas.Number,
     pitch: Schemas.Number
   }),
+  // --- skills (src/shared/skills.ts) -----------------------------------------------------
+  /**
+   * Client -> server -> all: a hero's skill fired at its contact frame; (x, z)
+   * is where its effect lands (a zone's centre, the caster for an aura). The
+   * server applies auras and zones itself and relays the cast for the FX.
+   */
+  skillCast: Schemas.Map({ id: Schemas.String, skill: Schemas.String, x: Schemas.Number, z: Schemas.Number, yaw: Schemas.Number }),
+  /** Client -> server: a skill's blow (a strike's arc, a shot's body) landed on enemy `i`. */
+  hitSkill: Schemas.Map({ id: Schemas.String, i: Schemas.Int, skill: Schemas.String }),
+  /** Server -> all: a buff on a hero: multipliers on damage dealt / taken for `seconds`. */
+  buff: Schemas.Map({ id: Schemas.String, skill: Schemas.String, might: Schemas.Number, toughness: Schemas.Number, seconds: Schemas.Number }),
+
   /** Server -> all: one party's enemies. Clients apply only the snapshot for the party they are in. */
   enemies: Schemas.Map({ party: Schemas.String, list: Schemas.Array(EnemySnap) }),
   loot: Schemas.Map({

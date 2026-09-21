@@ -24,6 +24,9 @@ import { presence } from './presence'
 import { trainingActive, trainingTally } from './trainingDummies'
 import { localXp } from './heroXp'
 import { bonusLines, MAX_LEVEL } from './shared/progression'
+import { heroClassOf } from './heroClasses'
+import { skillsUnlockedBetween } from './shared/skills'
+import { SkillBar, SKILL_BAR_HEIGHT } from './skillBarUi'
 import { formatTime, heroLabel, partyTitle } from './lobbyUi'
 import { DIFFICULTIES, LEVELS, MAX_PARTY, nextLevel, realmOfLevel } from './shared/levels'
 
@@ -464,6 +467,8 @@ function LevelUpNotice({ width, top, scale: s }: { width: number; top: number; s
   const boxWidth = Math.min(420 * s, width * 0.6)
   const cid = getEquippedCharacter().id
   const line = bonusLines(cid).join('   ·   ')
+  // A skill this level opened: the bar's new key.
+  const opened = skillsUnlockedBetween(heroClassOf(cid).id, x.levelUp - 1, x.levelUp)
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - boxWidth) / 2, top },
     width: boxWidth, flexDirection: 'column', alignItems: 'center', padding: { top: 8 * s, bottom: 10 * s }, borderRadius: 8 * s, pointerFilter: 'none' }}
     uiBackground={{ color: Color4.create(panel.r, panel.g, panel.b, panel.a * alpha) }}>
@@ -471,6 +476,9 @@ function LevelUpNotice({ width, top, scale: s }: { width: number; top: number; s
       uiTransform={{ width: '100%', height: 32 * s, pointerFilter: 'none' }} />
     <Label value={`${getEquippedCharacter().name}  ·  ${line}`} color={Color4.create(white.r, white.g, white.b, alpha)} font="sans-serif" fontSize={11 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 16 * s, pointerFilter: 'none' }} />
+    {opened.map((def) => <Label key={def.id} value={`NEW SKILL  ·  ${def.name} on key ${def.slot + 1}  ·  ${def.blurb}`}
+      color={Color4.create(gold.r, gold.g, gold.b, alpha)} font="sans-serif" fontSize={12 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 18 * s, margin: { top: 4 * s }, pointerFilter: 'none' }} />)}
   </UiEntity>
 }
 
@@ -480,20 +488,24 @@ export function WorldHudUi() {
   const player = getPlayerCharacterState()
   const ready = created && player.active && player.loading === 'ready'
   const inHub = myPhase() === HUB && !getLobbyState().open
+  // The skill bar sits at the foot of the screen; the prompts that used to stand there move up over it.
+  const showBar = ready && !getLobbyState().open
+  const lift = showBar ? SKILL_BAR_HEIGHT * s + 6 * s : 0
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width, height, pointerFilter: 'none' }}>
+    {showBar && <SkillBar width={width} bottom={bottom} scale={s} />}
     {ready && <PlayerVitals right={right} top={vitalsTop} scale={s} />}
     {ready && inRun() && !inRaid() && <RunPanel right={right + CARD_PAD * s} top={vitalsTop + 168 * s} scale={s} />}
     {ready && <ResultsOverlay width={width} height={height} scale={s} />}
-    {ready && <HubPrompt width={width} bottom={bottom} scale={s} />}
+    {ready && <HubPrompt width={width} bottom={bottom + lift} scale={s} />}
     {ready && <HubNotice width={width} top={vitalsTop - 60 * s} scale={s} />}
     {ready && <TrainingTally width={width} top={vitalsTop - 8 * s} scale={s} />}
     {ready && <LevelUpNotice width={width} top={vitalsTop + 60 * s} scale={s} />}
     {ready && <BossBar width={width} scale={s} />}
     {ready && <ColossusBar width={width} scale={s} />}
-    {ready && <RaidPrompt width={width} bottom={bottom} scale={s} />}
+    {ready && <RaidPrompt width={width} bottom={bottom + lift} scale={s} />}
     {ready && <LootToasts right={right} bottom={bottom} scale={s} />}
     {ready && devToolsOn() && <DungeonDevPanel />}
-    {created && <StatusNotice width={width} bottom={bottom} scale={s} />}
+    {created && <StatusNotice width={width} bottom={bottom + lift} scale={s} />}
     {created && devToolsOn() && <Label value={`${netStatus()} | ${netDebugSummary()}`} color={muted} font="sans-serif" fontSize={10 * s} textAlign="bottom-left" textWrap="nowrap"
       uiTransform={{ positionType: 'absolute', position: { left: 12 * s, bottom: 4 * s }, width: width - 140 * s, height: 16 * s, pointerFilter: 'none' }} />}
     {created && showNetLog() && <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 12 * s, top: height * 0.32 }, width: 520 * s,

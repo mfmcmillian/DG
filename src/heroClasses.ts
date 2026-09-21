@@ -11,6 +11,7 @@
 import type { EquipmentMotion } from './combatAnimations'
 import type { HeroAttackMotion } from './combatActions'
 import type { WeaponClass } from './weapons'
+import type { SkillDef } from './shared/skills'
 
 export type HeroClass = 'blade' | 'heavy' | 'bow' | 'magic'
 
@@ -30,6 +31,8 @@ export type ShotProfile = {
   spread: number
   /** Orbs that go off: every enemy within this many metres of the impact is hit. */
   burst?: number
+  /** Flies on through the bodies it hits (each is hit once) until its range is spent. */
+  pierce?: boolean
 }
 
 export interface HeroClassDefinition {
@@ -139,6 +142,19 @@ export function shotProfileForMotion(motion: HeroAttackMotion): ShotProfile | un
     if (profile) return profile
   }
   return undefined
+}
+
+/**
+ * A shot skill's projectile: the class's own missile (an arrow for the bow, a
+ * bolt for the staff) with the skill's speed, range and twist.
+ */
+export function skillShotProfile(def: SkillDef): ShotProfile | undefined {
+  const e = def.effect
+  if (e.kind !== 'shot') return undefined
+  return {
+    kind: def.cls === 'bow' ? 'arrow' : 'bolt', speed: e.speed, range: e.range, radius: 0.6, count: 1, spread: 0,
+    burst: e.variant === 'burst' ? e.radius : undefined, pierce: e.variant === 'pierce'
+  }
 }
 
 export function isRangedMotion(characterId: string | undefined, motion: HeroAttackMotion): boolean {

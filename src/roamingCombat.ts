@@ -8,6 +8,7 @@ import { COMBAT_CLIPS, EquipmentMotion, JumpMotion, NATIVE_JUMP_CLIPS } from './
 import { CombatControlAction, createCombatControls, readCombatControls, resetCombatControls } from './combatControls'
 import { getEquipmentJumpMotion, setEquipmentMotion } from './equipmentAvatar'
 import { HERO_CLASSES, heroClassOf, HeroClassDefinition } from './heroClasses'
+import { skillById, SkillDef } from './shared/skills'
 
 /** Stamina the hero's level adds to the bar (src/heroXp.ts keeps it current). */
 let staminaBonus = 0
@@ -37,9 +38,13 @@ type Dodge = {
   pose: EquipmentMotion
 }
 
-export type AttackContext = { finisher: boolean }
+export type AttackContext = { finisher: boolean; skill?: SkillDef }
 
 export type RoamingCombatHooks = {
+  /** The skill in this slot (0..3) if the hero's level has opened it; undefined keeps the key dead. */
+  skillInSlot?: (slot: number) => SkillDef | undefined
+  /** A skill key was tapped but nothing came out: still locked, cooling down, or no stamina. */
+  onSkillRefused?: (slot: number, why: 'locked' | 'cooldown' | 'stamina') => void
   /** A swing has just been selected; a good moment to lock on and step in. */
   onAttackStart?: (motion: HeroAttackMotion, context: AttackContext) => void
   /** A ground swing's wind-up is under way: carry the body forward into the
@@ -100,8 +105,10 @@ export function createRoamingCombat() {
     elapsed: 0, recovery: 0,
     /** Index of the next light in the string (0..2); the third is the finisher. */
     comboStep: 0, comboWindow: 0,
-    buffered: undefined as { action: CombatControlAction; ttl: number } | undefined,
+    buffered: undefined as { action: CombatControlAction; slot?: number; ttl: number } | undefined,
     swing: undefined as Swing | undefined,
+    /** Seconds until each skill slot (0..3) may fire again. */
+    cooldowns: [0, 0, 0, 0] as number[],
     /** Space held with the guard up. */
     blocking: false,
     jump: undefined as NativeJump | undefined,
@@ -217,6 +224,7 @@ export function updateRoamingCombat(
     combat.buffered.ttl -= dt
     if (combat.buffered.ttl <= 0) combat.buffered = undefined
   }
+  for (let i = 0; i < combat.cooldowns.length; i++) combat.cooldowns[i] = Math.max(0, combat.cooldowns[i] - dt)
 
   // Stamina regenerates after a short pause following any spend.
   combat.staminaDelay = Math.max(0, combat.staminaDelay - dt)
@@ -224,7 +232,7 @@ export function updateRoamingCombat(
     combat.stamina = Math.min(maxStamina(), combat.stamina + STAMINA.regenPerSecond * dt)
   }
 
-  const { action, blockHeld, dodgePressed } = readCombatControls(combat.controls, dt)
+  const { action, slot, blockHeld, dodgePressed } = readCombatControls(combat.controls, dt)
 
   const dy = previous ? position.y - previous.y : 0
   const dx = previous ? position.x - previous.x : 0
@@ -305,7 +313,18 @@ export function updateRoamingCombat(
   // --- attacks ---------------------------------------------------------------
   // Inputs that cannot start right now are buffered so a tap during a swing's
   // recovery still comes out, and a heavy tapped mid-string fires as its ender.
-  const wantedAction = action === 'light' || action === 'heavy' ? action : undefined
+  // A skill key that cannot fire at all (locked, cooling, out of breath) is
+  // answered now and not buffered: the bar shows why and the tap is spent.
+  let wantedAction = action === 'light' || action === 'heavy' || action === 'skill' ? action : undefined
+  let wantedSlot = action === 'skill' ? slot : undefined
+  if (wantedAction === 'skill' && armed && wantedSlot !== undefined) {
+    const refused = skillRefusal(combat, wantedSlot, hooks)
+    if (refused) {
+      hooks.onSkillRefused?.(wantedSlot, refused)
+      wantedAction = undefined
+      wantedSlot = undefined
+    }
+  }
   // Space holds the guard up whenever the fighter is otherwise free. An attack
   // input always wins over a held guard so E/F stay responsive.
   combat.blocking = armed && blockHeld && !wantedAction && !combat.swing && !combat.dodge &&
@@ -316,11 +335,27 @@ export function updateRoamingCombat(
     combat.buffered = undefined
   }
   if (wantedAction && armed && !canStartAttack(combat)) {
-    combat.buffered = { action: wantedAction, ttl: INPUT_BUFFER }
+    combat.buffered = { action: wantedAction, slot: wantedSlot, ttl: INPUT_BUFFER }
   }
   if (armed && !combat.dodge && canStartAttack(combat)) {
     const chosen = wantedAction ?? combat.buffered?.action
-    if (chosen) {
+    const chosenSlot = wantedAction ? wantedSlot : combat.buffered?.slot
+    if (chosen === 'skill') {
+      combat.buffered = undefined
+      const def = chosenSlot !== undefined ? hooks.skillInSlot?.(chosenSlot) : undefined
+      // Re-checked here: the buffer may have outlived the stamina or the cooldown may have been spent.
+      if (def && chosenSlot !== undefined && !skillRefusal(combat, chosenSlot, hooks)) {
+        combat.stamina -= def.stamina
+        if (def.stamina > 0) combat.staminaDelay = STAMINA.regenDelay
+        combat.cooldowns[chosenSlot] = def.cooldown
+        combat.comboStep = 0
+        combat.comboWindow = 0
+        combat.swing = createSwing(def.motion, combat.elapsed, false, { contact: def.contact, skill: def.id })
+        if (combat.jump) combat.jump.poseOverride = def.motion
+        setEquipmentMotion(root, def.motion, true)
+        hooks.onAttackStart?.(def.motion as HeroAttackMotion, { finisher: false, skill: def })
+      }
+    } else if (chosen) {
       combat.buffered = undefined
       let motion: HeroAttackMotion | undefined
       let finisher = false
@@ -351,11 +386,11 @@ export function updateRoamingCombat(
     }
   }
   const swing = combat.swing
-  if (swing && advanceAttack(swing, combat.elapsed, dt, () => hooks.onAttackContact?.(swing.motion as HeroAttackMotion, { finisher: !!swing.finisher }))) {
+  if (swing && advanceAttack(swing, combat.elapsed, dt, () => hooks.onAttackContact?.(swing.motion as HeroAttackMotion, { finisher: !!swing.finisher, skill: skillOf(swing) }))) {
     combat.swing = undefined
-    combat.recovery = attackRecovery(swing.motion, !!swing.finisher)
-    // The string may continue for a moment after the recovery; a finisher ends it.
-    const ender = isHeavyMotion(swing.motion) || !!swing.finisher
+    combat.recovery = swing.skill ? 0.2 : attackRecovery(swing.motion, !!swing.finisher)
+    // The string may continue for a moment after the recovery; a finisher (or a skill) ends it.
+    const ender = isHeavyMotion(swing.motion) || !!swing.finisher || !!swing.skill
     combat.comboWindow = ender ? 0 : combat.recovery + COMBO_WINDOW
     if (ender) combat.comboStep = 0
   } else if (swing && !combat.jump) {
@@ -374,13 +409,30 @@ export function updateRoamingCombat(
     if (wantsToMove) {
       combat.swing = undefined
       combat.recovery = 0
-      const ender = isHeavyMotion(swing.motion) || !!swing.finisher
+      const ender = isHeavyMotion(swing.motion) || !!swing.finisher || !!swing.skill
       combat.comboWindow = ender ? 0 : COMBO_WINDOW
       if (ender) combat.comboStep = 0
     }
   }
   if (hadSwingOrRecovery && !combat.swing && combat.recovery === 0) hooks.onAttackEnd?.()
   return currentMotion(combat)
+}
+
+/** The swing's skill, when it casts one. */
+function skillOf(swing: Swing): SkillDef | undefined {
+  return swing.skill ? skillById(swing.skill) : undefined
+}
+
+/**
+ * Why a skill key does nothing right now, or undefined when it may fire: the
+ * slot is still locked at this level, it is cooling down, or the bar is short.
+ */
+function skillRefusal(combat: RoamingCombat, slot: number, hooks: RoamingCombatHooks): 'locked' | 'cooldown' | 'stamina' | undefined {
+  const def = hooks.skillInSlot?.(slot)
+  if (!def) return 'locked'
+  if (combat.cooldowns[slot] > 0) return 'cooldown'
+  if (combat.stamina < def.stamina) return 'stamina'
+  return undefined
 }
 
 /** The native controller is held still: rolling, rooted in a ground swing, or dead. */

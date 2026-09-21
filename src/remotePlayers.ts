@@ -1,8 +1,9 @@
 import { AvatarAnchorPointType, AvatarAttach, engine, Entity, PlayerIdentityData, Transform } from '@dcl/sdk/ecs'
 import { Quaternion, Vector3 } from '@dcl/sdk/math'
 import { rearmAvatarHiding } from './avatarHiding'
-import { HeroAttackMotion, isHeavyMotion, isRangedAttack } from './combatActions'
-import { shotProfile, shotProfileForMotion } from './heroClasses'
+import { HeroAttackMotion, isRangedAttack, WeaponMotion } from './combatActions'
+import { shotProfile, shotProfileForMotion, skillShotProfile } from './heroClasses'
+import { skillById } from './shared/skills'
 import { launchShot } from './projectiles'
 import { EquipmentMotion } from './combatAnimations'
 import { fxImpact, fxNumber, fxSlash, fxSound } from './combatFx'
@@ -69,9 +70,12 @@ const DIAG_SECONDS = 10
 
 const RESET_MOTIONS = new Set<EquipmentMotion>([
   'attack_light', 'attack_light2', 'attack_heavy', 'attack_light3', 'heavy_combo_c', 'leap', 'hit', 'death', 'block', 'dodge_roll',
-  'bow_shoot', 'bow_volley', 'bow_bash', 'bow_block', 'cast_bolt', 'cast_nova'
+  'bow_shoot', 'bow_volley', 'bow_bash', 'bow_block', 'cast_bolt', 'cast_nova',
+  'fencing', 'flourish_heavy', 'heavy_combo_a', 'menace_enter', 'flourish'
 ])
-const MELEE_MOTIONS = new Set<EquipmentMotion>(['attack_light', 'attack_light2', 'attack_heavy', 'attack_light3', 'heavy_combo_c', 'leap'])
+/** The light strings; every other melee motion (heavies, skills) sounds heavy. */
+const LIGHT_MOTIONS = new Set<EquipmentMotion>(['attack_light', 'attack_light2', 'attack_light3'])
+const MELEE_MOTIONS = new Set<EquipmentMotion>(['attack_light', 'attack_light2', 'attack_heavy', 'attack_light3', 'heavy_combo_c', 'leap', 'fencing', 'flourish_heavy', 'heavy_combo_a'])
 
 /** Keyed by the synced hero entity. */
 const replicas = new Map<Entity, Replica>()
@@ -192,6 +196,14 @@ export function presentRemoteRevive(id: string) {
  * hits is settled by the host and arrives through the enemy snapshot.
  */
 export function presentRemoteShot(p: { id: string; motion: string; x: number; y: number; z: number; yaw: number; pitch: number }) {
+  // A skill's shot travels as `skill:<id>`: the skill knows its own missile.
+  if (p.motion.startsWith('skill:')) {
+    const def = skillById(p.motion.slice(6))
+    const profile = def ? skillShotProfile(def) : undefined
+    if (!def || !profile) return
+    launchShot({ origin: Vector3.create(p.x, p.y, p.z), yaw: p.yaw, pitch: p.pitch, profile, motion: def.motion as HeroAttackMotion, finisher: false })
+    return
+  }
   const motion = p.motion as HeroAttackMotion
   if (!isRangedAttack(motion)) return
   const replica = replicaByAddress(p.id)
@@ -256,8 +268,8 @@ function updateRemotePlayers(dt: number) {
         // through its own dungeon in these same metres is out of earshot.
         const heard = restart && partyOf(id) === myPhase
         if (heard && MELEE_MOTIONS.has(motion)) {
-          fxSlash(replica.root, motion as HeroAttackMotion)
-          fxSound(isHeavyMotion(motion as HeroAttackMotion) ? 'swing_heavy' : 'swing_light', 0.55)
+          fxSlash(replica.root, motion as WeaponMotion)
+          fxSound(LIGHT_MOTIONS.has(motion) ? 'swing_light' : 'swing_heavy', 0.55)
         } else if (heard && motion === 'bow_bash') {
           fxSound('swing_light', 0.55)
         }

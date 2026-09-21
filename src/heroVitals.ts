@@ -40,6 +40,55 @@ const vitals = new Map<string, Vitals>()
 const heartDrops: HeartDrop[] = []
 let initialized = false
 
+// --- buffs (skills' auras, src/shared/skills.ts) -------------------------------------
+//
+// One buff per hero at a time: a new one replaces it. The host keeps the
+// ledger and applies the multipliers to the blows it resolves; every client
+// mirrors it from the `buff` messages for the numbers it shows and the HUD.
+
+export type Buff = { skill: string; might: number; toughness: number; left: number; seconds: number }
+const buffs = new Map<string, Buff>()
+let buffSystem = false
+
+function ensureBuffSystem() {
+  if (buffSystem) return
+  buffSystem = true
+  engine.addSystem((deltaTime: number) => {
+    const dt = Number.isFinite(deltaTime) && deltaTime > 0 ? deltaTime : 0
+    for (const [id, b] of buffs) {
+      b.left -= dt
+      if (b.left <= 0) buffs.delete(id)
+    }
+  })
+}
+
+/** Host: a hero's buff begins; told to everyone. */
+export function applyBuff(id: string, skill: string, might: number, toughness: number, seconds: number) {
+  noteBuff(id, skill, might, toughness, seconds)
+  sendNet('buff', { id, skill, might, toughness, seconds })
+}
+
+/** Client: mirror of the host's `buff`. */
+export function noteBuff(id: string, skill: string, might: number, toughness: number, seconds: number) {
+  ensureBuffSystem()
+  if (seconds <= 0) buffs.delete(id)
+  else buffs.set(id, { skill, might, toughness, left: seconds, seconds })
+}
+
+export function activeBuff(id: string): Readonly<Buff> | undefined {
+  return buffs.get(id)
+}
+
+/** Multiplier on the damage this hero deals right now (1 without a buff). */
+export function buffMight(id: string): number {
+  return buffs.get(id)?.might ?? 1
+}
+
+/** Multiplier on the damage this hero takes right now (1 without a buff). */
+export function buffToughness(id: string): number {
+  return buffs.get(id)?.toughness ?? 1
+}
+
 export function initializeHeroVitals() {
   if (initialized) return
   initialized = true
@@ -93,7 +142,7 @@ export function strikeHero(
   const dodged = !blocked && !!opts.dodged
   // The hero's level takes some of the sting out of the blow, more so for a vanguard.
   const cid = heroCharacters((owner) => owner === id)[0] ?? ''
-  const toughness = heroBonusesFor(id, cid).toughness
+  const toughness = heroBonusesFor(id, cid).toughness * buffToughness(id)
   const dealt = blocked || dodged ? 0 : Math.max(0, Math.round(damage * toughness))
   v.health = Math.max(0, v.health - dealt)
   if (v.health === 0) v.deadFor = 0

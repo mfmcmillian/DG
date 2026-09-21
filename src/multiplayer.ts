@@ -384,6 +384,20 @@ export function publishHitEnemy(i: number, motion: string, finisher: boolean) {
   sendNet('hitEnemy', { id, i, motion, finisher })
 }
 
+/** A skill's blow on enemy `i`, for the host to validate and apply (src/shared/skills.ts). */
+export function publishHitSkill(i: number, skill: string) {
+  const id = localAddress()
+  if (!clientReady() || !id) return
+  sendNet('hitSkill', { id, i, skill })
+}
+
+/** Our hero's skill fired: the host applies its aura or zone and everyone else plays it. */
+export function publishSkillCast(skill: string, x: number, z: number, yaw: number) {
+  const id = localAddress()
+  if (!clientReady() || !id) return
+  sendNet('skillCast', { id, skill, x, z, yaw })
+}
+
 export function publishImpact(p: ImpactNet) {
   const id = localAddress()
   if (!clientReady() || !id) return
@@ -455,6 +469,9 @@ let onEnemies: ((party: string, list: EnemySnap[]) => void) | undefined
 let onLoot: ((party: string, x: number, z: number, coin: number, heart: number, item: string, boss: boolean) => void) | undefined
 let onJoin: ((id: string) => void) | undefined
 let onLeave: ((id: string) => void) | undefined
+let onHitSkill: ((id: string, i: number, skill: string) => void) | undefined
+let onSkillCast: ((id: string, skill: string, x: number, z: number, yaw: number) => void) | undefined
+let onBuff: ((id: string, skill: string, might: number, toughness: number, seconds: number) => void) | undefined
 
 export function setMultiplayerHandlers(handlers: {
   hitEnemy?: typeof onHitEnemy
@@ -472,8 +489,17 @@ export function setMultiplayerHandlers(handlers: {
   join?: typeof onJoin
   /** Server only: a hero left the room or withdrew their body. */
   leave?: typeof onLeave
+  /** Server only: a skill's blow on an enemy. */
+  hitSkill?: typeof onHitSkill
+  /** Server: a hero's skill fired (apply and relay). Client: another hero's, for the FX. */
+  skillCast?: typeof onSkillCast
+  /** Client: a hero's buff began (or ended, seconds 0). */
+  buff?: typeof onBuff
 }) {
   if (handlers.leave) onLeave = handlers.leave
+  if (handlers.hitSkill) onHitSkill = handlers.hitSkill
+  if (handlers.skillCast) onSkillCast = handlers.skillCast
+  if (handlers.buff) onBuff = handlers.buff
   if (handlers.hitEnemy) onHitEnemy = handlers.hitEnemy
   if (handlers.hitPlayer) onHitPlayer = handlers.hitPlayer
   if (handlers.heal) onHeal = handlers.heal
@@ -499,6 +525,11 @@ function bindClient() {
     if (msg.id === localAddress()) return
     onShot?.(msg)
   })
+  onNet('skillCast', (msg) => {
+    if (msg.id === localAddress()) return
+    onSkillCast?.(msg.id, msg.skill, msg.x, msg.z, msg.yaw)
+  })
+  onNet('buff', (msg) => onBuff?.(msg.id, msg.skill, msg.might, msg.toughness, msg.seconds))
   onNet('enemies', (msg) => {
     snapshots++
     sinceSnapshot = 0
@@ -542,6 +573,16 @@ function bindServer() {
   onNet('shot', (msg, context) => {
     if (!context || isSolo()) return
     sendNet('shot', { ...msg, id: context.from.toLowerCase() })
+  })
+  onNet('hitSkill', (msg, context) => {
+    if (!context) return
+    onHitSkill?.(context.from.toLowerCase(), msg.i, msg.skill)
+  })
+  onNet('skillCast', (msg, context) => {
+    if (!context) return
+    const id = context.from.toLowerCase()
+    onSkillCast?.(id, msg.skill, msg.x, msg.z, msg.yaw)
+    if (!isSolo()) sendNet('skillCast', { ...msg, id })
   })
   onNet('diag', (msg, context) => {
     if (!context) return
