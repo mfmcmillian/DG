@@ -230,7 +230,8 @@ export function initializeDungeonEnemies() {
       if (change === 'died') onLocalDefeated()
       else if (change === 'revived') recoverPlayer()
     },
-    impact: presentImpact,
+    // Another party's blows, landed in these same metres but in their own run, stay unseen and unheard.
+    impact: (p, from) => { if (samePhase(from)) presentImpact(p) },
     enemies: applyEnemySnapshots,
     loot: grantLoot,
     join: () => {

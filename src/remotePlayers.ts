@@ -252,10 +252,13 @@ function updateRemotePlayers(dt: number) {
       replica.seq = hero.seq
       if (!(replica.echoGrace > 0 && motion === replica.motion)) {
         applyMotion(replica, motion, restart && RESET_MOTIONS.has(motion))
-        if (restart && MELEE_MOTIONS.has(motion)) {
+        // Swings are heard only from heroes in our own phase: a party fighting
+        // through its own dungeon in these same metres is out of earshot.
+        const heard = restart && partyOf(id) === myPhase
+        if (heard && MELEE_MOTIONS.has(motion)) {
           fxSlash(replica.root, motion as HeroAttackMotion)
           fxSound(isHeavyMotion(motion as HeroAttackMotion) ? 'swing_heavy' : 'swing_light', 0.55)
-        } else if (restart && motion === 'bow_bash') {
+        } else if (heard && motion === 'bow_bash') {
           fxSound('swing_light', 0.55)
         }
       }

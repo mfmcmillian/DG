@@ -449,7 +449,7 @@ let onHitPlayer: ((hit: HeroHit) => void) | undefined
 let onHeal: ((id: string, amount: number, health: number) => void) | undefined
 let onRevive: ((id: string, health: number, inPlace: boolean) => void) | undefined
 let onVitals: ((id: string, health: number) => void) | undefined
-let onImpact: ((p: ImpactNet) => void) | undefined
+let onImpact: ((p: ImpactNet, from: string) => void) | undefined
 let onShot: ((p: ShotNet) => void) | undefined
 let onEnemies: ((party: string, list: EnemySnap[]) => void) | undefined
 let onLoot: ((party: string, x: number, z: number, coin: number, heart: number, item: string, boss: boolean) => void) | undefined
@@ -493,7 +493,7 @@ function bindClient() {
   onNet('vitals', (msg) => onVitals?.(msg.id, msg.health))
   onNet('impact', (msg) => {
     if (msg.id === localAddress()) return
-    onImpact?.(msg)
+    onImpact?.(msg, msg.id)
   })
   onNet('shot', (msg) => {
     if (msg.id === localAddress()) return

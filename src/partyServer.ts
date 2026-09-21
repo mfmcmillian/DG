@@ -102,6 +102,10 @@ function bind() {
   setRecoverPolicy((id) => (parties.get(RAID_PARTY)?.members.includes(id) ? RAID_RECOVER_SECONDS : RECOVER_SECONDS))
   initializeColossusServer({
     members: () => parties.get(RAID_PARTY)?.members ?? [],
+    wipe: () => {
+      for (const id of [...(parties.get(RAID_PARTY)?.members ?? [])]) leaveParty(id, false)
+      broadcast()
+    },
     awardXp: (id, amount) => awardXp(id, amount, 'clear'),
     saveXp: saveDirtyXp
   })

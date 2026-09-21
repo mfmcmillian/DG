@@ -127,7 +127,7 @@ export function initializeColossusClient() {
     events.push({ kind: msg.kind, text: msg.text, n: msg.n, age: 0 })
     if (events.length > 4) events.shift()
     if (msg.kind === 'wake' || msg.kind === 'phase') fxSound('roar', 1)
-    if (msg.kind === 'fall') fxSound('slam', 1)
+    if (msg.kind === 'fall' || msg.kind === 'wipe') fxSound('slam', 1)
   })
   onDungeonLoaded((state) => {
     const pit = state.style.id === 'pit'

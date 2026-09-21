@@ -30,6 +30,8 @@ export const COLOSSUS_MAX_HP = 9000
 const WAKE_RADIUS = 17
 /** With nobody in the Pit this long the fight resets and the stone settles. */
 const ABANDON_SECONDS = 25
+/** Every raider down: how long the fallen party lies there before the Pit puts them out. */
+const WIPE_SECONDS = 5
 /** It lies broken this long before the chains draw it up again. */
 const RESPAWN_SECONDS = 240
 const WAKING_SECONDS = 4
@@ -65,6 +67,8 @@ type Brain = {
   fires: Fire[]
   wait: number
   emptyFor: number
+  /** Counting down once the whole party is down; 0 while anyone stands. */
+  wipeIn: number
   /** Per act bookkeeping: which impact marks have fired, who the sweep/ring already caught. */
   fired: Set<number>
   caught: Set<string>
@@ -80,6 +84,8 @@ type Brain = {
 
 type Callbacks = {
   members: () => string[]
+  /** The party has fallen: put every member back in the hall. */
+  wipe: () => void
   awardXp: (id: string, amount: number) => void
   saveXp: () => void
 }
@@ -91,7 +97,7 @@ const brain: Brain = freshBrain()
 function freshBrain(): Brain {
   return {
     state: 'dormant', stateT: 0, hp: COLOSSUS_MAX_HP, phase: 1, yaw: 0, act: '', t: 0, pts: [], cooldown: 0, poise: 0, fires: [],
-    wait: 0, emptyFor: 0, fired: new Set(), caught: new Set(), sweepPrev: 0, ringPrev: 0, aggro: new Map(), dealt: new Map(),
+    wait: 0, emptyFor: 0, wipeIn: 0, fired: new Set(), caught: new Set(), sweepPrev: 0, ringPrev: 0, aggro: new Map(), dealt: new Map(),
     revive: new Map(), snapshotAge: 0, lastAct: ''
   }
 }
@@ -117,6 +123,7 @@ function raiders(): NetFighter[] {
 function setState(next: BossState) {
   brain.state = next
   brain.stateT = 0
+  brain.wipeIn = 0
   brain.act = ''
   brain.t = 0
   brain.pts = []
@@ -203,6 +210,7 @@ function update(dt: number) {
         console.log('[Colossus] abandoned, resets')
         break
       }
+      if (wiping(dt)) break
       fight(dt, fighters, alive)
       break
     case 'dying':
@@ -613,6 +621,43 @@ function fall() {
   }
   cb.saveXp()
   for (const id of members) if (heroDownFor(id) !== undefined) reviveHero(id, true)
+}
+
+/**
+ * The match ends when the whole party is down: nobody left to raise anyone.
+ * The fallen get a moment to see it, then the Pit puts them out in the hall
+ * and the Colossus is chained up whole again. True while that is under way.
+ */
+function wiping(dt: number): boolean {
+  if (!cb) return false
+  const members = new Set(cb.members())
+  const party = allFighters().filter((f) => members.has(f.address))
+  const allDown = party.length > 0 && party.every((f) => f.health <= 0)
+  if (brain.wipeIn <= 0) {
+    if (!allDown) return false
+    brain.wipeIn = WIPE_SECONDS
+    brain.act = ''
+    brain.t = 0
+    brain.pts = []
+    brain.fires = []
+    announce('wipe', 'THE PARTY HAS FALLEN')
+    console.log('[Colossus] wipes the party')
+    return true
+  }
+  brain.wipeIn -= dt
+  if (brain.wipeIn > 0) return true
+  brain.wipeIn = 0
+  for (const id of members) if (heroDownFor(id) !== undefined) reviveHero(id, true)
+  cb.wipe()
+  setState('dormant')
+  brain.hp = COLOSSUS_MAX_HP
+  brain.phase = 1
+  brain.poise = 0
+  brain.dealt.clear()
+  brain.aggro.clear()
+  brain.revive.clear()
+  console.log('[Colossus] the Pit is empty again; the chains hold')
+  return true
 }
 
 // --- downed heroes -----------------------------------------------------------------------------

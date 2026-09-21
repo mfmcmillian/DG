@@ -28,6 +28,9 @@ const stone = Color4.create(0.62, 0.6, 0.58, 1)
 const PHASE_COLOR = [Color4.create(0.75, 0.12, 0.2, 1), Color4.create(0.85, 0.3, 0.12, 1), Color4.create(1, 0.55, 0.1, 1)]
 let hovered = ''
 let pitRequested = false
+/** When the hero stepped onto the hall's circle with the Pit ready; 0 off it. Standing this long takes them down. */
+let descentStarted = 0
+const DESCEND_SECONDS = 2.5
 
 function Action({ id, text, onClick, scale: s, width = 200 }: { key?: string; id: string; text: string; onClick: () => void; scale: number; width?: number }) {
   return <UiEntity uiTransform={{ width: width * s, height: 36 * s, flexShrink: 0,
@@ -99,7 +102,7 @@ export function ColossusBar({ width, scale: s }: { width: number; scale: number 
     <Label value={sub} color={v.state === 'stagger' ? gold : muted} font="sans-serif" fontSize={11 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
     {latest && evAlpha > 0 && latest.kind !== 'revive' && <Label value={latest.kind === 'kill' ? `${latest.text}   +${latest.n} XP` : latest.text}
-      color={Color4.create(ember.r, ember.g, ember.b, evAlpha)} font="serif" fontSize={(latest.kind === 'fall' ? 22 : 15) * s} textAlign="middle-center" textWrap="nowrap"
+      color={Color4.create(ember.r, ember.g, ember.b, evAlpha)} font="serif" fontSize={(latest.kind === 'fall' || latest.kind === 'wipe' ? 22 : 15) * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 30 * s, margin: { top: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
   </UiEntity>
 }
@@ -124,20 +127,46 @@ export function RaidPrompt({ width, bottom, scale: s }: { width: number; bottom:
   const w = 380 * s
 
   if (inHall) {
-    if (!near || myParty()) return null
+    if (!near || myParty()) {
+      descentStarted = 0
+      return null
+    }
     const inside = getLobbyState().parties.find((p) => p.id === 'raid')?.members.length ?? 0
     if (!pitRequested) {
       pitRequested = true
       requestRealmPreload(RAID_LEVEL.style, true)
     }
+    // Standing on the circle is the whole ritual: the Pit's stone and the
+    // Colossus load first (the bar is that), then a short descent, then down.
+    const group = getPreloadGroup(realmGroupId(RAID_LEVEL.style))
     const ready = isRealmPreloaded(RAID_LEVEL.style)
+    const full = inside >= MAX_RAID
+    const now = Date.now()
+    if (!ready || full) descentStarted = 0
+    else if (!descentStarted) descentStarted = now
+    const descent = descentStarted ? Math.min(1, (now - descentStarted) / 1000 / DESCEND_SECONDS) : 0
+    if (descent >= 1) {
+      descentStarted = 0
+      joinRaid()
+    }
     rows.push(<Label key="cap" value={`${RAID_LEVEL.name}  ·  ${RAID_LEVEL.blurb}  ·  ${inside}/${MAX_RAID} inside`} color={ember} font="sans-serif" fontSize={12 * s} textWrap="nowrap"
       uiTransform={{ width: '100%', height: 24 * s, margin: { bottom: 6 * s }, pointerFilter: 'none' }} />)
-    if (ready) rows.push(<Action key="go" id="descend-pit" text={inside >= MAX_RAID ? 'The Pit is full' : 'Descend into the Pit'} onClick={() => { if (inside < MAX_RAID) joinRaid() }} scale={s} width={220} />)
-    else rows.push(<Label key="wait" value={preloadCaption(getPreloadGroup(realmGroupId(RAID_LEVEL.style)), 'Preparing')} color={muted} font="sans-serif" fontSize={12 * s} textWrap="nowrap"
-      uiTransform={{ width: '100%', height: 24 * s, pointerFilter: 'none' }} />)
+    if (full) {
+      rows.push(<Label key="full" value="The Pit is full. Wait for a hero to come up." color={muted} font="sans-serif" fontSize={12 * s} textWrap="nowrap"
+        uiTransform={{ width: '100%', height: 24 * s, pointerFilter: 'none' }} />)
+    } else {
+      const ratio = ready ? 0.25 + 0.75 * descent : 0.25 * (group?.progress ?? 0)
+      rows.push(<Label key="wait" value={ready ? 'Descending into the Pit…  step off the circle to stay' : preloadCaption(group, 'Preparing')}
+        color={ready ? gold : muted} font="sans-serif" fontSize={12 * s} textWrap="nowrap"
+        uiTransform={{ width: '100%', height: 22 * s, pointerFilter: 'none' }} />)
+      rows.push(<UiEntity key="bar" uiTransform={{ width: 260 * s, margin: { top: 2 * s }, pointerFilter: 'none' }}><Bar ratio={ratio} color={ready ? gold : ember} scale={s} height={8} /></UiEntity>)
+    }
   } else {
-    if (down) {
+    const wiped = v.events.some((ev) => ev.kind === 'wipe')
+    if (down && wiped) {
+      rows.push(<Label key="me" value="The party has fallen. The Pit puts you out in the hall…" color={ember} font="sans-serif" fontSize={12 * s} textWrap="nowrap"
+        uiTransform={{ width: '100%', height: 22 * s, pointerFilter: 'none' }} />)
+    } else if (down) {
       const k = myDown?.k ?? 0
       rows.push(<Label key="me" value={k > 0 ? 'An ally is raising you…' : `You are down. An ally standing by you can raise you.  ·  ${Math.ceil(rival.respawnSeconds)}s`}
         color={k > 0 ? gold : white} font="sans-serif" fontSize={12 * s} textWrap="nowrap"
