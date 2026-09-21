@@ -1,0 +1,50 @@
+{
+  "folk-quartermaster": {
+    "path": "models/folk/folk-quartermaster.glb",
+    "height": 1.85,
+    "tris": 15786,
+    "title": "Quartermaster"
+  },
+  "folk-guard-a": {
+    "path": "models/folk/folk-guard-a.glb",
+    "height": 1.85,
+    "tris": 18289,
+    "title": "Hall Guard"
+  },
+  "folk-guard-b": {
+    "path": "models/folk/folk-guard-b.glb",
+    "height": 1.85,
+    "tris": 18289,
+    "title": "Hall Guard"
+  },
+  "folk-sellsword": {
+    "path": "models/folk/folk-sellsword.glb",
+    "height": 1.85,
+    "tris": 18770,
+    "title": "Sellsword"
+  },
+  "folk-witch": {
+    "path": "models/folk/folk-witch.glb",
+    "height": 1.85,
+    "tris": 15499,
+    "title": "Hedge Witch"
+  },
+  "folk-squire": {
+    "path": "models/folk/folk-squire.glb",
+    "height": 1.85,
+    "tris": 24388,
+    "title": "Squire"
+  },
+  "folk-ranger": {
+    "path": "models/folk/folk-ranger.glb",
+    "height": 1.85,
+    "tris": 16892,
+    "title": "Ranger"
+  },
+  "folk-herald": {
+    "path": "models/folk/folk-herald.glb",
+    "height": 1.85,
+    "tris": 18469,
+    "title": "Herald"
+  }
+}

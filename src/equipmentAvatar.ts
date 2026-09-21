@@ -7,12 +7,14 @@ import { COMBAT_CLIPS, EQUIPMENT_CLIPS, EquipmentMotion, JumpMotion } from './co
 import { appearanceArmor, appearanceHair, appearancePart, BodyType, CharacterAppearance, getCommittedAppearance, normalizeAppearance } from './appearance'
 import roamingModels from './roamingModels.json'
 import enemyBodies from './enemyBodies.json'
+import folkBodies from './folkBodies.json'
 
 export { EquipmentMotion, EQUIPMENT_CLIPS } from './combatAnimations'
 
-/** One-piece characters (realm enemies): body, weapon and every combat clip in a single GLTF,
- *  built by scripts/export-enemy-bodies.py. No hair, armor or weapon parts are assembled for them. */
-const SOLID_BODIES: Readonly<Record<string, { path: string; height: number; tris: number }>> = enemyBodies
+/** One-piece characters: realm enemies (body, weapon and every combat clip in a single GLTF,
+ *  built by scripts/export-enemy-bodies.py) and the hall's folk (a hero outfit baked to one GLB with
+ *  only its own clips, scripts/build-hall-folk.py). No hair, armor or weapon parts are assembled for them. */
+const SOLID_BODIES: Readonly<Record<string, { path: string; height: number; tris: number }>> = { ...enemyBodies, ...folkBodies }
 
 export function isSolidBody(characterId: string): boolean {
   return characterId in SOLID_BODIES

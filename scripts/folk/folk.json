@@ -1,0 +1,45 @@
+{
+  "note": "The Hall of Antrom's folk (src/hallFolk.ts): each is one baked GLB under models/folk/ built by scripts/build-hall-folk.py from the hero wardrobe parts they wear, with only the clips they play. Motions are EquipmentMotion names (src/combatAnimations.ts); `set` is an armor set prefix from src/outfitCatalog.json; `weapon` an id from src/weaponCatalog.json.",
+  "folk": [
+    {
+      "id": "folk-quartermaster", "title": "Quartermaster", "cid": "brute", "set": "karl", "weapon": "vk-axe-01",
+      "appearance": { "bodyType": "male", "hairStyle": "none", "hairColor": "black", "skinTone": "tan" },
+      "motions": ["idle", "combat_idle", "attack_heavy", "flourish"]
+    },
+    {
+      "id": "folk-guard-a", "title": "Hall Guard", "cid": "vanguard", "set": "ironclad", "weapon": "pride-sword",
+      "appearance": { "bodyType": "male", "hairStyle": "short", "hairColor": "brown", "skinTone": "warm" },
+      "motions": ["idle", "combat_idle"]
+    },
+    {
+      "id": "folk-guard-b", "title": "Hall Guard", "cid": "vanguard", "set": "ironclad", "weapon": "pride-sword",
+      "appearance": { "bodyType": "female", "hairStyle": "tied", "hairColor": "black", "skinTone": "deep" },
+      "motions": ["idle", "combat_idle"]
+    },
+    {
+      "id": "folk-sellsword", "title": "Sellsword", "cid": "vanguard", "set": "blackguard", "weapon": "pride-sword",
+      "appearance": { "bodyType": "male", "hairStyle": "long", "hairColor": "auburn", "skinTone": "light" },
+      "motions": ["idle", "combat_idle", "flourish"]
+    },
+    {
+      "id": "folk-witch", "title": "Hedge Witch", "cid": "striker", "set": "witch", "weapon": "dr-staff-01",
+      "appearance": { "bodyType": "female", "hairStyle": "long", "hairColor": "violet", "skinTone": "light" },
+      "motions": ["idle", "combat_idle", "cast_bolt"]
+    },
+    {
+      "id": "folk-squire", "title": "Squire", "cid": "brute", "set": "raider", "weapon": "vk-axe-01",
+      "appearance": { "bodyType": "male", "hairStyle": "short", "hairColor": "blonde", "skinTone": "light" },
+      "motions": ["idle", "combat_idle", "attack_light", "attack_light2", "attack_heavy", "leap"]
+    },
+    {
+      "id": "folk-ranger", "title": "Ranger", "cid": "scout", "set": "dusk", "weapon": "bw-longbow-01",
+      "appearance": { "bodyType": "female", "hairStyle": "tied", "hairColor": "silver", "skinTone": "warm" },
+      "motions": ["idle", "combat_idle", "walk"]
+    },
+    {
+      "id": "folk-herald", "title": "Herald", "cid": "striker", "set": "sage", "weapon": "dr-staff-01",
+      "appearance": { "bodyType": "male", "hairStyle": "short", "hairColor": "silver", "skinTone": "deep" },
+      "motions": ["idle", "combat_idle", "walk"]
+    }
+  ]
+}

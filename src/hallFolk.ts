@@ -5,32 +5,32 @@
 // the dummies), gesture now and then, turn to face a hero who walks up, and a
 // couple of them walk rounds. Purely local presentation: nothing here is
 // networked, nothing takes or deals a hit, and the server never builds them.
+//
+// Each is one baked GLB (src/folkBodies.json, built by scripts/build-hall-folk.py
+// from scripts/folk/folk.json) carrying only the clips they play: in hero
+// wardrobe the eight of them were ~70 files and ~2,200 clips on entering the
+// hall, and remote heroes dropped out under that load.
 
 import { engine, Entity, Transform } from '@dcl/sdk/ecs'
 import { Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
-import { CharacterAppearance } from './appearance'
 import { COMBAT_CLIPS, EquipmentMotion } from './combatAnimations'
 import { COURTYARD } from './courtyard'
 import { onDungeonLoaded } from './dungeon'
-import { DEFAULT_LOADOUTS, EQUIPMENT_ITEMS, EquipmentLoadout, getEquipmentItemOrNull } from './equipmentCatalog'
+import { DEFAULT_LOADOUTS } from './equipmentCatalog'
 import {
-  destroyEquipmentAvatar, getEquipmentLoading, setEquipmentAvatar, setEquipmentMotion, setEquipmentStride, setEquipmentVisible
+  destroyEquipmentAvatar, getEquipmentLoading, isSolidBody, setEquipmentAvatar, setEquipmentMotion, setEquipmentStride, setEquipmentVisible
 } from './equipmentAvatar'
-import { classAllowsWeapon } from './heroClasses'
+import folkBodies from './folkBodies.json'
 import { createHeroNameTag, destroyHeroNameTag, setNameTagText } from './heroNameTag'
 import { isHeadless } from './multiplayer'
 
 type Gesture = { motion: EquipmentMotion; weight: number }
 
 type Role = {
-  /** The title over their head. */
-  title: string
-  /** Which hero's wardrobe they dress from. */
+  /** Their baked body in src/folkBodies.json (which also carries the title over their head). */
+  body: keyof typeof folkBodies
+  /** Which hero they are built as; the body's loadout comes from that hero's defaults. */
   cid: 'vanguard' | 'scout' | 'striker' | 'brute'
-  /** Which of that hero's armor sets they wear (see equipmentCatalog: the set is the id prefix). */
-  set: string
-  weapon: string
-  appearance: CharacterAppearance
   /** Where they stand (world metres) and which way they face (radians, 0 = +Z, PI/2 = +X). */
   at: [number, number]
   yaw: number
@@ -44,15 +44,6 @@ type Role = {
   /** A round to walk instead of standing still: waypoints, and how long to pause at each. */
   patrol?: { path: Array<[number, number]>; speed: number; pause: [number, number] }
 }
-
-/**
- * Off while the folk wear hero wardrobe: eight modular outfits are ~70 GLBs
- * and ~2,200 animation clips on entering the hall, and the first day they were
- * live remote heroes started dropping out (bodies hidden, names falling back to
- * wallet ids), which is what the renderer does under that load. Back on once
- * each folk is baked to a single GLB with only the clips they use.
- */
-const FOLK_ENABLED = false
 
 const FLOOR_Y = COURTYARD.characterFloorY
 /** The walk cycle is authored for about this ground speed. */
@@ -70,53 +61,45 @@ const deg = (d: number) => (d * Math.PI) / 180
 // x 58..68 (dummies along z 47); vestibule x 38..53, z 63..73 (spawn 45.5, 68).
 const ROLES: Role[] = [
   {
-    title: 'Quartermaster', cid: 'brute', set: 'karl', weapon: 'vk-axe-01',
-    appearance: { bodyType: 'male', hairStyle: 'none', hairColor: 'black', skinTone: 'tan' },
+    body: 'folk-quartermaster', cid: 'brute',
     at: [29.4, 50.5], yaw: deg(-90), rest: 'combat_idle',
     gestures: [{ motion: 'attack_heavy', weight: 3 }, { motion: 'flourish', weight: 1 }], every: [4, 9], greets: 0
   },
   {
-    title: 'Hall Guard', cid: 'vanguard', set: 'ironclad', weapon: 'pride-sword',
-    appearance: { bodyType: 'male', hairStyle: 'short', hairColor: 'brown', skinTone: 'warm' },
+    body: 'folk-guard-a', cid: 'vanguard',
     at: [43.3, 61.4], yaw: deg(0), rest: 'combat_idle',
     gestures: [], every: [0, 0], greets: 3.2
   },
   {
-    title: 'Hall Guard', cid: 'vanguard', set: 'ironclad', weapon: 'pride-sword',
-    appearance: { bodyType: 'female', hairStyle: 'tied', hairColor: 'black', skinTone: 'deep' },
+    body: 'folk-guard-b', cid: 'vanguard',
     at: [47.7, 61.4], yaw: deg(0), rest: 'combat_idle',
     gestures: [], every: [0, 0], greets: 3.2
   },
   {
-    title: 'Sellsword', cid: 'vanguard', set: 'blackguard', weapon: 'pride-sword',
-    appearance: { bodyType: 'male', hairStyle: 'long', hairColor: 'auburn', skinTone: 'light' },
+    body: 'folk-sellsword', cid: 'vanguard',
     at: [40.6, 43.9], yaw: deg(90), rest: 'idle',
     gestures: [{ motion: 'flourish', weight: 2 }, { motion: 'combat_idle', weight: 1 }], every: [7, 16], greets: 3
   },
   {
-    title: 'Hedge Witch', cid: 'striker', set: 'witch', weapon: 'dr-staff-01',
-    appearance: { bodyType: 'female', hairStyle: 'long', hairColor: 'violet', skinTone: 'light' },
+    body: 'folk-witch', cid: 'striker',
     at: [42.4, 43.9], yaw: deg(-90), rest: 'idle',
     gestures: [{ motion: 'cast_bolt', weight: 1 }], every: [9, 20], greets: 3
   },
   {
-    title: 'Squire', cid: 'brute', set: 'raider', weapon: 'vk-axe-01',
-    appearance: { bodyType: 'male', hairStyle: 'short', hairColor: 'blonde', skinTone: 'light' },
+    body: 'folk-squire', cid: 'brute',
     at: [63, 49.7], yaw: deg(180), rest: 'combat_idle',
     gestures: [{ motion: 'attack_light', weight: 3 }, { motion: 'attack_light2', weight: 3 }, { motion: 'attack_heavy', weight: 2 }, { motion: 'leap', weight: 1 }],
     every: [1.2, 3.5], greets: 0
   },
   {
-    title: 'Ranger', cid: 'scout', set: 'dusk', weapon: 'bw-longbow-01',
-    appearance: { bodyType: 'female', hairStyle: 'tied', hairColor: 'silver', skinTone: 'warm' },
+    body: 'folk-ranger', cid: 'scout',
     at: [40.5, 57], yaw: deg(0), rest: 'idle',
     gestures: [], every: [0, 0], greets: 0,
     // A round of the great hall inside the long tables and outside the braziers.
     patrol: { path: [[40.5, 57], [40.5, 44.5], [50.5, 44.5], [50.5, 57]], speed: 1.15, pause: [2.5, 6] }
   },
   {
-    title: 'Herald', cid: 'striker', set: 'sage', weapon: 'dr-staff-01',
-    appearance: { bodyType: 'male', hairStyle: 'short', hairColor: 'silver', skinTone: 'deep' },
+    body: 'folk-herald', cid: 'striker',
     at: [45.5, 66.2], yaw: deg(180), rest: 'idle',
     gestures: [], every: [0, 0], greets: 0,
     // Vestibule to the foot of the war table and back, through the arch.
@@ -168,7 +151,7 @@ export function hallFolkNear(x: number, z: number, reach: number): FolkView | un
       best = f
     }
   }
-  return best ? { key: folk.indexOf(best), title: best.role.title, x: best.x, z: best.z } : undefined
+  return best ? { key: folk.indexOf(best), title: titleOf(best.role), x: best.x, z: best.z } : undefined
 }
 
 /** Hold (or release, with undefined) a character's attention while a hero talks to them. */
@@ -182,17 +165,13 @@ function rand(lo: number, hi: number): number {
   return lo + Math.random() * (hi - lo)
 }
 
-/** Their outfit: the role's set piece by piece, the hero's default where a piece does not exist. */
-function loadoutFor(role: Role): EquipmentLoadout {
+/**
+ * The body is one GLB, so the loadout only says whether they stand armed: a
+ * folk at rest in the plain idle holds their weapon low rather than at the ready.
+ */
+function loadoutFor(role: Role) {
   const base = DEFAULT_LOADOUTS[role.cid] ?? DEFAULT_LOADOUTS.vanguard
-  const out: EquipmentLoadout = { ...base }
-  for (const slot of ['head', 'chest', 'shoulders', 'hands', 'legs', 'boots'] as const) {
-    const id = `${role.set}-${slot}`
-    if (getEquipmentItemOrNull(id)) out[slot] = id
-  }
-  const weapon = getEquipmentItemOrNull(role.weapon)
-  if (weapon?.weapon && classAllowsWeapon(role.cid, weapon.weapon.class)) out.weapon = role.weapon
-  return out
+  return { ...base, weapon: role.rest === 'idle' ? 'none-weapon' : base.weapon }
 }
 
 function build(role: Role): Folk {
@@ -201,7 +180,7 @@ function build(role: Role): Folk {
     position: Vector3.create(role.at[0], FLOOR_Y, role.at[1]),
     rotation: Quaternion.fromEulerDegrees(0, (role.yaw * 180) / Math.PI, 0)
   })
-  setEquipmentAvatar(root, role.cid, loadoutFor(role), false, { appearance: role.appearance })
+  setEquipmentAvatar(root, role.body, loadoutFor(role), false)
   setEquipmentVisible(root, false)
   setEquipmentMotion(root, role.rest, true)
   if (role.patrol) setEquipmentStride(root, Math.min(1.35, Math.max(0.7, role.patrol.speed / WALK_CLIP_SPEED)))
@@ -335,7 +314,7 @@ function update(dt: number) {
       if (loading !== 'ready') continue
       f.loaded = true
       setEquipmentVisible(f.root, true)
-      setNameTagText(f.tag, f.role.title, true, TITLE_COLOR)
+      setNameTagText(f.tag, titleOf(f.role), true, TITLE_COLOR)
     }
     if (f.role.patrol) patrol(f, span, hero)
     else stand(f, span, hero)
@@ -351,7 +330,7 @@ export function initializeHallFolk() {
   if (isHeadless()) return
   onDungeonLoaded((state) => {
     clear()
-    if (!FOLK_ENABLED || state.style.id !== 'hall') return
+    if (state.style.id !== 'hall') return
     queue = [...ROLES]
     queueIn = STAGGER_SECONDS * 2
   })
@@ -361,10 +340,11 @@ export function initializeHallFolk() {
   }
 }
 
-// A role naming a set with no pieces would fall back to the hero's defaults silently,
-// which would only show up as two guards in starter kit: say so in the log instead.
+function titleOf(role: Role): string {
+  return folkBodies[role.body].title
+}
+
+// Every role's body must be baked (scripts/build-hall-folk.py), or the hall shows a gap where they stand.
 for (const role of ROLES) {
-  if (!EQUIPMENT_ITEMS.some((item) => item.id.startsWith(`${role.set}-`))) {
-    console.log(`[DG] hall folk: no armor set '${role.set}' for the ${role.title}`)
-  }
+  if (!isSolidBody(role.body)) console.log(`[DG] hall folk: no baked body '${role.body}'`)
 }
