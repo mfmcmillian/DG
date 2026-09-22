@@ -13,6 +13,7 @@ import { onNet, sendNet } from './net'
 import { HUB, setPartyLookup } from './partyLookup'
 import { movePlayerToSpawn } from './playerPlacement'
 import { applyCameraSetting } from './settings'
+import { t } from './i18n'
 import { getPickerState } from './characterPicker'
 import { getPlayerCharacterState } from './playerCharacter'
 import { DIFFICULTIES, difficultyById, HUB_LEVEL, levelById, LEVELS, nextLevel, RAID_PARTY, realmOfLevel } from './shared/levels'
@@ -330,7 +331,7 @@ function update(dt: number) {
     standingFor = getPlayerCharacterState().visible ? standingFor + span : 0
     if (standingFor >= GREET_AFTER_SECONDS) {
       greeted = true
-      notice('Welcome to the Hall of Antrom. The war table, or the Dungeons button, leads to the fortresses.')
+      notice(t('Welcome to the Hall of Antrom. The war table, or the Dungeons button, leads to the fortresses.'))
     }
   }
   if (leaving > 0) leaving = phase === HUB ? 0 : leaving - span
@@ -395,11 +396,11 @@ function enterHub() {
 function bannerFor(result: RunResult | undefined): string {
   if (!result) return ''
   const level = LEVELS[result.level]
-  if (!result.won) return `The party fell in ${level?.name ?? 'the fortress'}. Pick your next fight.`
+  if (!result.won) return t('The party fell in {level}. Pick your next fight.', { level: level?.name ?? t('the fortress') })
   const next = nextLevel(result.level)
-  if (next) return `${level?.name ?? 'The fortress'} cleared. ${next.name} is open to you.`
+  if (next) return t('{level} cleared. {next} is open to you.', { level: level?.name ?? t('The fortress'), next: next.name })
   const diff = difficultyById(result.diff)
-  return `${level?.name ?? 'The last fortress'} cleared on ${diff.name}. All of ${realmOfLevel(result.level).name} has fallen to you.`
+  return t('{level} cleared on {difficulty}. All of {realm} has fallen to you.', { level: level?.name ?? t('The last fortress'), difficulty: t(diff.name), realm: realmOfLevel(result.level).name })
 }
 
 export function levelName(id: number): string {

@@ -1,16 +1,18 @@
-// Player settings: the camera the hero is played with, and whether the
-// developer panel shows. Saved with the hero (heroSave.ts carries them as a
+// Player settings: the language, the camera the hero is played with, and
+// whether the developer panel shows. Saved with the hero (heroSave.ts carries them as a
 // JSON string in `prefs`, so new settings never need a schema change) and
 // applied whenever they load or change.
 
 import { engine, InputModifier, PointerLock } from '@dcl/sdk/ecs'
 import { CameraChoice, getDungeonState, setCameraChoice } from './dungeon'
 import { parsePrefs, prefsOpenAll } from './shared/prefs'
+import { getLanguage, isLanguage, Language, setLanguage } from './i18n'
 
 /** The two cameras a player picks between; `native` stays a developer option. */
 export type CameraPreference = 'crawler' | 'shoulder'
 
 export type Settings = {
+  language: Language
   camera: CameraPreference
   devTools: boolean
   /** Developer: every level of every realm selectable, whatever the progress says. The host honours it from the saved prefs. */
@@ -22,7 +24,7 @@ export const CAMERA_OPTIONS: Array<{ id: CameraPreference; name: string; blurb: 
   { id: 'shoulder', name: 'Over the shoulder', blurb: 'A short boom behind the hero that turns with them.' }
 ]
 
-const DEFAULTS: Settings = { camera: 'crawler', devTools: false, openAll: false }
+const DEFAULTS: Settings = { language: 'en', camera: 'crawler', devTools: false, openAll: false }
 const settings: Settings = { ...DEFAULTS }
 let open = false
 
@@ -61,6 +63,19 @@ export function setCameraPreference(camera: CameraPreference) {
   applyCameraSetting()
 }
 
+/**
+ * Switch the game's language now. Picked on the title before there is a hero
+ * to save it with; it rides along in the prefs once there is one.
+ */
+export function setLanguagePreference(language: Language) {
+  settings.language = language
+  languageChosen = true
+  setLanguage(language)
+}
+
+/** A language was picked by hand this session (title flags or the settings sheet). */
+let languageChosen = false
+
 export function setDevTools(on: boolean) {
   settings.devTools = on
   if (!on) applyCameraSetting()
@@ -80,7 +95,7 @@ export function applyCameraSetting() {
 // --- persistence (hero save) --------------------------------------------------------------
 
 export function serializeSettings(): string {
-  return JSON.stringify({ camera: settings.camera, dev: settings.devTools ? 1 : 0, open: settings.openAll ? 1 : 0 })
+  return JSON.stringify({ camera: settings.camera, dev: settings.devTools ? 1 : 0, open: settings.openAll ? 1 : 0, lang: settings.language })
 }
 
 export function loadSettings(json: string) {
@@ -89,6 +104,10 @@ export function loadSettings(json: string) {
     settings.camera = value.camera === 'shoulder' ? 'shoulder' : 'crawler'
     settings.devTools = value.dev === 1 || value.dev === true
     settings.openAll = prefsOpenAll(json)
+    // A save from before languages, or one made in another session's tongue,
+    // never overrides a choice made on this title screen.
+    if (isLanguage(value.lang) && !languageChosen) setLanguage(settings.language = value.lang)
+    else settings.language = getLanguage()
   }
   applyCameraSetting()
 }

@@ -231,22 +231,3 @@ export function skillInSlot(cls: HeroClass, slot: number, level: number): SkillD
 export function skillsUnlockedBetween(cls: HeroClass, from: number, to: number): SkillDef[] {
   return BY_CLASS[cls].filter((def) => def.level > from && def.level <= to)
 }
-
-/** How the bar and the tooltips describe what a skill does. */
-export function skillSummary(def: SkillDef): string {
-  const e = def.effect
-  switch (e.kind) {
-    case 'strike': return `${e.all ? 'Everyone' : 'One enemy'} within ${e.range} m · ${Math.round(e.mult * 100)}% heavy damage`
-    case 'zone': return `${e.radius} m circle${e.at === 'aim' ? ' where you aim' : ' around you'} · ${e.ticks > 1 ? `${e.ticks} hits over ${e.seconds} s` : 'one hit'}`
-    case 'shot': return e.variant === 'pierce' ? 'Passes through every body in line'
-      : e.variant === 'chain' ? `Jumps to ${e.chain} more enemies` : `Bursts ${e.radius} m around the hit`
-    case 'aura': {
-      const parts: string[] = []
-      if (e.heal) parts.push(`+${e.heal} health`)
-      if (e.might !== 1) parts.push(`${e.might > 1 ? '+' : ''}${Math.round((e.might - 1) * 100)}% damage dealt`)
-      if (e.toughness !== 1) parts.push(`${e.toughness > 1 ? '+' : ''}${Math.round((e.toughness - 1) * 100)}% damage taken`)
-      if (e.seconds) parts.push(`${e.seconds} s`)
-      return `${e.target === 'party' ? 'Party' : 'You'} · ${parts.join(' · ')}`
-    }
-  }
-}

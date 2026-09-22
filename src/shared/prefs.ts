@@ -2,7 +2,7 @@
 // in saveHero/savedHero), so new switches never touch the frozen wire schema.
 // settings.ts writes it on the client; the host reads the bits it enforces.
 
-export type Prefs = { camera?: unknown; dev?: unknown; open?: unknown }
+export type Prefs = { camera?: unknown; dev?: unknown; open?: unknown; lang?: unknown }
 
 export function parsePrefs(json: string | undefined): Prefs {
   if (!json) return {}

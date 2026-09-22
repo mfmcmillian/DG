@@ -16,6 +16,8 @@ import { getLobbyState } from './party'
 import { LobbyUi } from './lobbyUi'
 import { GAME_VERSION } from './version'
 import { getPreloadGroup, releasePreload } from './preload'
+import { t } from './i18n'
+import { LanguageRow } from './languageUi'
 import { heroGroupId, preloadCaption, PRELOAD_HUB } from './preloadPlan'
 import { BODY_TYPES, HAIR_STYLES, HAIR_COLORS, SKIN_TONES } from './appearance'
 import {
@@ -53,7 +55,8 @@ function Sheet({ left, top, width, height, padding, scale: s, children }: {
 type AppearanceOption = { id: string; name: string; color?: string }
 
 function optionName(options: readonly AppearanceOption[], selected: string) {
-  return options.find((option) => option.id === selected)?.name || 'Choose a style'
+  const name = options.find((option) => option.id === selected)?.name
+  return name ? t(name) : t('Choose a style')
 }
 
 function swatchColor(hex?: string) {
@@ -105,16 +108,16 @@ function AppearanceEditor({ scale: s }: { scale: number }) {
   const disabled = getPickerState().confirming
   const hairIndex = HAIR_STYLES.findIndex((style) => style.id === appearance.hairStyle)
   return <Sheet left={794} top={100} width={486} height={538} padding={24} scale={s}>
-    <Heading title="APPEARANCE" scale={s} />
-    <Label value="Your face" font="serif" color={white} fontSize={26 * s} textAlign="middle-left" textWrap="nowrap"
+    <Heading title={t('APPEARANCE')} scale={s} />
+    <Label value={t('Your face')} font="serif" color={white} fontSize={26 * s} textAlign="middle-left" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 38 * s, flexShrink: 0, pointerFilter: 'none' }} />
-    <FieldHeading title="BODY" scale={s} />
+    <FieldHeading title={t('BODY')} scale={s} />
     <UiEntity uiTransform={{ width: '100%', height: 44 * s, flexDirection: 'row', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
-      {BODY_TYPES.map((body) => <Action key={body.id} id={`body-${body.id}`} text={body.name} accent="gold"
+      {BODY_TYPES.map((body) => <Action key={body.id} id={`body-${body.id}`} text={t(body.name)} accent="gold"
         width={(438 - (BODY_TYPES.length - 1) * 10) / Math.max(1, BODY_TYPES.length)} height={44} scale={s}
         active={appearance.bodyType === body.id} disabled={disabled} onClick={() => setCreatorAppearance({ bodyType: body.id })} />)}
     </UiEntity>
-    <FieldHeading title="HAIRSTYLE" value={`${Math.max(0, hairIndex) + 1} / ${HAIR_STYLES.length}`} scale={s} />
+    <FieldHeading title={t('HAIRSTYLE')} value={`${Math.max(0, hairIndex) + 1} / ${HAIR_STYLES.length}`} scale={s} />
     <UiEntity uiTransform={{ width: '100%', height: 48 * s, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
       <Action id="hair-previous" text="‹" width={42} height={42} scale={s} fontSize={26} accent="gold"
         disabled={disabled || HAIR_STYLES.length < 2} onClick={() => cycleHair(-1)} />
@@ -123,10 +126,10 @@ function AppearanceEditor({ scale: s }: { scale: number }) {
       <Action id="hair-next" text="›" width={42} height={42} scale={s} fontSize={26} accent="gold"
         disabled={disabled || HAIR_STYLES.length < 2} onClick={() => cycleHair(1)} />
     </UiEntity>
-    <FieldHeading title="HAIR COLOR" value={optionName(HAIR_COLORS, appearance.hairColor)} scale={s} />
+    <FieldHeading title={t('HAIR COLOR')} value={optionName(HAIR_COLORS, appearance.hairColor)} scale={s} />
     <Swatches id="hair-color" options={HAIR_COLORS} selected={appearance.hairColor} onSelect={(hairColor) => setCreatorAppearance({ hairColor })} scale={s} />
     <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', display: SKIN_TONES.length ? 'flex' : 'none', flexShrink: 0, pointerFilter: 'none' }}>
-      <FieldHeading title="SKIN TONE" value={optionName(SKIN_TONES, appearance.skinTone)} scale={s} />
+      <FieldHeading title={t('SKIN TONE')} value={optionName(SKIN_TONES, appearance.skinTone)} scale={s} />
       <Swatches id="skin-tone" options={SKIN_TONES} selected={appearance.skinTone} onSelect={(skinTone) => setCreatorAppearance({ skinTone })} scale={s} />
     </UiEntity>
   </Sheet>
@@ -135,8 +138,8 @@ function AppearanceEditor({ scale: s }: { scale: number }) {
 function OutfitPresets({ scale: s }: { scale: number }) {
   const state = getPickerState()
   return <Sheet left={0} top={100} width={234} height={538} padding={18} scale={s}>
-    <Heading title="OUTFIT" scale={s} />
-    <Label value="Starting armor" font="serif" color={white} fontSize={20 * s} textAlign="middle-left" textWrap="nowrap"
+    <Heading title={t('OUTFIT')} scale={s} />
+    <Label value={t('Starting armor')} font="serif" color={white} fontSize={20 * s} textAlign="middle-left" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 34 * s, margin: { bottom: 12 * s }, flexShrink: 0, pointerFilter: 'none' }} />
     <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', pointerFilter: 'none' }}>
       {CHARACTERS.map((entry) => {
@@ -154,7 +157,7 @@ function OutfitPresets({ scale: s }: { scale: number }) {
             padding: { left: 8 * s, top: 6 * s }, flexDirection: 'column', pointerFilter: 'none' }} uiBackground={{ color: ink }}>
             <Label value={entry.name} color={active ? gold : white} fontSize={14 * s} textAlign="middle-left" textWrap="nowrap"
               uiTransform={{ width: '100%', height: 20 * s, flexShrink: 0, pointerFilter: 'none' }} />
-            <Label value={entry.role} color={muted} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
+            <Label value={t(entry.role)} color={muted} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
               uiTransform={{ width: '100%', height: 16 * s, flexShrink: 0, pointerFilter: 'none' }} />
           </UiEntity>
         </UiEntity>
@@ -163,11 +166,13 @@ function OutfitPresets({ scale: s }: { scale: number }) {
   </Sheet>
 }
 
+const MOTION_NAMES = { idle: 'Idle', walk: 'Walk', run: 'Run' } as const
+
 function PreviewControls({ scale: s }: { scale: number }) {
   const state = getPickerState()
   const disabled = state.confirming || state.loading !== 'ready'
-  const status = state.confirming ? 'Entering the dungeon…' : state.loading === 'loading' ? 'Updating your look…'
-    : state.loading === 'error' ? 'Could not load this look' : ''
+  const status = state.confirming ? t('Entering the hall…') : state.loading === 'loading' ? t('Updating your look…')
+    : state.loading === 'error' ? t('Could not load this look') : ''
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 254 * s, top: 654 * s }, width: 476 * s,
     flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
     <Label value={status} color={state.loading === 'error' ? coral : muted} fontSize={13 * s} textWrap="nowrap"
@@ -175,12 +180,12 @@ function PreviewControls({ scale: s }: { scale: number }) {
     <UiEntity uiTransform={{ width: 428 * s, height: 38 * s, flexDirection: 'row', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
       <Action id="rotate-left" text="↶" onClick={() => rotatePreview(-45)} width={38} height={36} scale={s} fontSize={22} accent="gold" disabled={state.confirming} />
       {(['idle', 'walk', 'run'] as const).map((motion) => <Action key={motion} id={motion} accent="gold"
-        text={motion[0].toUpperCase() + motion.slice(1)} onClick={() => setPreviewMotion(motion)}
+        text={t(MOTION_NAMES[motion])} onClick={() => setPreviewMotion(motion)}
         width={100} height={36} scale={s} active={state.motion === motion} disabled={disabled} fontSize={14} />)}
       <Action id="rotate-right" text="↷" onClick={() => rotatePreview(45)} width={38} height={36} scale={s} fontSize={22} accent="gold" disabled={state.confirming} />
     </UiEntity>
     <UiEntity uiTransform={{ margin: { top: 8 * s }, pointerFilter: 'none' }}>
-      <Action id="spin" text={state.autoRotate ? 'Spin · On' : 'Spin · Off'} onClick={toggleAutoRotate}
+      <Action id="spin" text={state.autoRotate ? t('Spin · On') : t('Spin · Off')} onClick={toggleAutoRotate}
         width={120} height={28} scale={s} active={state.autoRotate} disabled={state.confirming} fontSize={12} accent="gold" />
     </UiEntity>
   </UiEntity>
@@ -200,7 +205,7 @@ function TitleScreen() {
       flexDirection: 'column', alignItems: 'flex-start', pointerFilter: 'none' }}>
       <Label value="KINGDOM OF ANTROM" color={gold} fontSize={14 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={{ width: 480 * s, height: 22 * s, flexShrink: 0, pointerFilter: 'none' }} />
-      <Label value="The Dungeon" font="serif" color={white} fontSize={56 * s} textAlign="middle-left" textWrap="nowrap"
+      <Label value={t('The Dungeon')} font="serif" color={white} fontSize={56 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={{ width: 520 * s, height: 70 * s, flexShrink: 0, pointerFilter: 'none' }} />
       <UiEntity uiTransform={{ width: 200 * s, height: 28 * s, margin: { top: 4 * s, bottom: 36 * s }, flexShrink: 0, pointerFilter: 'none' }}
         uiBackground={kitTexture(UI_KIT.flourish)} />
@@ -208,21 +213,24 @@ function TitleScreen() {
         ? <UiEntity uiTransform={{ flexDirection: 'column', alignItems: 'flex-start', pointerFilter: 'none' }}>
           {saved.found && !created && <UiEntity uiTransform={{ margin: { bottom: 12 * s }, pointerFilter: 'none' }}>
             <Action id="title-resume"
-              text={resuming ? 'Entering the hall…' : heroReady ? `Continue as ${savedHeroName()}` : preloadCaption(getPreloadGroup(heroGroupId(saved.cid)), 'Preparing')}
+              text={resuming ? t('Entering the hall…') : heroReady ? t('Continue as {name}', { name: savedHeroName() }) : preloadCaption(getPreloadGroup(heroGroupId(saved.cid)), t('Preparing'))}
               onClick={titleResumeSaved} disabled={resuming || !heroReady} primary
               width={340} height={52} scale={s} fontSize={18} />
           </UiEntity>}
-          <Action id="title-enter" text={saved.found ? 'New champion' : 'New game'} onClick={titleBegin} disabled={resuming}
+          <Action id="title-enter" text={saved.found ? t('New champion') : t('New game')} onClick={titleBegin} disabled={resuming}
             primary={!saved.found} accent="gold" width={340} height={52} scale={s} fontSize={18} />
           {created && <UiEntity uiTransform={{ margin: { top: 12 * s }, pointerFilter: 'none' }}>
-            <Action id="title-continue" text="Continue" onClick={titleContinue} primary
+            <Action id="title-continue" text={t('Continue')} onClick={titleContinue} primary
               width={340} height={52} scale={s} fontSize={18} />
           </UiEntity>}
-          {!saved.found && !created && isHeroSavePending() && <Label value="Looking for a saved champion…" color={muted} fontSize={13 * s}
+          {!saved.found && !created && isHeroSavePending() && <Label value={t('Looking for a saved champion…')} color={muted} fontSize={13 * s}
             textAlign="middle-left" textWrap="nowrap"
             uiTransform={{ width: 400 * s, height: 24 * s, margin: { top: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
         </UiEntity>
         : <TitleLoading scale={s} />}
+      <UiEntity uiTransform={{ margin: { top: 40 * s }, pointerFilter: 'none' }}>
+        <LanguageRow scale={s} />
+      </UiEntity>
     </UiEntity>
     <Label value={`v${GAME_VERSION}`} color={gold} fontSize={12 * s} textAlign="middle-right" textWrap="nowrap"
       uiTransform={{ positionType: 'absolute', position: { right: 16 * s, bottom: 12 * s }, width: 160 * s, height: 20 * s, pointerFilter: 'none' }} />
@@ -254,13 +262,13 @@ function TitleLoading({ scale: s }: { scale: number }) {
         uiBackground={{ color: gold }} />
     </UiEntity>
     <UiEntity uiTransform={{ width: width * s, height: 20 * s, margin: { top: 4 * s }, flexDirection: 'row', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
-      <Label value={stalled ? `Still waiting on ${fileName(stalled)}` : ''} color={coral} fontSize={12 * s} textAlign="middle-left" textWrap="nowrap"
+      <Label value={stalled ? t('Still waiting on {file}', { file: fileName(stalled) }) : ''} color={coral} fontSize={12 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={{ width: (width - 60) * s, height: '100%', pointerFilter: 'none' }} />
       <Label value={`${pct}%`} color={gold} fontSize={13 * s} textAlign="middle-right" textWrap="nowrap"
         uiTransform={{ width: 60 * s, height: '100%', pointerFilter: 'none' }} />
     </UiEntity>
     {slow && <UiEntity uiTransform={{ margin: { top: 14 * s }, pointerFilter: 'none' }}>
-      <Action id="title-enter-anyway" text="Enter anyway" onClick={() => releasePreload(PRELOAD_HUB)} accent="gold"
+      <Action id="title-enter-anyway" text={t('Enter anyway')} onClick={() => releasePreload(PRELOAD_HUB)} accent="gold"
         width={200} height={40} scale={s} fontSize={14} />
     </UiEntity>}
   </UiEntity>
@@ -289,7 +297,7 @@ function Picker() {
       <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width: 700 * s, flexDirection: 'column', pointerFilter: 'none' }}>
         <Label value="KINGDOM OF ANTROM" color={gold} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
           uiTransform={{ width: '100%', height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
-        <Label value={state.hasCreatedCharacter ? 'Your champion' : 'Choose your champion'} font="serif" color={white} fontSize={32 * s}
+        <Label value={state.hasCreatedCharacter ? t('Your champion') : t('Choose your champion')} font="serif" color={white} fontSize={32 * s}
           textAlign="middle-left" textWrap="nowrap"
           uiTransform={{ width: '100%', height: 44 * s, flexShrink: 0, pointerFilter: 'none' }} />
         <UiEntity uiTransform={{ width: 200 * s, height: 2 * s, margin: { top: 6 * s }, flexShrink: 0, pointerFilter: 'none' }}
@@ -299,19 +307,22 @@ function Picker() {
         <Action id="close" text="×" onClick={closePicker} width={38} height={38} scale={s} fontSize={26} accent="gold" disabled={state.confirming} />
       </UiEntity>
       <OutfitPresets scale={s} />
+      <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 654 * s }, width: 234 * s, pointerFilter: 'none' }}>
+        <LanguageRow scale={s * 0.82} caption="below" />
+      </UiEntity>
       <AppearanceEditor scale={s} />
       <Label value={selected.name} font="serif" color={white} fontSize={26 * s} textAlign="middle-center" textWrap="nowrap"
         uiTransform={{ positionType: 'absolute', position: { left: 254 * s, top: 84 * s }, width: 476 * s, height: 36 * s, pointerFilter: 'none' }} />
-      <Label value={selected.role.toUpperCase()} color={gold} fontSize={11 * s} textAlign="middle-center" textWrap="nowrap"
+      <Label value={t(selected.role).toUpperCase()} color={gold} fontSize={11 * s} textAlign="middle-center" textWrap="nowrap"
         uiTransform={{ positionType: 'absolute', position: { left: 254 * s, top: 122 * s }, width: 476 * s, height: 18 * s, pointerFilter: 'none' }} />
       <PreviewControls scale={s} />
       <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 794 * s, top: 650 * s }, width: 486 * s,
         flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
-        <Label value={state.confirmationError || 'Gear can be changed after you enter.'} color={state.confirmationError ? coral : muted}
+        <Label value={state.confirmationError ? t(state.confirmationError) : t('Gear can be changed after you enter.')} color={state.confirmationError ? coral : muted}
           fontSize={13 * s} uiTransform={{ width: '100%', height: 28 * s, margin: { bottom: 8 * s }, flexShrink: 0, pointerFilter: 'none' }} />
         <Action id="confirm"
-          text={state.confirming ? 'Entering the hall…' : state.confirmationError ? 'Try again'
-            : state.loading === 'error' ? 'Retry this look' : state.hasCreatedCharacter ? 'Save champion' : 'Enter the hall'}
+          text={state.confirming ? t('Entering the hall…') : state.confirmationError ? t('Try again')
+            : state.loading === 'error' ? t('Retry this look') : state.hasCreatedCharacter ? t('Save champion') : t('Enter the hall')}
           onClick={state.loading === 'error' ? () => selectCharacter(selected.id) : confirmCharacter}
           width={438} height={52} scale={s} fontSize={18} primary accent="gold"
           disabled={state.confirming || state.loading === 'loading'} />

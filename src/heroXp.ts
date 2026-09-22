@@ -11,7 +11,8 @@ import { localAddress } from './multiplayer'
 import { onNet } from './net'
 import { inRun } from './party'
 import { setStaminaBonus } from './roamingCombat'
-import { heroBonuses, HeroBonuses, levelForXp, levelProgress, parseXp, XpRecord } from './shared/progression'
+import { heroBonuses, HeroBonuses, levelForXp, levelGains, levelProgress, parseXp, XpRecord } from './shared/progression'
+import { t } from './i18n'
 
 const table = new Map<string, XpRecord>()
 
@@ -127,4 +128,14 @@ export function initializeHeroXp() {
       }
     }
   })
+}
+
+/** The bonus lines a level-up shows: what this champion gains per level. */
+export function bonusLinesText(cid: string): string[] {
+  const g = levelGains(cid)
+  return [
+    t('+{pct}% damage dealt', { pct: (g.might * 100).toFixed(1) }),
+    t('-{pct}% damage taken', { pct: (g.toughness * 100).toFixed(1) }),
+    t('+{n} stamina', { n: g.stamina })
+  ]
 }

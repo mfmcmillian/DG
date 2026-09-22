@@ -15,6 +15,7 @@ import { MAX_RAID, RAID_LEVEL } from '../shared/levels'
 import { getPreloadGroup } from '../preload'
 import { isRealmPreloaded, preloadCaption, realmGroupId, requestRealmPreload } from '../preloadPlan'
 import { raidView } from './colossusClient'
+import { t } from '../i18n'
 
 const white = Color4.create(0.94, 0.96, 0.98, 1)
 const muted = Color4.create(0.76, 0.80, 0.85, 1)
@@ -63,32 +64,32 @@ export function ColossusBar({ width, scale: s }: { width: number; scale: number 
   const barWidth = Math.min(520 * s, width * 0.55)
   const canvas = UiCanvasInformation.getOrNull(engine.RootEntity)
   const top = Math.max(0, canvas?.screenInsetArea?.top || 0) + 26 * s
-  let title = 'THE CHAINED COLOSSUS'
+  let title = t('THE CHAINED COLOSSUS')
   let sub = ''
   let ratio = v.hp / Math.max(1, v.max)
   let color = PHASE_COLOR[Math.max(0, Math.min(2, v.phase - 1))]
   switch (v.state) {
     case 'dormant':
-      sub = 'It sleeps in its chains. Step onto the circle to wake it.'
+      sub = t('It sleeps in its chains. Step onto the circle to wake it.')
       ratio = 1
       color = stone
       break
     case 'waking':
-      sub = 'The chains groan…'
+      sub = t('The chains groan…')
       break
     case 'fighting':
-      sub = `Phase ${ROMAN[v.phase - 1] ?? v.phase}   ·   ${v.n} in the Pit`
+      sub = `${t('Phase {n}', { n: ROMAN[v.phase - 1] ?? v.phase })}   ·   ${t('{n} in the Pit', { n: v.n })}`
       break
     case 'stagger':
-      sub = 'STAGGERED  ·  its fists are down'
+      sub = t('STAGGERED  ·  its fists are down')
       color = gold
       break
     case 'dying':
-      sub = 'The stone breaks…'
+      sub = t('The stone breaks…')
       break
     case 'dead':
-      title = 'THE COLOSSUS LIES BROKEN'
-      sub = `The chains draw it up again in ${mmss(v.wait)}`
+      title = t('THE COLOSSUS LIES BROKEN')
+      sub = t('The chains draw it up again in {time}', { time: mmss(v.wait) })
       ratio = 0
       break
   }
@@ -101,7 +102,7 @@ export function ColossusBar({ width, scale: s }: { width: number; scale: number 
     <Bar ratio={ratio} color={color} scale={s} height={12} />
     <Label value={sub} color={v.state === 'stagger' ? gold : muted} font="sans-serif" fontSize={11 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
-    {latest && evAlpha > 0 && latest.kind !== 'revive' && <Label value={latest.kind === 'kill' ? `${latest.text}   +${latest.n} XP` : latest.text}
+    {latest && evAlpha > 0 && latest.kind !== 'revive' && <Label value={latest.kind === 'kill' ? `${t(latest.text)}   +${latest.n} XP` : t(latest.text)}
       color={Color4.create(ember.r, ember.g, ember.b, evAlpha)} font="serif" fontSize={(latest.kind === 'fall' || latest.kind === 'wipe' ? 22 : 15) * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 30 * s, margin: { top: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
   </UiEntity>
@@ -149,14 +150,14 @@ export function RaidPrompt({ width, bottom, scale: s }: { width: number; bottom:
       descentStarted = 0
       joinRaid()
     }
-    rows.push(<Label key="cap" value={`${RAID_LEVEL.name}  ·  ${RAID_LEVEL.blurb}  ·  ${inside}/${MAX_RAID} inside`} color={ember} font="sans-serif" fontSize={12 * s} textWrap="nowrap"
+    rows.push(<Label key="cap" value={`${RAID_LEVEL.name}  ·  ${t(RAID_LEVEL.blurb)}  ·  ${t('{n}/{max} inside', { n: inside, max: MAX_RAID })}`} color={ember} font="sans-serif" fontSize={12 * s} textWrap="nowrap"
       uiTransform={{ width: '100%', height: 24 * s, margin: { bottom: 6 * s }, pointerFilter: 'none' }} />)
     if (full) {
-      rows.push(<Label key="full" value="The Pit is full. Wait for a hero to come up." color={muted} font="sans-serif" fontSize={12 * s} textWrap="nowrap"
+      rows.push(<Label key="full" value={t('The Pit is full. Wait for a hero to come up.')} color={muted} font="sans-serif" fontSize={12 * s} textWrap="nowrap"
         uiTransform={{ width: '100%', height: 24 * s, pointerFilter: 'none' }} />)
     } else {
       const ratio = ready ? 0.25 + 0.75 * descent : 0.25 * (group?.progress ?? 0)
-      rows.push(<Label key="wait" value={ready ? 'Descending into the Pit…  step off the circle to stay' : preloadCaption(group, 'Preparing')}
+      rows.push(<Label key="wait" value={ready ? t('Descending into the Pit…  step off the circle to stay') : preloadCaption(group, t('Preparing'))}
         color={ready ? gold : muted} font="sans-serif" fontSize={12 * s} textWrap="nowrap"
         uiTransform={{ width: '100%', height: 22 * s, pointerFilter: 'none' }} />)
       rows.push(<UiEntity key="bar" uiTransform={{ width: 260 * s, margin: { top: 2 * s }, pointerFilter: 'none' }}><Bar ratio={ratio} color={ready ? gold : ember} scale={s} height={8} /></UiEntity>)
@@ -164,25 +165,25 @@ export function RaidPrompt({ width, bottom, scale: s }: { width: number; bottom:
   } else {
     const wiped = v.events.some((ev) => ev.kind === 'wipe')
     if (down && wiped) {
-      rows.push(<Label key="me" value="The party has fallen. The Pit puts you out in the hall…" color={ember} font="sans-serif" fontSize={12 * s} textWrap="nowrap"
+      rows.push(<Label key="me" value={t('The party has fallen. The Pit puts you out in the hall…')} color={ember} font="sans-serif" fontSize={12 * s} textWrap="nowrap"
         uiTransform={{ width: '100%', height: 22 * s, pointerFilter: 'none' }} />)
     } else if (down) {
       const k = myDown?.k ?? 0
-      rows.push(<Label key="me" value={k > 0 ? 'An ally is raising you…' : `You are down. An ally standing by you can raise you.  ·  ${Math.ceil(rival.respawnSeconds)}s`}
+      rows.push(<Label key="me" value={k > 0 ? t('An ally is raising you…') : `${t('You are down. An ally standing by you can raise you.')}  ·  ${Math.ceil(rival.respawnSeconds)}s`}
         color={k > 0 ? gold : white} font="sans-serif" fontSize={12 * s} textWrap="nowrap"
         uiTransform={{ width: '100%', height: 22 * s, pointerFilter: 'none' }} />)
       if (k > 0) rows.push(<UiEntity key="mebar" uiTransform={{ width: 240 * s, margin: { bottom: 6 * s }, pointerFilter: 'none' }}><Bar ratio={k} color={gold} scale={s} height={8} /></UiEntity>)
     }
     for (const d of others) {
-      rows.push(<Label key={`d-${d.id}`} value={d.k > 0 ? `Raising ${heroLabel(d.id)}…` : `${heroLabel(d.id)} is down — stand by them to raise`}
+      rows.push(<Label key={`d-${d.id}`} value={d.k > 0 ? t('Raising {name}…', { name: heroLabel(d.id) }) : t('{name} is down — stand by them to raise', { name: heroLabel(d.id) })}
         color={d.k > 0 ? gold : muted} font="sans-serif" fontSize={12 * s} textWrap="nowrap"
         uiTransform={{ width: '100%', height: 20 * s, pointerFilter: 'none' }} />)
       if (d.k > 0) rows.push(<UiEntity key={`b-${d.id}`} uiTransform={{ width: 240 * s, margin: { bottom: 4 * s }, pointerFilter: 'none' }}><Bar ratio={d.k} color={gold} scale={s} height={6} /></UiEntity>)
     }
     if (near && !down) {
-      rows.push(<Label key="gate" value="The circle: back up to the hall." color={muted} font="sans-serif" fontSize={12 * s} textWrap="nowrap"
+      rows.push(<Label key="gate" value={t('The circle: back up to the hall.')} color={muted} font="sans-serif" fontSize={12 * s} textWrap="nowrap"
         uiTransform={{ width: '100%', height: 22 * s, margin: { top: rows.length ? 6 * s : 0 }, pointerFilter: 'none' }} />)
-      rows.push(<Action key="leave" id="leave-pit" text="Leave the Pit" onClick={leaveParty} scale={s} width={200} />)
+      rows.push(<Action key="leave" id="leave-pit" text={t('Leave the Pit')} onClick={leaveParty} scale={s} width={200} />)
     }
   }
   if (!rows.length) return null

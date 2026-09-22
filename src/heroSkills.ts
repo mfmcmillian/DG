@@ -12,6 +12,7 @@ import { localXp } from './heroXp'
 import { localAddress } from './multiplayer'
 import { getPlayerCharacterState, getPlayerVitals, setPlayerSkillHandlers } from './playerCharacter'
 import { SkillDef, skillInSlot, skillsFor } from './shared/skills'
+import { t } from './i18n'
 
 export type SkillSlotView = {
   slot: number
@@ -69,4 +70,23 @@ export function skillRefusal(): Readonly<SkillRefusal> | undefined {
 /** The buff on the local hero, if one is up. */
 export function myBuff(): Readonly<Buff> | undefined {
   return activeBuff(localAddress())
+}
+
+/** How the bar and the tooltips describe what a skill does, in the player's language. */
+export function skillSummaryText(def: SkillDef): string {
+  const e = def.effect
+  switch (e.kind) {
+    case 'strike': return `${e.all ? t('Everyone') : t('One enemy')} ${t('within {n} m', { n: e.range })} · ${t('{pct}% heavy damage', { pct: Math.round(e.mult * 100) })}`
+    case 'zone': return `${t('{n} m circle', { n: e.radius })}${e.at === 'aim' ? ` ${t('where you aim')}` : ` ${t('around you')}`} · ${e.ticks > 1 ? t('{hits} hits over {seconds} s', { hits: e.ticks, seconds: e.seconds }) : t('one hit')}`
+    case 'shot': return e.variant === 'pierce' ? t('Passes through every body in line')
+      : e.variant === 'chain' ? t('Jumps to {n} more enemies', { n: e.chain ?? 0 }) : t('Bursts {n} m around the hit', { n: e.radius ?? 0 })
+    case 'aura': {
+      const parts: string[] = []
+      if (e.heal) parts.push(t('+{n} health', { n: e.heal }))
+      if (e.might !== 1) parts.push(t('{pct}% damage dealt', { pct: `${e.might > 1 ? '+' : ''}${Math.round((e.might - 1) * 100)}` }))
+      if (e.toughness !== 1) parts.push(t('{pct}% damage taken', { pct: `${e.toughness > 1 ? '+' : ''}${Math.round((e.toughness - 1) * 100)}` }))
+      if (e.seconds) parts.push(`${e.seconds} s`)
+      return `${e.target === 'party' ? t('Party') : t('You')} · ${parts.join(' · ')}`
+    }
+  }
 }

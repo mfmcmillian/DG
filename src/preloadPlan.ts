@@ -17,6 +17,7 @@ import { isPreloadComplete, preloadGroup, PreloadGroup } from './preload'
 import { projectileAssets } from './projectiles'
 import { partSources } from './raid/colossusPose'
 import { LEVELS, RAID_LEVEL, REALMS } from './shared/levels'
+import { t } from './i18n'
 
 /** The hall the title looks out on, plus the small FX set every run uses. */
 export const PRELOAD_HUB = 'hub'
@@ -30,12 +31,12 @@ export function realmGroupId(style: StyleId) {
 }
 
 function realmLabel(style: StyleId) {
-  return REALMS.find((r) => r.style === style)?.name ?? 'the dungeon'
+  return REALMS.find((r) => r.style === style)?.name ?? t('the dungeon')
 }
 
 /** The saved or chosen champion's outfit and weapon; `urgent` when a button waits on it. */
 export function requestHeroPreload(cid: string, loadout: EquipmentLoadout, urgent = false) {
-  const name = CHARACTERS.find((c) => c.id === cid)?.name ?? 'your champion'
+  const name = CHARACTERS.find((c) => c.id === cid)?.name ?? t('your champion')
   preloadGroup(heroGroupId(cid), name, equipmentModelPaths(cid, loadout), urgent)
 }
 
@@ -60,11 +61,11 @@ export function isRealmPreloaded(style: StyleId) {
   return isPreloadComplete(realmGroupId(style))
 }
 
-/** A loading line for one group: "Loading the hall… 14 / 17". */
-export function preloadCaption(group: Readonly<PreloadGroup> | undefined, verb = 'Loading') {
+/** A loading line for one group: "Loading the hall… 14 / 17". The label is a realm or champion name, or one of the phrases below. */
+export function preloadCaption(group: Readonly<PreloadGroup> | undefined, verb = t('Loading')) {
   if (!group) return `${verb}\u2026`
   const counts = group.total ? ` ${group.done} / ${group.total}` : ''
-  return `${verb} ${group.label}\u2026${counts}`
+  return `${verb} ${t(group.label)}\u2026${counts}`
 }
 
 /** Kick off the whole plan at start-up. Groups download two at a time in this order. */

@@ -24,12 +24,14 @@ import { presence } from './presence'
 import { trainingActive, trainingTally } from './trainingDummies'
 import { closeTalk, getTalkState, nextLine, openTalk } from './hallTalk'
 import { localXp } from './heroXp'
-import { bonusLines, MAX_LEVEL } from './shared/progression'
+import { bonusLinesText } from './heroXp'
+import { MAX_LEVEL } from './shared/progression'
 import { heroClassOf } from './heroClasses'
 import { skillsUnlockedBetween } from './shared/skills'
 import { SkillBar, SKILL_BAR_HEIGHT } from './skillBarUi'
 import { formatTime, heroLabel, partyTitle } from './lobbyUi'
 import { DIFFICULTIES, LEVELS, MAX_PARTY, nextLevel, realmOfLevel } from './shared/levels'
+import { t, tn } from './i18n'
 
 /** Still shaking hands with the party server (solo play never waits). */
 function joining() {
@@ -82,9 +84,9 @@ function XpBar({ scale: s }: { scale: number }) {
   const ratio = capped ? 1 : Math.max(0, Math.min(1, x.into / x.span))
   return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', flexShrink: 0, margin: { top: 2 * s }, pointerFilter: 'none' }}>
     <UiEntity uiTransform={{ width: '100%', height: 14 * s, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
-      <Label value={`LEVEL ${x.level}`} color={gold} font="sans-serif" fontSize={9 * s} textAlign="middle-left" textWrap="nowrap"
+      <Label value={t('LEVEL {n}', { n: x.level })} color={gold} font="sans-serif" fontSize={9 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={{ width: 90 * s, height: 14 * s, flexShrink: 0, pointerFilter: 'none' }} />
-      <Label value={capped ? 'MAX' : `${x.into} / ${x.span} XP`} color={muted} font="sans-serif" fontSize={9 * s} textAlign="middle-right" textWrap="nowrap"
+      <Label value={capped ? t('MAX') : t('{into} / {span} XP', { into: x.into, span: x.span })} color={muted} font="sans-serif" fontSize={9 * s} textAlign="middle-right" textWrap="nowrap"
         uiTransform={{ width: 120 * s, height: 14 * s, flexShrink: 0, pointerFilter: 'none' }} />
     </UiEntity>
     <UiEntity uiTransform={{ width: '100%', height: 4 * s, borderRadius: 2 * s, flexShrink: 0, flexDirection: 'row', margin: { top: 1 * s }, pointerFilter: 'none' }} uiBackground={{ color: track }}>
@@ -113,9 +115,9 @@ function HallRoster({ scale: s }: { scale: number }) {
   return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', flexShrink: 0, pointerFilter: 'none' }}>
     <Rule scale={s} />
     <UiEntity uiTransform={{ width: '100%', height: 14 * s, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, margin: { bottom: 3 * s }, pointerFilter: 'none' }}>
-      <Label value={`ONLINE  ${list.length}`} color={gold} font="sans-serif" fontSize={9 * s} textAlign="middle-left" textWrap="nowrap"
+      <Label value={`${t('ONLINE')}  ${list.length}`} color={gold} font="sans-serif" fontSize={9 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={{ width: 100 * s, height: 14 * s, flexShrink: 0, pointerFilter: 'none' }} />
-      <Label value={`IN THE HALL  ${inHall}`} color={muted} font="sans-serif" fontSize={9 * s} textAlign="middle-right" textWrap="nowrap"
+      <Label value={`${t('IN THE HALL')}  ${inHall}`} color={muted} font="sans-serif" fontSize={9 * s} textAlign="middle-right" textWrap="nowrap"
         uiTransform={{ width: 120 * s, height: 14 * s, flexShrink: 0, pointerFilter: 'none' }} />
     </UiEntity>
     {shown.map((p) => <UiEntity key={p.id} uiTransform={{ width: '100%', height: rowHeight, flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
@@ -123,11 +125,11 @@ function HallRoster({ scale: s }: { scale: number }) {
         uiBackground={{ color: p.inHall ? stamina : p.short === 'Gate' ? muted : gold }} />
       <Label value={fit(p.name, 14)} color={p.me ? gold : white} font="sans-serif" fontSize={12 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={{ width: 104 * s, height: rowHeight, flexShrink: 0, pointerFilter: 'none' }} />
-      <Label value={p.cls ? `${fit(p.cls, 12)}  <color=#8d9aa8>·</color>  ${fit(p.short, 12)}` : fit(p.short, 12)} color={muted} font="sans-serif" fontSize={10 * s}
+      <Label value={p.cls ? `${fit(p.cls, 12)}  <color=#8d9aa8>·</color>  ${fit(t(p.short), 12)}` : fit(t(p.short), 12)} color={muted} font="sans-serif" fontSize={10 * s}
         textAlign="middle-right" textWrap="nowrap"
         uiTransform={{ width: 118 * s, height: rowHeight, flexShrink: 0, pointerFilter: 'none' }} />
     </UiEntity>)}
-    {list.length > shown.length && <Label value={`+${list.length - shown.length} more`} color={muted} font="sans-serif" fontSize={10 * s}
+    {list.length > shown.length && <Label value={t('+{n} more', { n: list.length - shown.length })} color={muted} font="sans-serif" fontSize={10 * s}
       textAlign="middle-right" textWrap="nowrap" uiTransform={{ width: '100%', height: 16 * s, flexShrink: 0, pointerFilter: 'none' }} />}
   </UiEntity>
 }
@@ -145,8 +147,8 @@ function PlayerVitals({ right, top, scale: s }: { right: number; top: number; sc
   const staminaRatio = Math.max(0, Math.min(1, vitals.stamina / vitals.maxStamina))
   const coins = getLootState().coins
   const hall = myPhase() === HUB
-  const name = playerDisplayName(localAddress()) || 'You'
-  const cls = `${getEquippedCharacter().name}  ·  Level ${localXp().level}`
+  const name = playerDisplayName(localAddress()) || t('You')
+  const cls = `${getEquippedCharacter().name}  ·  ${t('Level {n}', { n: localXp().level })}`
   const inner = (CARD_WIDTH - CARD_PAD * 2) * s
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { right, top },
     width: CARD_WIDTH * s, flexDirection: 'column', padding: CARD_PAD * s, borderRadius: 10 * s, pointerFilter: 'none' }}
@@ -200,7 +202,7 @@ function BossBar({ width, scale: s }: { width: number; scale: number }) {
   const top = Math.max(0, canvas?.screenInsetArea?.top || 0) + 26 * s
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - barWidth) / 2, top },
     width: barWidth, height: 44 * s, flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
-    <Label value={state.bossLabel ? `${state.name}  ·  ${state.bossLabel}` : state.name} color={white} font="sans-serif" fontSize={15 * s} textAlign="middle-center" textWrap="nowrap"
+    <Label value={state.bossLabel ? `${t(state.name)}  ·  ${t(state.bossLabel)}` : t(state.name)} color={white} font="sans-serif" fontSize={15 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 22 * s, flexShrink: 0, pointerFilter: 'none' }} />
     <UiEntity uiTransform={{ width: '100%', height: 10 * s, padding: s, borderRadius: 3 * s, borderWidth: s, borderColor: line, flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: track }}>
       <UiEntity uiTransform={{ width: `${ratio * 100}%`, height: '100%', pointerFilter: 'none' }} uiBackground={{ color: bossRed }} />
@@ -227,17 +229,17 @@ function StatusNotice({ width, bottom, scale: s }: { width: number; bottom: numb
   let message = ''
   let retry: (() => void) | undefined
   if (player.active && player.loading === 'error') {
-    message = 'Could not load your character.'
+    message = t('Could not load your character.')
     retry = retryPlayerCharacter
   } else if (player.active && player.loading !== 'ready') {
-    message = 'Preparing your character…'
+    message = t('Preparing your character…')
   } else if (rival.visible && rival.phase === 'error') {
-    message = 'Could not load the dungeon enemies.'
+    message = t('Could not load the dungeon enemies.')
     retry = retryWorldRival
   } else if (rival.visible && rival.phase === 'defeat') {
-    message = `Recovering in ${Math.ceil(rival.respawnSeconds)}s`
+    message = t('Recovering in {n}s', { n: Math.ceil(rival.respawnSeconds) })
   } else if (joining()) {
-    message = 'Joining the realm…'
+    message = t('Joining the realm…')
   }
   // Routine combat, telegraphs, approach prompts and respawn counters stay off the HUD.
   if (!message) return null
@@ -248,7 +250,7 @@ function StatusNotice({ width, bottom, scale: s }: { width: number; bottom: numb
     flexDirection: 'row', alignItems: 'center', pointerFilter: 'none' }} uiBackground={{ color: panel }}>
     <Label value={message} color={white} font="sans-serif" fontSize={13 * s} textAlign={retry ? 'middle-left' : 'middle-center'} textWrap="nowrap"
       uiTransform={{ width: noticeWidth - (retry ? 102 : 16) * s, height: 36 * s, flexShrink: 0, pointerFilter: 'none' }} />
-    {retry && <TextAction id="retry-hud" text="Retry" onClick={retry} scale={s} />}
+    {retry && <TextAction id="retry-hud" text={t('Retry')} onClick={retry} scale={s} />}
   </UiEntity>
 }
 
@@ -268,21 +270,21 @@ function LootToasts({ right, bottom, scale: s }: { right: number; bottom: number
   const cardHeight = 54 * s
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { right, bottom: bottom + 60 * s },
     width: cardWidth, flexDirection: 'column-reverse', pointerFilter: 'none' }}>
-    {toasts.map((t, i) => {
-      const fade = Math.max(0, Math.min(1, (TOAST_SECONDS - t.age) / 0.9))
-      const rarity = RARITIES[rarityOf(t.item.id)]
+    {toasts.map((toast, i) => {
+      const fade = Math.max(0, Math.min(1, (TOAST_SECONDS - toast.age) / 0.9))
+      const rarity = RARITIES[rarityOf(toast.item.id)]
       const rarityColor = rarity.color
-      const subtitle = t.salvaged > 0
-        ? `${t.wrongClass ? 'Cut for another class' : 'Already owned'}  ·  salvaged for ${t.salvaged} coins`
-        : t.item.weapon ? `${rarity.label}  ·  ${WEAPON_CLASSES[t.item.weapon.class].label}  ·  now in your inventory`
-        : `${rarity.label}  ·  ${t.item.setLabel ?? ''} set  ·  now in your wardrobe`
-      return <UiEntity key={`${t.item.id}-${i}`} uiTransform={{ width: cardWidth, height: cardHeight, margin: { top: 6 * s },
-        padding: 7 * s, borderRadius: 8 * s, borderWidth: s, borderColor: withAlpha(t.salvaged > 0 ? line : rarityColor, fade * 0.9),
+      const subtitle = toast.salvaged > 0
+        ? `${toast.wrongClass ? t('Cut for another class') : t('Already owned')}  ·  ${t('salvaged for {n} coins', { n: toast.salvaged })}`
+        : toast.item.weapon ? `${t(rarity.label)}  ·  ${t(WEAPON_CLASSES[toast.item.weapon.class].label)}  ·  ${t('now in your inventory')}`
+        : `${t(rarity.label)}  ·  ${t('{set} set', { set: toast.item.setLabel ?? '' })}  ·  ${t('now in your wardrobe')}`
+      return <UiEntity key={`${toast.item.id}-${i}`} uiTransform={{ width: cardWidth, height: cardHeight, margin: { top: 6 * s },
+        padding: 7 * s, borderRadius: 8 * s, borderWidth: s, borderColor: withAlpha(toast.salvaged > 0 ? line : rarityColor, fade * 0.9),
         flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: withAlpha(panel, fade) }}>
         <UiEntity uiTransform={{ width: 40 * s, height: 40 * s, borderRadius: 6 * s, flexShrink: 0, pointerFilter: 'none' }}
-          uiBackground={{ color: withAlpha(track, fade), textureMode: 'stretch', texture: { src: t.item.icon } }} />
+          uiBackground={{ color: withAlpha(track, fade), textureMode: 'stretch', texture: { src: toast.item.icon } }} />
         <UiEntity uiTransform={{ width: cardWidth - 62 * s, height: 40 * s, margin: { left: 8 * s }, flexDirection: 'column', justifyContent: 'center', pointerFilter: 'none' }}>
-          <Label value={t.item.name} color={withAlpha(t.salvaged > 0 ? muted : rarityColor, fade)} font="sans-serif" fontSize={13.5 * s}
+          <Label value={toast.item.name} color={withAlpha(toast.salvaged > 0 ? muted : rarityColor, fade)} font="sans-serif" fontSize={13.5 * s}
             textAlign="middle-left" textWrap="nowrap" uiTransform={{ width: '100%', height: 20 * s, flexShrink: 0, pointerFilter: 'none' }} />
           <Label value={subtitle} color={withAlpha(muted, fade)} font="sans-serif" fontSize={11 * s}
             textAlign="middle-left" textWrap="nowrap" uiTransform={{ width: '100%', height: 17 * s, flexShrink: 0, pointerFilter: 'none' }} />
@@ -297,10 +299,10 @@ function FoundThisRun({ found, salvaged, width, scale: s }: { found: string[]; s
   const items = found.map((id) => getEquipmentItemOrNull(id)).filter((item) => !!item)
   const shown = items.slice(0, 8)
   const more = items.length - shown.length
-  const salvageText = salvaged > 0 ? `${salvaged} duplicate${salvaged === 1 ? '' : 's'} salvaged for coin` : ''
+  const salvageText = salvaged > 0 ? tn(salvaged, '{n} duplicate salvaged for coin', '{n} duplicates salvaged for coin') : ''
   const caption = items.length
-    ? `Found this run  ·  ${items.length} new item${items.length === 1 ? '' : 's'}${salvageText ? `  ·  ${salvageText}` : ''}`
-    : salvageText ? `Nothing new  ·  ${salvageText}` : 'No gear dropped this run'
+    ? `${t('Found this run')}  ·  ${tn(items.length, '{n} new item', '{n} new items')}${salvageText ? `  ·  ${salvageText}` : ''}`
+    : salvageText ? `${t('Nothing new')}  ·  ${salvageText}` : t('No gear dropped this run')
   return <UiEntity uiTransform={{ width, margin: { top: 12 * s }, flexDirection: 'column', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
     <Label value={caption} color={items.length ? gold : muted} font="sans-serif" fontSize={12 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 20 * s, flexShrink: 0, pointerFilter: 'none' }} />
@@ -326,9 +328,9 @@ function RunPanel({ right, top, scale: s }: { right: number; top: number; scale:
   const level = LEVELS[party.level]
   const diff = DIFFICULTIES[party.diff]
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { right, top }, width: (CARD_WIDTH - CARD_PAD * 2) * s, flexDirection: 'column', pointerFilter: 'none' }}>
-    <Label value={`${level?.name ?? ''}  ·  ${diff?.name ?? ''}`} color={gold} font="sans-serif" fontSize={12 * s} textAlign="middle-right" textWrap="nowrap"
+    <Label value={`${level?.name ?? ''}  ·  ${t(diff?.name ?? '')}`} color={gold} font="sans-serif" fontSize={12 * s} textAlign="middle-right" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
-    <Label value={`Slain ${party.slain} / ${party.total}   ·   ${formatTime(party.time + getLobbyState().silence)}`} color={muted} font="sans-serif" fontSize={12 * s} textAlign="middle-right" textWrap="nowrap"
+    <Label value={`${t('Slain {n} / {total}', { n: party.slain, total: party.total })}   ·   ${formatTime(party.time + getLobbyState().silence)}`} color={muted} font="sans-serif" fontSize={12 * s} textAlign="middle-right" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
     {party.members.length > 1 && party.members.map((m) => <Label key={m} value={`${heroLabel(m)}${m === party.leader ? ' ♛' : ''}`}
       color={white} font="sans-serif" fontSize={12 * s} textAlign="middle-right" textWrap="nowrap"
@@ -358,36 +360,36 @@ function ResultsOverlay({ width, height, scale: s }: { width: number; height: nu
   const meReady = party.ready.includes(me)
   const wait = resultsWait()
   const cardWidth = Math.min(520 * s, width * 0.7)
-  const goText = result.won ? (next ? `Descend to ${next.name}` : 'Fight it again') : 'Try again'
+  const goText = result.won ? (next ? t('Descend to {level}', { level: next.name }) : t('Fight it again')) : t('Try again')
   const go = result.won && next ? descend : retryRun
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - cardWidth) / 2, top: height * 0.1 },
     width: cardWidth, padding: 24 * s, borderRadius: 8 * s, borderWidth: s, borderColor: result.won ? gold : line,
     flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }} uiBackground={{ color: panel }}>
-    <Label value={result.won ? 'FORTRESS CLEARED' : 'THE PARTY HAS FALLEN'} font="serif" color={result.won ? gold : red} fontSize={30 * s} textAlign="middle-center" textWrap="nowrap"
+    <Label value={result.won ? t('FORTRESS CLEARED') : t('THE PARTY HAS FALLEN')} font="serif" color={result.won ? gold : red} fontSize={30 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 40 * s, flexShrink: 0, pointerFilter: 'none' }} />
-    <Label value={`${level?.name ?? ''}  ·  ${diff?.name ?? ''}`} color={white} font="sans-serif" fontSize={15 * s} textAlign="middle-center" textWrap="nowrap"
+    <Label value={`${level?.name ?? ''}  ·  ${t(diff?.name ?? '')}`} color={white} font="sans-serif" fontSize={15 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 26 * s, margin: { top: 4 * s }, flexShrink: 0, pointerFilter: 'none' }} />
-    <Label value={`Time ${formatTime(result.time)}   ·   Slain ${result.slain} / ${result.total}   ·   Coins +${Math.max(0, result.coins)}   ·   XP +${localXp().runGain}`}
+    <Label value={`${t('Time {time}', { time: formatTime(result.time) })}   ·   ${t('Slain {n} / {total}', { n: result.slain, total: result.total })}   ·   ${t('Coins +{n}', { n: Math.max(0, result.coins) })}   ·   ${t('XP +{n}', { n: localXp().runGain })}`}
       color={muted} font="sans-serif" fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 24 * s, margin: { top: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />
     <FoundThisRun found={result.found} salvaged={result.salvaged} width={cardWidth - 48 * s} scale={s} />
-    {next && <Label value={`${next.name} is open to you.`} color={gold} font="sans-serif" fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
+    {next && <Label value={t('{level} is open to you.', { level: next.name })} color={gold} font="sans-serif" fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 22 * s, margin: { top: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
-    {result.won && !next && <Label value={`All of ${realmOfLevel(result.level).name} has fallen to you.`} color={gold} font="sans-serif" fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
+    {result.won && !next && <Label value={t('All of {realm} has fallen to you.', { realm: realmOfLevel(result.level).name })} color={gold} font="sans-serif" fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 22 * s, margin: { top: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
     <UiEntity uiTransform={{ width: '100%', height: 40 * s, margin: { top: 16 * s }, flexDirection: 'row', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }}>
       {leader
-        ? <MenuAction id="results-go" text={othersReady ? goText : `${goText}  (${readyCount}/${party.members.length} ready)`} onClick={go}
+        ? <MenuAction id="results-go" text={othersReady ? goText : `${goText}  ${t('({n}/{total} ready)', { n: readyCount, total: party.members.length })}`} onClick={go}
           width={cardWidth / s - 48 - 176} height={40} scale={s} fontSize={14} primary disabled={!othersReady} />
-        : <MenuAction id="results-ready" text={meReady ? 'Ready  ✓' : `Ready to go on  (${readyCount}/${party.members.length})`} onClick={() => setReady(!meReady)}
+        : <MenuAction id="results-ready" text={meReady ? `${t('Ready')}  ✓` : `${t('Ready to go on')}  (${readyCount}/${party.members.length})`} onClick={() => setReady(!meReady)}
           width={cardWidth / s - 48 - 176} height={40} scale={s} fontSize={14} primary={!meReady} accent="gold" active={meReady} />}
       <UiEntity uiTransform={{ width: 12 * s, flexShrink: 0, pointerFilter: 'none' }} />
-      <MenuAction id="results-hall" text={leader ? 'Return to the hall' : 'Leave for the hall'} onClick={leader ? returnToHall : leaveParty}
+      <MenuAction id="results-hall" text={leader ? t('Return to the hall') : t('Leave for the hall')} onClick={leader ? returnToHall : leaveParty}
         width={164} height={40} scale={s} fontSize={14} accent="gold" />
     </UiEntity>
     <Label value={leader
-      ? (solo ? `Back to the hall on its own in ${formatTime(wait)}.` : `You lead: the party goes on once everyone is ready. Back to the hall on its own in ${formatTime(wait)}.`)
-      : `${heroLabel(party.leader)} decides where the party goes next. Back to the hall in ${formatTime(wait)} at the latest.`}
+      ? (solo ? t('Back to the hall on its own in {time}.', { time: formatTime(wait) }) : t('You lead: the party goes on once everyone is ready. Back to the hall on its own in {time}.', { time: formatTime(wait) }))
+      : t('{name} decides where the party goes next. Back to the hall in {time} at the latest.', { name: heroLabel(party.leader), time: formatTime(wait) })}
       color={muted} font="sans-serif" fontSize={11.5 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 20 * s, margin: { top: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />
   </UiEntity>
@@ -408,15 +410,15 @@ function HubPrompt({ width, bottom, scale: s }: { width: number; bottom: number;
   if (!party && !near && !who) return null
   if (!party && !who && atPitGate()) return null
   const caption = party ? `${partyTitle(party)}  ·  ${party.members.length}/${MAX_PARTY}  ·  ${LEVELS[party.level]?.name ?? ''}`
-    : near ? 'The war table: choose a fortress to enter.' : `The ${who?.title ?? ''} looks your way.`
+    : near ? t('The war table: choose a fortress to enter.') : t('The {title} looks your way.', { title: t(who?.title ?? '') })
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - 460 * s) / 2, bottom },
     width: 460 * s, flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
     <Label value={caption} color={party ? gold : muted} font="sans-serif" fontSize={12 * s} textWrap="nowrap"
       uiTransform={{ width: '100%', height: 24 * s, margin: { bottom: 6 * s }, pointerFilter: 'none' }} />
     <UiEntity uiTransform={{ flexDirection: 'row', justifyContent: 'center', pointerFilter: 'none' }}>
-      {(near || party) && <TextAction id="open-lobby" text={party ? 'Party' : 'Dungeons'} onClick={openLobby} scale={s} width={who ? 140 : 200} />}
+      {(near || party) && <TextAction id="open-lobby" text={party ? t('Party') : t('Dungeons')} onClick={openLobby} scale={s} width={who ? 140 : 200} />}
       {who && <UiEntity uiTransform={{ margin: { left: near || party ? 8 * s : 0 }, pointerFilter: 'none' }}>
-        <TextAction id="talk" text={`Talk to the ${who.title}`} onClick={openTalk} scale={s} width={220} />
+        <TextAction id="talk" text={t('Talk to the {title}', { title: t(who.title) })} onClick={openTalk} scale={s} width={220} />
       </UiEntity>}
     </UiEntity>
   </UiEntity>
@@ -429,14 +431,14 @@ function TalkPanel({ width, bottom, scale: s, open }: { width: number; bottom: n
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - panelWidth) / 2, bottom },
     width: panelWidth, flexDirection: 'column', alignItems: 'center', padding: { top: 10 * s, bottom: 10 * s, left: 16 * s, right: 16 * s },
     borderRadius: 8 * s, borderWidth: s, borderColor: line, pointerFilter: 'block' }} uiBackground={{ color: panel }}>
-    <Label value={open.title} color={gold} font="serif" fontSize={15 * s} textAlign="middle-center" textWrap="nowrap"
+    <Label value={t(open.title)} color={gold} font="serif" fontSize={15 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 20 * s, pointerFilter: 'none' }} />
     <Label value={open.lines[open.index] ?? ''} color={white} font="sans-serif" fontSize={13 * s} textAlign="middle-center" textWrap="wrap"
       uiTransform={{ width: '100%', height: 66 * s, margin: { top: 4 * s, bottom: 8 * s }, pointerFilter: 'none' }} />
     <UiEntity uiTransform={{ flexDirection: 'row', justifyContent: 'center', pointerFilter: 'none' }}>
-      <TextAction id="talk-next" text={last ? 'Farewell' : `Go on  (${open.index + 1}/${open.lines.length})`} onClick={nextLine} scale={s} width={150} />
+      <TextAction id="talk-next" text={last ? t('Farewell') : `${t('Go on')}  (${open.index + 1}/${open.lines.length})`} onClick={nextLine} scale={s} width={150} />
       {!last && <UiEntity uiTransform={{ margin: { left: 8 * s }, pointerFilter: 'none' }}>
-        <TextAction id="talk-leave" text="Enough" onClick={closeTalk} scale={s} width={100} />
+        <TextAction id="talk-leave" text={t('Enough')} onClick={closeTalk} scale={s} width={100} />
       </UiEntity>}
     </UiEntity>
   </UiEntity>
@@ -462,9 +464,9 @@ function HubNotice({ width, top, scale: s }: { width: number; top: number; scale
  */
 function TrainingTally({ width, top, scale: s }: { width: number; top: number; scale: number }) {
   if (myPhase() !== HUB || getLobbyState().open || !trainingActive()) return null
-  const t = trainingTally()
+  const tally = trainingTally()
   // Fade in on the first blow, out over the last second and a half.
-  const alpha = Math.min(1, (6 - t.since) / 1.5)
+  const alpha = Math.min(1, (6 - tally.since) / 1.5)
   const boxWidth = Math.min(560 * s, width * 0.7)
   const dim = Color4.create(muted.r, muted.g, muted.b, alpha)
   const bright = Color4.create(white.r, white.g, white.b, alpha)
@@ -477,13 +479,13 @@ function TrainingTally({ width, top, scale: s }: { width: number; top: number; s
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - boxWidth) / 2, top },
     width: boxWidth, flexDirection: 'column', alignItems: 'center', padding: { top: 6 * s, bottom: 8 * s }, borderRadius: 8 * s, pointerFilter: 'none' }}
     uiBackground={{ color: Color4.create(panel.r, panel.g, panel.b, panel.a * alpha) }}>
-    <Label value="TRAINING YARD" color={Color4.create(gold.r, gold.g, gold.b, alpha)} font="sans-serif" fontSize={10 * s} textAlign="middle-center" textWrap="nowrap"
+    <Label value={t('TRAINING YARD')} color={Color4.create(gold.r, gold.g, gold.b, alpha)} font="sans-serif" fontSize={10 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 14 * s, margin: { bottom: 2 * s }, pointerFilter: 'none' }} />
     <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', pointerFilter: 'none' }}>
-      {cell('LAST BLOW', `${t.last}`, Color4.create(gold.r, gold.g, gold.b, alpha))}
-      {cell(t.hits === 1 ? '1 BLOW' : `${t.hits} BLOWS`, `${t.total}`)}
-      {cell('PER SECOND', t.perSecond > 0 ? t.perSecond.toFixed(1) : '—')}
-      {cell('BEST BLOW', `${t.best}`)}
+      {cell(t('LAST BLOW'), `${tally.last}`, Color4.create(gold.r, gold.g, gold.b, alpha))}
+      {cell(tn(tally.hits, '{n} BLOW', '{n} BLOWS'), `${tally.total}`)}
+      {cell(t('PER SECOND'), tally.perSecond > 0 ? tally.perSecond.toFixed(1) : '—')}
+      {cell(t('BEST BLOW'), `${tally.best}`)}
     </UiEntity>
   </UiEntity>
 }
@@ -495,17 +497,17 @@ function LevelUpNotice({ width, top, scale: s }: { width: number; top: number; s
   const alpha = Math.min(1, x.levelUpFor / 0.4, Math.max(0, (6 - x.levelUpFor) / 1.2))
   const boxWidth = Math.min(420 * s, width * 0.6)
   const cid = getEquippedCharacter().id
-  const line = bonusLines(cid).join('   ·   ')
+  const line = bonusLinesText(cid).join('   ·   ')
   // A skill this level opened: the bar's new key.
   const opened = skillsUnlockedBetween(heroClassOf(cid).id, x.levelUp - 1, x.levelUp)
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - boxWidth) / 2, top },
     width: boxWidth, flexDirection: 'column', alignItems: 'center', padding: { top: 8 * s, bottom: 10 * s }, borderRadius: 8 * s, pointerFilter: 'none' }}
     uiBackground={{ color: Color4.create(panel.r, panel.g, panel.b, panel.a * alpha) }}>
-    <Label value={`LEVEL ${x.levelUp}${x.levelUp >= MAX_LEVEL ? '  ·  THE SUMMIT' : ''}`} color={Color4.create(gold.r, gold.g, gold.b, alpha)} font="serif" fontSize={26 * s} textAlign="middle-center" textWrap="nowrap"
+    <Label value={`${t('LEVEL {n}', { n: x.levelUp })}${x.levelUp >= MAX_LEVEL ? `  ·  ${t('THE SUMMIT')}` : ''}`} color={Color4.create(gold.r, gold.g, gold.b, alpha)} font="serif" fontSize={26 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 32 * s, pointerFilter: 'none' }} />
     <Label value={`${getEquippedCharacter().name}  ·  ${line}`} color={Color4.create(white.r, white.g, white.b, alpha)} font="sans-serif" fontSize={11 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 16 * s, pointerFilter: 'none' }} />
-    {opened.map((def) => <Label key={def.id} value={`NEW SKILL  ·  ${def.name} on key ${def.slot + 1}  ·  ${def.blurb}`}
+    {opened.map((def) => <Label key={def.id} value={`${t('NEW SKILL')}  ·  ${t('{skill} on key {key}', { skill: def.name, key: def.slot + 1 })}  ·  ${t(def.blurb)}`}
       color={Color4.create(gold.r, gold.g, gold.b, alpha)} font="sans-serif" fontSize={12 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 18 * s, margin: { top: 4 * s }, pointerFilter: 'none' }} />)}
   </UiEntity>
@@ -544,16 +546,16 @@ export function WorldHudUi() {
     </UiEntity>}
     {created && <UiEntity uiTransform={{ positionType: 'absolute', position: { right, bottom },
       width: (inHub ? 228 : 168) * s, height: 48 * s, flexDirection: 'row', justifyContent: 'space-between', pointerFilter: 'none' }}>
-      {inHub && <IconButton id="dungeons" label={myParty() ? 'Party' : 'Dungeons'} icon="images/hud/dungeons.png" scale={s} disabled={!ready} onClick={openLobby} />}
-      <IconButton id="inventory" label="Inventory" icon="images/hud/inventory.png" scale={s} disabled={!ready} onClick={openInventory} />
-      <IconButton id="character" label="Edit character" icon="images/hud/character.png" scale={s} onClick={openPicker} />
-      <IconButton id="settings" label="Settings" icon="images/hud/settings.png" scale={s} onClick={openSettings} />
+      {inHub && <IconButton id="dungeons" label={myParty() ? t('Party') : t('Dungeons')} icon="images/hud/dungeons.png" scale={s} disabled={!ready} onClick={openLobby} />}
+      <IconButton id="inventory" label={t('Inventory')} icon="images/hud/inventory.png" scale={s} disabled={!ready} onClick={openInventory} />
+      <IconButton id="character" label={t('Edit character')} icon="images/hud/character.png" scale={s} onClick={openPicker} />
+      <IconButton id="settings" label={t('Settings')} icon="images/hud/settings.png" scale={s} onClick={openSettings} />
     </UiEntity>}
     {!created && <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - 250 * s) / 2, bottom },
       width: 250 * s, flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
-      <Label value="Make a character to begin." color={muted} font="sans-serif" fontSize={13 * s} textWrap="nowrap"
+      <Label value={t('Make a character to begin.')} color={muted} font="sans-serif" fontSize={13 * s} textWrap="nowrap"
         uiTransform={{ width: '100%', height: 27 * s, margin: { bottom: 8 * s }, pointerFilter: 'none' }} />
-      <TextAction id="create-character" text="Create character" onClick={openPicker} scale={s} width={220} />
+      <TextAction id="create-character" text={t('Create character')} onClick={openPicker} scale={s} width={220} />
     </UiEntity>}
   </UiEntity>
 }

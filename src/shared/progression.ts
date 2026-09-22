@@ -67,14 +67,9 @@ export function heroBonuses(cid: string, level: number): HeroBonuses {
   return { might: 1 + g.might * steps, toughness: 1 - g.toughness * steps, stamina: g.stamina * steps }
 }
 
-/** The bonus lines a level-up shows: what this champion gains per level. */
-export function bonusLines(cid: string): string[] {
-  const g = GAINS[cid] ?? DEFAULT_GAINS
-  return [
-    `+${(g.might * 100).toFixed(1)}% damage dealt`,
-    `-${(g.toughness * 100).toFixed(1)}% damage taken`,
-    `+${g.stamina} stamina`
-  ]
+/** What this champion gains per level, for the level-up notice to put into words. */
+export function levelGains(cid: string): { might: number; toughness: number; stamina: number } {
+  return GAINS[cid] ?? DEFAULT_GAINS
 }
 
 /** Experience per champion for one wallet, as stored and as sent. */

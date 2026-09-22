@@ -8,6 +8,7 @@
 import { Color4 } from '@dcl/sdk/math'
 import { ArmorRealm, EQUIPMENT_ITEMS, EquipmentItem, getEquipmentItemOrNull } from './equipmentCatalog'
 import { classAllowsArmor } from './heroClasses'
+import { t } from './i18n'
 
 export type WeaponClass = 'sword' | 'dagger' | 'axe' | 'mace' | 'hammer' | 'club' | 'great' | 'bow' | 'staff' | 'sceptre'
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
@@ -100,7 +101,7 @@ export function rarityColor(id: string): Color4 {
 /** "Epic · Sword · Dark Fortress" */
 export function weaponSubtitle(item: EquipmentItem): string {
   if (!item.weapon) return ''
-  return `${RARITIES[item.weapon.rarity].label} · ${WEAPON_CLASSES[item.weapon.class].label} · ${item.weapon.pack}`
+  return `${t(RARITIES[item.weapon.rarity].label)} · ${t(WEAPON_CLASSES[item.weapon.class].label)} · ${item.weapon.pack}`
 }
 
 /** "+20% damage · +40% stagger · +4 damage" for the inventory. */
@@ -109,11 +110,11 @@ export function weaponStatLine(item: EquipmentItem): string {
   const s = weaponStats(item.id)
   const parts: string[] = []
   const pct = (v: number) => `${v >= 0 ? '+' : ''}${Math.round(v * 100)}%`
-  if (s.damage !== 1) parts.push(`${pct(s.damage - 1)} damage`)
-  if (s.stagger !== 1) parts.push(`${pct(s.stagger - 1)} stagger`)
-  if (s.knockback !== 1) parts.push(`${pct(s.knockback - 1)} knockback`)
-  if (s.bonus) parts.push(`+${s.bonus} flat damage`)
-  return parts.length ? parts.join(' · ') : 'Balanced'
+  if (s.damage !== 1) parts.push(t('{pct} damage', { pct: pct(s.damage - 1) }))
+  if (s.stagger !== 1) parts.push(t('{pct} stagger', { pct: pct(s.stagger - 1) }))
+  if (s.knockback !== 1) parts.push(t('{pct} knockback', { pct: pct(s.knockback - 1) }))
+  if (s.bonus) parts.push(t('+{n} flat damage', { n: s.bonus }))
+  return parts.length ? parts.join(' · ') : t('Balanced')
 }
 
 // --- drop tables (host) --------------------------------------------------------------

@@ -16,6 +16,19 @@ Live at **SpaceMatt.dcl.eth** (6×6 parcels).
 - Space hold to block · Ctrl dodge roll (brief invulnerability)
 - 1–4 skills: four per class, opened at levels 2, 5, 9 and 14; each costs stamina and then cools down
 - In the hall, walk up to one of its folk and the prompt offers a word: each explains one part of the game
+- Six languages (English, Spanish, French, German, Portuguese, Japanese): the flag row on the title screen and in Settings switches the whole UI; the choice is saved with the champion
+
+## Languages
+
+English is the source and lives in the code: every line the player reads goes
+through `t('English text', { params })` (`src/i18n.ts`), and the other
+languages are tables keyed by that English text in `src/locales/<lang>.json`.
+A key with no entry falls back to English, so a new string never breaks a
+language. `node scripts/i18n-extract.mjs` lists every key in the code, flags
+what each table is missing or has left over, and checks that `{placeholders}`
+survive translation. Realm, fortress, skill, set, weapon and champion names
+stay English everywhere; the catalog's item descriptions are not translated
+yet.
 
 ## Run locally
 

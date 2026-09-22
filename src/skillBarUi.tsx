@@ -4,8 +4,9 @@
 
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { Color4 } from '@dcl/sdk/math'
-import { myBuff, skillBar, skillRefusal } from './heroSkills'
-import { skillById, skillSummary } from './shared/skills'
+import { myBuff, skillBar, skillRefusal, skillSummaryText } from './heroSkills'
+import { skillById } from './shared/skills'
+import { t } from './i18n'
 import { localXp } from './heroXp'
 
 export const SKILL_BAR_HEIGHT = 84
@@ -26,9 +27,9 @@ function tint(color: [number, number, number], alpha: number, k = 1): Color4 {
 
 /** Refusals in words the bar can show under the slot. */
 function refusalText(why: 'locked' | 'cooldown' | 'stamina', level: number): string {
-  if (why === 'locked') return `Opens at level ${level}`
-  if (why === 'cooldown') return 'Not yet'
-  return 'Winded'
+  if (why === 'locked') return t('Opens at level {n}', { n: level })
+  if (why === 'cooldown') return t('Not yet')
+  return t('Winded')
 }
 
 export function SkillBar({ width, bottom, scale: s }: { width: number; bottom: number; scale: number }) {
@@ -42,8 +43,8 @@ export function SkillBar({ width, bottom, scale: s }: { width: number; bottom: n
   // The next skill to open, for a hero still climbing to it.
   const next = slots.find((v) => !v.unlocked)
   const line = refusal && hovered ? refusalText(refusal.why, hovered.def.level)
-    : buff && buffDef ? `${buffDef.name}  ·  ${skillSummary(buffDef)}  ·  ${Math.ceil(buff.left)} s`
-    : next ? `${next.def.name} opens at level ${next.def.level}  ·  you are level ${localXp().level}` : ''
+    : buff && buffDef ? `${buffDef.name}  ·  ${skillSummaryText(buffDef)}  ·  ${Math.ceil(buff.left)} s`
+    : next ? `${t('{skill} opens at level {n}', { skill: next.def.name, n: next.def.level })}  ·  ${t('you are level {n}', { n: localXp().level })}` : ''
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - barWidth) / 2, bottom },
     width: barWidth, height: SKILL_BAR_HEIGHT * s, flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', pointerFilter: 'none' }}>
     {line !== '' && <Label value={line} color={refusal ? refusedRim : buff ? gold : muted} font="sans-serif" fontSize={11 * s} textAlign="middle-center" textWrap="nowrap"
@@ -61,7 +62,7 @@ export function SkillBar({ width, bottom, scale: s }: { width: number; bottom: n
             uiBackground={{ color: shade }} />}
           <Label value={`${v.slot + 1}`} color={v.unlocked ? white : muted} font="sans-serif" fontSize={10 * s} textAlign="top-left" textWrap="nowrap"
             uiTransform={{ positionType: 'absolute', position: { left: 5 * s, top: 3 * s }, width: 16 * s, height: 12 * s, pointerFilter: 'none' }} />
-          <Label value={v.unlocked ? (ratio > 0 ? `${Math.ceil(v.cooldownLeft)}` : initials(v.def.name)) : `Lv ${v.def.level}`}
+          <Label value={v.unlocked ? (ratio > 0 ? `${Math.ceil(v.cooldownLeft)}` : initials(v.def.name)) : t('Lv {n}', { n: v.def.level })}
             color={v.unlocked ? white : muted} font={v.unlocked && ratio === 0 ? 'serif' : 'sans-serif'} fontSize={(v.unlocked && ratio === 0 ? 20 : 15) * s}
             textAlign="middle-center" textWrap="nowrap"
             uiTransform={{ positionType: 'absolute', position: { left: 0, top: 10 * s }, width: '100%', height: (SLOT - 22) * s, pointerFilter: 'none' }} />

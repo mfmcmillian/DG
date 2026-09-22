@@ -1,4 +1,4 @@
-// The settings sheet: camera choice and the developer panel switch. Same
+// The settings sheet: language, camera choice and the developer panel switch. Same
 // dark sheet, gold rule and flat buttons as the lobby.
 
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
@@ -11,11 +11,13 @@ import { isDeveloper } from './devAccess'
 import { flushHeroSave } from './heroSave'
 import { cycleLobbyPickLevel, getLobbyPick } from './party'
 import { LEVELS } from './shared/levels'
+import { t } from './i18n'
+import { LanguageRow } from './languageUi'
 
 const { white, muted, gold, panel, card, line, goldLine } = menuColors
 const veil = Color4.create(0.01, 0.02, 0.03, 0.62)
 const sheet = Color4.create(0.025, 0.045, 0.07, 0.97)
-const FRAME = { width: 520, height: 470 }
+const FRAME = { width: 520, height: 540 }
 let hovered = ''
 
 function layout(extra = 0) {
@@ -57,7 +59,7 @@ export function SettingsUi() {
         <UiEntity uiTransform={{ flexDirection: 'column', pointerFilter: 'none' }}>
           <Label value="KINGDOM OF ANTROM" color={gold} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
             uiTransform={{ width: 300 * s, height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
-          <Label value="Settings" font="serif" color={white} fontSize={32 * s} textAlign="middle-left" textWrap="nowrap"
+          <Label value={t('Settings')} font="serif" color={white} fontSize={32 * s} textAlign="middle-left" textWrap="nowrap"
             uiTransform={{ width: 300 * s, height: 42 * s, flexShrink: 0, pointerFilter: 'none' }} />
         </UiEntity>
         <Action id="settings-close" text="×" onClick={closeSettings} width={38} height={38} scale={s} fontSize={26} accent="gold" />
@@ -65,7 +67,12 @@ export function SettingsUi() {
       <UiEntity uiTransform={{ width: 200 * s, height: 2 * s, margin: { bottom: 18 * s }, flexShrink: 0, pointerFilter: 'none' }}
         uiBackground={{ color: gold }} />
 
-      <Heading title="CAMERA" scale={s} />
+      <Heading title={t('LANGUAGE')} scale={s} />
+      <UiEntity uiTransform={{ width: '100%', height: 36 * s, margin: { bottom: 16 * s }, flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+        <LanguageRow scale={s} />
+      </UiEntity>
+
+      <Heading title={t('CAMERA')} scale={s} />
       {CAMERA_OPTIONS.map((option) => {
         const active = settings.camera === option.id
         const key = `camera-${option.id}`
@@ -77,12 +84,12 @@ export function SettingsUi() {
           onMouseEnter={() => { hovered = key }} onMouseLeave={() => { if (hovered === key) hovered = '' }}
           onMouseDown={() => { hovered = ''; setCameraPreference(option.id) }}>
           <UiEntity uiTransform={{ width: '100%', height: 24 * s, flexDirection: 'row', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
-            <Label value={option.name} font="serif" color={active ? gold : white} fontSize={18 * s} textAlign="middle-left" textWrap="nowrap"
+            <Label value={t(option.name)} font="serif" color={active ? gold : white} fontSize={18 * s} textAlign="middle-left" textWrap="nowrap"
               uiTransform={{ width: (inner - 140) * s, height: '100%', pointerFilter: 'none' }} />
-            <Label value={active ? 'Selected' : ''} color={gold} fontSize={11 * s} textAlign="middle-right" textWrap="nowrap"
+            <Label value={active ? t('Selected') : ''} color={gold} fontSize={11 * s} textAlign="middle-right" textWrap="nowrap"
               uiTransform={{ width: 100 * s, height: '100%', pointerFilter: 'none' }} />
           </UiEntity>
-          <Label value={option.blurb} color={muted} fontSize={11.5 * s} textAlign="middle-left" textWrap="nowrap"
+          <Label value={t(option.blurb)} color={muted} fontSize={11.5 * s} textAlign="middle-left" textWrap="nowrap"
             uiTransform={{ width: '100%', height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
         </UiEntity>
       })}
@@ -120,7 +127,7 @@ export function SettingsUi() {
         </UiEntity>
       </UiEntity>}
 
-      <Label value="Saved with your champion." color={muted} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
+      <Label value={t('Saved with your champion.')} color={muted} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={{ width: '100%', height: 20 * s, margin: { top: 18 * s }, flexShrink: 0, pointerFilter: 'none' }} />
     </UiEntity>
   </UiEntity>
