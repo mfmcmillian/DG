@@ -27,8 +27,8 @@ A key with no entry falls back to English, so a new string never breaks a
 language. `node scripts/i18n-extract.mjs` lists every key in the code, flags
 what each table is missing or has left over, and checks that `{placeholders}`
 survive translation. Realm, fortress, skill, set, weapon and champion names
-stay English everywhere; the catalog's item descriptions are not translated
-yet.
+stay English everywhere; everything else, down to the wardrobe's item
+descriptions, is a key.
 
 ## Run locally
 

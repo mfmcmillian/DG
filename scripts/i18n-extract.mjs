@@ -8,7 +8,8 @@
 // data tables whose English is passed through `t()` at render time (difficulty
 // names, level and realm blurbs, class roles and labels, skill blurbs, weapon
 // class and rarity labels, equipment slot labels, camera options, appearance
-// names, the hall folk's titles, enemy names, boss phases and the raid's announcements).
+// names, the hall folk's titles, enemy names, boss phases, the raid's
+// announcements and the wardrobe's item descriptions).
 // Proper nouns (realm, fortress, skill, set, weapon and champion names) are
 // not keys: they read the same in every language.
 
@@ -76,6 +77,12 @@ literals('src/raid/colossusServer.ts', /announce\('[a-z]+',\s*'([^']+)'/g)
 for (const file of ['src/folkBodies.json', 'src/enemyBodies.json']) {
   const json = JSON.parse(readFileSync(join(root, file), 'utf8'))
   for (const entry of Object.values(json)) if (entry && typeof entry.title === 'string') add(entry.title, file)
+}
+// The wardrobe's item descriptions: the built-in pieces, the outfit sets and the loot weapons.
+literals('src/equipmentCatalog.ts', /"description":\s*"((?:[^"\\]|\\.)*)"/g)
+for (const file of ['src/outfitCatalog.json', 'src/weaponCatalog.json']) {
+  const json = JSON.parse(readFileSync(join(root, file), 'utf8'))
+  for (const item of json.items) if (typeof item.description === 'string') add(item.description, file)
 }
 literals('src/dungeon/rosters.ts', /^\s+name: '([^']+)'/gm) // enemy names, over the boss bar
 literals('src/bossBrain.ts', /phase === 3 \? '([^']+)' : phase === 2 \? '([^']+)' : '([^']+)'/g)

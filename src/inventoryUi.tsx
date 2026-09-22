@@ -203,7 +203,7 @@ export function InventoryUi() {
         textAlign="middle-left" textWrap="nowrap" uiTransform={rect(744, 579, 488, 22, s)} />
       <Label value={selected.name} font="serif" color={white} fontSize={25 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={rect(744, 601, 490, 34, s)} />
-      <Label value={selected.weapon ? `${selected.description}  ${weaponStatLine(selected)}` : selected.description}
+      <Label value={selected.weapon ? `${t(selected.description)}  ${weaponStatLine(selected)}` : t(selected.description)}
         color={muted} fontSize={12 * s} textAlign="middle-left"
         uiTransform={rect(744, 637, 490, 35, s)} />
       <Label value={status} color={error || locked ? coral : dirty ? gold : muted} fontSize={11 * s} textAlign="middle-left"

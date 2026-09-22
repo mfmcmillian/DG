@@ -7,8 +7,8 @@
 // what each table is missing.
 //
 // Proper nouns stay English everywhere: realm and fortress names, skill names,
-// armor set names, weapon names and the champions' names. The catalog's item
-// descriptions are not translated yet either.
+// armor set names, weapon names and the champions' names. Everything else,
+// down to the wardrobe's item descriptions, is a key.
 
 import es from './locales/es.json'
 import fr from './locales/fr.json'
