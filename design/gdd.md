@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Public experience title | Dungeons of Antrom (working title in the live build: Kingdom of Antrom) — IP & [Content Policy](https://decentraland.org/content/) self-check: permission documented — 3D assets are licensed Synty Studios packs (Synty EULA permits use in shipped games); names, characters, code and UI are original |
+| Public experience title | Dungeons of Antrom — IP & [Content Policy](https://decentraland.org/content/) self-check: permission documented — 3D assets are licensed Synty Studios packs (Synty EULA permits use in shipped games); names, characters, code and UI are original |
 | Deployment target | Genesis City, base parcel `-17,123` (6×6, live) |
 | Studio / team name | KOA |
 | Date | 2026-09-22 |
@@ -181,7 +181,7 @@ Synty low-poly fantasy kits (Dark Fortress, Fantasy Kingdom, Dwarven) seen from 
 
 | Week | What is playable / done |
 |---|---|
-| 1 — Prototype definition (20 h) | Rename to Dungeons of Antrom in the title card and listing; Warlord's prize paid only to heroes who hit the boss; hero level shown on party seats; **weekly fastest-clear board** on the server with a Monday 00:00 UTC reset and the clear screen showing rank and gap. Playable: a run ends with "4th this week, 11 s behind Korrin". |
+| 1 — Prototype definition (20 h) | Warlord's prize paid only to heroes who hit the boss; hero level shown on party seats; **weekly fastest-clear board** on the server with a Monday 00:00 UTC reset and the clear screen showing rank and gap. Playable: a run ends with "4th this week, 11 s behind Korrin". |
 | 2 — Core interaction + first-group test (20 h) | **Forge Lord**: reforge and temper +1/+2/+3 with the visible trim; coin prices set from the clear-yield arithmetic. Milestone playtest at the social threshold: two players, one party, the board and the forge both used in one session; watch one true newcomer for §2's timings. |
 | 3 — Core systems refinement (20 h) | **Touch layer**: move stick, tap/hold attack, block and roll buttons, two skill buttons, trigger areas at the war table, wardrobe and circle; run UI moved to the bottom third. Desktop unchanged. Asset pass begins: strip unused models from the deploy (453 MB in the repo against ~186 MB shipped). |
 | 4 — Playable prototype, final design direction (20 h) | **Mobile playtest** on the named phone: a first-time phone player clearing three rooms on touch and the 30 fps check at four players; fix what fails, load per-realm assets on demand if the frame rate demands it. Board, forge and touch all live at `-17,123`; design direction locked from the week-2 and week-4 sessions. |

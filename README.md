@@ -15,7 +15,7 @@ headless host owns enemies, loot and hero health; each hero is a synced
 from it (native avatars are hidden scene-wide).
 
 **Play it:** [Genesis City, -17,123](https://play.decentraland.org/?NETWORK=mainnet&position=-17,123)
-(6×6 parcels; the live build still shows the working title *Kingdom of Antrom*).
+(6×6 parcels).
 
 **Design:** the Game Design Document for Decentraland's Creator Success
 programme is at [`design/gdd.md`](design/gdd.md); `design/` also holds the
