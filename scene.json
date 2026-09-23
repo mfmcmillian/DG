@@ -6,14 +6,14 @@
     "0xfe2d424af0df49bb3316cb2e9f574b0d09cf98ad"
   ],
   "display": {
-    "title": "Kingdom of Antrom",
-    "description": "Co-op dungeon crawler. Pick a hero — Vanguard, Berserker, Scout or Striker — and fight down through the Dark Fortress, the Fallen Crown and the Dwarven Forge with your party. Every run is a new layout; every boss drops a weapon to keep.",
+    "title": "Dungeons of Antrom",
+    "description": "Co-op dungeon crawler. Pick a hero — Vanguard, Berserker, Scout or Striker — and fight down through the Dark Fortress, the Fallen Crown and the Dwarven Forge with your party. Three minutes a fortress, bring friends; every Warlord can drop a piece of the armor you wear back into the hall.",
     "navmapThumbnail": "images/scene-thumbnail.png",
     "favicon": "favicon_asset"
   },
   "owner": "",
   "contact": {
-    "name": "Kingdom of Antrom",
+    "name": "Dungeons of Antrom",
     "email": ""
   },
   "main": "bin/index.js",

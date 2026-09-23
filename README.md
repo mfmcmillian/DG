@@ -1,14 +1,25 @@
-# DG — Dark Fortress Dungeon
+# Dungeons of Antrom
 
-A co-op dungeon crawler for Decentraland (SDK7). A procedurally generated
-Synty *Dark Fortress* dungeon, explored with a top-down crawler camera:
-build a hero, fight roaming enemies with a light/heavy/block/roll combat
-kit, collect loot, and take down the Warlord boss. Multiplayer runs on the
-SDK's authoritative server: the headless host owns enemies, loot and hero
-health; each hero is a synced `HeroBody` entity, and every client builds the
-other players' custom bodies from it (native avatars are hidden scene-wide).
+*You are a champion of Antrom. You raid fortresses with a party for gear you
+keep, while every run takes three minutes.*
 
-Live at **SpaceMatt.dcl.eth** (6×6 parcels).
+A co-op dungeon crawler for Decentraland (SDK7): seven fortresses across
+three realms (The Dark Fortress, The Fallen Crown, The Dwarven Forge), built
+from Synty kits and explored with a top-down crawler camera. Pick one of four
+champions, form a party of up to four in the Hall of Antrom, fight room to
+room with a light/heavy/block/roll combat kit, slay the Warlord, and wear
+what he drops back into the hall. An eight-hero raid, The Pit of Chains,
+waits under the hall. Multiplayer runs on the SDK's authoritative server: the
+headless host owns enemies, loot and hero health; each hero is a synced
+`HeroBody` entity, and every client builds the other players' custom bodies
+from it (native avatars are hidden scene-wide).
+
+**Play it:** [Genesis City, -17,123](https://play.decentraland.org/?NETWORK=mainnet&position=-17,123)
+(6×6 parcels; the live build still shows the working title *Kingdom of Antrom*).
+
+**Design:** the Game Design Document for Decentraland's Creator Success
+programme is at [`design/gdd.md`](design/gdd.md); `design/` also holds the
+hypothesis log, decisions and ideas that grew with it.
 
 ## Controls
 

@@ -13,7 +13,7 @@ import { HUB_LEVEL } from './shared/levels'
  * for the scene's measurements only; runs generate their own level from its seed.
  */
 export function initServer() {
-  console.log('[Server] Kingdom of Antrom host starting')
+  console.log('[Server] Dungeons of Antrom host starting')
   loadDungeon(HUB_LEVEL.seed, HUB_LEVEL.style)
   initializeCombatFx()
   initializeLoot()

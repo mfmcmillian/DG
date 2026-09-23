@@ -147,7 +147,7 @@ export function InventoryUi() {
     position: { left: 0, top: 0 }, pointerFilter: 'none' }}>
     <UiEntity uiTransform={{ width, height, positionType: 'absolute', position: { left: x, top: y }, pointerFilter: 'none' }}>
       <UiEntity uiTransform={{ ...rect(0, 0, 600, 76, s), flexDirection: 'column' }}>
-        <Label value="KINGDOM OF ANTROM" color={gold} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
+        <Label value="DUNGEONS OF ANTROM" color={gold} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
           uiTransform={{ width: '100%', height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
         <Label value={t('Equipment')} font="serif" color={white} fontSize={32 * s} textAlign="middle-left" textWrap="nowrap"
           uiTransform={{ width: '100%', height: 44 * s, flexShrink: 0, pointerFilter: 'none' }} />

@@ -203,7 +203,7 @@ function TitleScreen() {
     uiBackground={kitTexture(UI_KIT.titleBg)}>
     <UiEntity uiTransform={{ positionType: 'absolute', position: { left: x, top }, width: 520 * s,
       flexDirection: 'column', alignItems: 'flex-start', pointerFilter: 'none' }}>
-      <Label value="KINGDOM OF ANTROM" color={gold} fontSize={14 * s} textAlign="middle-left" textWrap="nowrap"
+      <Label value="DUNGEONS OF ANTROM" color={gold} fontSize={14 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={{ width: 480 * s, height: 22 * s, flexShrink: 0, pointerFilter: 'none' }} />
       <Label value={t('The Dungeon')} font="serif" color={white} fontSize={56 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={{ width: 520 * s, height: 70 * s, flexShrink: 0, pointerFilter: 'none' }} />
@@ -295,7 +295,7 @@ function Picker() {
     <HallVeil />
     <UiEntity uiTransform={{ width, height, positionType: 'absolute', position: { left: x, top: y }, pointerFilter: 'none' }}>
       <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width: 700 * s, flexDirection: 'column', pointerFilter: 'none' }}>
-        <Label value="KINGDOM OF ANTROM" color={gold} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
+        <Label value="DUNGEONS OF ANTROM" color={gold} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
           uiTransform={{ width: '100%', height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
         <Label value={state.hasCreatedCharacter ? t('Your champion') : t('Choose your champion')} font="serif" color={white} fontSize={32 * s}
           textAlign="middle-left" textWrap="nowrap"
