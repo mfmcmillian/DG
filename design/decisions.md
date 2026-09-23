@@ -2,6 +2,7 @@
 
 *Append-only, newest first: date · decision · why.*
 
+- 2026-09-22 · V1 is hooks plus polish (UI, audio, a distinct boss per existing realm) plus mobile, not a mobile-only round · owner's correction after the Bay letter read as "V1 is just mobile"; no new fortresses
 - 2026-09-22 · Requested round is v0; the §9 plan is the proposed V1 follow-on · the programme page states the first application is always V0
 - 2026-09-22 · Mobile touch controls are in the V1 scope, not deferred · owner's correction; roll is a button, not a gesture, because the mobile client has no gesture support
 - 2026-09-22 · Coins are spent at the Forge Lord (reforge, temper +1/+2/+3 with visible trim) · the only sink that grows with the set hunt and shows on other players
