@@ -1,4 +1,4 @@
-import { AvatarLocomotionSettings, engine, Entity, SkyboxTime } from '@dcl/sdk/ecs'
+import { AvatarLocomotionSettings, engine, Entity } from '@dcl/sdk/ecs'
 import { isServer as isServerApi } from '~system/EngineApi'
 import './shared/messages'
 import { initServer } from './server'
@@ -55,8 +55,7 @@ export async function main() {
 
 function initClient() {
   installNetDebug()
-  // Deep night so the torches carry the lighting.
-  SkyboxTime.create(engine.RootEntity, { fixedTime: 1800 })
+  // The sky is the player's: no fixed time of day, the torches carry the rooms whatever the hour.
   // The title waits only on the hall (see preloadPlan); heroes and realms
   // download behind it and each door waits on its own group.
   planPreload()
