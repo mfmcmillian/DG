@@ -5,7 +5,7 @@
 
 import { engine, InputModifier, PointerLock } from '@dcl/sdk/ecs'
 import { CameraChoice, getDungeonState, setCameraChoice } from './dungeon'
-import { parsePrefs, prefsOpenAll } from './shared/prefs'
+import { CAMERA_DEFAULT_GENERATION, parsePrefs, prefsOpenAll } from './shared/prefs'
 import { getLanguage, isLanguage, Language, setLanguage } from './i18n'
 
 /** The two cameras a player picks between; `native` stays a developer option. */
@@ -95,14 +95,20 @@ export function applyCameraSetting() {
 // --- persistence (hero save) --------------------------------------------------------------
 
 export function serializeSettings(): string {
-  return JSON.stringify({ camera: settings.camera, dev: settings.devTools ? 1 : 0, open: settings.openAll ? 1 : 0, lang: settings.language })
+  return JSON.stringify({
+    camera: settings.camera, camV: CAMERA_DEFAULT_GENERATION,
+    dev: settings.devTools ? 1 : 0, open: settings.openAll ? 1 : 0, lang: settings.language
+  })
 }
 
 export function loadSettings(json: string) {
   if (json) {
     const value = parsePrefs(json)
-    // Over the shoulder is the default; only a save that asked for the overhead camera keeps it.
-    settings.camera = value.camera === 'crawler' ? 'crawler' : 'shoulder'
+    // Over the shoulder is the default. Only a save written under the current
+    // default generation that asked for the overhead camera keeps it; older
+    // saves carry `crawler` whether or not the player ever chose it.
+    const chosenUnderCurrentDefault = value.camV === CAMERA_DEFAULT_GENERATION
+    settings.camera = chosenUnderCurrentDefault && value.camera === 'crawler' ? 'crawler' : 'shoulder'
     settings.devTools = value.dev === 1 || value.dev === true
     settings.openAll = prefsOpenAll(json)
     // A save from before languages, or one made in another session's tongue,
