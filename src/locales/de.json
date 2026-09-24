@@ -791,5 +791,11 @@
   "CONTROLS": "STEUERUNG",
   "Light blow": "Leichter Schlag",
   "Heavy blow": "Schwerer Schlag",
-  "Hold, near folk or the war table": "Halten, bei den Leuten oder am Kriegstisch"
+  "Hold, near folk or the war table": "Halten, bei den Leuten oder am Kriegstisch",
+  "Leave the fortress": "Festung verlassen",
+  "Leave the fortress?": "Festung verlassen?",
+  "Leave": "Gehen",
+  "Stay": "Bleiben",
+  "The run ends and you walk back to the hall. Your coins and experience stay with you.": "Der Lauf endet und du kehrst in die Halle zurück. Münzen und Erfahrung bleiben dir.",
+  "You walk back to the hall; your party fights on without you. Your coins and experience stay with you.": "Du kehrst in die Halle zurück; deine Gruppe kämpft ohne dich weiter. Münzen und Erfahrung bleiben dir."
 }

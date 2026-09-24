@@ -546,12 +546,43 @@ function HintStrip({ width, bottom, scale: s }: { width: number; bottom: number;
   </UiEntity>
 }
 
+/** The way out of a fight: a door button while a run is on, and a question before it is taken. */
+let leaveAsked = false
+
+function LeaveConfirm({ width, height, scale: s }: { width: number; height: number; scale: number }) {
+  const party = myParty()
+  if (!leaveAsked) return null
+  if (!party || party.state !== 'running' || inRaid()) {
+    leaveAsked = false
+    return null
+  }
+  const alone = party.members.length <= 1
+  const boxWidth = Math.min(440 * s, width * 0.7)
+  return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width, height, justifyContent: 'center', alignItems: 'center', pointerFilter: 'block' }}
+    uiBackground={{ color: Color4.create(0.01, 0.02, 0.03, 0.55) }}>
+    <UiEntity uiTransform={{ width: boxWidth, flexDirection: 'column', alignItems: 'center', padding: { top: 18 * s, bottom: 16 * s, left: 20 * s, right: 20 * s },
+      borderRadius: 8 * s, borderWidth: s, borderColor: gold, pointerFilter: 'block' }} uiBackground={{ color: hoverPanel }}>
+      <Label value={t('Leave the fortress?')} color={gold} font="serif" fontSize={24 * s} textAlign="middle-center" textWrap="nowrap"
+        uiTransform={{ width: '100%', height: 32 * s, pointerFilter: 'none' }} />
+      <Label value={alone ? t('The run ends and you walk back to the hall. Your coins and experience stay with you.') : t('You walk back to the hall; your party fights on without you. Your coins and experience stay with you.')}
+        color={white} font="sans-serif" fontSize={12 * s} textAlign="middle-center" textWrap="wrap"
+        uiTransform={{ width: '100%', height: 44 * s, margin: { top: 6 * s, bottom: 12 * s }, pointerFilter: 'none' }} />
+      <UiEntity uiTransform={{ flexDirection: 'row', justifyContent: 'center', pointerFilter: 'none' }}>
+        <MenuAction id="leave-run-yes" text={t('Leave')} onClick={() => { leaveAsked = false; leaveParty() }} width={150} height={40} scale={s} fontSize={14} primary />
+        <UiEntity uiTransform={{ width: 10 * s, pointerFilter: 'none' }} />
+        <MenuAction id="leave-run-no" text={t('Stay')} onClick={() => { leaveAsked = false }} width={150} height={40} scale={s} fontSize={14} accent="gold" />
+      </UiEntity>
+    </UiEntity>
+  </UiEntity>
+}
+
 export function WorldHudUi() {
   const { width, height, scale: s, right, bottom, vitalsTop } = hudLayout()
   const created = getPickerState().hasCreatedCharacter
   const player = getPlayerCharacterState()
   const ready = created && player.active && player.loading === 'ready'
   const inHub = myPhase() === HUB && !getLobbyState().open
+  const canLeave = ready && inRun() && !inRaid()
   // The skill bar sits at the foot of the screen; the prompts that used to stand there move up over it.
   const showBar = ready && !getLobbyState().open
   const lift = showBar ? SKILL_BAR_HEIGHT * s + 6 * s : 0
@@ -579,12 +610,14 @@ export function WorldHudUi() {
         uiTransform={{ width: '100%', height: 12 * s, pointerFilter: 'none' }} />)}
     </UiEntity>}
     {created && <UiEntity uiTransform={{ positionType: 'absolute', position: { right, bottom },
-      width: (inHub ? 228 : 168) * s, height: 48 * s, flexDirection: 'row', justifyContent: 'space-between', pointerFilter: 'none' }}>
+      width: (inHub || canLeave ? 228 : 168) * s, height: 48 * s, flexDirection: 'row', justifyContent: 'space-between', pointerFilter: 'none' }}>
       {inHub && <IconButton id="dungeons" label={myParty() ? t('Party') : t('Dungeons')} icon="images/hud/dungeons.png" scale={s} disabled={!ready} onClick={openLobby} />}
+      {canLeave && <IconButton id="leave-run" label={t('Leave the fortress')} icon="images/hud/leave.png" scale={s} onClick={() => { leaveAsked = true }} />}
       <IconButton id="inventory" label={t('Inventory')} icon="images/hud/inventory.png" scale={s} disabled={!ready} onClick={openInventory} />
       <IconButton id="character" label={t('Edit character')} icon="images/hud/character.png" scale={s} onClick={openPicker} />
       <IconButton id="settings" label={t('Settings')} icon="images/hud/settings.png" scale={s} onClick={openSettings} />
     </UiEntity>}
+    {canLeave && <LeaveConfirm width={width} height={height} scale={s} />}
     {!created && <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - 250 * s) / 2, bottom },
       width: 250 * s, flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
       <Label value={t('Make a character to begin.')} color={muted} font="sans-serif" fontSize={13 * s} textWrap="nowrap"

@@ -791,5 +791,11 @@
   "CONTROLS": "操作",
   "Light blow": "弱攻撃",
   "Heavy blow": "強攻撃",
-  "Hold, near folk or the war table": "長押し：人々や作戦卓の近くで"
+  "Hold, near folk or the war table": "長押し：人々や作戦卓の近くで",
+  "Leave the fortress": "要塞を去る",
+  "Leave the fortress?": "要塞を去る？",
+  "Leave": "去る",
+  "Stay": "残る",
+  "The run ends and you walk back to the hall. Your coins and experience stay with you.": "探索は終わり、広間へ戻る。コインと経験値はそのまま。",
+  "You walk back to the hall; your party fights on without you. Your coins and experience stay with you.": "広間へ戻る。パーティーはあなた抜きで戦い続ける。コインと経験値はそのまま。"
 }

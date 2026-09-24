@@ -791,5 +791,11 @@
   "CONTROLS": "COMMANDES",
   "Light blow": "Coup léger",
   "Heavy blow": "Coup lourd",
-  "Hold, near folk or the war table": "Maintenir, près des gens ou de la table de guerre"
+  "Hold, near folk or the war table": "Maintenir, près des gens ou de la table de guerre",
+  "Leave the fortress": "Quitter la forteresse",
+  "Leave the fortress?": "Quitter la forteresse ?",
+  "Leave": "Partir",
+  "Stay": "Rester",
+  "The run ends and you walk back to the hall. Your coins and experience stay with you.": "L'expédition prend fin et vous rentrez à la salle. Vos pièces et votre expérience restent avec vous.",
+  "You walk back to the hall; your party fights on without you. Your coins and experience stay with you.": "Vous rentrez à la salle ; votre groupe continue sans vous. Vos pièces et votre expérience restent avec vous."
 }
