@@ -10,7 +10,7 @@ export const SCENE_SIZE = 96
  * are the Dark Fortress; every later realm (Synty pack exported through
  * scripts/realms/) is one more entry here.
  */
-export type StyleId = 'tight' | 'open' | 'hall' | 'castle' | 'forge' | 'pit'
+export type StyleId = 'tight' | 'open' | 'gauntlet' | 'hall' | 'castle' | 'forge' | 'pit'
 
 export interface DungeonStyle {
   id: StyleId
@@ -121,6 +121,43 @@ export const STYLES: Record<StyleId, DungeonStyle> = {
       treasure: ['chest', 'crystal', 'rune', 'urn', 'crystal', 'rubble'],
       combat: ['cage', 'rubble', 'bones', 'skulls', 'urn', 'brazier'],
       quiet: ['table', 'chair', 'urn', 'rubble', 'rune', 'bones']
+    },
+    bossCentrepiece: 'statue',
+    cutawayWall: 'parapet',
+    torchLightCount: 8,
+    torchLightIntensity: 900,
+    torchLightRange: 22,
+    floorTexture: FLOOR_TEXTURE
+  },
+  /**
+   * The one dungeon: the Dark Fortress drawn by hand in ./gauntlet.ts as a
+   * line of rooms (Dungeon Quest shape). Same kit and camera as `open`; the
+   * generator settings below are never used for it.
+   */
+  gauntlet: {
+    id: 'gauntlet',
+    label: 'The Dark Fortress',
+    tile: 5,
+    size: 18,
+    wallHeight: 6,
+    entranceSize: 2,
+    minLeaf: 4,
+    maxLeaf: 6,
+    minRoom: 2,
+    ceiling: false,
+    firstPerson: false,
+    walls: ['wall_l_a', 'wall_l_a', 'wall_l_a', 'wall_l_b', 'wall_l_window'],
+    door: 'wall_l_arch',
+    pillar: 'pillar_l',
+    torch: 'torch_wall',
+    torchHeight: 3.2,
+    torchEvery: 2,
+    props: {
+      entrance: ['torch_stand', 'banner', 'torch_stand', 'banner'],
+      boss: ['brazier', 'banner', 'cage', 'skulls', 'brazier', 'bones'],
+      treasure: ['chest', 'crystal', 'rune', 'urn', 'crystal', 'rubble'],
+      combat: ['cage', 'rubble', 'bones', 'skulls', 'urn', 'brazier'],
+      quiet: ['torch_stand', 'rubble', 'bones', 'torch_stand']
     },
     bossCentrepiece: 'statue',
     cutawayWall: 'parapet',

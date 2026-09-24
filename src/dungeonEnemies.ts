@@ -6,7 +6,7 @@
 // Presentation (particles, numbers, sounds, telegraph decals, camera kicks,
 // hit-stop) lives in combatFx; loot in loot.ts.
 
-import { EasingFunction, engine, Entity, Transform, Tween } from '@dcl/sdk/ecs'
+import { ColliderLayer, EasingFunction, engine, Entity, Material, MeshCollider, MeshRenderer, Transform, Tween } from '@dcl/sdk/ecs'
 import { Color3, Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
 import { COURTYARD } from './courtyard'
 import { ArmorRealm, DEFAULT_LOADOUTS, EquipmentLoadout, getEquipmentItemOrNull } from './equipmentCatalog'
@@ -49,6 +49,7 @@ import { edgeMidpoint, sideInward, sideYaw } from './dungeon/layout'
 import { Archetype, Roster, rosterFor } from './dungeon/rosters'
 import { Dungeon, generateDungeon, RoomKind, Side } from './dungeon/generator'
 import { authoredLayout } from './dungeon/layouts'
+import { Stage, stageAtCell, STAGES, WAVE_GAP_SECONDS, wavePlaces, WaveUnit } from './dungeon/gauntlet'
 import {
   DifficultyDefinition, difficultyById, HUB_LEVEL, LevelDefinition, levelById, RAID_PARTY
 } from './shared/levels'
@@ -114,7 +115,15 @@ type Enemy = CombatPose & {
   strayed: boolean
   /** Cached grid route toward whatever the enemy last walked to. */
   path?: EnemyPath
+  /** Gauntlet: not arrived yet. Unseen, untargetable, and takes no part until its wave is called. */
+  asleep: boolean
+  /** Gauntlet: which stage and wave the enemy belongs to (-1 elsewhere). */
+  stage: number
+  wave: number
 }
+
+/** A sealed doorway in the gauntlet (client only): the way on out of a stage, lifted once the stage is cleared. */
+type Gate = { stage: number; entity: Entity; open: boolean }
 
 type EnemyPath = { key: string; cells: Array<{ cx: number; cy: number }>; age: number }
 
@@ -189,6 +198,8 @@ type Sim = {
   traps: Array<{ x: number; z: number; radius: number; damage: number; cool: number }>
   /** Host-owned skill zones (a slam's ring, burning ground, falling arrows) still delivering blows. */
   zones: Zone[]
+  /** The gauntlet's bookkeeping when the level is one (src/dungeon/gauntlet.ts). */
+  gauntlet?: { waveTimer: number; gates: Gate[] }
 }
 
 /** A zone skill the host is resolving: the ground it covers and the blows it has left. */
@@ -330,6 +341,7 @@ export function destroyRunSim(party: string) {
   const s = sims.get(party)
   if (!s) return
   for (const e of s.enemies) despawn(e)
+  destroyGates(s)
   sims.delete(party)
   if (sim === s) sim = undefined
 }
@@ -382,6 +394,7 @@ function postedDoorHome(dungeon: Dungeon, room: { x: number; y: number; w: numbe
 function populate(dungeon: Readonly<DungeonState>) {
   if (clientSim) {
     for (const e of clientSim.enemies) despawn(e)
+    destroyGates(clientSim)
     clientSim = undefined
   }
   clearLoot()
@@ -417,6 +430,11 @@ function createSim(
   sim = s
   const healthScale = level.health * diff.health
   const roster = rosterFor(style.id)
+  if (style.id === 'gauntlet') {
+    spawnGauntlet(s, roster, healthScale, diff.extra)
+    sim = previous ?? s
+    return s
+  }
   // Spawn points come straight from the rooms, so the server and every member
   // enumerate the same enemies in the same order (the snapshot index).
   let index = 0
@@ -449,6 +467,186 @@ function createSim(
   }
   sim = previous ?? s
   return s
+}
+
+// --- the gauntlet -----------------------------------------------------------------
+
+/** The roster's guard grown into a room's sole occupant. */
+function wardenOf(roster: Roster, name: string): Archetype {
+  const g = roster.guard
+  return {
+    ...g, name, health: Math.round(g.health * 4.5), scale: g.scale * 1.2, damageScale: g.damageScale * 1.3, aggro: 9, speed: g.speed * 1.05,
+    profile: { ...g.profile, blockChance: 0.3, pace: 1.0 }
+  }
+}
+
+function unitArchetype(unit: WaveUnit, roster: Roster, stage: Stage): Archetype {
+  switch (unit) {
+    case 'boss': return roster.boss
+    case 'warden': return wardenOf(roster, stage.name.replace(/^The /, ''))
+    case 'guard': return roster.guard
+    case 'scout': return roster.scout
+    default: return roster.striker
+  }
+}
+
+/** How far a gauntlet enemy will chase from where it arrived: the whole room and the corridor beyond. */
+const GAUNTLET_LEASH = 30
+
+/**
+ * Every enemy of every wave is spawned up front, asleep, so the snapshot index
+ * is the same on the host and every member; a wave is woken when its turn comes.
+ */
+function spawnGauntlet(s: Sim, roster: Roster, healthScale: number, extra: number) {
+  s.gauntlet = { waveTimer: 0, gates: [] }
+  STAGES.forEach((stage, si) => {
+    stage.waves.forEach((wave, wi) => {
+      const units: WaveUnit[] = [...wave]
+      // Harder settings add to every wave of grunts, never to a warden or the Warlord alone.
+      if (stage.kind === 'combat') for (let i = 0; i < extra; i++) units.push(i % 2 === 0 ? 'striker' : 'scout')
+      const places = wavePlaces(stage, units.length)
+      units.forEach((unit, k) => {
+        const archetype = { ...unitArchetype(unit, roster, stage), leash: GAUNTLET_LEASH }
+        const c = cellCenter(s.style, places[k][0], places[k][1])
+        // Face the door the party comes in by (facing 0 looks along +Z, south; PI/2 along +X).
+        const entryYaw = stage.entry === 's' ? 0 : stage.entry === 'n' ? Math.PI : stage.entry === 'w' ? -Math.PI / 2 : Math.PI / 2
+        const home: CombatPose = { position: Vector3.create(c.x, COURTYARD.characterFloorY, c.z), facing: entryYaw }
+        const e = spawnEnemy(home, archetype, unit === 'boss')
+        e.maxHealth = Math.round(archetype.health * healthScale)
+        e.health = e.maxHealth
+        e.asleep = true
+        e.stage = si
+        e.wave = wi
+        s.enemies.push(e)
+      })
+    })
+    if (stage.gate && !isHeadless()) s.gauntlet!.gates.push(buildGate(s, si, stage.gate))
+  })
+}
+
+/** A portcullis of dark iron across a doorway, with a collider, until the stage is cleared. */
+function buildGate(s: Sim, stage: number, gate: [[number, number], [number, number]]): Gate {
+  const [[x, y], [bx, by]] = gate
+  const side: Side = by < y ? 'n' : by > y ? 's' : bx < x ? 'w' : 'e'
+  const m = edgeMidpoint(s.style, { x, y, side })
+  const entity = engine.addEntity()
+  Transform.create(entity, {
+    position: Vector3.create(m.x, COURTYARD.characterFloorY + 2.25, m.z),
+    rotation: Quaternion.fromEulerDegrees(0, sideYaw(side), 0),
+    scale: Vector3.create(3.8, 4.5, 0.3)
+  })
+  MeshRenderer.setBox(entity)
+  MeshCollider.setBox(entity, ColliderLayer.CL_PHYSICS | ColliderLayer.CL_POINTER)
+  Material.setPbrMaterial(entity, {
+    albedoColor: Color4.create(0.16, 0.14, 0.15, 1), emissiveColor: Color3.create(0.6, 0.08, 0.03), emissiveIntensity: 1.4,
+    metallic: 0.7, roughness: 0.55
+  })
+  return { stage, entity, open: false }
+}
+
+function openGate(g: Gate) {
+  if (g.open) return
+  g.open = true
+  MeshCollider.deleteFrom(g.entity)
+  const t = Transform.get(g.entity)
+  Tween.createOrReplace(g.entity, {
+    mode: Tween.Mode.Move({ start: t.position, end: Vector3.create(t.position.x, t.position.y + 4.8, t.position.z) }),
+    duration: 1400, easingFunction: EasingFunction.EF_EASEINQUAD
+  })
+  fxSound('thunk_wood', 0.7)
+}
+
+function destroyGates(s: Sim) {
+  if (!s.gauntlet) return
+  for (const g of s.gauntlet.gates) engine.removeEntity(g.entity)
+  s.gauntlet.gates = []
+}
+
+/** Everything of a stage that has arrived is down, and nothing is left to arrive. */
+function stageCleared(s: Sim, stage: number): boolean {
+  return s.enemies.every((e) => e.stage !== stage || e.dead)
+}
+
+/** The stage the party is on: the first not yet cleared. */
+function currentStage(s: Sim): number {
+  for (let i = 0; i < STAGES.length; i++) if (!stageCleared(s, i)) return i
+  return STAGES.length
+}
+
+/** Host: call the waves. The first when a hero steps into the room, each next one a breath after the last falls. */
+function tickGauntlet(s: Sim, dt: number, fighters: NetFighter[]) {
+  const g = s.gauntlet
+  if (!g) return
+  const si = currentStage(s)
+  if (si >= STAGES.length) return
+  const mine = s.enemies.filter((e) => e.stage === si)
+  const awake = mine.filter((e) => !e.asleep)
+  if (awake.length === 0) {
+    // Nobody called yet: the first wave arrives when a living hero stands in the room.
+    const inside = fighters.some((f) => f.health > 0 && stageAtCell(simCell(f.position.x, f.position.z).cx, simCell(f.position.x, f.position.z).cy) === si)
+    if (inside) {
+      wakeWave(s, si, 0)
+      g.waveTimer = 0
+    }
+    return
+  }
+  if (awake.some((e) => !e.dead)) {
+    g.waveTimer = 0
+    return
+  }
+  const nextWave = Math.max(...awake.map((e) => e.wave)) + 1
+  if (nextWave >= STAGES[si].waves.length) return
+  g.waveTimer += dt
+  if (g.waveTimer >= WAVE_GAP_SECONDS) {
+    wakeWave(s, si, nextWave)
+    g.waveTimer = 0
+  }
+}
+
+function wakeWave(s: Sim, stage: number, wave: number) {
+  for (const e of s.enemies) if (e.stage === stage && e.wave === wave && e.asleep) wake(e)
+  if (isHost()) console.log(`[Server] run ${s.party}: ${STAGES[stage].name}, wave ${wave + 1}/${STAGES[stage].waves.length}`)
+}
+
+/** An enemy arrives: seen, armed, and looking for the party. */
+function wake(e: Enemy) {
+  if (!e.asleep) return
+  e.asleep = false
+  if (isHeadless()) return
+  if (e.loading === 'ready') {
+    show(e, true)
+    playMotion(e, e.boss ? 'menace_enter' : 'combat_idle', true)
+    syncTransform(e)
+  }
+  fxMagicBurst(Vector3.create(e.position.x, e.position.y + 0.9, e.position.z), Color4.create(0.85, 0.2, 0.1, 1), e.boss ? 1.1 : 0.55)
+  if (e.boss || e.archetype.role === 'elite') fxSound('roar', 0.5)
+  if (e.boss) showNotice(`${e.archetype.name}!`, 2)
+  else if (e.archetype.role === 'elite' && e.stage >= 0 && STAGES[e.stage]?.kind === 'warden') showNotice(`${e.archetype.name}!`, 2)
+}
+
+/** Client: lift the gates of cleared stages. */
+function tickGates(s: Sim) {
+  const g = s.gauntlet
+  if (!g) return
+  for (const gate of g.gates) {
+    if (gate.open || !stageCleared(s, gate.stage)) continue
+    openGate(gate)
+    showNotice(`${STAGES[gate.stage].name} cleared. The door opens.`, 2.5)
+  }
+}
+
+export type GauntletProgress = { stage: number; stages: number; name: string; wave: number; waves: number; alive: number; kind: Stage['kind'] }
+
+/** Client: where our run stands in the gauntlet, for the HUD; undefined outside one or once the Warlord is down. */
+export function gauntletProgress(): GauntletProgress | undefined {
+  const s = clientSim
+  if (!s?.gauntlet) return undefined
+  const si = currentStage(s)
+  if (si >= STAGES.length) return undefined
+  const stage = STAGES[si]
+  const mine = s.enemies.filter((e) => e.stage === si && !e.asleep)
+  const wave = mine.length ? Math.max(...mine.map((e) => e.wave)) + 1 : 0
+  return { stage: si, stages: STAGES.length, name: stage.name, wave, waves: stage.waves.length, alive: mine.filter((e) => !e.dead).length, kind: stage.kind }
 }
 
 function indexEdges(s: Sim) {
@@ -504,7 +702,7 @@ function spawnEnemy(home: CombatPose, archetype: Archetype, boss: boolean): Enem
     engaged: false, returningHome: false, dead: false, deadSeconds: 0, loading: isHeadless() ? 'ready' : 'loading', loadSeconds: 0,
     ring: createDecal('ring'), ritual: boss ? createDecal('ritual') : undefined, hitStop: 0, announced: false, stillSeconds: 0,
     bossBrain: boss ? createBossBrain() : undefined, hyperArmor: false, rollSeconds: 0, rollDir: 1,
-    provoked: 0, strayed: false
+    provoked: 0, strayed: false, asleep: false, stage: -1, wave: -1
   }
 }
 
@@ -591,9 +789,11 @@ function stepSim(dt: number, fighters: NetFighter[], local: ReturnType<typeof ge
   }
 
   if (isHost() && sim.zones.length) tickZones(dt)
+  if (isHost() && sim.gauntlet) tickGauntlet(sim, dt, fighters)
   if (!isHeadless()) {
     tickZoneFx(dt)
     tickAuraRings(dt)
+    if (sim.gauntlet) tickGates(sim)
   }
 
   if (isHost() && sim.traps.length && sim.graceSeconds === 0) {
@@ -627,10 +827,14 @@ function stepSim(dt: number, fighters: NetFighter[], local: ReturnType<typeof ge
         anyError = true
       } else if (loading === 'ready') {
         e.loading = 'ready'
-        show(e, true)
+        show(e, !e.asleep)
         playMotion(e, e.boss ? 'menace' : 'combat_idle', true)
         syncTransform(e)
       } else anyLoading = true
+      continue
+    }
+    if (e.asleep) {
+      updateBar(e)
       continue
     }
     if (e.dead) {
@@ -691,7 +895,7 @@ function stepSim(dt: number, fighters: NetFighter[], local: ReturnType<typeof ge
     }
   }
 
-  state.alive = enemies.filter((e) => !e.dead).length
+  state.alive = enemies.filter((e) => !e.dead && !e.asleep).length
   state.bossAlive = enemies.some((e) => e.boss && !e.dead)
   if (defeated) state.phase = 'defeat'
   else if (anyError) state.phase = 'error'
@@ -716,7 +920,7 @@ function stepSim(dt: number, fighters: NetFighter[], local: ReturnType<typeof ge
   } else if (!defeated) {
     state.telegraph = ''
     if (noticeSeconds === 0) {
-      state.message = state.alive === 0 && enemies.length > 0 ? 'The dungeon is cleared' : ''
+      state.message = state.alive === 0 && enemies.length > 0 && enemies.every((e) => e.dead) ? 'The dungeon is cleared' : ''
     }
   }
 }
@@ -732,6 +936,7 @@ function tickEnemyPresentation(e: Enemy, dt: number) {
 }
 
 function pickTarget(e: Enemy, fighters: NetFighter[]): NetFighter | undefined {
+  if (e.asleep) return undefined
   const living = fighters.filter((f) => f.health > 0 && simFloor(f.position.x, f.position.z) &&
     combatDistance(e.home, f) <= e.archetype.leash &&
     Math.abs(f.position.y - e.position.y) <= COMBAT_RULES.maximumVerticalReach + 1)
@@ -1112,7 +1317,7 @@ function pickHeroTarget(attacker: CombatPose, range: number, minDot: number, ver
     }
   }
   sim.enemies.forEach((e, index) => {
-    if (e.loading !== 'ready' || e.dead) return
+    if (e.loading !== 'ready' || e.dead || e.asleep) return
     consider(e, index)
   })
   trainingTargets().forEach((t, i) => consider(trainingBody(t, attacker), trainingIndex(i)))
@@ -1166,7 +1371,7 @@ function projectileTargets(): ProjectileTarget[] {
   const out: ProjectileTarget[] = []
   if (!clientSim || clientSim.paused) return out
   clientSim.enemies.forEach((e, index) => {
-    if (e.loading !== 'ready' || e.dead) return
+    if (e.loading !== 'ready' || e.dead || e.asleep) return
     out.push({ index, position: e.position, height: 1.85 * e.archetype.scale, radius: 0.45 * e.archetype.scale })
   })
   trainingTargets().forEach((t, i) => out.push({
@@ -1191,7 +1396,7 @@ function hitEnemies(motion: HeroAttackMotion, context: AttackContext) {
   let bestIndex = -1
   let bestDistance = Infinity
   sim.enemies.forEach((e, i) => {
-    if (e.loading !== 'ready' || e.dead || e.returningHome || !attackCanReach(attacker, e, motion)) return
+    if (e.loading !== 'ready' || e.dead || e.asleep || e.returningHome || !attackCanReach(attacker, e, motion)) return
     const d = combatDistance(attacker, e)
     if (d < bestDistance) {
       bestDistance = d
@@ -1260,7 +1465,7 @@ function shootEnemies(attacker: CombatPose, motion: HeroAttackMotion, context: A
         return
       }
       const e = sim.enemies[t.index]
-      if (!e || e.dead || e.loading !== 'ready') return
+      if (!e || e.dead || e.asleep || e.loading !== 'ready') return
       const shooter = getPlayerCombatPose() ?? attacker
       // Knockback goes the way the shot went, not the way the body has turned since.
       const dx = e.position.x - shooter.position.x
@@ -1281,7 +1486,7 @@ function applyRemoteHit(id: string, index: number, motion: string, finisher: boo
   sim = s
   const attack = asHeroAttack(motion)
   const e = s.enemies[index]
-  if (!attack || !e || e.dead || e.loading !== 'ready') return
+  if (!attack || !e || e.dead || e.asleep || e.loading !== 'ready') return
   const attacker = allFighters().find((f) => f.address === id)
   // Reach is checked on the server pose with slack for the lunge the client
   // already played; facing is not, because the body yaw is still client-owned.
@@ -1320,7 +1525,7 @@ function withMight(damage: number, might: number): number {
 
 function enemySnaps(): EnemySnap[] {
   return (sim?.enemies ?? []).map((e, i) => ({
-    i, x: e.position.x, z: e.position.z, f: e.facing, h: e.health, m: e.motion, dead: e.dead, engaged: e.engaged
+    i, x: e.position.x, z: e.position.z, f: e.facing, h: e.health, m: e.motion, dead: e.dead, engaged: e.engaged, a: !e.asleep
   }))
 }
 
@@ -1508,7 +1713,7 @@ function strikeWithSkill(def: SkillDef, e: Extract<SkillDef['effect'], { kind: '
   }
   const found: Array<{ d: number; enemy?: Enemy; index: number; dummy?: TrainingTarget }> = []
   sim.enemies.forEach((en, index) => {
-    if (en.loading !== 'ready' || en.dead || en.returningHome) return
+    if (en.loading !== 'ready' || en.dead || en.asleep || en.returningHome) return
     const d = inArc(en, en.archetype.scale)
     if (d !== undefined) found.push({ d, enemy: en, index })
   })
@@ -1579,7 +1784,7 @@ function landSkillShot(def: SkillDef, t: ProjectileTarget, at: Vector3, attacker
     return
   }
   const en = sim.enemies[t.index]
-  if (!en || en.dead || en.loading !== 'ready') return
+  if (!en || en.dead || en.asleep || en.loading !== 'ready') return
   const from = poseToward(shooter.position, en.position)
   presentPlayerStrike(from, en, def.motion as HeroAttackMotion, { finisher: false, skill: def }, at)
   if (isHost()) applySkillHit(from, en, def, { weapon: localWeapon(), might: localMight() })
@@ -1671,7 +1876,7 @@ function applyRemoteSkillHit(id: string, index: number, skill: string) {
   if (!def || !s) return
   sim = s
   const e = s.enemies[index]
-  if (!e || e.dead || e.loading !== 'ready') return
+  if (!e || e.dead || e.asleep || e.loading !== 'ready') return
   const attacker = allFighters().find((f) => f.address === id)
   if (!attacker) return
   const cid = heroCharacters((owner) => owner === id)[0]
@@ -1757,7 +1962,7 @@ function zoneTick(z: Zone) {
   if (!sim || z.def.effect.kind !== 'zone') return
   const radius = z.def.effect.radius
   for (const e of sim.enemies) {
-    if (e.loading !== 'ready' || e.dead) continue
+    if (e.loading !== 'ready' || e.dead || e.asleep) continue
     const dx = e.position.x - z.x
     const dz = e.position.z - z.z
     if (Math.sqrt(dx * dx + dz * dz) > radius + 0.45 * e.archetype.scale) continue
@@ -2134,6 +2339,8 @@ function applyEnemySnapshots(party: string, list: EnemySnap[]) {
     e.facing = snap.f
     e.health = snap.h
     e.engaged = snap.engaged
+    if (snap.a && e.asleep) wake(e)
+    if (e.asleep) continue
     if (snap.dead && !e.dead) clientSim.slain++
     if (snap.dead) presentDeath(e)
     else if (!e.dead) {
@@ -2397,7 +2604,7 @@ function separate(e: Enemy, target: CombatPose) {
   // the whole queue jams against the jambs.
   if (nearDoor(e.position)) return
   for (const other of sim?.enemies ?? []) {
-    if (other === e || other.dead || other.loading !== 'ready') continue
+    if (other === e || other.dead || other.asleep || other.loading !== 'ready') continue
     const distance = combatDistance(e, other)
     if (distance >= COMBAT_RULES.bodySeparation || distance < 0.0001) continue
     const push = (COMBAT_RULES.bodySeparation - distance) / 2

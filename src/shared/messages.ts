@@ -12,7 +12,9 @@ const EnemySnap = Schemas.Map({
   h: Schemas.Number,
   m: Schemas.String,
   dead: Schemas.Boolean,
-  engaged: Schemas.Boolean
+  engaged: Schemas.Boolean,
+  /** Arrived (gauntlet waves): false while the enemy waits unseen for its wave. */
+  a: Schemas.Boolean
 })
 
 const PartySnap = Schemas.Map({

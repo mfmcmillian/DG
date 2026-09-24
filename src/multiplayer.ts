@@ -28,6 +28,8 @@ export type EnemySnap = {
   m: EquipmentMotion
   dead: boolean
   engaged: boolean
+  /** Arrived; false while asleep ahead of its wave. */
+  a: boolean
 }
 
 export type ImpactNet = {

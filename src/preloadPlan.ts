@@ -16,7 +16,7 @@ import { getCommittedLoadout } from './equipmentState'
 import { isPreloadComplete, preloadGroup, PreloadGroup } from './preload'
 import { projectileAssets } from './projectiles'
 import { partSources } from './raid/colossusPose'
-import { LEVELS, RAID_LEVEL, REALMS } from './shared/levels'
+import { LEVELS, RAID_LEVEL, RAID_OPEN, REALMS } from './shared/levels'
 import { t } from './i18n'
 
 /** The hall the title looks out on, plus the small FX set every run uses. */
@@ -31,7 +31,7 @@ export function realmGroupId(style: StyleId) {
 }
 
 function realmLabel(style: StyleId) {
-  return REALMS.find((r) => r.style === style)?.name ?? t('the dungeon')
+  return LEVELS.find((l) => l.style === style)?.name ?? REALMS.find((r) => r.style === style)?.name ?? t('the dungeon')
 }
 
 /** The saved or chosen champion's outfit and weapon; `urgent` when a button waits on it. */
@@ -88,5 +88,5 @@ export function planPreload() {
   if (styles.length) requestRealmPreload(styles[0])
   for (const c of CHARACTERS) requestHeroPreload(c.id, getCommittedLoadout(c.id))
   for (const style of styles.slice(1)) requestRealmPreload(style)
-  requestRealmPreload(RAID_LEVEL.style)
+  if (RAID_OPEN) requestRealmPreload(RAID_LEVEL.style)
 }

@@ -17,7 +17,7 @@ import { isRealmPreloaded } from './preloadPlan'
 import { t } from './i18n'
 import { getPickerState } from './characterPicker'
 import { getPlayerCharacterState } from './playerCharacter'
-import { DIFFICULTIES, difficultyById, HUB_LEVEL, levelById, LEVELS, nextLevel, RAID_PARTY, realmOfLevel } from './shared/levels'
+import { DIFFICULTIES, difficultyById, HUB_LEVEL, levelById, LEVELS, RAID_PARTY } from './shared/levels'
 
 /** What the player has picked in the lobby before they have a party of their own. */
 let pickLevel = 0
@@ -435,11 +435,10 @@ function enterHub() {
 function bannerFor(result: RunResult | undefined): string {
   if (!result) return ''
   const level = LEVELS[result.level]
-  if (!result.won) return t('The party fell in {level}. Pick your next fight.', { level: level?.name ?? t('the fortress') })
-  const next = nextLevel(result.level)
-  if (next) return t('{level} cleared. {next} is open to you.', { level: level?.name ?? t('The fortress'), next: next.name })
+  const outOfTime = (level?.seconds ?? 0) > 0 && result.time >= (level?.seconds ?? 0)
+  if (!result.won) return outOfTime ? t('Time ran out in {level}. Go again.', { level: level?.name ?? t('the fortress') }) : t('The party fell in {level}. Go again.', { level: level?.name ?? t('the fortress') })
   const diff = difficultyById(result.diff)
-  return t('{level} cleared on {difficulty}. All of {realm} has fallen to you.', { level: level?.name ?? t('The last fortress'), difficulty: t(diff.name), realm: realmOfLevel(result.level).name })
+  return t('{level} cleared on {difficulty}.', { level: level?.name ?? t('The fortress'), difficulty: t(diff.name) })
 }
 
 export function levelName(id: number): string {

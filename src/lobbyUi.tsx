@@ -1,9 +1,9 @@
-// The hall's lobby. One button: Go. It makes a party of one whose doors close
-// in a few seconds; anyone in the hall can step in before they do, and the
-// leader can close them at once or hold them for friends. A hero who has never
-// cleared anything sees one fortress and no settings; the ladder and "how
-// hard" appear once there is a choice to make. Shown over the hub (no camera
-// change); the host's `parties` broadcast is what every row here reflects.
+// The hall's lobby. One dungeon, three difficulties, one button: Go. It makes
+// a party of one whose doors close in a few seconds; anyone in the hall can
+// step in before they do, and the leader can close them at once or hold them
+// for friends. Medium and Hard ask for a hero level, the way Dungeon Quest
+// does; a locked row says which. Shown over the hub (no camera change); the
+// host's `parties` broadcast is what every row here reflects.
 
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { engine, UiCanvasInformation } from '@dcl/sdk/ecs'
@@ -13,16 +13,15 @@ import { isClientSynced, localAddress } from './multiplayer'
 import { menuColors, MenuAction as Action } from './menuUi'
 import {
   doorsWait, getLobbyPick, getLobbyState, goRun, holdDoors, isLeader, joinParty, leaveParty, myParty, openParties, PartyInfo,
-  setLobbyPickDiff, setLobbyPickLevel, startRun
+  setLobbyPickDiff, startRun
 } from './party'
 import { devToolsOn } from './devAccess'
 import { openSettings } from './settings'
 import { openInventory } from './inventory'
 import { IconButton } from './hudButtons'
 import { closeLobby, openLobby } from './party'
-import {
-  DIFFICULTIES, levelById, LEVELS, levelUnlocked, MAX_PARTY, previousLevel
-} from './shared/levels'
+import { DIFFICULTIES, difficultyAllowed, levelById, LEVELS, MAX_PARTY } from './shared/levels'
+import { localXp } from './heroXp'
 import { getPreloadGroup } from './preload'
 import { isRealmPreloaded, preloadCaption, realmGroupId, requestRealmPreload } from './preloadPlan'
 import { t } from './i18n'
@@ -90,74 +89,65 @@ function Heading({ title, scale: s }: { title: string; scale: number }) {
     uiTransform={{ width: '100%', height: 20 * s, margin: { bottom: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />
 }
 
-/** Is this level open to the player: cleared up to it, or the developer panel. */
-function isOpen(progress: readonly number[], level: number): boolean {
-  return devToolsOn() || levelUnlocked(progress, level)
-}
-
-/** Nothing cleared yet: one fortress, one difficulty, one button. */
-function firstTimer(): boolean {
-  return !devToolsOn() && getLobbyState().progress.every((n) => n === 0)
-}
-
-/** The one linear ladder. Locked-via-dev rows show a gold Dev mark. */
-function LevelList({ scale: s, canPick }: { scale: number; canPick: boolean }) {
-  const progress = getLobbyState().progress
-  const current = getLobbyPick().level
-  const shown = firstTimer() ? LEVELS.slice(0, 1) : LEVELS
+/** The one dungeon, as a card: its picture, its name, what waits inside, and the best clear so far. */
+function MapCard({ scale: s }: { scale: number }) {
+  const level = LEVELS[0]
+  const best = getLobbyState().progress[0] ?? 0
+  const picture = { w: LEFT, h: Math.round(LEFT * 400 / 570) }
+  const limit = level.seconds > 0 ? formatTime(level.seconds) : ''
   return <UiEntity uiTransform={{ width: LEFT * s, flexDirection: 'column', flexShrink: 0, pointerFilter: 'none' }}>
-    <Heading title={firstTimer() ? t('YOUR FIRST FORTRESS') : t('DUNGEON')} scale={s} />
-    {shown.map((level, step) => {
-      const byProgress = levelUnlocked(progress, level.id)
-      const unlocked = isOpen(progress, level.id)
-      const best = progress[level.id] ?? 0
-      const active = current === level.id
-      const key = `level-${level.id}`
-      const hover = hovered === key && unlocked && canPick
-      const status = !unlocked ? t('Locked') : !byProgress ? 'Dev' : best > 0 ? t('Cleared on {difficulty}', { difficulty: t(DIFFICULTIES[best - 1]?.name ?? '') }) : ''
-      const blurb = unlocked ? t(level.blurb) : t('Clear {level} to open the way.', { level: previousLevel(level.id)?.name ?? t('the dungeon before') })
-      const inner = LEFT - 32 - 40 - 12
-      return <UiEntity key={key} uiTransform={{ width: '100%', height: 68 * s, margin: { bottom: 6 * s }, padding: { left: 16 * s, right: 16 * s },
-        borderRadius: 4 * s, borderWidth: s, borderColor: active ? gold : hover ? goldLine : line, flexDirection: 'row', alignItems: 'center',
-        opacity: unlocked ? 1 : 0.55, flexShrink: 0, pointerFilter: unlocked && canPick ? 'block' : 'none' }}
+    <Heading title={t('DUNGEON')} scale={s} />
+    <UiEntity uiTransform={{ width: picture.w * s, height: picture.h * s, borderRadius: 6 * s, borderWidth: s, borderColor: goldLine, flexShrink: 0, pointerFilter: 'none' }}
+      uiBackground={{ textureMode: 'stretch', texture: { src: 'images/scene-thumbnail.png' } }} />
+    <Label value={level.name} font="serif" color={white} fontSize={26 * s} textAlign="middle-left" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 36 * s, margin: { top: 12 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+    <Label value={t(level.blurb)} color={muted} fontSize={12.5 * s} textAlign="middle-left" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 20 * s, flexShrink: 0, pointerFilter: 'none' }} />
+    <Label value={`${t('Waves in every room')}  ·  ${t('Doors open when the room is clear')}${limit ? `  ·  ${t('{time} on the clock', { time: limit })}` : ''}`}
+      color={muted} fontSize={11.5 * s} textAlign="middle-left" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 18 * s, margin: { top: 2 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+    <Label value={best > 0 ? t('Cleared on {difficulty}', { difficulty: t(DIFFICULTIES[best - 1]?.name ?? '') }) : t('Not cleared yet')}
+      color={best > 0 ? cyan : muted} fontSize={12 * s} textAlign="middle-left" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 20 * s, margin: { top: 8 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+  </UiEntity>
+}
+
+/** Easy, Medium, Hard as rows; a row above the hero's level is locked and says so. */
+function DifficultyLadder({ scale: s, canPick }: { scale: number; canPick: boolean }) {
+  const current = getLobbyPick().diff
+  const heroLvl = localXp().level
+  const allowed = devToolsOn() ? DIFFICULTIES.length - 1 : difficultyAllowed(heroLvl)
+  return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', flexShrink: 0, pointerFilter: 'none' }}>
+    <Heading title={t('HOW HARD')} scale={s} />
+    {DIFFICULTIES.map((diff) => {
+      const open = diff.id <= allowed
+      const active = current === diff.id
+      const key = `diff-${diff.id}`
+      const hover = hovered === key && open && canPick
+      return <UiEntity key={key} uiTransform={{ width: '100%', height: 54 * s, margin: { bottom: 6 * s }, padding: { left: 14 * s, right: 14 * s },
+        borderRadius: 4 * s, borderWidth: s, borderColor: active ? gold : hover ? goldLine : line, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        opacity: open ? 1 : 0.55, flexShrink: 0, pointerFilter: open && canPick ? 'block' : 'none' }}
         uiBackground={{ color: active ? Color4.create(0.16, 0.12, 0.06, 0.96) : hover ? card : panel }}
         onMouseEnter={() => { hovered = key }} onMouseLeave={() => { if (hovered === key) hovered = '' }}
-        onMouseDown={!unlocked || !canPick ? undefined : () => { hovered = ''; setLobbyPickLevel(level.id) }}>
-        <Label value={`${step + 1}`} font="serif" color={active ? gold : muted} fontSize={26 * s} textAlign="middle-center" textWrap="nowrap"
-          uiTransform={{ width: 40 * s, height: '100%', flexShrink: 0, pointerFilter: 'none' }} />
-        <UiEntity uiTransform={{ width: inner * s, height: '100%', flexDirection: 'column', justifyContent: 'center', margin: { left: 12 * s }, pointerFilter: 'none' }}>
-          <UiEntity uiTransform={{ width: '100%', height: 22 * s, flexDirection: 'row', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
-            <Label value={level.name} font="serif" color={white} fontSize={18 * s} textAlign="middle-left" textWrap="nowrap"
-              uiTransform={{ width: (inner - 150) * s, height: '100%', pointerFilter: 'none' }} />
-            <Label value={status} color={!unlocked ? coral : !byProgress ? gold : cyan} fontSize={11 * s} textAlign="middle-right" textWrap="nowrap"
-              uiTransform={{ width: 150 * s, height: '100%', pointerFilter: 'none' }} />
-          </UiEntity>
-          <Label value={blurb} color={muted} fontSize={11.5 * s} textAlign="middle-left" textWrap="nowrap"
-            uiTransform={{ width: '100%', height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
+        onMouseDown={!open || !canPick ? undefined : () => { hovered = ''; setLobbyPickDiff(diff.id) }}>
+        <UiEntity uiTransform={{ flexDirection: 'column', justifyContent: 'center', width: (RIGHT - 28 - 120) * s, height: '100%', pointerFilter: 'none' }}>
+          <Label value={t(diff.name)} font="serif" color={active ? gold : white} fontSize={18 * s} textAlign="middle-left" textWrap="nowrap"
+            uiTransform={{ width: '100%', height: 24 * s, flexShrink: 0, pointerFilter: 'none' }} />
+          <Label value={describeDifficulty(diff.id)} color={muted} fontSize={10.5 * s} textAlign="middle-left" textWrap="nowrap"
+            uiTransform={{ width: '100%', height: 16 * s, flexShrink: 0, pointerFilter: 'none' }} />
         </UiEntity>
+        <Label value={open ? (diff.level > 1 ? t('Level {n}', { n: diff.level }) : '') : t('Level {n} needed', { n: diff.level })}
+          color={open ? muted : coral} fontSize={11 * s} textAlign="middle-right" textWrap="nowrap"
+          uiTransform={{ width: 120 * s, height: '100%', pointerFilter: 'none' }} />
       </UiEntity>
     })}
   </UiEntity>
 }
 
-function DifficultyRow({ scale: s, canPick }: { scale: number; canPick: boolean }) {
-  const current = getLobbyPick().diff
-  return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', flexShrink: 0, pointerFilter: 'none' }}>
-    <Heading title={t('HOW HARD')} scale={s} />
-    <UiEntity uiTransform={{ width: '100%', height: 38 * s, flexDirection: 'row', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
-      {DIFFICULTIES.map((diff) => <Action key={`diff-${diff.id}`} id={`diff-${diff.id}`} text={t(diff.name)} accent="gold" width={(RIGHT - 20) / 3} height={38} scale={s}
-        active={current === diff.id} disabled={!canPick} fontSize={14}
-        onClick={() => setLobbyPickDiff(diff.id)} />)}
-    </UiEntity>
-    <Label value={describeDifficulty(current)} color={muted} fontSize={11.5 * s} textAlign="middle-left" textWrap="nowrap"
-      uiTransform={{ width: '100%', height: 20 * s, margin: { top: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />
-  </UiEntity>
-}
-
 function describeDifficulty(id: number): string {
   const d = DIFFICULTIES[id] ?? DIFFICULTIES[0]
-  const parts = [t('Enemy health ×{n}', { n: d.health }), t('damage ×{n}', { n: d.damage }), t('coins ×{n}', { n: d.coins })]
-  if (d.extra) parts.push(t('+{n} enemy per room', { n: d.extra }))
+  const parts = [t('Health ×{n}', { n: d.health }), t('damage ×{n}', { n: d.damage }), t('coins ×{n}', { n: d.coins })]
+  if (d.extra) parts.push(t('+{n} per wave', { n: d.extra }))
   return parts.join('  ·  ')
 }
 
@@ -173,7 +163,7 @@ function OpenParties({ scale: s }: { scale: number }) {
         borderRadius: 4 * s, borderWidth: s, borderColor: line, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}
         uiBackground={{ color: panel }}>
         <UiEntity uiTransform={{ width: (RIGHT - 130) * s, height: '100%', flexDirection: 'column', justifyContent: 'center', pointerFilter: 'none' }}>
-          <Label value={`${heroLabel(p.leader)} → ${LEVELS[p.level]?.name ?? ''} · ${p.members.length}/${MAX_PARTY}`} color={white} fontSize={13 * s} textAlign="middle-left" textWrap="nowrap"
+          <Label value={`${heroLabel(p.leader)} · ${t(DIFFICULTIES[p.diff]?.name ?? '')} · ${p.members.length}/${MAX_PARTY}`} color={white} fontSize={13 * s} textAlign="middle-left" textWrap="nowrap"
             uiTransform={{ width: '100%', height: 20 * s, flexShrink: 0, pointerFilter: 'none' }} />
           <Label value={wait > 0 ? t('Doors close in {n}s', { n: Math.ceil(wait) }) : t('Waiting for friends')} color={wait > 0 && wait < 5 ? gold : muted} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
             uiTransform={{ width: '100%', height: 16 * s, flexShrink: 0, pointerFilter: 'none' }} />
@@ -198,7 +188,7 @@ function PartyCard({ scale: s, party }: { scale: number; party: PartyInfo }) {
   const held = party.wait <= 0
   const countdown = held ? t('The doors are held. Go when you are ready.') : t('Doors close in {n}s', { n: Math.ceil(wait) })
   return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', flexShrink: 0, margin: { top: 18 * s }, pointerFilter: 'none' }}>
-    <Heading title={leader ? t('GOING WITH YOU') : t('GOING WITH {name}', { name: heroLabel(party.leader).toUpperCase() })} scale={s} />
+    <Heading title={`${leader ? t('GOING WITH YOU') : t('GOING WITH {name}', { name: heroLabel(party.leader).toUpperCase() })}  ·  ${t(DIFFICULTIES[party.diff]?.name ?? '').toUpperCase()}`} scale={s} />
     {party.members.map((m) => {
       return <UiEntity key={m} uiTransform={{ width: '100%', height: 36 * s, margin: { bottom: 4 * s }, padding: { left: 12 * s, right: 12 * s },
         borderRadius: 4 * s, borderWidth: s, borderColor: line, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}
@@ -280,7 +270,7 @@ export function LobbyUi() {
         <UiEntity uiTransform={{ flexDirection: 'column', pointerFilter: 'none' }}>
           <Label value="DUNGEONS OF ANTROM" color={gold} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
             uiTransform={{ width: 420 * s, height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
-          <Label value={t('Choose a dungeon')} font="serif" color={white} fontSize={32 * s} textAlign="middle-left" textWrap="nowrap"
+          <Label value={t('The war table')} font="serif" color={white} fontSize={32 * s} textAlign="middle-left" textWrap="nowrap"
             uiTransform={{ width: 600 * s, height: 42 * s, flexShrink: 0, pointerFilter: 'none' }} />
         </UiEntity>
         <LobbyTools scale={s} />
@@ -295,10 +285,10 @@ export function LobbyUi() {
       </UiEntity>}
       <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
         <UiEntity uiTransform={{ width: LEFT * s, flexDirection: 'column', flexShrink: 0, pointerFilter: 'none' }}>
-          <LevelList scale={s} canPick={canPick} />
+          <MapCard scale={s} />
         </UiEntity>
         <UiEntity uiTransform={{ width: RIGHT * s, flexDirection: 'column', flexShrink: 0, pointerFilter: 'none' }}>
-          {!firstTimer() && <DifficultyRow scale={s} canPick={canPick} />}
+          <DifficultyLadder scale={s} canPick={canPick} />
           {party ? <PartyCard scale={s} party={party} /> : <NoParty scale={s} />}
         </UiEntity>
       </UiEntity>

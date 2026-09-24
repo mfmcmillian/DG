@@ -16,12 +16,13 @@ import { Storage } from '@dcl/sdk/server'
 import { MAX_COMBAT_HEALTH } from './combatActions'
 import { createRunSim, destroyRunSim, runStatus } from './dungeonEnemies'
 import { healHero, heroHealth, RAID_RECOVER_SECONDS, RECOVER_SECONDS, reviveHero, setRecoverPolicy } from './heroVitals'
-import { addXp, setXpRecord, xpRecordOf } from './heroXp'
+import { addXp, heroLevel, setXpRecord, xpRecordOf } from './heroXp'
 import { heroCharacters, isHeadless, onHostStart, setMultiplayerHandlers } from './multiplayer'
 import { onNet, sendNet } from './net'
 import { HUB, setPartyLookup } from './partyLookup'
 import {
-  DIFFICULTIES, difficultyById, LevelDefinition, LEVELS, levelUnlocked, MAX_PARTY, MAX_RAID, nextLevel, previousLevel, RAID_LEVEL, RAID_PARTY
+  DIFFICULTIES, difficultyAllowed, difficultyById, LevelDefinition, LEVELS, levelUnlocked, MAX_PARTY, MAX_RAID, nextLevel, previousLevel, RAID_LEVEL,
+  RAID_OPEN, RAID_PARTY
 } from './shared/levels'
 import { initializeColossusServer } from './raid/colossusServer'
 import { clearXp, killXp, XpRecord } from './shared/progression'
@@ -102,7 +103,7 @@ function bind() {
   })
   setMultiplayerHandlers({ leave: leaveParty })
   engine.addSystem(update)
-  ensureRaid()
+  if (RAID_OPEN) ensureRaid()
   // A hero who falls in the Pit waits for an ally; elsewhere the entrance takes them quickly.
   setRecoverPolicy((id) => (parties.get(RAID_PARTY)?.members.includes(id) ? RAID_RECOVER_SECONDS : RECOVER_SECONDS))
   initializeColossusServer({
@@ -261,8 +262,12 @@ function clampLevel(id: string, level: number): number {
   return 0
 }
 
-function clampDiff(diff: number): number {
-  return Math.max(0, Math.min(DIFFICULTIES.length - 1, Math.floor(diff) || 0))
+/** The difficulty asked for, no higher than the hero's level allows (developer tools skip the gate). */
+function clampDiff(id: string, diff: number): number {
+  const wanted = Math.max(0, Math.min(DIFFICULTIES.length - 1, Math.floor(diff) || 0))
+  const prefs = heroes.get(id)?.prefs
+  if (prefsHaveDevTools(prefs)) return wanted
+  return Math.min(wanted, difficultyAllowed(heroLevel(id, championOf(id))))
 }
 
 function handleAction(id: string, action: string, partyId: string, level: number, diff: number) {
@@ -274,7 +279,7 @@ function handleAction(id: string, action: string, partyId: string, level: number
       leaveParty(id, false)
       counter++
       const party: Party = {
-        id: `p${counter}`, leader: id, level: clampLevel(id, level), diff: clampDiff(diff), state: 'open',
+        id: `p${counter}`, leader: id, level: clampLevel(id, level), diff: clampDiff(id, diff), state: 'open',
         members: [id], ready: new Set([id]), started: 0, ended: 0, slain: 0, total: 0, won: false, run: 0,
         doors: action === 'go' ? elapsed + DOOR_SECONDS : 0
       }
@@ -303,6 +308,7 @@ function handleAction(id: string, action: string, partyId: string, level: number
       leaveParty(id, false)
       break
     case 'raid': {
+      if (!RAID_OPEN) return
       ensureRaid()
       const raid = parties.get(RAID_PARTY)!
       if (raid.members.includes(id) || raid.members.length >= MAX_RAID) return
@@ -324,7 +330,7 @@ function handleAction(id: string, action: string, partyId: string, level: number
       const party = partyOfMember(id)
       if (!party || party.leader !== id || party.state !== 'open') return
       party.level = clampLevel(id, level)
-      party.diff = clampDiff(diff)
+      party.diff = clampDiff(id, diff)
       break
     }
     case 'start': {
@@ -472,8 +478,13 @@ function update(deltaTime: number) {
         party.total = status.total
         changed = true
       }
+      const limit = LEVELS[party.level]?.seconds ?? 0
       if (status.won) finishRun(party, true)
       else if (status.lost) finishRun(party, false)
+      else if (limit > 0 && elapsed - party.started >= limit) {
+        console.log(`[Server] party ${party.id} ran out of time`)
+        finishRun(party, false)
+      }
     } else if (party.state === 'done' && elapsed - party.ended >= DECISION_SECONDS) {
       // Nobody decided; the host walks the party back to the hall.
       console.log(`[Server] party ${party.id} idled on the results, back to the hall`)

@@ -5,7 +5,7 @@ import { getEquippedCharacter, getPickerState, openPicker } from './characterPic
 import { openInventory } from './inventory'
 import { IconButton } from './hudButtons'
 import { getPlayerCharacterState, getPlayerVitals, retryPlayerCharacter } from './playerCharacter'
-import { getWorldRivalState, retryWorldRival } from './dungeonEnemies'
+import { gauntletProgress, getWorldRivalState, retryWorldRival } from './dungeonEnemies'
 import { getLootState, getLootToasts, TOAST_SECONDS } from './loot'
 import { getEquipmentItemOrNull } from './equipmentCatalog'
 import { RARITIES, rarityOf, WEAPON_CLASSES } from './weapons'
@@ -13,7 +13,7 @@ import { isClientSynced, isSoloMode, localAddress, netStatus } from './multiplay
 import { netDebugSummary, recentLogs } from './netDebug'
 import { MenuAction } from './menuUi'
 import {
-  atPitGate, atWarTable, descend, doorsWait, getLobbyState, inRaid, inRun, joinParty, leaveParty, myParty, myPhase, openLobby, openParties,
+  atPitGate, atWarTable, doorsWait, getLobbyState, inRaid, inRun, joinParty, leaveParty, myParty, myPhase, openLobby, openParties,
   resultsWait, retryRun, returnToHall
 } from './party'
 import { ColossusBar, RaidPrompt } from './raid/raidHudUi'
@@ -32,7 +32,8 @@ import { heroClassOf } from './heroClasses'
 import { skillsUnlockedBetween } from './shared/skills'
 import { SkillBar, SKILL_BAR_HEIGHT } from './skillBarUi'
 import { formatTime, heroLabel, partyTitle } from './lobbyUi'
-import { DIFFICULTIES, LEVELS, MAX_PARTY, nextLevel, realmOfLevel } from './shared/levels'
+import { DIFFICULTIES, LEVELS, MAX_PARTY } from './shared/levels'
+import { fxSound } from './combatFx'
 import { t, tn } from './i18n'
 
 /** Still shaking hands with the party server (solo play never waits). */
@@ -53,6 +54,8 @@ const panel = Color4.create(0.04, 0.065, 0.10, 0.82)
 const hoverPanel = Color4.create(0.13, 0.17, 0.22, 0.96)
 const line = Color4.create(0.52, 0.58, 0.66, 0.6)
 const track = Color4.create(0.035, 0.045, 0.065, 0.86)
+const goldDim = Color4.create(0.62, 0.5, 0.2, 0.9)
+const cyanBright = Color4.create(0.45, 0.85, 1, 1)
 const stamina = Color4.create(0.35, 0.72, 0.95, 1)
 const staminaLow = Color4.create(0.95, 0.62, 0.2, 1)
 const gold = Color4.create(1, 0.84, 0.32, 1)
@@ -296,30 +299,84 @@ function LootToasts({ right, bottom, scale: s }: { right: number; bottom: number
   </UiEntity>
 }
 
-/** The results card's haul: an icon per weapon unlocked, framed in its rarity, and the salvage tally. */
-function FoundThisRun({ found, salvaged, width, scale: s }: { found: string[]; salvaged: number; width: number; scale: number }) {
+/** Card geometry for the rewards screen (unscaled). */
+const CARD = { w: 150, h: 214, icon: 108, gap: 14 }
+/** The first card turns over this long after the screen comes up; each next one this much later. */
+const REVEAL_FIRST = 0.7
+const REVEAL_EVERY = 0.55
+let revealKey = ''
+let revealStart = 0
+let revealedShown = 0
+
+/**
+ * The haul as big cards, Dungeon Quest style: each item found is a face-down
+ * card that turns over in turn, its picture framed in its rarity's colour, its
+ * name and rarity beneath. Nothing found is one quiet card that says so.
+ */
+function LootCards({ found, salvaged, width, scale: s, resultKey }: { found: string[]; salvaged: number; width: number; scale: number; resultKey: string }) {
+  if (revealKey !== resultKey) {
+    revealKey = resultKey
+    revealStart = Date.now()
+    revealedShown = 0
+  }
+  const age = (Date.now() - revealStart) / 1000
   const items = found.map((id) => getEquipmentItemOrNull(id)).filter((item) => !!item)
-  const shown = items.slice(0, 8)
+  const perRow = Math.max(1, Math.min(items.length || 1, Math.floor((width + CARD.gap * s) / ((CARD.w + CARD.gap) * s)), 5))
+  const shown = items.slice(0, perRow * 2)
   const more = items.length - shown.length
-  const salvageText = salvaged > 0 ? tn(salvaged, '{n} duplicate salvaged for coin', '{n} duplicates salvaged for coin') : ''
-  const caption = items.length
-    ? `${t('Found this run')}  ·  ${tn(items.length, '{n} new item', '{n} new items')}${salvageText ? `  ·  ${salvageText}` : ''}`
-    : salvageText ? `${t('Nothing new')}  ·  ${salvageText}` : t('No gear dropped this run')
-  return <UiEntity uiTransform={{ width, margin: { top: 12 * s }, flexDirection: 'column', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
-    <Label value={caption} color={items.length ? gold : muted} font="sans-serif" fontSize={12 * s} textAlign="middle-center" textWrap="nowrap"
+  const revealed = Math.min(shown.length, Math.max(0, Math.floor((age - REVEAL_FIRST) / REVEAL_EVERY) + 1))
+  if (revealed > revealedShown) {
+    revealedShown = revealed
+    fxSound('coin', 0.55)
+  }
+  const salvageText = salvaged > 0 ? tn(salvaged, '{n} duplicate turned to coin', '{n} duplicates turned to coin') : ''
+  const rows: Array<typeof shown> = []
+  for (let k = 0; k < shown.length; k += perRow) rows.push(shown.slice(k, k + perRow))
+  return <UiEntity uiTransform={{ width, margin: { top: 16 * s }, flexDirection: 'column', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+    <Label value={items.length ? t('YOUR LOOT') : t('NO LOOT THIS TIME')} color={items.length ? gold : muted} font="sans-serif" fontSize={12 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 20 * s, flexShrink: 0, pointerFilter: 'none' }} />
-    {shown.length > 0 && <UiEntity uiTransform={{ width: '100%', height: 56 * s, margin: { top: 4 * s }, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
-      {shown.map((item, i) => {
-        const color = RARITIES[rarityOf(item.id)].color
-        return <UiEntity key={`${item.id}-${i}`} uiTransform={{ width: 48 * s, height: 48 * s, margin: { left: 3 * s, right: 3 * s }, padding: 2 * s,
-          borderRadius: 6 * s, borderWidth: 1.5 * s, borderColor: color, flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: track }}>
-          <UiEntity uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }}
-            uiBackground={{ textureMode: 'stretch', texture: { src: item.icon } }} />
+    {items.length === 0 && <UiEntity uiTransform={{ width: CARD.w * s, height: CARD.h * s, margin: { top: 8 * s }, borderRadius: 10 * s, borderWidth: 1.5 * s, borderColor: line,
+      justifyContent: 'center', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: track }}>
+      <Label value={t('Fight on. The Warlord drops the best.')} color={muted} font="sans-serif" fontSize={12 * s} textAlign="middle-center" textWrap="wrap"
+        uiTransform={{ width: '84%', height: '60%', pointerFilter: 'none' }} />
+    </UiEntity>}
+    {rows.map((row, r) => <UiEntity key={`row-${r}`} uiTransform={{ height: CARD.h * s, margin: { top: 8 * s }, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+      {row.map((item, k) => {
+        const index = r * perRow + k
+        const up = index < revealed
+        const rarity = RARITIES[rarityOf(item.id)]
+        const fresh = up && age - REVEAL_FIRST - index * REVEAL_EVERY < 0.3
+        const grow = fresh ? 1.06 : 1
+        return <UiEntity key={`${item.id}-${index}`} uiTransform={{ width: CARD.w * s * grow, height: CARD.h * s * grow, margin: { left: (CARD.gap / 2) * s, right: (CARD.gap / 2) * s },
+          borderRadius: 10 * s, borderWidth: (up ? 2.5 : 1.5) * s, borderColor: up ? rarity.color : goldDim,
+          flexDirection: 'column', alignItems: 'center', justifyContent: up ? 'flex-start' : 'center', padding: { top: up ? 12 * s : 0 }, flexShrink: 0, pointerFilter: 'none' }}
+          uiBackground={{ color: up ? Color4.create(rarity.color.r * 0.16, rarity.color.g * 0.16, rarity.color.b * 0.16, 0.96) : track }}>
+          {!up && <Label value="?" color={goldDim} font="serif" fontSize={72 * s} textAlign="middle-center" textWrap="nowrap"
+            uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} />}
+          {up && <UiEntity uiTransform={{ width: CARD.icon * s, height: CARD.icon * s, borderRadius: 8 * s, flexShrink: 0, pointerFilter: 'none' }}
+            uiBackground={{ color: Color4.create(0, 0, 0, 0.35) }}>
+            <UiEntity uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} uiBackground={{ textureMode: 'stretch', texture: { src: item.icon } }} />
+          </UiEntity>}
+          {up && <Label value={item.name} color={white} font="sans-serif" fontSize={12.5 * s} textAlign="middle-center" textWrap="wrap"
+            uiTransform={{ width: '92%', height: 40 * s, margin: { top: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
+          {up && <Label value={t(rarity.label).toUpperCase()} color={rarity.color} font="sans-serif" fontSize={11 * s} textAlign="middle-center" textWrap="nowrap"
+            uiTransform={{ width: '100%', height: 18 * s, margin: { top: 4 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
         </UiEntity>
       })}
-      {more > 0 && <Label value={`+${more}`} color={muted} font="sans-serif" fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
-        uiTransform={{ width: 40 * s, height: 48 * s, flexShrink: 0, pointerFilter: 'none' }} />}
-    </UiEntity>}
+    </UiEntity>)}
+    {(more > 0 || salvageText) && <Label value={[more > 0 ? t('+{n} more in your bag', { n: more }) : '', salvageText].filter(Boolean).join('  ·  ')}
+      color={muted} font="sans-serif" fontSize={11.5 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 18 * s, margin: { top: 8 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
+  </UiEntity>
+}
+
+/** One big number with a word under it: the coins and the experience a run paid. */
+function Payout({ value, label, color, scale: s }: { value: string; label: string; color: Color4; scale: number }) {
+  return <UiEntity uiTransform={{ width: 170 * s, flexDirection: 'column', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+    <Label value={value} color={color} font="serif" fontSize={30 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 36 * s, flexShrink: 0, pointerFilter: 'none' }} />
+    <Label value={label} color={muted} font="sans-serif" fontSize={11 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 16 * s, flexShrink: 0, pointerFilter: 'none' }} />
   </UiEntity>
 }
 
@@ -329,11 +386,25 @@ function RunPanel({ right, top, scale: s }: { right: number; top: number; scale:
   if (!party || party.state !== 'running') return null
   const level = LEVELS[party.level]
   const diff = DIFFICULTIES[party.diff]
+  const elapsed = party.time + getLobbyState().silence
+  const limit = level?.seconds ?? 0
+  const left = limit > 0 ? Math.max(0, limit - elapsed) : 0
+  const urgent = limit > 0 && left < 60
+  const g = gauntletProgress()
+  const where = g
+    ? g.kind === 'combat'
+      ? `${t('Room {n} of {total}', { n: g.stage + 1, total: g.stages })}${g.wave > 0 ? `  ·  ${t('Wave {n} of {total}', { n: g.wave, total: g.waves })}` : ''}`
+      : `${t('Room {n} of {total}', { n: g.stage + 1, total: g.stages })}  ·  ${t(g.name)}`
+    : ''
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { right, top }, width: (CARD_WIDTH - CARD_PAD * 2) * s, flexDirection: 'column', pointerFilter: 'none' }}>
     <Label value={`${level?.name ?? ''}  ·  ${t(diff?.name ?? '')}`} color={gold} font="sans-serif" fontSize={12 * s} textAlign="middle-right" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
-    <Label value={`${t('Slain {n} / {total}', { n: party.slain, total: party.total })}   ·   ${formatTime(party.time + getLobbyState().silence)}`} color={muted} font="sans-serif" fontSize={12 * s} textAlign="middle-right" textWrap="nowrap"
-      uiTransform={{ width: '100%', height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
+    <Label value={limit > 0 ? formatTime(left) : formatTime(elapsed)} color={urgent ? red : white} font="serif" fontSize={(urgent ? 30 : 26) * s} textAlign="middle-right" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 34 * s, flexShrink: 0, pointerFilter: 'none' }} />
+    {where !== '' && <Label value={where} color={white} font="sans-serif" fontSize={12 * s} textAlign="middle-right" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />}
+    <Label value={t('Slain {n} / {total}', { n: party.slain, total: party.total })} color={muted} font="sans-serif" fontSize={11 * s} textAlign="middle-right" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 16 * s, flexShrink: 0, pointerFilter: 'none' }} />
     {party.members.length > 1 && party.members.map((m) => <Label key={m} value={`${heroLabel(m)}${m === party.leader ? ' ♛' : ''}`}
       color={white} font="sans-serif" fontSize={12 * s} textAlign="middle-right" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 17 * s, flexShrink: 0, pointerFilter: 'none' }} />)}
@@ -341,11 +412,10 @@ function RunPanel({ right, top, scale: s }: { right: number; top: number; scale:
 }
 
 /**
- * The verdict and the decision. The party stands in the fortress it just
- * fought through (loot still on the floor) while the leader picks: down to the
- * next level or back to the hall after a win, again or the hall after a loss.
- * Going deeper needs everyone ready, like starting from the lobby. The host
- * walks an undecided party back on its own when the timer runs out.
+ * The rewards screen. The party stands in the fortress it just fought through
+ * while the cards turn over; the leader plays again or takes everyone back to
+ * the hall, and anyone who has had enough leaves on their own. The host walks
+ * an undecided party back when the timer runs out.
  */
 function ResultsOverlay({ width, height, scale: s }: { width: number; height: number; scale: number }) {
   const party = myParty()
@@ -353,46 +423,45 @@ function ResultsOverlay({ width, height, scale: s }: { width: number; height: nu
   if (!party || party.state !== 'done' || !result) return null
   const level = LEVELS[result.level]
   const diff = DIFFICULTIES[result.diff]
-  const next = result.won ? nextLevel(result.level) : undefined
   const me = localAddress()
   const leader = party.leader === me
   const solo = party.members.length === 1
   const readyCount = party.members.filter((m) => party.ready.includes(m)).length
   const othersReady = party.members.every((m) => m === party.leader || party.ready.includes(m))
   const wait = resultsWait()
-  const cardWidth = Math.min(520 * s, width * 0.7)
-  const goText = result.won ? (next ? t('Descend to {level}', { level: next.name }) : t('Fight it again')) : t('Try again')
-  const go = result.won && next ? descend : retryRun
-  return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - cardWidth) / 2, top: height * 0.1 },
-    width: cardWidth, padding: 24 * s, borderRadius: 8 * s, borderWidth: s, borderColor: result.won ? gold : line,
+  const cardWidth = Math.min(860 * s, width * 0.9)
+  const outOfTime = !result.won && (level?.seconds ?? 0) > 0 && result.time >= (level?.seconds ?? 0)
+  const title = result.won ? t('DUNGEON CLEARED') : outOfTime ? t('OUT OF TIME') : t('THE PARTY HAS FALLEN')
+  const goText = result.won ? t('Play again') : t('Try again')
+  const resultKey = `${party.id}:${party.run}:${result.won ? 'w' : 'l'}:${result.time.toFixed(0)}`
+  return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - cardWidth) / 2, top: height * 0.06 },
+    width: cardWidth, padding: { top: 22 * s, bottom: 20 * s, left: 24 * s, right: 24 * s }, borderRadius: 12 * s, borderWidth: 1.5 * s, borderColor: result.won ? gold : line,
     flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }} uiBackground={{ color: panel }}>
-    <Label value={result.won ? t('FORTRESS CLEARED') : t('THE PARTY HAS FALLEN')} font="serif" color={result.won ? gold : red} fontSize={30 * s} textAlign="middle-center" textWrap="nowrap"
-      uiTransform={{ width: '100%', height: 40 * s, flexShrink: 0, pointerFilter: 'none' }} />
-    <Label value={`${level?.name ?? ''}  ·  ${t(diff?.name ?? '')}`} color={white} font="sans-serif" fontSize={15 * s} textAlign="middle-center" textWrap="nowrap"
-      uiTransform={{ width: '100%', height: 26 * s, margin: { top: 4 * s }, flexShrink: 0, pointerFilter: 'none' }} />
-    <Label value={`${t('Time {time}', { time: formatTime(result.time) })}   ·   ${t('Slain {n} / {total}', { n: result.slain, total: result.total })}   ·   ${t('Coins +{n}', { n: Math.max(0, result.coins) })}   ·   ${t('XP +{n}', { n: localXp().runGain })}`}
+    <Label value={title} font="serif" color={result.won ? gold : red} fontSize={36 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 46 * s, flexShrink: 0, pointerFilter: 'none' }} />
+    <Label value={`${level?.name ?? ''}  ·  ${t(diff?.name ?? '')}  ·  ${formatTime(result.time)}  ·  ${t('Slain {n} / {total}', { n: result.slain, total: result.total })}`}
       color={muted} font="sans-serif" fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
-      uiTransform={{ width: '100%', height: 24 * s, margin: { top: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />
-    <FoundThisRun found={result.found} salvaged={result.salvaged} width={cardWidth - 48 * s} scale={s} />
-    {next && <Label value={t('{level} is open to you.', { level: next.name })} color={gold} font="sans-serif" fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
-      uiTransform={{ width: '100%', height: 22 * s, margin: { top: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
-    {result.won && !next && <Label value={t('All of {realm} has fallen to you.', { realm: realmOfLevel(result.level).name })} color={gold} font="sans-serif" fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
-      uiTransform={{ width: '100%', height: 22 * s, margin: { top: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
-    <UiEntity uiTransform={{ width: '100%', height: 40 * s, margin: { top: 16 * s }, flexDirection: 'row', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+      uiTransform={{ width: '100%', height: 22 * s, margin: { top: 2 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+    <LootCards found={result.found} salvaged={result.salvaged} width={cardWidth - 48 * s} scale={s} resultKey={resultKey} />
+    <UiEntity uiTransform={{ width: '100%', margin: { top: 16 * s }, flexDirection: 'row', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+      <Payout value={`+${Math.max(0, result.coins)}`} label={t('coins')} color={gold} scale={s} />
+      <Payout value={`+${localXp().runGain}`} label={t('experience')} color={cyanBright} scale={s} />
+    </UiEntity>
+    <UiEntity uiTransform={{ width: '100%', height: 44 * s, margin: { top: 14 * s }, flexDirection: 'row', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }}>
       {leader
-        ? <MenuAction id="results-go" text={othersReady ? goText : `${goText}  ${t('({n}/{total} ready)', { n: readyCount, total: party.members.length })}`} onClick={go}
-          width={cardWidth / s - 48 - 176} height={40} scale={s} fontSize={14} primary disabled={!othersReady} />
+        ? <MenuAction id="results-go" text={othersReady ? goText : `${goText}  ${t('({n}/{total} ready)', { n: readyCount, total: party.members.length })}`} onClick={retryRun}
+          width={220} height={44} scale={s} fontSize={16} primary disabled={!othersReady} />
         : <Label value={t('Waiting for {name}…', { name: heroLabel(party.leader) })} color={gold} font="sans-serif" fontSize={14 * s} textAlign="middle-center" textWrap="nowrap"
-          uiTransform={{ width: (cardWidth / s - 48 - 176) * s, height: '100%', pointerFilter: 'none' }} />}
+          uiTransform={{ width: 220 * s, height: '100%', pointerFilter: 'none' }} />}
       <UiEntity uiTransform={{ width: 12 * s, flexShrink: 0, pointerFilter: 'none' }} />
-      <MenuAction id="results-hall" text={leader ? t('Return to the hall') : t('Leave for the hall')} onClick={leader ? returnToHall : leaveParty}
-        width={164} height={40} scale={s} fontSize={14} />
+      <MenuAction id="results-hall" text={leader ? t('Lobby') : t('Leave for the lobby')} onClick={leader ? returnToHall : leaveParty}
+        width={164} height={44} scale={s} fontSize={14} />
     </UiEntity>
     <Label value={leader
       ? (solo ? t('Back to the hall on its own in {time}.', { time: formatTime(wait) }) : t('You lead: the party goes on when you say. Back to the hall on its own in {time}.', { time: formatTime(wait) }))
       : t('{name} decides where the party goes next. Back to the hall in {time} at the latest.', { name: heroLabel(party.leader), time: formatTime(wait) })}
       color={muted} font="sans-serif" fontSize={11.5 * s} textAlign="middle-center" textWrap="nowrap"
-      uiTransform={{ width: '100%', height: 20 * s, margin: { top: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+      uiTransform={{ width: '100%', height: 20 * s, margin: { top: 8 * s }, flexShrink: 0, pointerFilter: 'none' }} />
   </UiEntity>
 }
 
@@ -417,7 +486,7 @@ function HubPrompt({ width, bottom, scale: s }: { width: number; bottom: number;
     ? `${partyTitle(party)}  ·  ${party.members.length}/${MAX_PARTY}  ·  ${LEVELS[party.level]?.name ?? ''}${wait > 0 ? `  ·  ${t('Doors close in {n}s', { n: Math.ceil(wait) })}` : ''}`
     : going
       ? `${t('{name} is going to {level}', { name: heroLabel(going.leader), level: LEVELS[going.level]?.name ?? '' })}${wait > 0 ? `  ·  ${t('Doors close in {n}s', { n: Math.ceil(wait) })}` : ''}`
-      : t('The war table: choose a fortress to enter.')
+      : t('The war table: pick how hard and press Go.')
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - 460 * s) / 2, bottom },
     width: 460 * s, flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
     <Label value={caption} color={party || going ? gold : muted} font="sans-serif" fontSize={12 * s} textWrap="nowrap"

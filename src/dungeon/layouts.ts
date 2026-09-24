@@ -3,6 +3,7 @@
 
 import { DungeonStyle } from './config'
 import { Dungeon } from './generator'
+import { gauntletDungeon } from './gauntlet'
 import { hubDungeon } from './hub'
 import { pitDungeon } from './pit'
 
@@ -10,5 +11,6 @@ import { pitDungeon } from './pit'
 export function authoredLayout(style: DungeonStyle): Dungeon | undefined {
   if (style.id === 'hall') return hubDungeon(style.torchEvery)
   if (style.id === 'pit') return pitDungeon(style.torchEvery)
+  if (style.id === 'gauntlet') return gauntletDungeon(style.torchEvery)
   return undefined
 }

@@ -1,4 +1,5 @@
-// The realms, their dungeons and the difficulty table. Pure data shared by
+// The one dungeon and the difficulty table (this branch: one map, Dungeon
+// Quest shape, see src/dungeon/gauntlet.ts). Pure data shared by
 // the server (which simulates each party's run) and the clients (which build
 // the layout and show the lobby), so a level is the same fortress everywhere.
 //
@@ -49,45 +50,15 @@ export type LevelDefinition = {
   damage: number
   /** Coins per kill are multiplied by this and the difficulty's factor. */
   coins: number
+  /** The run fails when this many seconds pass without the boss falling (0: no limit). */
+  seconds: number
 }
 
 export const LEVELS: LevelDefinition[] = [
   {
-    id: 0, realm: 'fortress', name: 'The Dark Fortress', seed: 1337, style: 'open',
-    blurb: 'Ten rooms, one Warlord. Where every champion starts.',
-    health: 1, damage: 1, coins: 1
-  },
-  {
-    id: 1, realm: 'fortress', name: 'The Vaults', seed: 36, style: 'open',
-    blurb: 'Thirteen rooms and three treasure vaults, each with its guard.',
-    health: 1.15, damage: 1.1, coins: 1.3
-  },
-  {
-    id: 2, realm: 'fortress', name: 'The Sunken Halls', seed: 153, style: 'open',
-    blurb: 'Eight rooms deep before the Warlord. Longer corridors, more patrols.',
-    health: 1.3, damage: 1.2, coins: 1.6
-  },
-  {
-    id: 3, realm: 'fortress', name: 'The Warren', seed: 302, style: 'open',
-    blurb: 'Twenty-eight doorways. Enemies come from more than one side.',
-    health: 1.5, damage: 1.35, coins: 2
-  },
-  {
-    id: 4, realm: 'fortress', name: 'The Deep Keep', seed: 2318, style: 'open',
-    blurb: 'Eleven rooms deep, the longest road to the Warlord. Bring a party.',
-    health: 1.75, damage: 1.5, coins: 2.5
-  },
-  // --- The Fallen Crown (castle kit, Fantasy Kingdom) ---------------------------
-  {
-    id: 5, realm: 'castle', name: 'The Fallen Crown', seed: 4471, style: 'castle',
-    blurb: 'A king\'s castle, its garrison turned. Banners still hang in the halls.',
-    health: 2, damage: 1.65, coins: 3
-  },
-  // --- The Dwarven Forge (forge kit, Dungeon Realms) -----------------------------
-  {
-    id: 6, realm: 'forge', name: 'The Dwarven Forge', seed: 7729, style: 'forge',
-    blurb: 'Lava ducts and saw traps. The Forge Lord still works the anvil.',
-    health: 2.2, damage: 1.8, coins: 3.4
+    id: 0, realm: 'fortress', name: 'The Dark Fortress', seed: 1337, style: 'gauntlet',
+    blurb: 'Seven rooms, two wardens, one Warlord. Ten minutes.',
+    health: 1, damage: 1, coins: 1.5, seconds: 600
   }
 ]
 
@@ -96,16 +67,28 @@ export type DifficultyDefinition = {
   name: string
   health: number
   damage: number
-  /** Extra enemies added to every combat room. */
+  /** Extra enemies added to every wave. */
   extra: number
   coins: number
+  /** The hero level it asks for; the server refuses a party below it. */
+  level: number
 }
 
 export const DIFFICULTIES: DifficultyDefinition[] = [
-  { id: 0, name: 'Normal', health: 1, damage: 1, extra: 0, coins: 1 },
-  { id: 1, name: 'Hard', health: 1.5, damage: 1.35, extra: 1, coins: 2 },
-  { id: 2, name: 'Nightmare', health: 2.2, damage: 1.8, extra: 1, coins: 3 }
+  { id: 0, name: 'Easy', health: 1, damage: 1, extra: 0, coins: 1, level: 1 },
+  { id: 1, name: 'Medium', health: 1.6, damage: 1.4, extra: 1, coins: 2, level: 5 },
+  { id: 2, name: 'Hard', health: 2.4, damage: 1.9, extra: 2, coins: 3, level: 10 }
 ]
+
+/** The hardest difficulty a hero of this level may pick (0 when none: Easy is always open). */
+export function difficultyAllowed(heroLevel: number): number {
+  let best = 0
+  for (const d of DIFFICULTIES) if (heroLevel >= d.level) best = d.id
+  return best
+}
+
+/** The Pit of Chains is closed on this branch: one map, one boss. */
+export const RAID_OPEN = false
 
 /**
  * The hub between runs: its own small keep (the `hall` style) so coming back
@@ -115,7 +98,7 @@ export const DIFFICULTIES: DifficultyDefinition[] = [
 export const HUB_LEVEL: LevelDefinition = {
   id: -1, realm: 'fortress', name: 'The Hall of Antrom', seed: 1, style: 'hall',
   blurb: 'Where champions gather between fortresses.',
-  health: 1, damage: 1, coins: 1
+  health: 1, damage: 1, coins: 1, seconds: 0
 }
 
 /**
@@ -128,7 +111,7 @@ export const HUB_LEVEL: LevelDefinition = {
 export const RAID_LEVEL: LevelDefinition = {
   id: -2, realm: 'forge', name: 'The Pit of Chains', seed: 2, style: 'pit',
   blurb: 'The Chained Colossus. Bring everyone.',
-  health: 1, damage: 2.4, coins: 4
+  health: 1, damage: 2.4, coins: 4, seconds: 0
 }
 
 export const RAID_PARTY = 'raid'

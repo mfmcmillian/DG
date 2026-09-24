@@ -134,8 +134,8 @@ const FURNITURE: Furniture[] = [
   { id: 'forge_shelf', x: 2, y: 5, side: 'e' },
   { id: 'forge_cog_pile', ...m(25, 46) },
   { id: 'rune', x: 1, y: 5, side: 'w' },
-  // The summoning circle the smiths cut into the floor: stand on it to descend to the Pit of Chains.
-  { id: 'pit_symbol', ...m(28.5, 55), tag: PIT_GATE_TAG },
+  // The summoning circle the smiths cut into the floor once led down to the Pit of Chains;
+  // on this branch the Pit is closed (RAID_OPEN), so the circle is not laid and nothing is tagged.
   { id: 'pit_hell_symbol', x: 2, y: 7, side: 's' },
 
   // --- training yard (east): dummies to swing at, targets to shoot -----------
