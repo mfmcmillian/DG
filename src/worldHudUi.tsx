@@ -672,6 +672,8 @@ export function WorldHudUi() {
   const ready = created && player.active && player.loading === 'ready'
   const inHub = myPhase() === HUB && !getLobbyState().open
   const canLeave = ready && inRun() && !inRaid()
+  // Inventory and Settings always; Dungeons and Edit character in the hall; Leave in a run.
+  const hudButtons = 2 + (inHub ? 2 : 0) + (canLeave ? 1 : 0)
   // The skill bar sits at the foot of the screen; the prompts that used to stand there move up over it.
   const showBar = ready && !getLobbyState().open
   const lift = showBar ? SKILL_BAR_HEIGHT * s + 6 * s : 0
@@ -699,12 +701,13 @@ export function WorldHudUi() {
         uiTransform={{ width: '100%', height: 12 * s, pointerFilter: 'none' }} />)}
     </UiEntity>}
     {created && <UiEntity uiTransform={{ positionType: 'absolute', position: { right, bottom },
-      width: (inHub || canLeave ? 228 : 168) * s, height: 48 * s, flexDirection: 'row', justifyContent: 'space-between', pointerFilter: 'none' }}>
+      width: (48 * hudButtons - 12) * s, height: 48 * s, flexDirection: 'row', justifyContent: 'space-between', pointerFilter: 'none' }}>
       {inHub && <IconButton id="dungeons" label={myParty() ? t('Party') : t('Dungeons')} icon="images/hud/dungeons.png" scale={s} disabled={!ready} onClick={openLobby} />}
       {canLeave && <IconButton id="leave-run" label={t('Leave the fortress')} icon="images/hud/leave.png" scale={s} onClick={() => { leaveAsked = true }} />}
       <IconButton id="inventory" label={t('Inventory')} icon="images/hud/inventory.png" scale={s} disabled={!ready} onClick={openInventory}
         glow={inHub && newGearWaiting()} badge={t('NEW')} />
-      <IconButton id="character" label={t('Edit character')} icon="images/hud/character.png" scale={s} onClick={openPicker} />
+      {/* Class and look are chosen in the hall; a champion in the fortress is committed to it. */}
+      {inHub && <IconButton id="character" label={t('Edit character')} icon="images/hud/character.png" scale={s} onClick={openPicker} />}
       <IconButton id="settings" label={t('Settings')} icon="images/hud/settings.png" scale={s} onClick={openSettings} />
     </UiEntity>}
     {canLeave && <LeaveConfirm width={width} height={height} scale={s} />}
