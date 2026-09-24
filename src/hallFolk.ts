@@ -37,6 +37,8 @@ type Role = {
   yaw: number
   /** The clip they rest in. */
   rest: EquipmentMotion
+  /** Stands there, but has nothing to say: no hold-to-talk prompt. */
+  silent?: boolean
   /** What they do now and then, weighted, and how long they wait between (seconds, min..max). */
   gestures: Gesture[]
   every: [number, number]
@@ -76,7 +78,7 @@ const ROLES: Role[] = [
   {
     body: 'folk-guard-b', cid: 'vanguard',
     at: [47.7, 61.4], yaw: deg(0), rest: 'combat_idle',
-    gestures: [], every: [0, 0], greets: 3.2
+    gestures: [], every: [0, 0], greets: 3.2, silent: true
   },
   {
     body: 'folk-sellsword', cid: 'vanguard',
@@ -137,7 +139,7 @@ export function hallFolkNear(x: number, z: number, reach: number): FolkView | un
   let best: Folk | undefined
   let bestD = reach * reach
   for (const f of folk) {
-    if (!f.loaded) continue
+    if (!f.loaded || f.role.silent) continue
     const dx = f.x - x
     const dz = f.z - z
     const d = dx * dx + dz * dz
