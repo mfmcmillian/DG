@@ -13,7 +13,8 @@ import { isClientSynced, isSoloMode, localAddress, netStatus } from './multiplay
 import { netDebugSummary, recentLogs } from './netDebug'
 import { MenuAction } from './menuUi'
 import {
-  atPitGate, atWarTable, descend, getLobbyState, inRaid, inRun, leaveParty, myParty, myPhase, openLobby, resultsWait, retryRun, returnToHall, setReady
+  atPitGate, atWarTable, descend, doorsWait, getLobbyState, inRaid, inRun, joinParty, leaveParty, myParty, myPhase, openLobby, openParties,
+  resultsWait, retryRun, returnToHall
 } from './party'
 import { ColossusBar, RaidPrompt } from './raid/raidHudUi'
 import { HUB } from './partyLookup'
@@ -358,7 +359,6 @@ function ResultsOverlay({ width, height, scale: s }: { width: number; height: nu
   const solo = party.members.length === 1
   const readyCount = party.members.filter((m) => party.ready.includes(m)).length
   const othersReady = party.members.every((m) => m === party.leader || party.ready.includes(m))
-  const meReady = party.ready.includes(me)
   const wait = resultsWait()
   const cardWidth = Math.min(520 * s, width * 0.7)
   const goText = result.won ? (next ? t('Descend to {level}', { level: next.name }) : t('Fight it again')) : t('Try again')
@@ -382,14 +382,14 @@ function ResultsOverlay({ width, height, scale: s }: { width: number; height: nu
       {leader
         ? <MenuAction id="results-go" text={othersReady ? goText : `${goText}  ${t('({n}/{total} ready)', { n: readyCount, total: party.members.length })}`} onClick={go}
           width={cardWidth / s - 48 - 176} height={40} scale={s} fontSize={14} primary disabled={!othersReady} />
-        : <MenuAction id="results-ready" text={meReady ? `${t('Ready')}  ✓` : `${t('Ready to go on')}  (${readyCount}/${party.members.length})`} onClick={() => setReady(!meReady)}
-          width={cardWidth / s - 48 - 176} height={40} scale={s} fontSize={14} primary={!meReady} accent="gold" active={meReady} />}
+        : <Label value={t('Waiting for {name}…', { name: heroLabel(party.leader) })} color={gold} font="sans-serif" fontSize={14 * s} textAlign="middle-center" textWrap="nowrap"
+          uiTransform={{ width: (cardWidth / s - 48 - 176) * s, height: '100%', pointerFilter: 'none' }} />}
       <UiEntity uiTransform={{ width: 12 * s, flexShrink: 0, pointerFilter: 'none' }} />
       <MenuAction id="results-hall" text={leader ? t('Return to the hall') : t('Leave for the hall')} onClick={leader ? returnToHall : leaveParty}
-        width={164} height={40} scale={s} fontSize={14} accent="gold" />
+        width={164} height={40} scale={s} fontSize={14} />
     </UiEntity>
     <Label value={leader
-      ? (solo ? t('Back to the hall on its own in {time}.', { time: formatTime(wait) }) : t('You lead: the party goes on once everyone is ready. Back to the hall on its own in {time}.', { time: formatTime(wait) }))
+      ? (solo ? t('Back to the hall on its own in {time}.', { time: formatTime(wait) }) : t('You lead: the party goes on when you say. Back to the hall on its own in {time}.', { time: formatTime(wait) }))
       : t('{name} decides where the party goes next. Back to the hall in {time} at the latest.', { name: heroLabel(party.leader), time: formatTime(wait) })}
       color={muted} font="sans-serif" fontSize={11.5 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 20 * s, margin: { top: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />
@@ -407,17 +407,26 @@ function HubPrompt({ width, bottom, scale: s }: { width: number; bottom: number;
   if (talk.open) return <TalkPanel width={width} bottom={bottom} scale={s} open={talk.open} />
   const party = myParty()
   const near = atWarTable()
+  // Someone in the hall is about to go (doors counting down): the offer to step in follows you around the hall.
+  const going = party ? undefined : openParties().find((p) => p.members.length < MAX_PARTY && doorsWait(p) > 0)
   // Beside one of the folk the world prompt (hold E) does the asking; nothing doubles it down here.
-  if (!party && !near) return null
-  if (!party && atPitGate()) return null
-  const caption = party ? `${partyTitle(party)}  ·  ${party.members.length}/${MAX_PARTY}  ·  ${LEVELS[party.level]?.name ?? ''}`
-    : t('The war table: choose a fortress to enter.')
+  if (!party && !near && !going) return null
+  if (!party && !going && atPitGate()) return null
+  const wait = party ? doorsWait(party) : going ? doorsWait(going) : 0
+  const caption = party
+    ? `${partyTitle(party)}  ·  ${party.members.length}/${MAX_PARTY}  ·  ${LEVELS[party.level]?.name ?? ''}${wait > 0 ? `  ·  ${t('Doors close in {n}s', { n: Math.ceil(wait) })}` : ''}`
+    : going
+      ? `${t('{name} is going to {level}', { name: heroLabel(going.leader), level: LEVELS[going.level]?.name ?? '' })}${wait > 0 ? `  ·  ${t('Doors close in {n}s', { n: Math.ceil(wait) })}` : ''}`
+      : t('The war table: choose a fortress to enter.')
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - 460 * s) / 2, bottom },
     width: 460 * s, flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
-    <Label value={caption} color={party ? gold : muted} font="sans-serif" fontSize={12 * s} textWrap="nowrap"
+    <Label value={caption} color={party || going ? gold : muted} font="sans-serif" fontSize={12 * s} textWrap="nowrap"
       uiTransform={{ width: '100%', height: 24 * s, margin: { bottom: 6 * s }, pointerFilter: 'none' }} />
     <UiEntity uiTransform={{ flexDirection: 'row', justifyContent: 'center', pointerFilter: 'none' }}>
-      <TextAction id="open-lobby" text={party ? t('Party') : t('Dungeons')} onClick={openLobby} scale={s} width={200} />
+      {going && <UiEntity uiTransform={{ margin: { right: near ? 8 * s : 0 }, pointerFilter: 'none' }}>
+        <MenuAction id="join-going" text={t('Join {name}', { name: heroLabel(going.leader) })} onClick={() => joinParty(going.id)} width={200} height={34} scale={s} fontSize={13} primary />
+      </UiEntity>}
+      {(near || party) && <TextAction id="open-lobby" text={party ? t('Party') : t('Dungeons')} onClick={openLobby} scale={s} width={going ? 140 : 200} />}
     </UiEntity>
   </UiEntity>
 }
@@ -529,10 +538,21 @@ function KeyCap({ chip, alpha, scale: s }: { key?: string; chip: HintChip; alpha
   </UiEntity>
 }
 
+/** Something more pressing is on screen: a status line, a level-up, a hall notice or a verdict. The hint strip waits. */
+function busyWithNotices(): boolean {
+  const lobby = getLobbyState()
+  if (lobby.open || lobby.result) return true
+  if (lobby.notice && myPhase() === HUB) return true
+  if (localXp().levelUp) return true
+  const player = getPlayerCharacterState()
+  const rival = getWorldRivalState()
+  return (player.active && player.loading !== 'ready') || (rival.visible && (rival.phase === 'error' || rival.phase === 'defeat')) || joining()
+}
+
 /** The how-to-play strip (src/hints.ts): key caps and a line, faded in and out, over the foot of the screen. */
 function HintStrip({ width, bottom, scale: s }: { width: number; bottom: number; scale: number }) {
   const hint = getHint()
-  if (!hint || getLobbyState().open) return null
+  if (!hint || busyWithNotices()) return null
   const alpha = Math.min(1, hint.age / 0.35, Math.max(0, hint.remaining / 0.6))
   const stripWidth = Math.min(640 * s, width * 0.8)
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - stripWidth) / 2, bottom },

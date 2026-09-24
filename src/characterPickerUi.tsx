@@ -29,6 +29,8 @@ import {
 
 const { white, muted, gold, card, selectedGold, line, goldLine, coral, ink } = menuColors
 const veil = Color4.create(0.01, 0.02, 0.03, 0.55)
+/** A first champion sees one screen (class, rolled face, Enter); the face and outfit editors sit behind Customise. */
+let customising = false
 const veilDeep = Color4.create(0.01, 0.02, 0.03, 0.72)
 /** The lobby's sheet: every full-screen panel in the game shares it. */
 const sheet = Color4.create(0.025, 0.045, 0.07, 0.97)
@@ -137,9 +139,10 @@ function AppearanceEditor({ scale: s }: { scale: number }) {
 
 function OutfitPresets({ scale: s }: { scale: number }) {
   const state = getPickerState()
+  const first = !state.hasCreatedCharacter
   return <Sheet left={0} top={100} width={234} height={538} padding={18} scale={s}>
-    <Heading title={t('OUTFIT')} scale={s} />
-    <Label value={t('Starting armor')} font="serif" color={white} fontSize={20 * s} textAlign="middle-left" textWrap="nowrap"
+    <Heading title={first ? t('CHAMPION') : t('OUTFIT')} scale={s} />
+    <Label value={first ? t('Pick one') : t('Starting armor')} font="serif" color={white} fontSize={20 * s} textAlign="middle-left" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 34 * s, margin: { bottom: 12 * s }, flexShrink: 0, pointerFilter: 'none' }} />
     <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', pointerFilter: 'none' }}>
       {CHARACTERS.map((entry) => {
@@ -163,6 +166,25 @@ function OutfitPresets({ scale: s }: { scale: number }) {
         </UiEntity>
       })}
     </UiEntity>
+  </Sheet>
+}
+
+/** The right-hand sheet for a first champion: who this is, and the door to the editors. */
+function ChampionCard({ scale: s }: { scale: number }) {
+  const selected = getSelectedCharacter()
+  const disabled = getPickerState().confirming
+  return <Sheet left={794} top={100} width={486} height={538} padding={24} scale={s}>
+    <Heading title={t('YOUR CHAMPION')} scale={s} />
+    <Label value={selected.name} font="serif" color={white} fontSize={30 * s} textAlign="middle-left" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 40 * s, flexShrink: 0, pointerFilter: 'none' }} />
+    <Label value={t(selected.role).toUpperCase()} color={gold} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 18 * s, margin: { bottom: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+    <Label value={t(selected.description)} color={muted} fontSize={14 * s} textAlign="top-left" textWrap="wrap"
+      uiTransform={{ width: '100%', height: 90 * s, flexShrink: 0, pointerFilter: 'none' }} />
+    <UiEntity uiTransform={{ width: '100%', flexGrow: 1, pointerFilter: 'none' }} />
+    <Label value={t('Your face is already picked. Change it if you like, or just go.')} color={muted} fontSize={12 * s} textAlign="middle-left" textWrap="wrap"
+      uiTransform={{ width: '100%', height: 36 * s, margin: { bottom: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+    <Action id="customise" text={t('Customise your look')} onClick={() => { customising = true }} width={438} height={44} scale={s} fontSize={15} accent="gold" disabled={disabled} />
   </Sheet>
 }
 
@@ -291,6 +313,8 @@ function Picker() {
   const { scale: s, x, y, width, height } = getMenuLayout('picker')
   const state = getPickerState()
   const selected = getSelectedCharacter()
+  // Editing an existing champion always shows the editors; a first one opens them on request.
+  const editing = state.hasCreatedCharacter || customising
   return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}>
     <HallVeil />
     <UiEntity uiTransform={{ width, height, positionType: 'absolute', position: { left: x, top: y }, pointerFilter: 'none' }}>
@@ -304,18 +328,18 @@ function Picker() {
           uiBackground={{ color: gold }} />
       </UiEntity>
       <UiEntity uiTransform={{ positionType: 'absolute', position: { right: 0, top: 18 * s }, pointerFilter: 'none' }}>
-        <Action id="close" text="×" onClick={closePicker} width={38} height={38} scale={s} fontSize={26} accent="gold" disabled={state.confirming} />
+        {state.hasCreatedCharacter && <Action id="close" text="×" onClick={closePicker} width={38} height={38} scale={s} fontSize={26} accent="gold" disabled={state.confirming} />}
       </UiEntity>
       <OutfitPresets scale={s} />
-      <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 654 * s }, width: 234 * s, pointerFilter: 'none' }}>
+      {editing && <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 654 * s }, width: 234 * s, pointerFilter: 'none' }}>
         <LanguageRow scale={s * 0.82} caption="below" />
-      </UiEntity>
-      <AppearanceEditor scale={s} />
+      </UiEntity>}
+      {editing ? <AppearanceEditor scale={s} /> : <ChampionCard scale={s} />}
       <Label value={selected.name} font="serif" color={white} fontSize={26 * s} textAlign="middle-center" textWrap="nowrap"
         uiTransform={{ positionType: 'absolute', position: { left: 254 * s, top: 84 * s }, width: 476 * s, height: 36 * s, pointerFilter: 'none' }} />
       <Label value={t(selected.role).toUpperCase()} color={gold} fontSize={11 * s} textAlign="middle-center" textWrap="nowrap"
         uiTransform={{ positionType: 'absolute', position: { left: 254 * s, top: 122 * s }, width: 476 * s, height: 18 * s, pointerFilter: 'none' }} />
-      <PreviewControls scale={s} />
+      {editing && <PreviewControls scale={s} />}
       <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 794 * s, top: 650 * s }, width: 486 * s,
         flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
         <Label value={state.confirmationError ? t(state.confirmationError) : t('Gear can be changed after you enter.')} color={state.confirmationError ? coral : muted}
@@ -323,7 +347,7 @@ function Picker() {
         <Action id="confirm"
           text={state.confirming ? t('Entering the hall…') : state.confirmationError ? t('Try again')
             : state.loading === 'error' ? t('Retry this look') : state.hasCreatedCharacter ? t('Save champion') : t('Enter the hall')}
-          onClick={state.loading === 'error' ? () => selectCharacter(selected.id) : confirmCharacter}
+          onClick={state.loading === 'error' ? () => selectCharacter(selected.id) : () => { customising = false; confirmCharacter() }}
           width={438} height={52} scale={s} fontSize={18} primary accent="gold"
           disabled={state.confirming || state.loading === 'loading'} />
       </UiEntity>

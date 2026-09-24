@@ -20,7 +20,8 @@ import { isSettingsOpen } from './settings'
 import { skillsFor } from './shared/skills'
 import { nearTrainingDummy, trainingTally } from './trainingDummies'
 
-export type HintId = 'yard' | 'dungeon' | 'hit' | 'breath' | 'downed'
+/** `gear` is not a strip: it is the arrows to the quartermaster (src/hallGuide.ts), seen once like the rest. */
+export type HintId = 'yard' | 'dungeon' | 'hit' | 'breath' | 'downed' | 'gear'
 
 /** One key cap and what it does. */
 export type HintChip = { key: string; label: string }
@@ -38,7 +39,7 @@ export type HintView = {
 /** How far from a dummy the yard counts as being used. */
 const YARD_REACH = 7
 /** How long each hint stays unless its lesson is learned sooner. */
-const SECONDS: Record<HintId, number> = { yard: 22, dungeon: 20, hit: 6, breath: 4, downed: 30 }
+const SECONDS: Record<HintId, number> = { yard: 22, dungeon: 20, hit: 6, breath: 4, downed: 30, gear: 0 }
 /** Blows on the dummies that count as having learned the keys. */
 const YARD_BLOWS = 4
 
@@ -60,6 +61,14 @@ export function getHint(): Readonly<HintView> | undefined {
 
 export function seenHints(): HintId[] {
   return [...seen]
+}
+
+export function hintSeen(id: HintId): boolean {
+  return seen.has(id)
+}
+
+export function markHintSeen(id: HintId) {
+  seen.add(id)
 }
 
 export function loadSeenHints(list: unknown) {

@@ -142,7 +142,7 @@ function linesFor(title: string, visit: number): string[] {
     case 'Hall Guard':
       return [
         visit === 0 ? t('Steady. The hall is for the living; save the steel for the fortresses.') : t('You again. Still standing, I see. Good.'),
-        t('The war table in the centre of the hall: whoever opens it leads. The leader picks the fortress and how hard it fights; everyone else marks Ready and follows them down.'),
+        t('The war table in the centre of the hall: press Go and your doors stand open a few breaths. Anyone in the hall may step in before they close, and whoever pressed it leads.'),
         t('A party is up to {n}. Going alone is allowed, if you are that sort. Harder settings pay better, in experience and in what drops.', { n: MAX_PARTY }),
         t('When the fight is done the leader chooses: descend deeper, fight it again, or return to the hall. Anyone who has had enough can leave for the hall on their own.')
       ]

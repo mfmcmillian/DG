@@ -13,6 +13,7 @@ import { onNet, sendNet } from './net'
 import { HUB, setPartyLookup } from './partyLookup'
 import { movePlayerToSpawn } from './playerPlacement'
 import { applyCameraSetting } from './settings'
+import { isRealmPreloaded } from './preloadPlan'
 import { t } from './i18n'
 import { getPickerState } from './characterPicker'
 import { getPlayerCharacterState } from './playerCharacter'
@@ -57,7 +58,7 @@ export type PartyInfo = {
   total: number
   won: boolean
   run: number
-  /** Seconds left on the results before the host sends the party to the hall. */
+  /** Seconds left on the results before the host sends the party to the hall; while open, seconds until the doors close (0: held). */
   wait: number
 }
 
@@ -197,8 +198,24 @@ function act(action: string, party = '', level = 0, diff = 0): boolean {
 let leaving = 0
 const LEAVE_IN_FLIGHT_SECONDS = 4
 
-export function createParty(level = 0, diff = 0) {
-  act('create', '', level, diff)
+/**
+ * The one button. A party of one whose doors close in a few seconds; anyone in
+ * the hall can step in before they do, and the leader can close them at once
+ * (startRun) or hold them (holdDoors).
+ */
+export function goRun(level = 0, diff = 0) {
+  act('go', '', level, diff)
+}
+
+/** Leader: stop the doors closing, or start the timer again. */
+export function holdDoors() {
+  act('hold')
+}
+
+/** Seconds until an open party's doors close, counted down between broadcasts; 0 when held. */
+export function doorsWait(party: PartyInfo): number {
+  if (party.state !== 'open' || party.wait <= 0) return 0
+  return Math.max(0, party.wait - state.silence)
 }
 
 export function joinParty(id: string) {
@@ -226,12 +243,6 @@ export function setPartyDifficulty(diff: number) {
 }
 
 export function startRun() {
-  act('start')
-}
-
-/** A party of one, straight into the fight. */
-export function soloRun(level: number, diff: number) {
-  act('create', '', level, diff)
   act('start')
 }
 
@@ -335,6 +346,7 @@ function update(dt: number) {
     }
   }
   if (leaving > 0) leaving = phase === HUB ? 0 : leaving - span
+  syncReadiness(party, span)
   if (phase !== appliedPhase) {
     if (phase === HUB) enterHub()
     else if (party) enterRun(party)
@@ -353,6 +365,33 @@ function update(dt: number) {
   }
   appliedState = party?.state
   if (state.open && phase !== HUB) closeLobby()
+}
+
+/**
+ * Readiness the player never has to press. As leader of an open party we are
+ * ready when the realm is on disk (the host holds the doors while we are not,
+ * and Go now is refused until then). As a member on the results, we are ready as soon as they show: the
+ * leader decides, and anyone who has had enough leaves for the hall instead.
+ */
+let readinessAge = 0
+let autoReadyRun = -1
+function syncReadiness(party: PartyInfo | undefined, span: number) {
+  readinessAge += span
+  if (!party || readinessAge < 1) return
+  const me = localAddress()
+  const leader = party.leader === me
+  const ready = party.ready.includes(me)
+  if (party.state === 'open' && leader) {
+    const want = isRealmPreloaded(levelById(party.level).style)
+    if (want !== ready) {
+      readinessAge = 0
+      act(want ? 'ready' : 'unready')
+    }
+  } else if (party.state === 'done' && !leader && !ready && autoReadyRun !== party.run) {
+    autoReadyRun = party.run
+    readinessAge = 0
+    act('ready')
+  }
 }
 
 function enterRun(party: PartyInfo) {

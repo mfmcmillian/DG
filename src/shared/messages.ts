@@ -31,7 +31,8 @@ const PartySnap = Schemas.Map({
   won: Schemas.Boolean,
   /** Counts up with every run the party starts, so a client can tell a new run in the same party. */
   run: Schemas.Int,
-  /** While `done`: seconds left before the host sends the party back to the hall on its own. */
+  /** While `done`: seconds left before the host sends the party back to the hall on its own.
+   *  While `open`: seconds until the doors close and the run starts on its own (0: held open). */
   wait: Schemas.Number
 })
 
@@ -123,8 +124,10 @@ export const Messages = {
 
   // --- parties and runs -------------------------------------------------------
   /**
-   * Client -> server: a lobby action. `action` is one of create, join, leave,
-   * ready, unready, set (level/diff, leader only), start (leader only).
+   * Client -> server: a lobby action. `action` is one of go (a party whose doors
+   * close on a timer), create (a party that waits), join, leave, ready, unready,
+   * set (level/diff, leader only), hold (leader: stop or restart the timer),
+   * start (leader only).
    */
   party: Schemas.Map({ action: Schemas.String, party: Schemas.String, level: Schemas.Int, diff: Schemas.Int }),
   /** Server -> all: every party in the room. Sent on each change and every few seconds. */

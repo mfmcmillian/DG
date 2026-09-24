@@ -45,6 +45,8 @@ type Party = {
   won: boolean
   /** Runs this party has started; clients key their dungeon rebuild on it. */
   run: number
+  /** `elapsed` at which an open party's doors close and the run starts on its own; 0 while held open. */
+  doors: number
 }
 
 type SavedHero = {
@@ -54,6 +56,9 @@ type SavedHero = {
 
 /** How long the party may stand on the results before the host walks it back to the hall. */
 const DECISION_SECONDS = 120
+/** "Go" opens the doors for this long so others in the hall can step in; a joiner is given at least this much. */
+const DOOR_SECONDS = 15
+const JOIN_GRACE_SECONDS = 8
 const BROADCAST_SECONDS = 3
 
 const parties = new Map<string, Party>()
@@ -122,7 +127,7 @@ function ensureRaid() {
   if (parties.has(RAID_PARTY)) return
   const party: Party = {
     id: RAID_PARTY, leader: '', level: RAID_LEVEL.id, diff: 0, state: 'running',
-    members: [], ready: new Set(), started: elapsed, ended: 0, slain: 0, total: 0, won: false, run: 1
+    members: [], ready: new Set(), started: elapsed, ended: 0, slain: 0, total: 0, won: false, run: 1, doors: 0
   }
   parties.set(RAID_PARTY, party)
   createRunSim(RAID_PARTY, RAID_LEVEL.id, 0)
@@ -262,15 +267,19 @@ function clampDiff(diff: number): number {
 
 function handleAction(id: string, action: string, partyId: string, level: number, diff: number) {
   switch (action) {
+    // `go` is the one button: a party of one whose doors close on a timer, so
+    // anyone in the hall can step in first. `create` is the same party held open.
+    case 'go':
     case 'create': {
       leaveParty(id, false)
       counter++
       const party: Party = {
         id: `p${counter}`, leader: id, level: clampLevel(id, level), diff: clampDiff(diff), state: 'open',
-        members: [id], ready: new Set([id]), started: 0, ended: 0, slain: 0, total: 0, won: false, run: 0
+        members: [id], ready: new Set([id]), started: 0, ended: 0, slain: 0, total: 0, won: false, run: 0,
+        doors: action === 'go' ? elapsed + DOOR_SECONDS : 0
       }
       parties.set(party.id, party)
-      console.log(`[Server] party ${party.id} created by ${id}`)
+      console.log(`[Server] party ${party.id} ${action === 'go' ? 'going' : 'created'} by ${id}`)
       break
     }
     case 'join': {
@@ -279,8 +288,15 @@ function handleAction(id: string, action: string, partyId: string, level: number
       if (party.members.includes(id)) return
       leaveParty(id, false)
       party.members.push(id)
-      // Joining is the pick; the leader still has to start.
+      // Joining is the pick; the leader still has to start (or the doors close).
       party.ready.add(id)
+      if (party.doors > 0) party.doors = Math.max(party.doors, elapsed + JOIN_GRACE_SECONDS)
+      break
+    }
+    case 'hold': {
+      const party = partyOfMember(id)
+      if (!party || party.leader !== id || party.state !== 'open') return
+      party.doors = party.doors > 0 ? 0 : elapsed + DOOR_SECONDS
       break
     }
     case 'leave':
@@ -377,6 +393,7 @@ function returnToHall(party: Party) {
   destroyRunSim(party.id)
   party.state = 'open'
   party.ready = new Set(party.members)
+  party.doors = 0
   // Back in the hall on their feet; a fallen party is not still down at the bar.
   for (const m of party.members) restoreHero(m)
   const next = party.won ? nextLevel(party.level) : undefined
@@ -462,6 +479,16 @@ function update(deltaTime: number) {
       console.log(`[Server] party ${party.id} idled on the results, back to the hall`)
       returnToHall(party)
       changed = true
+    } else if (party.state === 'open' && party.doors > 0 && elapsed >= party.doors) {
+      // The doors close on their own. Someone not ready (the leader's client still
+      // fetching the realm) holds them a moment longer.
+      if (everyoneReady(party)) {
+        console.log(`[Server] party ${party.id}: doors closed`)
+        beginRun(party)
+      } else {
+        party.doors = elapsed + 2
+      }
+      changed = true
     }
   }
   broadcastAge += dt
@@ -476,7 +503,8 @@ function broadcast() {
       members: [...p.members], ready: [...p.ready],
       time: p.state === 'open' ? 0 : (p.state === 'done' ? p.ended : elapsed) - p.started,
       slain: p.slain, total: p.total, won: p.won, run: p.run,
-      wait: p.state === 'done' ? Math.max(0, DECISION_SECONDS - (elapsed - p.ended)) : 0
+      wait: p.state === 'done' ? Math.max(0, DECISION_SECONDS - (elapsed - p.ended))
+        : p.state === 'open' && p.doors > 0 ? Math.max(0, p.doors - elapsed) : 0
     }))
   })
 }

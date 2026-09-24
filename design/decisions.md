@@ -2,6 +2,8 @@
 
 *Append-only, newest first: date · decision · why.*
 
+- 2026-09-23 · The war table has one button, Go: a party of one whose doors close in 15 s, joinable from anywhere in the hall; Make a party / Go alone, ready checks and the follower Ready on results are gone · every fork a first-timer must choose is a stall; party formation now happens to you (Roblox elevator model), tested as H2-02
+- 2026-09-23 · First-timer paths are collapsed: rolled face with Customise behind a button, one fortress and no difficulty row until something is cleared, gold arrows to the war table then to the quartermaster, key caps in the yard and the first run, one notice on screen at a time · "one glowing thing per screen"; the full screens return as soon as there is a choice to make
 - 2026-09-23 · Overhead crawler camera is the default again; over-the-shoulder stays as a Settings option · owner reversed the 1.16.3 default after trying it live; the one-time camera migration (1.16.4) is dropped with it
 - 2026-09-22 · V1 is hooks plus polish (UI, audio, a distinct boss per existing realm) plus mobile, not a mobile-only round · owner's correction after the Bay letter read as "V1 is just mobile"; no new fortresses
 - 2026-09-22 · Requested round is v0; the §9 plan is the proposed V1 follow-on · the programme page states the first application is always V0

@@ -37,15 +37,15 @@ The twist is the run length, and the first minute proves it. For the listing rat
 | Time | Player experience |
 |---|---|
 | **0–5 seconds after control** | A torchlit stone hall, a title card, six language flags and one gold button: New game (or Continue with your champion's name). |
-| **5–10 seconds** | Four champions turn on a pedestal: Vanguard (sword), Berserker (axe), Scout (bow), Striker (staff), each with a one-line role. Click one. |
-| **10–60 seconds** | Change body, hair and armor, or press Enter the hall. You appear in the Hall of Antrom, name over your head, others visible, a war table in the middle. |
-| **1–3 minutes** | Step onto the war table: three realms, the first fortress open. Make a party or Go alone, Start run. Black-stone rooms and your first fight: E swing, F heavy, Space block, Ctrl roll. Coins pop from the first kill. |
+| **5–10 seconds** | Four champions turn on a pedestal: Vanguard (sword), Berserker (axe), Scout (bow), Striker (staff), each with a one-line role. Click one; the face is already rolled (Customise is there for whoever wants it). |
+| **10–60 seconds** | Press Enter the hall. You appear in the Hall of Antrom, others visible, gold arrows over the war table and a chevron trail on the floor leading to it. |
+| **1–3 minutes** | Hold E at the war table: one fortress, one button, Go. The doors close in 15 s and anyone in the hall can step in first. Black-stone rooms and your first fight, with key caps on screen the first time: E light, F heavy, Space guard, Ctrl roll. Coins pop from the first kill. |
 | **3–10 minutes** | At level 2 a NEW SKILL card puts your first skill on key 1. A weapon drops with a rarity toast. The boss door, and the Warlord. |
 | **Natural stopping point** | FORTRESS CLEARED: time, coins, XP, gear found; "The Vaults is open to you." In V0 the screen also shows your time against the week's board and the set piece still missing. Back in the hall, the wardrobe shows where it drops. |
 
 **Player-facing How to Play**
 
-- Pick a champion, gather a party, enter
+- Pick a champion, press Go, friends step in
 - Slay the Warlord: gear drops, next fortress opens
 - Friends fight beside you and can raise you
 
@@ -55,7 +55,7 @@ The twist is the run length, and the first minute proves it. For the listing rat
 
 | # | Step (verb) | What the player does (Player input → what they see or hear → what changes) | Why do it again? |
 |---|---|---|---|
-| 1 | **Gather** a party in the hall | Make a party or Join an open one from the list → seats fill, ready checks light up → the leader picks a fortress (7 today across 3 realms) and a difficulty (Normal / Hard / Nightmare). Or Go alone. | A different fortress, a harder difficulty, or a party that makes the deeper ones possible. |
+| 1 | **Go** from the war table | Pick a fortress (7 today across 3 realms) and how hard (Normal / Hard / Nightmare), press Go → your doors are open for 15 s and everyone in the hall sees "{name} is going to {fortress} · Join" → friends step in, seats fill with no ready checks → the doors close, or the leader closes them early or holds them. A first-timer sees one fortress and one button. | A different fortress, a harder difficulty, or a party that makes the deeper ones possible. |
 | 2 | **Fight** room to room | WASD, E light / F heavy / Space block / Ctrl roll, skills on 1–4 → enemies stagger, take numbers, drop coins and hearts → rooms clear, the boss door opens. | Your class's four skills open at levels 2, 5, 9 and 14, so the same room plays differently a week later. |
 | 3 | **Slay** the Warlord | Boss arena, three phases → THE PARTY HAS FALLEN or FORTRESS CLEARED → coins and any weapon or armor drop go to every hero in the party the moment it falls. | Each realm's armor set drops only in that realm, piece by piece; the boss is the best roll. |
 | 4 — optional | **Equip** in the hall | Wardrobe: all equipment, class-locked sets shown with where each missing piece drops → equip changes the hero everyone sees. | The set is visible x/N; the next piece has a named place to go. |
@@ -115,12 +115,12 @@ The twist is the run length, and the first minute proves it. For the listing rat
 
 | | |
 |---|---|
-| **The repeatable social loop** | A player opens a party at the war table and picks a fortress → a second player sees it under OPEN PARTIES with the fortress, difficulty and class seats, and joins → the leader can now start a difficulty the two of them could not solo, and each covers what the other's class lacks (a Scout keeps range while a Vanguard holds the Warlord) → the clear time goes on the board under both names and the drop lands for both, so the same two are worth finding again. |
+| **The repeatable social loop** | A player presses Go at the war table → for 15 s a second player anywhere in the hall sees "{name} is going to {fortress} · Join" at the foot of the screen (and under GOING NOW at the table) and steps in with one click → the leader can now start a difficulty the two of them could not solo, and each covers what the other's class lacks (a Scout keeps range while a Vanguard holds the Warlord) → the clear time goes on the board under both names and the drop lands for both, so the same two are worth finding again. |
 | **The disappearance test** | Solo runs, the hall, the wardrobe and the board still work; what breaks is **the Pit** (the Colossus has been cleared by four, never by one; a lone hero is not raised when downed) and **Nightmare** on the later fortresses, which are tuned above what one class can cover. A solo player keeps roughly two thirds of the game and loses the top of it. |
 | **From strangers to a group** | The OPEN PARTIES list names the fortress, the difficulty and the seats already taken by class icon, so a newcomer sees "Throne Room · Hard · Vanguard, Striker, — , —" and knows a Scout or Berserker is wanted before they click. Ready checks light up per seat; no text needed. In V0 the party seat also shows the hero's level, so nobody joins a Nightmare run at level 3 by accident. |
 | **Recognition & continuity** | Names float over heroes in the hall and in the run, and the war-table board lists them by fortress; a player first learns a name when it sits above theirs on the board or when a party seat fills beside them. What persists: the weekly board (a rival's name to beat), set progress on the hero others can see, and OPEN PARTIES that show a familiar name. |
 | **Quiet hours & player counts** | When few people are online, a solo player can run any open fortress alone ("Go alone") and use the hall, wardrobe and training yard. Social play becomes viable at 2 players (one party). The ideal group is **4**, one of each class; a party holds up to **4**, the Pit holds up to **8** (v1 tested maximum: **4**, a full party in a fortress and the Pit cleared with four). How a solo arrival meets someone: the hall shows who is IN THE HALL and lists OPEN PARTIES to join with one click; the Pit's raid party never disbands and anyone can drop in while the fight is up. |
-| **Drop-in / drop-out** | A party is joined from the hall before Start run; once a run starts the party is closed. In the Pit anyone can drop in mid-fight, and a downed hero is raised by an ally standing beside them; if the whole Pit party falls, everyone is put back in the hall and the Colossus is chained whole again. If a party member leaves mid-run the others continue. |
+| **Drop-in / drop-out** | A party is joined from the hall while its doors are open (15 s after Go, extended by 8 s for each joiner, or held by the leader); once the doors close the party is closed. A member can leave a run at any time from the door button; the others continue. In the Pit anyone can drop in mid-fight, and a downed hero is raised by an ally standing beside them; if the whole Pit party falls, everyone is put back in the hall and the Colossus is chained whole again. If a party member leaves mid-run the others continue. |
 | **Visible play (the bystander test)** | In the hall's training yard a bystander sees a hero block, roll behind a dummy and land a heavy blow that staggers it, and understands the fight is timed hits, not clicks. |
 | **Shareable play (the memorable moment)** | Eight heroes on the lava rim as the Chained Colossus drops, the last of them raised from the floor two seconds before the killing blow, and the raid-set drop toast over everyone's screen at once. |
 | **Bring-a-friend** | The moment a player opens the Fallen Crown on Hard and the party list is empty, or the summoning circle to the Pit lights and they know nobody has done it alone. What changes when the friend arrives: a difficulty that was a wall becomes a run, and the clear time carries both names. |

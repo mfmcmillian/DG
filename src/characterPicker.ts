@@ -11,7 +11,9 @@ import {
   MENU_PREVIEW_FACING, MenuPreviewStage, updateMenuPreviewStage
 } from './menuPreviewStage'
 import { getCommittedLoadout, setCommittedLoadout } from './equipmentState'
-import { CharacterAppearance, getCommittedAppearance, normalizeAppearance, setCommittedAppearance } from './appearance'
+import {
+  BODY_TYPES, CharacterAppearance, getCommittedAppearance, HAIR_COLORS, HAIR_STYLES, normalizeAppearance, setCommittedAppearance, SKIN_TONES
+} from './appearance'
 import {
   EQUIPMENT_CLIPS, destroyEquipmentAvatar, getEquipmentLoading,
   setEquipmentAvatar, setEquipmentMotion
@@ -160,7 +162,7 @@ export function openPicker() {
   state.open = true
   state.confirmationError = ''
   state.selectedId = state.equippedId
-  creatorAppearance = getCommittedAppearance(state.equippedId)
+  creatorAppearance = state.hasCreatedCharacter ? getCommittedAppearance(state.equippedId) : rolledAppearance()
   state.motion = 'idle'
   state.autoRotate = false
   facing = MENU_PREVIEW_FACING
@@ -168,6 +170,16 @@ export function openPicker() {
   stage = createMenuPreviewStage('picker')
 
   replacePreview()
+}
+
+/** A face rolled for a first champion, so the screen opens answered; Customise is there for whoever wants it. */
+function rolledAppearance(): CharacterAppearance {
+  const pick = <T,>(list: readonly T[]): T => list[Math.floor(Math.random() * list.length)]
+  const hair = HAIR_STYLES.filter((h) => h.id !== 'none')
+  return normalizeAppearance({
+    bodyType: pick(BODY_TYPES).id, hairStyle: pick(hair.length ? hair : HAIR_STYLES).id,
+    hairColor: pick(HAIR_COLORS).id, skinTone: pick(SKIN_TONES).id
+  })
 }
 
 /** Closing without confirmation discards the roster selection. */

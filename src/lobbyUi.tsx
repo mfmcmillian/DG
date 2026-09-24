@@ -1,6 +1,9 @@
-// The hall's lobby: pick a fortress and a difficulty, make a party or join one,
-// and start. Shown over the hub (no camera change); the host's `parties`
-// broadcast is what every row here reflects.
+// The hall's lobby. One button: Go. It makes a party of one whose doors close
+// in a few seconds; anyone in the hall can step in before they do, and the
+// leader can close them at once or hold them for friends. A hero who has never
+// cleared anything sees one fortress and no settings; the ladder and "how
+// hard" appear once there is a choice to make. Shown over the hub (no camera
+// change); the host's `parties` broadcast is what every row here reflects.
 
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { engine, UiCanvasInformation } from '@dcl/sdk/ecs'
@@ -9,8 +12,8 @@ import { playerDisplayName } from './heroNameTag'
 import { isClientSynced, localAddress } from './multiplayer'
 import { menuColors, MenuAction as Action } from './menuUi'
 import {
-  createParty, getLobbyPick, getLobbyState, isLeader, joinParty, leaveParty, myParty, openParties, PartyInfo,
-  setLobbyPickDiff, setLobbyPickLevel, setReady, soloRun, startRun
+  doorsWait, getLobbyPick, getLobbyState, goRun, holdDoors, isLeader, joinParty, leaveParty, myParty, openParties, PartyInfo,
+  setLobbyPickDiff, setLobbyPickLevel, startRun
 } from './party'
 import { devToolsOn } from './devAccess'
 import { openSettings } from './settings'
@@ -92,13 +95,19 @@ function isOpen(progress: readonly number[], level: number): boolean {
   return devToolsOn() || levelUnlocked(progress, level)
 }
 
+/** Nothing cleared yet: one fortress, one difficulty, one button. */
+function firstTimer(): boolean {
+  return !devToolsOn() && getLobbyState().progress.every((n) => n === 0)
+}
+
 /** The one linear ladder. Locked-via-dev rows show a gold Dev mark. */
 function LevelList({ scale: s, canPick }: { scale: number; canPick: boolean }) {
   const progress = getLobbyState().progress
   const current = getLobbyPick().level
+  const shown = firstTimer() ? LEVELS.slice(0, 1) : LEVELS
   return <UiEntity uiTransform={{ width: LEFT * s, flexDirection: 'column', flexShrink: 0, pointerFilter: 'none' }}>
-    <Heading title={t('DUNGEON')} scale={s} />
-    {LEVELS.map((level, step) => {
+    <Heading title={firstTimer() ? t('YOUR FIRST FORTRESS') : t('DUNGEON')} scale={s} />
+    {shown.map((level, step) => {
       const byProgress = levelUnlocked(progress, level.id)
       const unlocked = isOpen(progress, level.id)
       const best = progress[level.id] ?? 0
@@ -134,7 +143,7 @@ function LevelList({ scale: s, canPick }: { scale: number; canPick: boolean }) {
 function DifficultyRow({ scale: s, canPick }: { scale: number; canPick: boolean }) {
   const current = getLobbyPick().diff
   return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', flexShrink: 0, pointerFilter: 'none' }}>
-    <Heading title={t('DIFFICULTY')} scale={s} />
+    <Heading title={t('HOW HARD')} scale={s} />
     <UiEntity uiTransform={{ width: '100%', height: 38 * s, flexDirection: 'row', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
       {DIFFICULTIES.map((diff) => <Action key={`diff-${diff.id}`} id={`diff-${diff.id}`} text={t(diff.name)} accent="gold" width={(RIGHT - 20) / 3} height={38} scale={s}
         active={current === diff.id} disabled={!canPick} fontSize={14}
@@ -152,44 +161,51 @@ function describeDifficulty(id: number): string {
   return parts.join('  ·  ')
 }
 
+/** Who in the hall is about to go: step in before their doors close. */
 function OpenParties({ scale: s }: { scale: number }) {
   const open = openParties()
+  if (open.length === 0) return null
   return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', flexShrink: 0, margin: { top: 18 * s }, pointerFilter: 'none' }}>
-    <Heading title={t('OPEN PARTIES')} scale={s} />
-    {open.length === 0 && <Label value={t('Nobody else is forming a party right now.')} color={muted} fontSize={11.5 * s}
-      textAlign="middle-left" textWrap="nowrap" uiTransform={{ width: '100%', height: 24 * s, flexShrink: 0, pointerFilter: 'none' }} />}
-    {open.slice(0, 3).map((p) => <UiEntity key={p.id} uiTransform={{ width: '100%', height: 44 * s, margin: { bottom: 6 * s }, padding: { left: 12 * s, right: 8 * s },
-      borderRadius: 4 * s, borderWidth: s, borderColor: line, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}
-      uiBackground={{ color: panel }}>
-      <UiEntity uiTransform={{ width: (RIGHT - 130) * s, height: '100%', flexDirection: 'column', justifyContent: 'center', pointerFilter: 'none' }}>
-        <Label value={`${partyTitle(p)} · ${p.members.length}/${MAX_PARTY}`} color={white} fontSize={13 * s} textAlign="middle-left" textWrap="nowrap"
-          uiTransform={{ width: '100%', height: 20 * s, flexShrink: 0, pointerFilter: 'none' }} />
-        <Label value={`${LEVELS[p.level]?.name ?? ''} · ${t(DIFFICULTIES[p.diff]?.name ?? '')}`} color={muted} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
-          uiTransform={{ width: '100%', height: 16 * s, flexShrink: 0, pointerFilter: 'none' }} />
+    <Heading title={t('GOING NOW')} scale={s} />
+    {open.slice(0, 3).map((p) => {
+      const wait = doorsWait(p)
+      return <UiEntity key={p.id} uiTransform={{ width: '100%', height: 44 * s, margin: { bottom: 6 * s }, padding: { left: 12 * s, right: 8 * s },
+        borderRadius: 4 * s, borderWidth: s, borderColor: line, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}
+        uiBackground={{ color: panel }}>
+        <UiEntity uiTransform={{ width: (RIGHT - 130) * s, height: '100%', flexDirection: 'column', justifyContent: 'center', pointerFilter: 'none' }}>
+          <Label value={`${heroLabel(p.leader)} → ${LEVELS[p.level]?.name ?? ''} · ${p.members.length}/${MAX_PARTY}`} color={white} fontSize={13 * s} textAlign="middle-left" textWrap="nowrap"
+            uiTransform={{ width: '100%', height: 20 * s, flexShrink: 0, pointerFilter: 'none' }} />
+          <Label value={wait > 0 ? t('Doors close in {n}s', { n: Math.ceil(wait) }) : t('Waiting for friends')} color={wait > 0 && wait < 5 ? gold : muted} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
+            uiTransform={{ width: '100%', height: 16 * s, flexShrink: 0, pointerFilter: 'none' }} />
+        </UiEntity>
+        <Action id={`join-${p.id}`} text={t('Join')} accent="gold" width={84} height={30} scale={s} fontSize={13}
+          disabled={p.members.length >= MAX_PARTY} onClick={() => joinParty(p.id)} />
       </UiEntity>
-      <Action id={`join-${p.id}`} text={t('Join')} accent="gold" width={84} height={30} scale={s} fontSize={13}
-        disabled={p.members.length >= MAX_PARTY} onClick={() => joinParty(p.id)} />
-    </UiEntity>)}
+    })}
   </UiEntity>
 }
 
+/**
+ * Our party while its doors are open. The leader closes them (Go now), holds
+ * them for friends, or cancels; a member only needs to stand there. Readiness
+ * is automatic (src/party.ts syncReadiness), so nothing here asks for it.
+ */
 function PartyCard({ scale: s, party }: { scale: number; party: PartyInfo }) {
   const me = localAddress()
   const leader = isLeader()
-  const allReady = party.members.every((m) => party.ready.includes(m))
-  const meReady = party.ready.includes(me)
   const gate = realmGate(party.level)
-  const startText = !gate.ready ? gate.caption : allReady ? t('Start run') : t('Waiting for the party…')
+  const wait = doorsWait(party)
+  const held = party.wait <= 0
+  const countdown = held ? t('The doors are held. Go when you are ready.') : t('Doors close in {n}s', { n: Math.ceil(wait) })
   return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', flexShrink: 0, margin: { top: 18 * s }, pointerFilter: 'none' }}>
-    <Heading title={partyTitle(party).toUpperCase()} scale={s} />
+    <Heading title={leader ? t('GOING WITH YOU') : t('GOING WITH {name}', { name: heroLabel(party.leader).toUpperCase() })} scale={s} />
     {party.members.map((m) => {
-      const ready = party.ready.includes(m)
       return <UiEntity key={m} uiTransform={{ width: '100%', height: 36 * s, margin: { bottom: 4 * s }, padding: { left: 12 * s, right: 12 * s },
         borderRadius: 4 * s, borderWidth: s, borderColor: line, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}
         uiBackground={{ color: panel }}>
         <Label value={`${m === party.leader ? '♛ ' : ''}${m === me ? t('You') : heroLabel(m)}`} color={white} fontSize={13 * s} textAlign="middle-left" textWrap="nowrap"
           uiTransform={{ width: (RIGHT - 150) * s, height: '100%', pointerFilter: 'none' }} />
-        <Label value={ready ? t('Ready') : t('Not ready')} color={ready ? cyan : muted} fontSize={12 * s} textAlign="middle-right" textWrap="nowrap"
+        <Label value={m === party.leader ? t('Leads') : ''} color={muted} fontSize={12 * s} textAlign="middle-right" textWrap="nowrap"
           uiTransform={{ width: 100 * s, height: '100%', pointerFilter: 'none' }} />
       </UiEntity>
     })}
@@ -199,32 +215,30 @@ function PartyCard({ scale: s, party }: { scale: number; party: PartyInfo }) {
       <Label value={t('Open seat')} color={Color4.create(0.5, 0.55, 0.6, 0.8)} fontSize={12 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} />
     </UiEntity>)}
-    <UiEntity uiTransform={{ width: '100%', height: 44 * s, margin: { top: 12 * s }, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
+    <Label value={countdown} color={!held && wait < 5 ? gold : muted} fontSize={13 * s} textAlign="middle-left" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 22 * s, margin: { top: 8 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+    <UiEntity uiTransform={{ width: '100%', height: 44 * s, margin: { top: 8 * s }, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
       {leader
-        ? <Action id="party-start" text={startText} onClick={startRun}
-          width={RIGHT - 150} height={44} scale={s} fontSize={15} primary disabled={!allReady || !gate.ready} />
-        : <Action id="party-ready" text={meReady ? t('Not ready') : t('Ready')} onClick={() => setReady(!meReady)}
-          width={RIGHT - 150} height={44} scale={s} fontSize={15} primary={!meReady} accent="gold" active={meReady} />}
-      <Action id="party-leave" text={t('Leave party')} width={136} height={44} scale={s} fontSize={13} accent="gold" onClick={leaveParty} />
+        ? <Action id="party-start" text={gate.ready ? t('Go now') : gate.caption} onClick={startRun}
+          width={160} height={44} scale={s} fontSize={15} primary disabled={!gate.ready} />
+        : <Label value={t('{name} says when.', { name: heroLabel(party.leader) })} color={muted} fontSize={12 * s} textAlign="middle-left" textWrap="nowrap"
+          uiTransform={{ width: 160 * s, height: '100%', pointerFilter: 'none' }} />}
+      {leader && <Action id="party-hold" text={held ? t('Close the doors') : t('Hold the doors')} width={130} height={44} scale={s} fontSize={13} accent="gold" active={held} onClick={holdDoors} />}
+      <Action id="party-leave" text={leader ? t('Cancel') : t('Stay here')} width={110} height={44} scale={s} fontSize={13} accent="gold" onClick={leaveParty} />
     </UiEntity>
-    {!leader && <Label value={t('The leader picks the dungeon and starts the run.')} color={muted} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
-      uiTransform={{ width: '100%', height: 18 * s, margin: { top: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
   </UiEntity>
 }
 
+/** No party yet: the one button, and whoever else is about to go. */
 function NoParty({ scale: s }: { scale: number }) {
   const synced = isClientSynced()
   const gate = realmGate(getLobbyPick().level)
   return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', flexShrink: 0, margin: { top: 18 * s }, pointerFilter: 'none' }}>
-    <UiEntity uiTransform={{ width: '100%', height: 44 * s, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
-      <Action id="lobby-create" text={t('Make a party')} onClick={() => createParty(getLobbyPick().level, getLobbyPick().diff)}
-        width={(RIGHT - 10) / 2} height={44} scale={s} fontSize={15} primary disabled={!synced} />
-      <Action id="lobby-solo" text={gate.ready ? t('Go alone') : t('Preparing…')} onClick={() => soloRun(getLobbyPick().level, getLobbyPick().diff)}
-        width={(RIGHT - 10) / 2} height={44} scale={s} fontSize={15} accent="gold" disabled={!synced || !gate.ready} />
-    </UiEntity>
-    <Label value={!synced ? t('Connecting to the hall…') : !gate.ready ? gate.caption : t('A party holds up to four. Others in the hall can join before you start.')}
-      color={synced && gate.ready ? muted : coral} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
-      uiTransform={{ width: '100%', height: 18 * s, margin: { top: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+    <Action id="lobby-go" text={!synced ? t('Connecting…') : gate.ready ? t('Go') : gate.caption} onClick={() => goRun(getLobbyPick().level, getLobbyPick().diff)}
+      width={RIGHT} height={56} scale={s} fontSize={20} primary disabled={!synced || !gate.ready} />
+    <Label value={!synced ? t('Connecting to the hall…') : t('Friends in the hall can step in before the doors close.')}
+      color={synced ? muted : coral} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 18 * s, margin: { top: 8 * s }, flexShrink: 0, pointerFilter: 'none' }} />
     <OpenParties scale={s} />
   </UiEntity>
 }
@@ -284,7 +298,7 @@ export function LobbyUi() {
           <LevelList scale={s} canPick={canPick} />
         </UiEntity>
         <UiEntity uiTransform={{ width: RIGHT * s, flexDirection: 'column', flexShrink: 0, pointerFilter: 'none' }}>
-          <DifficultyRow scale={s} canPick={canPick} />
+          {!firstTimer() && <DifficultyRow scale={s} canPick={canPick} />}
           {party ? <PartyCard scale={s} party={party} /> : <NoParty scale={s} />}
         </UiEntity>
       </UiEntity>
