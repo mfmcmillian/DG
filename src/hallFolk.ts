@@ -154,12 +154,6 @@ export function hallFolkNear(x: number, z: number, reach: number): FolkView | un
   return best ? { key: folk.indexOf(best), title: titleOf(best.role), x: best.x, z: best.z } : undefined
 }
 
-/** Where one of the folk stands right now, by title (the arrows point at the quartermaster). */
-export function hallFolkWhere(title: string): { x: number; z: number } | undefined {
-  const f = folk.find((f) => f.loaded && titleOf(f.role) === title)
-  return f ? { x: f.x, z: f.z } : undefined
-}
-
 /** Hold (or release, with undefined) a character's attention while a hero talks to them. */
 export function attendHallFolk(key: number | undefined) {
   attended = key === undefined ? undefined : folk[key]

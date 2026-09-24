@@ -2,9 +2,7 @@
 // chevrons bobbing over a place, and a trail of flat chevrons on the floor
 // leading to it. A hero who has never cleared a fortress gets them over the
 // war table from the moment they arrive, until they open it or clear a run;
-// back from a run with loot in the bag, they point at the quartermaster until
-// the inventory is opened, once; the folk hand them out on request ("Show me
-// the yard"). Local only, and nothing here has a collider, so they never get
+// the folk hand them out on request ("Show me the yard"). Local only, and nothing here has a collider, so they never get
 // in anyone's way.
 
 import { engine, Entity, Material, MeshRenderer, Transform, VisibilityComponent } from '@dcl/sdk/ecs'
@@ -12,14 +10,11 @@ import { Color3, Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
 import { COURTYARD } from './courtyard'
 import { getDungeonState, onDungeonLoaded } from './dungeon'
 import { PIT_GATE_TAG, WAR_TABLE_TAG } from './dungeon/hub'
-import { hallFolkWhere } from './hallFolk'
-import { hintSeen, markHintSeen } from './hints'
-import { getInventoryState, getUnlockedItems } from './inventory'
 import { isHeadless } from './multiplayer'
 import { getLobbyState, myParty, myPhase } from './party'
 import { HUB } from './partyLookup'
 
-export type GuideTarget = 'table' | 'pit' | 'yard' | 'gear'
+export type GuideTarget = 'table' | 'pit' | 'yard'
 
 const FLOOR_Y = COURTYARD.characterFloorY
 /** Where the trail for a first-timer starts: the vestibule spawn (src/dungeon/hub.ts). */
@@ -94,10 +89,6 @@ function build() {
 function placeOf(which: GuideTarget): Vector3 | undefined {
   const tagged = getDungeonState().instance?.tagged
   if (which === 'yard') return Vector3.create(YARD[0], FLOOR_Y, YARD[1])
-  if (which === 'gear') {
-    const q = hallFolkWhere('Quartermaster')
-    return q ? Vector3.create(q.x, FLOOR_Y, q.z) : undefined
-  }
   const entity = tagged?.[which === 'table' ? WAR_TABLE_TAG : PIT_GATE_TAG]
   const t = entity !== undefined ? Transform.getOrNull(entity) : undefined
   return t ? Vector3.create(t.position.x, FLOOR_Y, t.position.z) : undefined
@@ -152,24 +143,17 @@ function needsTheWay(): boolean {
   return progress.every((n) => n === 0)
 }
 
-/** Back from a clear with something found and the wardrobe never opened: the quartermaster is the next lesson. */
-function needsTheGear(): boolean {
-  if (hintSeen('gear')) return false
-  return getLobbyState().progress.some((n) => n > 0) && getUnlockedItems().length > 0
-}
-
 function update(dt: number) {
   const span = Number.isFinite(dt) && dt > 0 ? Math.min(dt, 0.1) : 0
   clock += span
   const lobby = getLobbyState()
   const inHall = myPhase() === HUB
   if (inHall && lobby.open) tableOpened = true
-  if (inHall && getInventoryState().open && needsTheGear()) markHintSeen('gear')
   if (!inHall || lobby.open) {
     if (target) hide()
     return
   }
-  const auto: GuideTarget | undefined = needsTheWay() ? 'table' : needsTheGear() ? 'gear' : undefined
+  const auto: GuideTarget | undefined = needsTheWay() ? 'table' : undefined
   if (target && remaining !== Infinity) {
     // A requested pointer runs its course.
     remaining -= span

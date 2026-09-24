@@ -12,7 +12,7 @@ import { getPickerState } from './characterPicker'
 import { heroClassOf } from './heroClasses'
 import { localXp } from './heroXp'
 import { t } from './i18n'
-import { getInventoryState } from './inventory'
+import { getInventoryState, getUnlockedItems } from './inventory'
 import { getLobbyState, inRaid, inRun, myPhase } from './party'
 import { HUB } from './partyLookup'
 import { getPlayerCharacterState, getPlayerVitals, getPlayerWeapon } from './playerCharacter'
@@ -20,7 +20,7 @@ import { isSettingsOpen } from './settings'
 import { skillsFor } from './shared/skills'
 import { nearTrainingDummy, trainingTally } from './trainingDummies'
 
-/** `gear` is not a strip: it is the arrows to the quartermaster (src/hallGuide.ts), seen once like the rest. */
+/** `gear` is not a strip: it is the glow on the HUD's Inventory button (newGearWaiting), seen once like the rest. */
 export type HintId = 'yard' | 'dungeon' | 'hit' | 'breath' | 'downed' | 'gear'
 
 /** One key cap and what it does. */
@@ -75,6 +75,15 @@ export function loadSeenHints(list: unknown) {
   seen.clear()
   if (!Array.isArray(list)) return
   for (const id of list) if (typeof id === 'string' && id in SECONDS) seen.add(id as HintId)
+}
+
+/**
+ * Back from a clear with something found and the bag never opened: the HUD's
+ * Inventory button glows and wears a NEW badge until it is (src/worldHudUi.tsx).
+ */
+export function newGearWaiting(): boolean {
+  if (seen.has('gear')) return false
+  return getLobbyState().progress.some((n) => n > 0) && getUnlockedItems().length > 0
 }
 
 // --- what the keys are -----------------------------------------------------------------
@@ -132,6 +141,7 @@ function update(dt: number) {
   const running = inRun() && !inRaid()
   const menus = getLobbyState().open || isSettingsOpen() || getInventoryState().open || picker.open
   const hall = myPhase() === HUB
+  if (getInventoryState().open && newGearWaiting()) seen.add('gear')
   const p = Transform.getOrNull(engine.PlayerEntity)?.position
 
   // What is up: time it out, or end it early once the lesson has landed.
