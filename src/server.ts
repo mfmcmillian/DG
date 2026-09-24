@@ -5,6 +5,7 @@ import { initializeMultiplayer } from './multiplayer'
 import { initializeHeroVitals } from './heroVitals'
 import { initializeDungeonEnemies } from './dungeonEnemies'
 import { initializePartyServer } from './partyServer'
+import { initializeJoinNotify } from './joinNotify'
 import { HUB_LEVEL } from './shared/levels'
 
 /**
@@ -21,4 +22,5 @@ export function initServer() {
   initializeHeroVitals()
   initializeDungeonEnemies()
   initializePartyServer()
+  initializeJoinNotify()
 }
