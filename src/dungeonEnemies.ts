@@ -548,11 +548,8 @@ function openGate(g: Gate) {
   if (g.open) return
   g.open = true
   MeshCollider.deleteFrom(g.entity)
-  const t = Transform.get(g.entity)
-  Tween.createOrReplace(g.entity, {
-    mode: Tween.Mode.Move({ start: t.position, end: Vector3.create(t.position.x, t.position.y + 4.8, t.position.z) }),
-    duration: 1400, easingFunction: EasingFunction.EF_EASEINQUAD
-  })
+  const from = { ...Transform.get(g.entity).position }
+  Tween.setMove(g.entity, from, Vector3.create(from.x, from.y + 4.8, from.z), 1400, EasingFunction.EF_EASEINQUAD)
   fxSound('thunk_wood', 0.7)
 }
 
