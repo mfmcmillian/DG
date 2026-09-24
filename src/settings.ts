@@ -26,6 +26,8 @@ export const CAMERA_OPTIONS: Array<{ id: CameraPreference; name: string; blurb: 
 ]
 
 const DEFAULTS: Settings = { language: 'en', camera: 'crawler', devTools: false, openAll: false }
+/** Bumping this puts every saved hero back on the default camera on their next load. */
+const CAMERA_GENERATION = 2
 const settings: Settings = { ...DEFAULTS }
 let open = false
 
@@ -97,14 +99,17 @@ export function applyCameraSetting() {
 
 export function serializeSettings(): string {
   return JSON.stringify({
-    camera: settings.camera, dev: settings.devTools ? 1 : 0, open: settings.openAll ? 1 : 0, lang: settings.language, hints: seenHints()
+    camera: settings.camera, camV: CAMERA_GENERATION, dev: settings.devTools ? 1 : 0, open: settings.openAll ? 1 : 0, lang: settings.language, hints: seenHints()
   })
 }
 
 export function loadSettings(json: string) {
   if (json) {
     const value = parsePrefs(json)
-    settings.camera = value.camera === 'shoulder' ? 'shoulder' : 'crawler'
+    // Everyone starts overhead. A save from before this generation (including the
+    // weeks the shoulder camera was the default) goes back to it once; a choice
+    // made since is kept.
+    settings.camera = value.camV === CAMERA_GENERATION && value.camera === 'shoulder' ? 'shoulder' : 'crawler'
     settings.devTools = value.dev === 1 || value.dev === true
     settings.openAll = prefsOpenAll(json)
     // A save from before languages, or one made in another session's tongue,
