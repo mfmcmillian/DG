@@ -1,7 +1,7 @@
 import { CreatedBy, engine, Entity, EntityState, PlayerIdentityData, RealmInfo, Transform } from '@dcl/sdk/ecs'
 import { Vector3 } from '@dcl/sdk/math'
 import { isStateSyncronized, syncEntity } from '@dcl/sdk/network'
-import { CombatPose, MAX_COMBAT_HEALTH } from './combatActions'
+import { CombatPose, isMeleeSwing, MAX_COMBAT_HEALTH } from './combatActions'
 import { EquipmentMotion } from './combatAnimations'
 import { CharacterAppearance } from './appearance'
 import { EquipmentLoadout, EQUIPMENT_SLOTS, sanitizeLoadout } from './equipmentCatalog'
@@ -16,6 +16,8 @@ export type NetFighter = CombatPose & {
   health: number
   invulnerable: boolean
   blocking: boolean
+  /** Mid hand-weapon swing: the commit guard softens blows taken (combatActions MELEE). */
+  swinging: boolean
   local: boolean
 }
 
@@ -208,7 +210,7 @@ export function heroPosition(id: string): Vector3 | undefined {
   return undefined
 }
 
-export function allFighters(local?: (CombatPose & { health: number; invulnerable: boolean; blocking: boolean })): NetFighter[] {
+export function allFighters(local?: (CombatPose & { health: number; invulnerable: boolean; blocking: boolean; swinging: boolean })): NetFighter[] {
   const list: NetFighter[] = []
   const me = localAddress()
   if (local && me) {
@@ -224,6 +226,7 @@ export function allFighters(local?: (CombatPose & { health: number; invulnerable
       health: isHost() ? heroHealth(id) : MAX_COMBAT_HEALTH,
       invulnerable: hero.dodge,
       blocking: hero.block,
+      swinging: isMeleeSwing(hero.motion),
       local: false
     })
   }

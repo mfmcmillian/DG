@@ -1,7 +1,7 @@
 import { Entity } from '@dcl/sdk/ecs'
 import { Vector3 } from '@dcl/sdk/math'
 import {
-  advanceAttack, attackRecovery, canStartAttack, COMBO_WINDOW, createSwing, HeroAttackMotion,
+  advanceAttack, attackRecovery, canStartAttack, COMBO_WINDOW, createSwing, HeroAttackMotion, isMeleeSwing,
   INPUT_BUFFER, isHeavyMotion, MAX_COMBAT_HEALTH, STAMINA, Swing
 } from './combatActions'
 import { COMBAT_CLIPS, EquipmentMotion, JumpMotion, NATIVE_JUMP_CLIPS } from './combatAnimations'
@@ -156,6 +156,11 @@ export function isRoamingInvulnerable(combat: RoamingCombat): boolean {
 
 export function isRoamingBlocking(combat: RoamingCombat): boolean {
   return combat.blocking
+}
+
+/** Mid hand-weapon swing (not a skill, not a shot): the commit guard applies. */
+export function isRoamingSwinging(combat: RoamingCombat): boolean {
+  return !!combat.swing && !combat.swing.skill && isMeleeSwing(combat.swing.motion)
 }
 
 /**
@@ -388,7 +393,9 @@ export function updateRoamingCombat(
   const swing = combat.swing
   if (swing && advanceAttack(swing, combat.elapsed, dt, () => hooks.onAttackContact?.(swing.motion as HeroAttackMotion, { finisher: !!swing.finisher, skill: skillOf(swing) }))) {
     combat.swing = undefined
-    combat.recovery = swing.skill ? 0.2 : attackRecovery(swing.motion, !!swing.finisher)
+    // The berserker's smash and leap already run 1.6 s inside the enemy's reach: the hero gets back on guard fast.
+    const bigSwing = swing.motion === 'heavy_combo_c' || swing.motion === 'leap'
+    combat.recovery = swing.skill || bigSwing ? 0.2 : attackRecovery(swing.motion, !!swing.finisher)
     // The string may continue for a moment after the recovery; a finisher (or a skill) ends it.
     const ender = isHeavyMotion(swing.motion) || !!swing.finisher || !!swing.skill
     combat.comboWindow = ender ? 0 : combat.recovery + COMBO_WINDOW

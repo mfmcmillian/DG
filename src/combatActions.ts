@@ -22,6 +22,26 @@ export function isSlashMotion(motion: WeaponMotion): boolean {
 
 const RANGED_MOTIONS: ReadonlySet<WeaponMotion> = new Set<WeaponMotion>(['bow_shoot', 'bow_volley', 'cast_bolt', 'cast_nova'])
 
+/** A hand-weapon swing (blade or heavy): what cleaves, and what earns the commit guard. */
+export function isMeleeSwing(motion: string): boolean {
+  return isSlashMotion(motion as WeaponMotion) || motion === 'stab' || motion === 'heavy_combo_b'
+}
+
+/**
+ * Melee fights inside the enemy's reach while ranged fights outside it, so a
+ * hand weapon is paid back two ways. A swing cleaves: a light also catches the
+ * next body in the arc for `cleaveSecondary` of its damage, while a heavy or a
+ * string's finisher lands on everyone in the arc in full. And a hero in the
+ * middle of a swing takes `commitGuard` of a blow rather than all of it, so
+ * committing to the attack is not simply eating the reply.
+ */
+export const MELEE = {
+  cleaveSecondary: 0.6,
+  /** Bodies within this of the first one struck can be caught by the same swing (host side, where facing is not trusted). */
+  cleaveSpread: 3,
+  commitGuard: 0.75
+}
+
 /** A shot: the blow lands where the projectile does, not at the contact frame. */
 export function isRangedAttack(motion: WeaponMotion): boolean {
   return RANGED_MOTIONS.has(motion)

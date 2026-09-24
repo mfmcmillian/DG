@@ -52,10 +52,10 @@ export function clearXp(level: LevelDefinition, diff: DifficultyDefinition, firs
  */
 export type HeroBonuses = { might: number; toughness: number; stamina: number }
 
-/** Per level gains by champion: the vanguard hardens, the berserker hits harder, the scout runs longer. */
+/** Per level gains by champion: the two who fight in reach harden, the berserker hits harder too, the scout runs longer. */
 const GAINS: Record<string, { might: number; toughness: number; stamina: number }> = {
   vanguard: { might: 0.007, toughness: 0.01, stamina: 1 },
-  brute: { might: 0.015, toughness: 0.005, stamina: 1 },
+  brute: { might: 0.015, toughness: 0.01, stamina: 1 },
   scout: { might: 0.01, toughness: 0.005, stamina: 2 },
   striker: { might: 0.012, toughness: 0.005, stamina: 1 }
 }

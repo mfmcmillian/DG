@@ -117,13 +117,13 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     effect: { kind: 'strike', arc: 180, range: 2.7, carry: 0, mult: 1.1, all: true, stagger: 1, knockback: 0.5 }
   },
   rally: {
-    id: 'rally', name: 'Rally', cls: 'blade', slot: 2, level: SKILL_LEVELS[2],
+    id: 'rally', name: 'Rally', cls: 'blade', slot: 3, level: SKILL_LEVELS[3],
     blurb: 'A cry that puts a fifth more weight behind every ally\'s blows for eight seconds.',
     cooldown: 20, stamina: 10, motion: 'menace_enter', contact: 0.6, color: BLADE,
     effect: { kind: 'aura', target: 'party', radius: 9, seconds: 8, might: 1.2, toughness: 1, heal: 0 }
   },
   iron_ward: {
-    id: 'iron_ward', name: 'Iron Ward', cls: 'blade', slot: 3, level: SKILL_LEVELS[3],
+    id: 'iron_ward', name: 'Iron Ward', cls: 'blade', slot: 2, level: SKILL_LEVELS[2],
     blurb: 'Set your feet: blows take two fifths less out of you for six seconds.',
     cooldown: 18, stamina: 15, motion: 'flourish', contact: 0.7, color: BLADE,
     effect: { kind: 'aura', target: 'self', radius: 0, seconds: 6, might: 1, toughness: 0.6, heal: 0 }
@@ -143,13 +143,13 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     effect: { kind: 'strike', arc: 75, range: 2.9, carry: 1.6, mult: 1.2, all: true, stagger: 1, knockback: 0.45 }
   },
   berserk: {
-    id: 'berserk', name: 'Berserk', cls: 'heavy', slot: 2, level: SKILL_LEVELS[2],
-    blurb: 'Eight seconds of a third more damage dealt, and a little more taken.',
+    id: 'berserk', name: 'Berserk', cls: 'heavy', slot: 3, level: SKILL_LEVELS[3],
+    blurb: 'Eight seconds of a third more damage dealt.',
     cooldown: 22, stamina: 10, motion: 'menace_enter', contact: 0.6, color: HEAVY,
-    effect: { kind: 'aura', target: 'self', radius: 0, seconds: 8, might: 1.35, toughness: 1.15, heal: 0 }
+    effect: { kind: 'aura', target: 'self', radius: 0, seconds: 8, might: 1.35, toughness: 1, heal: 0 }
   },
   second_wind: {
-    id: 'second_wind', name: 'Second Wind', cls: 'heavy', slot: 3, level: SKILL_LEVELS[3],
+    id: 'second_wind', name: 'Second Wind', cls: 'heavy', slot: 2, level: SKILL_LEVELS[2],
     blurb: 'Shake it off: thirty health back on the spot.',
     cooldown: 25, stamina: 0, motion: 'flourish', contact: 0.7, color: HEAVY,
     effect: { kind: 'aura', target: 'self', radius: 0, seconds: 0, might: 1, toughness: 1, heal: 30 }

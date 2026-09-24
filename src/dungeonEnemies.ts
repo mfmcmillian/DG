@@ -19,9 +19,9 @@ import { EquipmentMotion } from './combatAnimations'
 import {
   advanceAttack, attackCanReach, attackRange, attackRecovery, AttackMotion, canStartAttack,
   combatDistance, CombatPose, COMBAT_RULES, createSwing, facesCombatant, HeroAttackMotion, isHeavyMotion, isRangedAttack,
-  MAX_COMBAT_HEALTH, resolveCombatHit, resolveSkillHit, Swing, WeaponModifiers, WeaponMotion
+  MAX_COMBAT_HEALTH, MELEE, resolveCombatHit, resolveSkillHit, Swing, WeaponModifiers, WeaponMotion
 } from './combatActions'
-import { heroClassOf, shotProfile, skillShotProfile, weaponPoolFor } from './heroClasses'
+import { classOfCharacter, heroClassOf, shotProfile, skillShotProfile, weaponPoolFor } from './heroClasses'
 import { SkillDef, skillById } from './shared/skills'
 import { clearProjectiles, launchShot, ProjectileTarget, setProjectileTargets, SHOT_HEIGHT } from './projectiles'
 import { createRivalBrain, resetRivalBrain, RivalBrain, updateRivalBrain } from './rivalBrain'
@@ -1389,18 +1389,17 @@ function hitEnemies(motion: HeroAttackMotion, context: AttackContext) {
     shootEnemies(attacker, motion, context)
     return
   }
-  let best: Enemy | undefined
-  let bestIndex = -1
-  let bestDistance = Infinity
+  // Everyone the swing can reach, nearest first. The nearest takes the blow in
+  // full; a light also catches the next body for part of it, a heavy or a
+  // finisher lands on all of them (combatActions MELEE).
+  const reached: Array<{ e: Enemy; i: number; d: number }> = []
   sim.enemies.forEach((e, i) => {
     if (e.loading !== 'ready' || e.dead || e.asleep || e.returningHome || !attackCanReach(attacker, e, motion)) return
-    const d = combatDistance(attacker, e)
-    if (d < bestDistance) {
-      bestDistance = d
-      best = e
-      bestIndex = i
-    }
+    reached.push({ e, i, d: combatDistance(attacker, e) })
   })
+  reached.sort((a, b) => a.d - b.d)
+  const best = reached[0]?.e
+  const bestIndex = reached[0]?.i ?? -1
   if (!best || bestIndex < 0) {
     // Nobody to fight: a training dummy in reach takes the blow instead.
     let dummy: TrainingTarget | undefined
@@ -1419,8 +1418,38 @@ function hitEnemies(motion: HeroAttackMotion, context: AttackContext) {
     return
   }
   presentPlayerStrike(attacker, best, motion, context)
-  if (isHost()) applyPlayerHit(attacker, best, motion, { finisher: context.finisher, weapon: localWeapon(), might: localMight() })
-  else publishHitEnemy(bestIndex, motion, context.finisher)
+  const wide = isHeavyMotion(motion) || context.finisher
+  const others = wide ? reached.slice(1) : reached.slice(1, 2)
+  for (const { e } of others) presentPlayerStrike(attacker, e, motion, { ...context, share: wide ? 1 : MELEE.cleaveSecondary })
+  if (isHost()) {
+    const hit = { finisher: context.finisher, weapon: localWeapon(), might: localMight() }
+    applyPlayerHit(attacker, best, motion, hit)
+    for (const { e } of others) applyPlayerHit(attacker, e, motion, { ...hit, might: hit.might * (wide ? 1 : MELEE.cleaveSecondary) })
+  } else {
+    // One report, for the body the client chose; the host finds the rest of the cleave itself.
+    publishHitEnemy(bestIndex, motion, context.finisher)
+  }
+}
+
+/**
+ * Host: the bodies a reported swing also catches. The client's facing is not
+ * trusted here, so the cleave is bounded by reach from the attacker and by
+ * closeness to the body the client did name: the same knot of enemies.
+ */
+function cleaveFrom(attacker: CombatPose, struck: Enemy, motion: HeroAttackMotion, wide: boolean): Enemy[] {
+  const s = sim
+  if (!s || isRangedAttack(motion) || motion === 'bow_bash') return []
+  const range = attackRange(motion) + 0.5
+  const list: Array<{ e: Enemy; d: number }> = []
+  for (const e of s.enemies) {
+    if (e === struck || e.loading !== 'ready' || e.dead || e.asleep || e.returningHome) continue
+    if (Math.abs(attacker.position.y - e.position.y) > COMBAT_RULES.maximumVerticalReach) continue
+    const d = combatDistance(attacker, e)
+    if (d > range || combatDistance(struck, e) > MELEE.cleaveSpread) continue
+    list.push({ e, d })
+  }
+  list.sort((a, b) => a.d - b.d)
+  return (wide ? list : list.slice(0, 1)).map((x) => x.e)
 }
 
 /**
@@ -1497,7 +1526,12 @@ function applyRemoteHit(id: string, index: number, motion: string, finisher: boo
   const cid = heroCharacters((owner) => owner === id)[0]
   if (!heroClassMotionAllowed(cid, attack)) return
   // The weapon is read off the hero's synced body: the client never states its own damage.
-  applyPlayerHit(attacker, e, attack, { finisher, weapon: weaponStats(heroWeapon(id)), might: hostMight(id, cid) })
+  const hit = { finisher, weapon: weaponStats(heroWeapon(id)), might: hostMight(id, cid) }
+  applyPlayerHit(attacker, e, attack, hit)
+  const wide = isHeavyMotion(attack) || finisher
+  for (const other of cleaveFrom(attacker, e, attack, wide)) {
+    applyPlayerHit(attacker, other, attack, { ...hit, might: hit.might * (wide ? 1 : MELEE.cleaveSecondary) })
+  }
 }
 
 /** A hero's multiplier on damage dealt as the host applies it: their level, and any buff on them. */
@@ -1578,12 +1612,13 @@ function applyPlayerHit(
 }
 
 function presentPlayerStrike(
-  attacker: CombatPose, e: StrikeTarget, motion: HeroAttackMotion, context: { finisher: boolean; skill?: SkillDef }, at?: Vector3
+  attacker: CombatPose, e: StrikeTarget, motion: HeroAttackMotion, context: { finisher: boolean; skill?: SkillDef; share?: number }, at?: Vector3
 ) {
   const heavy = isHeavyMotion(motion) || !!context.skill
   const guarded = e.blocking && facesCombatant(e, attacker, 0.1)
   const hit = context.skill ? skillHit(context.skill, guarded, localWeapon()) : resolveCombatHit(motion, guarded, context.finisher, localWeapon())
-  hit.damage = withMight(hit.damage, localMight())
+  // A cleave's second body takes its share of the blow (combatActions MELEE).
+  hit.damage = withMight(hit.damage, localMight() * (context.share ?? 1))
   // A sword meets the body between the two; a projectile where it landed.
   const contact = at ? Vector3.clone(at) : Vector3.create(
     (attacker.position.x + e.position.x) / 2, e.position.y + 1.15 * e.archetype.scale, (attacker.position.z + e.position.z) / 2)
@@ -2230,6 +2265,10 @@ function advanceSwing(e: Enemy, dt: number, target: NetFighter, fighters: NetFig
     const hit = resolveCombatHit(swing.motion, guarded, false, weaponStats(e.archetype.weapon, false))
     if (hit.damage === 0) {
       blockFighter(target, e.facing)
+      // A vanguard's guard turns the blow: the attacker is left open for a moment.
+      if (isHost() && !e.boss && classOfCharacter(heroCharacters((owner) => owner === target.address)[0]) === 'blade') {
+        parried(e)
+      }
       return
     }
     const damage = Math.round(hit.damage * e.archetype.damageScale * (sim?.damageScale ?? 1))
@@ -2270,7 +2309,21 @@ function slam(e: Enemy, fighters: NetFighter[]) {
  */
 function strikeFighter(target: NetFighter, damage: number, stagger: number, yaw: number) {
   if (!isHost()) return
-  strikeHero(target.address, damage, stagger, yaw, { dodged: target.invulnerable })
+  // Committed to a swing of a hand weapon: the blow lands softer (combatActions MELEE).
+  const dealt = target.swinging ? Math.round(damage * MELEE.commitGuard) : damage
+  strikeHero(target.address, dealt, stagger, yaw, { dodged: target.invulnerable })
+}
+
+/** The enemy's blow was turned by a vanguard's guard: its swing is gone and it reels for a moment. */
+function parried(e: Enemy) {
+  if (e.dead || e.health <= 0 || e.rollSeconds > 0) return
+  e.swing = undefined
+  e.slamming = false
+  e.blocking = false
+  hideDecals(e)
+  resetRivalBrain(e.brain, 0.1, false)
+  e.stagger = 0.55
+  playMotion(e, 'hit', true)
 }
 
 function blockFighter(target: NetFighter, yaw: number) {

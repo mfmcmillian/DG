@@ -7,7 +7,7 @@ import { movePlayerTo } from '~system/RestrictedActions'
 import { COURTYARD, isInCourtyard } from './courtyard'
 import { EquipmentLoadout } from './equipmentCatalog'
 import {
-  AttackContext, createRoamingCombat, healRoamingCharacter, hitRoamingCharacter, isRoamingBlocking, isRoamingInvulnerable,
+  AttackContext, createRoamingCombat, healRoamingCharacter, hitRoamingCharacter, isRoamingBlocking, isRoamingInvulnerable, isRoamingSwinging,
   isRoamingRooted, maxStamina, resetRoamingCombat, restoreRoamingHealth, RoamingCombatHooks, setRoamingClass, setRoamingHealth, updateRoamingCombat
 } from './roamingCombat'
 import { CombatPose, HeroAttackMotion, isHeavyMotion, isRangedAttack, isSlashMotion, MAX_COMBAT_HEALTH } from './combatActions'
@@ -94,13 +94,13 @@ export type PlayerVitals = {
 }
 
 /** World combat reads the native pose; it never takes over the player transform. */
-export function getPlayerCombatPose(): (CombatPose & { health: number; invulnerable: boolean; blocking: boolean; speed: number }) | undefined {
+export function getPlayerCombatPose(): (CombatPose & { health: number; invulnerable: boolean; blocking: boolean; swinging: boolean; speed: number }) | undefined {
   if (!active || suspended || characterRoot === undefined || getEquipmentLoading(characterRoot) !== 'ready') return undefined
   const player = Transform.getOrNull(engine.PlayerEntity)
   if (!player || !isInsideScene(player.position)) return undefined
   return { position: player.position, facing: facingOverride ?? playerYaw(player.rotation),
     health: roamingCombat.health, invulnerable: isRoamingInvulnerable(roamingCombat), blocking: isRoamingBlocking(roamingCombat),
-    speed: groundSpeed }
+    swinging: isRoamingSwinging(roamingCombat), speed: groundSpeed }
 }
 
 /** The weapon id the local hero's body is carrying right now ('none-weapon' when unarmed). */
