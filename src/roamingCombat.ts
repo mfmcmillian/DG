@@ -435,9 +435,9 @@ function skillRefusal(combat: RoamingCombat, slot: number, hooks: RoamingCombatH
   return undefined
 }
 
-/** The native controller is held still: rolling, rooted in a ground swing, or dead. */
+/** The native controller is held still: rolling, rooted in a ground swing, holding the guard up, or dead. */
 export function isRoamingRooted(combat: RoamingCombat): boolean {
-  return combat.health <= 0 || !!combat.dodge || (!!combat.swing && !combat.jump)
+  return combat.health <= 0 || !!combat.dodge || combat.blocking || (!!combat.swing && !combat.jump)
 }
 
 /** The next light of the string; a ranged class with an enemy at arm's length strikes with the weapon instead. */
