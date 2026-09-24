@@ -2,6 +2,7 @@
 
 *Append-only, newest first: date · decision · why.*
 
+- 2026-09-23 · Default camera is over the shoulder; the overhead crawler camera stays as a Settings option · owner's call; the armor players grind for has to be visible on their own hero, and shoulder view is the one that shows it. Existing saves that chose overhead keep it
 - 2026-09-22 · V1 is hooks plus polish (UI, audio, a distinct boss per existing realm) plus mobile, not a mobile-only round · owner's correction after the Bay letter read as "V1 is just mobile"; no new fortresses
 - 2026-09-22 · Requested round is v0; the §9 plan is the proposed V1 follow-on · the programme page states the first application is always V0
 - 2026-09-22 · Mobile touch controls are in the V1 scope, not deferred · owner's correction; roll is a button, not a gesture, because the mobile client has no gesture support

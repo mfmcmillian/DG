@@ -5,7 +5,8 @@ keep, while every run takes three minutes.*
 
 A co-op dungeon crawler for Decentraland (SDK7): seven fortresses across
 three realms (The Dark Fortress, The Fallen Crown, The Dwarven Forge), built
-from Synty kits and explored with a top-down crawler camera. Pick one of four
+from Synty kits, played over the hero's shoulder (an overhead crawler camera is
+the alternative in Settings). Pick one of four
 champions, form a party of up to four in the Hall of Antrom, fight room to
 room with a light/heavy/block/roll combat kit, slay the Warlord, and wear
 what he drops back into the hall. An eight-hero raid, The Pit of Chains,

@@ -136,7 +136,7 @@ The twist is the run length, and the first minute proves it. For the listing rat
 | Core-loop verb | How it works with touch controls |
 |---|---|
 | **Gather** a party | The war table and summoning circle are trigger areas, not hover targets; OPEN PARTIES is a full-screen list with thumb-height rows; Join and Start run are one tap each. |
-| **Fight** room to room | Left thumb moves. One large attack button on the right: **tap = light blow, hold = heavy blow**. Block is a second button beside it; **roll is a third button** (the mobile client has no gesture support, so no swipes anywhere). Two skill buttons above attack (slots 1–2); slots 3–4 reached by a swap tap in V1. The top-down camera never needs a second thumb. |
+| **Fight** room to room | Left thumb moves. One large attack button on the right: **tap = light blow, hold = heavy blow**. Block is a second button beside it; **roll is a third button** (the mobile client has no gesture support, so no swipes anywhere). Two skill buttons above attack (slots 1–2); slots 3–4 reached by a swap tap in V1. The camera is over the shoulder by default and turns with a drag on the right half of the screen, so looking and attacking share the right thumb: the tap/hold attack sits where the thumb rests, and a drag anywhere else on that half turns the view. Players who want one thumb free can switch to the overhead camera in Settings, which needs no look input at all. |
 | **Slay** the Warlord | Same buttons; phase changes are telegraphed by the boss's wind-up animation and a bar that spans the top of the screen, readable at arm's length. |
 | **Equip** in the hall | Wardrobe as a one-column list with large slot cards; equip is a tap, no drag. |
 | **Descend** into the Pit | Trigger area on the circle; the raise-an-ally action is the same attack button held while standing beside a downed hero. |
@@ -157,7 +157,7 @@ Antrom's three strongholds fell to a Warlord, a turned garrison and a Forge Lord
 
 **Visual direction.**
 
-Synty low-poly fantasy kits (Dark Fortress, Fantasy Kingdom, Dwarven) seen from a top-down crawler camera, so a room, its doors and its enemies fit one screen and stay readable on a phone; heroes and enemies carry name tags and health bars; objectives are lit (the boss door, the loot glow); UI is a gold-on-dark stone panel kit with serif headings. **Signature:** a party of four, one of each class, in a torchlit black-stone room seen from above, name tags and health bars over each, the boss door lit ahead: the typical moment, not the spectacular one. Sound: each class's hit has its own weight (axe thud, bow snap, staff crack); on a muted phone the stagger animation and the damage number carry the same information.
+Synty low-poly fantasy kits (Dark Fortress, Fantasy Kingdom, Dwarven) seen over the hero's shoulder on a short fixed boom (3.2 m, no zoom) so the low-poly detail of the armor reads, with an overhead crawler camera in Settings that fits a whole room on one screen; heroes and enemies carry name tags and health bars; objectives are lit (the boss door, the loot glow); UI is a gold-on-dark stone panel kit with serif headings. **Signature:** a party of four, one of each class, in a torchlit black-stone room seen over the leading hero's shoulder, name tags and health bars over the other three, the boss door lit ahead: the typical moment, not the spectacular one. Sound: each class's hit has its own weight (axe thud, bow snap, staff crack); on a muted phone the stagger animation and the damage number carry the same information.
 
 ---
 

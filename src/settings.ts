@@ -20,11 +20,11 @@ export type Settings = {
 }
 
 export const CAMERA_OPTIONS: Array<{ id: CameraPreference; name: string; blurb: string }> = [
-  { id: 'crawler', name: 'Overhead', blurb: 'High and pitched down, fixed heading. Walls facing the camera drop to parapets.' },
-  { id: 'shoulder', name: 'Over the shoulder', blurb: 'A short boom behind the hero that turns with them.' }
+  { id: 'shoulder', name: 'Over the shoulder', blurb: 'A short boom behind the hero that turns with them.' },
+  { id: 'crawler', name: 'Overhead', blurb: 'High and pitched down, fixed heading. Walls facing the camera drop to parapets.' }
 ]
 
-const DEFAULTS: Settings = { language: 'en', camera: 'crawler', devTools: false, openAll: false }
+const DEFAULTS: Settings = { language: 'en', camera: 'shoulder', devTools: false, openAll: false }
 const settings: Settings = { ...DEFAULTS }
 let open = false
 
@@ -101,7 +101,8 @@ export function serializeSettings(): string {
 export function loadSettings(json: string) {
   if (json) {
     const value = parsePrefs(json)
-    settings.camera = value.camera === 'shoulder' ? 'shoulder' : 'crawler'
+    // Over the shoulder is the default; only a save that asked for the overhead camera keeps it.
+    settings.camera = value.camera === 'crawler' ? 'crawler' : 'shoulder'
     settings.devTools = value.dev === 1 || value.dev === true
     settings.openAll = prefsOpenAll(json)
     // A save from before languages, or one made in another session's tongue,
