@@ -1,12 +1,12 @@
 // Discord: a line in the channel when a player walks into the scene. Runs on
 // the headless server only, so one notice goes out per arrival however many
-// clients are watching. Same webhook and shape as DecentraCraft's join notice.
+// clients are watching. The webhook itself lives on the website (Vercel env
+// var behind /api/join): scene code is public and a URL committed here would
+// be scraped and spammed, as the last one was.
 
 import { AvatarBase, engine, PlayerIdentityData } from '@dcl/sdk/ecs'
-import { EnvVar } from '@dcl/sdk/server'
 
-const DEFAULT_JOIN_WEBHOOK =
-  'https://discord.com/api/webhooks/1538574204855656458/py8wHhVdyELkNeTgLSn3ExV5Kuqm2dhWegyeHrzlVFMpc4xhdCjdDLNYvAfBNf_XNwB_'
+const JOIN_RELAY_URL = 'https://decentracraft-nine.vercel.app/api/join'
 /** A player who leaves and comes straight back is not announced twice. */
 const COOLDOWN_MS = 120000
 /** How long to hold a notice waiting for the profile name to arrive. */
@@ -22,14 +22,6 @@ export function initializeJoinNotify() {
   if (initialized) return
   initialized = true
   engine.addSystem(update)
-}
-
-async function webhookUrl(): Promise<string> {
-  try {
-    return (await EnvVar.get('DISCORD_JOIN_WEBHOOK')) || DEFAULT_JOIN_WEBHOOK
-  } catch {
-    return DEFAULT_JOIN_WEBHOOK
-  }
 }
 
 function shortAddress(address: string): string {
@@ -81,23 +73,10 @@ function post(address: string) {
   const online = present.size
   void (async () => {
     try {
-      const url = await webhookUrl()
-      if (!url) return
-      const response = await fetch(url, {
+      const response = await fetch(JOIN_RELAY_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: 'Dungeons of Antrom',
-          embeds: [
-            {
-              title: 'Player entered the scene',
-              description: `**${name}**\n\`${address}\``,
-              color: 0xc9a227,
-              footer: { text: `${online} in scene` },
-              timestamp: new Date().toISOString()
-            }
-          ]
-        })
+        body: JSON.stringify({ game: 'antrom', name, address, online })
       })
       if (!response.ok) console.log(`[Server] discord join notify failed: ${response.status}`)
     } catch (error) {
