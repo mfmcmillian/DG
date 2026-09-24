@@ -7,6 +7,7 @@ import { engine, InputModifier, PointerLock } from '@dcl/sdk/ecs'
 import { CameraChoice, getDungeonState, setCameraChoice } from './dungeon'
 import { parsePrefs, prefsOpenAll } from './shared/prefs'
 import { getLanguage, isLanguage, Language, setLanguage } from './i18n'
+import { loadSeenHints, seenHints } from './hints'
 
 /** The two cameras a player picks between; `native` stays a developer option. */
 export type CameraPreference = 'crawler' | 'shoulder'
@@ -95,7 +96,9 @@ export function applyCameraSetting() {
 // --- persistence (hero save) --------------------------------------------------------------
 
 export function serializeSettings(): string {
-  return JSON.stringify({ camera: settings.camera, dev: settings.devTools ? 1 : 0, open: settings.openAll ? 1 : 0, lang: settings.language })
+  return JSON.stringify({
+    camera: settings.camera, dev: settings.devTools ? 1 : 0, open: settings.openAll ? 1 : 0, lang: settings.language, hints: seenHints()
+  })
 }
 
 export function loadSettings(json: string) {
@@ -108,6 +111,7 @@ export function loadSettings(json: string) {
     // never overrides a choice made on this title screen.
     if (isLanguage(value.lang) && !languageChosen) setLanguage(settings.language = value.lang)
     else settings.language = getLanguage()
+    loadSeenHints(value.hints)
   }
   applyCameraSetting()
 }

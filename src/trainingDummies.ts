@@ -58,6 +58,16 @@ export function trainingActive(): boolean {
   return tally.since < 6
 }
 
+/** Standing within `reach` metres of one of the yard's targets (the hints use it to offer the keys). */
+export function nearTrainingDummy(x: number, z: number, reach: number): boolean {
+  for (const d of dummies) {
+    const dx = d.target.position.x - x
+    const dz = d.target.position.z - z
+    if (dx * dx + dz * dz <= reach * reach) return true
+  }
+  return false
+}
+
 function onHit(damage: number, attacker: CombatPose, heavy: boolean, d: Dummy) {
   if (clock - lastHitAt > STRING_GAP) {
     tally.hits = 0

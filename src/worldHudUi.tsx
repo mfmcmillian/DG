@@ -23,6 +23,7 @@ import { playerDisplayName } from './heroNameTag'
 import { presence } from './presence'
 import { trainingActive, trainingTally } from './trainingDummies'
 import { closeTalk, getTalkState, nextLine, TalkOpen } from './hallTalk'
+import { getHint, HintChip } from './hints'
 import { localXp } from './heroXp'
 import { bonusLinesText } from './heroXp'
 import { MAX_LEVEL } from './shared/progression'
@@ -514,6 +515,37 @@ function LevelUpNotice({ width, top, scale: s }: { width: number; top: number; s
   </UiEntity>
 }
 
+/** One key cap with its word: a dark rounded cap, the key in white, what it does in muted grey beside it. */
+function KeyCap({ chip, alpha, scale: s }: { key?: string; chip: HintChip; alpha: number; scale: number }) {
+  const capWidth = Math.max(30, 12 + chip.key.length * 9) * s
+  return <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { left: 7 * s, right: 7 * s }, pointerFilter: 'none' }}>
+    <UiEntity uiTransform={{ width: capWidth, height: 28 * s, borderRadius: 5 * s, borderWidth: s, borderColor: withAlpha(line, alpha), justifyContent: 'center', alignItems: 'center', pointerFilter: 'none' }}
+      uiBackground={{ color: withAlpha(track, alpha) }}>
+      <Label value={chip.key} color={withAlpha(white, alpha)} font="sans-serif" fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
+        uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} />
+    </UiEntity>
+    <Label value={chip.label} color={withAlpha(muted, alpha)} font="sans-serif" fontSize={12 * s} textAlign="middle-left" textWrap="nowrap"
+      uiTransform={{ width: Math.max(36, chip.label.length * 7.5) * s, height: 28 * s, margin: { left: 6 * s }, pointerFilter: 'none' }} />
+  </UiEntity>
+}
+
+/** The how-to-play strip (src/hints.ts): key caps and a line, faded in and out, over the foot of the screen. */
+function HintStrip({ width, bottom, scale: s }: { width: number; bottom: number; scale: number }) {
+  const hint = getHint()
+  if (!hint || getLobbyState().open) return null
+  const alpha = Math.min(1, hint.age / 0.35, Math.max(0, hint.remaining / 0.6))
+  const stripWidth = Math.min(640 * s, width * 0.8)
+  return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - stripWidth) / 2, bottom },
+    width: stripWidth, flexDirection: 'column', alignItems: 'center', padding: { top: 8 * s, bottom: 8 * s }, borderRadius: 8 * s, pointerFilter: 'none' }}
+    uiBackground={{ color: withAlpha(panel, alpha) }}>
+    {hint.chips.length > 0 && <UiEntity uiTransform={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', height: 30 * s, pointerFilter: 'none' }}>
+      {hint.chips.map((chip) => <KeyCap key={chip.key} chip={chip} alpha={alpha} scale={s} />)}
+    </UiEntity>}
+    {hint.text !== '' && <Label value={hint.text} color={withAlpha(hint.id === 'downed' ? red : gold, alpha)} font="sans-serif" fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 20 * s, margin: { top: hint.chips.length > 0 ? 4 * s : 0 }, pointerFilter: 'none' }} />}
+  </UiEntity>
+}
+
 export function WorldHudUi() {
   const { width, height, scale: s, right, bottom, vitalsTop } = hudLayout()
   const created = getPickerState().hasCreatedCharacter
@@ -532,6 +564,7 @@ export function WorldHudUi() {
     {ready && <HubNotice width={width} top={vitalsTop - 60 * s} scale={s} />}
     {ready && <TrainingTally width={width} top={vitalsTop - 8 * s} scale={s} />}
     {ready && <LevelUpNotice width={width} top={vitalsTop + 60 * s} scale={s} />}
+    {ready && <HintStrip width={width} bottom={bottom + lift + 128 * s} scale={s} />}
     {ready && <BossBar width={width} scale={s} />}
     {ready && <ColossusBar width={width} scale={s} />}
     {ready && <RaidPrompt width={width} bottom={bottom + lift} scale={s} />}

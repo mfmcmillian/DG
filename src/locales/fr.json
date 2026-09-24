@@ -779,5 +779,17 @@
   "Show me the yard": "Montre-moi la cour",
   "Show me the circle": "Montre-moi le cercle",
   "War table": "Table de guerre",
-  "hold to open": "maintenir pour ouvrir"
+  "hold to open": "maintenir pour ouvrir",
+  "Space": "Espace",
+  "Guard": "Garde",
+  "Roll": "Roulade",
+  "Skills": "Compétences",
+  "Try the keys on the dummies.": "Essayez les touches sur les mannequins.",
+  "Hold Space to guard a blow, or roll clear of it.": "Maintenez Espace pour parer un coup, ou roulez pour l'éviter.",
+  "Out of breath. Stand still a moment and it comes back.": "À bout de souffle. Restez immobile un instant et il revient.",
+  "You are down. You'll be back on your feet in a moment.": "Vous êtes à terre. Vous serez debout dans un instant.",
+  "CONTROLS": "COMMANDES",
+  "Light blow": "Coup léger",
+  "Heavy blow": "Coup lourd",
+  "Hold, near folk or the war table": "Maintenir, près des gens ou de la table de guerre"
 }

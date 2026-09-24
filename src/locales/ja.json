@@ -779,5 +779,17 @@
   "Show me the yard": "訓練場を見せて",
   "Show me the circle": "円陣を見せて",
   "War table": "作戦卓",
-  "hold to open": "長押しで開く"
+  "hold to open": "長押しで開く",
+  "Space": "スペース",
+  "Guard": "ガード",
+  "Roll": "回避",
+  "Skills": "スキル",
+  "Try the keys on the dummies.": "人形でキーを試してみよう。",
+  "Hold Space to guard a blow, or roll clear of it.": "スペース長押しでガード、または回避で切り抜けよう。",
+  "Out of breath. Stand still a moment and it comes back.": "息切れ。少し立ち止まれば回復する。",
+  "You are down. You'll be back on your feet in a moment.": "倒れた。すぐに立ち上がれる。",
+  "CONTROLS": "操作",
+  "Light blow": "弱攻撃",
+  "Heavy blow": "強攻撃",
+  "Hold, near folk or the war table": "長押し：人々や作戦卓の近くで"
 }

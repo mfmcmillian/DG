@@ -17,7 +17,12 @@ import { LanguageRow } from './languageUi'
 const { white, muted, gold, panel, card, line, goldLine } = menuColors
 const veil = Color4.create(0.01, 0.02, 0.03, 0.62)
 const sheet = Color4.create(0.025, 0.045, 0.07, 0.97)
-const FRAME = { width: 520, height: 540 }
+const FRAME = { width: 520, height: 640 }
+
+/** The keys, for anyone who missed them in the yard. */
+const CONTROLS: Array<[string, string]> = [
+  ['E', 'Light blow'], ['F', 'Heavy blow'], ['Space', 'Guard'], ['Ctrl', 'Roll'], ['1-4', 'Skills'], ['E', 'Hold, near folk or the war table']
+]
 let hovered = ''
 
 function layout(extra = 0) {
@@ -70,6 +75,19 @@ export function SettingsUi() {
       <Heading title={t('LANGUAGE')} scale={s} />
       <UiEntity uiTransform={{ width: '100%', height: 36 * s, margin: { bottom: 16 * s }, flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
         <LanguageRow scale={s} />
+      </UiEntity>
+
+      <Heading title={t('CONTROLS')} scale={s} />
+      <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', flexWrap: 'wrap', margin: { bottom: 12 * s }, flexShrink: 0, pointerFilter: 'none' }}>
+        {CONTROLS.map(([key, what], i) => <UiEntity key={`ctl-${i}`} uiTransform={{ width: (i === CONTROLS.length - 1 ? inner : inner / 3) * s, height: 26 * s, flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+          <UiEntity uiTransform={{ width: Math.max(28, 10 + key.length * 8) * s, height: 20 * s, borderRadius: 4 * s, borderWidth: s, borderColor: line, justifyContent: 'center', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}
+            uiBackground={{ color: card }}>
+            <Label value={key === 'Space' ? t('Space') : key} color={white} fontSize={10.5 * s} textAlign="middle-center" textWrap="nowrap"
+              uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} />
+          </UiEntity>
+          <Label value={t(what)} color={muted} fontSize={11.5 * s} textAlign="middle-left" textWrap="nowrap"
+            uiTransform={{ height: '100%', margin: { left: 6 * s }, flexGrow: 1, pointerFilter: 'none' }} />
+        </UiEntity>)}
       </UiEntity>
 
       <Heading title={t('CAMERA')} scale={s} />

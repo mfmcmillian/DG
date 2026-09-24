@@ -19,6 +19,7 @@ import { initializeHallFolk } from './hallFolk'
 import { initializeHallTalk } from './hallTalk'
 import { initializeHallGuide } from './hallGuide'
 import { initializeHallPrompt } from './hallPrompt'
+import { initializeHints } from './hints'
 import { initializeColossusClient } from './raid/colossusClient'
 import { initializeCombatFx } from './combatFx'
 import { initializeProjectiles } from './projectiles'
@@ -90,6 +91,7 @@ function initClient() {
   initializeHallTalk()
   initializeHallPrompt()
   initializeHallGuide()
+  initializeHints()
   initializeColossusClient()
   // Lobby mirror and saved hero ride on the room; a client that goes solo also
   // hosts the party registry itself (see partyServer's onHostStart binding).
