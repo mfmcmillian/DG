@@ -30,7 +30,7 @@ const state: DungeonState = {
   dungeon: undefined,
   instance: undefined,
   showSpawns: false,
-  camera: 'shoulder'
+  camera: 'crawler'
 }
 
 /** The crawler camera only makes sense with no ceiling and a low camera-facing wall. */
