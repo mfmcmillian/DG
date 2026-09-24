@@ -3,8 +3,10 @@
 // the player may not own yet, so the hall also shows what is out there), stand
 // where they belong (the smith at the anvil, guards at the door, a squire at
 // the dummies), gesture now and then, turn to face a hero who walks up, and a
-// couple of them walk rounds. Purely local presentation: nothing here is
-// networked, nothing takes or deals a hit, and the server never builds them.
+// couple of them walk rounds. Nothing floats over their heads: a hero who
+// walks up gets the hold-to-talk prompt beside them (src/hallPrompt.ts).
+// Purely local presentation: nothing here is networked, nothing takes or
+// deals a hit, and the server never builds them.
 //
 // Each is one baked GLB (src/folkBodies.json, built by scripts/build-hall-folk.py
 // from scripts/folk/folk.json) carrying only the clips they play: in hero
@@ -12,7 +14,7 @@
 // hall, and remote heroes dropped out under that load.
 
 import { engine, Entity, Transform } from '@dcl/sdk/ecs'
-import { Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
+import { Quaternion, Vector3 } from '@dcl/sdk/math'
 import { COMBAT_CLIPS, EquipmentMotion } from './combatAnimations'
 import { COURTYARD } from './courtyard'
 import { onDungeonLoaded } from './dungeon'
@@ -21,13 +23,12 @@ import {
   destroyEquipmentAvatar, getEquipmentLoading, isSolidBody, setEquipmentAvatar, setEquipmentMotion, setEquipmentStride, setEquipmentVisible
 } from './equipmentAvatar'
 import folkBodies from './folkBodies.json'
-import { createHeroNameTag, destroyHeroNameTag, setNameTagText } from './heroNameTag'
 import { isHeadless } from './multiplayer'
 
 type Gesture = { motion: EquipmentMotion; weight: number }
 
 type Role = {
-  /** Their baked body in src/folkBodies.json (which also carries the title over their head). */
+  /** Their baked body in src/folkBodies.json (which also carries their title). */
   body: keyof typeof folkBodies
   /** Which hero they are built as; the body's loadout comes from that hero's defaults. */
   cid: 'vanguard' | 'scout' | 'striker' | 'brute'
@@ -110,7 +111,6 @@ const ROLES: Role[] = [
 type Folk = {
   role: Role
   root: Entity
-  tag: Entity
   loaded: boolean
   x: number
   z: number
@@ -159,8 +159,6 @@ export function attendHallFolk(key: number | undefined) {
   attended = key === undefined ? undefined : folk[key]
 }
 
-const TITLE_COLOR = Color4.create(0.78, 0.8, 0.86, 1)
-
 function rand(lo: number, hi: number): number {
   return lo + Math.random() * (hi - lo)
 }
@@ -184,9 +182,8 @@ function build(role: Role): Folk {
   setEquipmentVisible(root, false)
   setEquipmentMotion(root, role.rest, true)
   if (role.patrol) setEquipmentStride(root, Math.min(1.35, Math.max(0.7, role.patrol.speed / WALK_CLIP_SPEED)))
-  const tag = createHeroNameTag(root)
   return {
-    role, root, tag, loaded: false, x: role.at[0], z: role.at[1], yaw: role.yaw, wantYaw: role.yaw,
+    role, root, loaded: false, x: role.at[0], z: role.at[1], yaw: role.yaw, wantYaw: role.yaw,
     nextGesture: role.gestures.length ? rand(role.every[0], role.every[1]) : Infinity, gesturing: 0,
     leg: 1, pausing: role.patrol ? rand(role.patrol.pause[0], role.patrol.pause[1]) : 0, walking: false
   }
@@ -194,7 +191,6 @@ function build(role: Role): Folk {
 
 function clear() {
   for (const f of folk) {
-    destroyHeroNameTag(f.tag)
     destroyEquipmentAvatar(f.root)
     engine.removeEntity(f.root)
   }
@@ -314,7 +310,6 @@ function update(dt: number) {
       if (loading !== 'ready') continue
       f.loaded = true
       setEquipmentVisible(f.root, true)
-      setNameTagText(f.tag, titleOf(f.role), true, TITLE_COLOR)
     }
     if (f.role.patrol) patrol(f, span, hero)
     else stand(f, span, hero)

@@ -771,5 +771,11 @@
   "Your champion": "あなたの勇者",
   "Your face": "顔",
   "Your party": "自分のパーティ",
-  "Your party gathers, {cls}. The fortresses will not wait forever.": "パーティが集まっているぞ、{cls}。要塞は永遠には待たん。"
+  "Your party gathers, {cls}. The fortresses will not wait forever.": "パーティが集まっているぞ、{cls}。要塞は永遠には待たん。",
+  "hold to talk": "長押しで話す",
+  "Open the wardrobe": "衣装棚を開く",
+  "Show me the weapons": "武器を見せて",
+  "Open the war table": "作戦卓を開く",
+  "Show me the yard": "訓練場を見せて",
+  "Show me the circle": "円陣を見せて"
 }

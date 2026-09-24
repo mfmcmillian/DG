@@ -19,6 +19,15 @@ const GOLD = Color4.create(0.93, 0.82, 0.52, 1)
  */
 let farCamera: Entity | undefined
 
+/**
+ * What a camera-facing billboard should aim at right now: the far stand-in
+ * under the rigid crawler camera, the camera itself otherwise (undefined).
+ * Shared with the hall's prompt so it faces the player the same way the tags do.
+ */
+export function billboardTarget(): Entity | undefined {
+  return isCrawlerCameraOn() && CRAWLER_CAMERA.mode === 'rigid' ? farCameraTarget() : undefined
+}
+
 function farCameraTarget(): Entity {
   if (farCamera !== undefined) return farCamera
   const { pitch, height, yaw } = CRAWLER_CAMERA
@@ -89,7 +98,7 @@ export function setNameTagText(tag: Entity, name: string, visible: boolean, colo
   if (shape.text !== name) TextShape.getMutable(tag).text = name
   if (VisibilityComponent.get(tag).visible !== show) VisibilityComponent.getMutable(tag).visible = show
   // Rigid crawler camera: face its fixed direction. Any other camera: face the camera itself.
-  const target = isCrawlerCameraOn() && CRAWLER_CAMERA.mode === 'rigid' ? farCameraTarget() : undefined
+  const target = billboardTarget()
   if (Billboard.get(tag).targetEntity !== target) Billboard.getMutable(tag).targetEntity = target
 }
 

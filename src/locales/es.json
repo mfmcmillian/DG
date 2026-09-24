@@ -771,5 +771,11 @@
   "Your champion": "Tu campeón",
   "Your face": "Tu rostro",
   "Your party": "Tu grupo",
-  "Your party gathers, {cls}. The fortresses will not wait forever.": "Tu grupo se reúne, {cls}. Las fortalezas no esperarán siempre."
+  "Your party gathers, {cls}. The fortresses will not wait forever.": "Tu grupo se reúne, {cls}. Las fortalezas no esperarán siempre.",
+  "hold to talk": "mantén para hablar",
+  "Open the wardrobe": "Abrir el guardarropa",
+  "Show me the weapons": "Muéstrame las armas",
+  "Open the war table": "Abrir la mesa de guerra",
+  "Show me the yard": "Muéstrame el patio",
+  "Show me the circle": "Muéstrame el círculo"
 }

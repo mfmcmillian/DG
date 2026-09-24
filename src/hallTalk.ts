@@ -1,16 +1,20 @@
-// Talking to the hall's folk. Stand near one and the hall prompt offers a
-// word; each has a few lines that teach one part of the game (the smith on
-// armor, the guards on parties, the squire on the yard, the ranger on skills
-// and levels, the witch on stamina, the herald on the Pit), with a first line
-// that changes for who is asking and how often they have asked. Local only:
-// the conversation is between the player and their own client.
+// Talking to the hall's folk. Stand near one and the hold-to-talk prompt
+// (src/hallPrompt.ts) offers a word; each has a few lines that teach one part
+// of the game (the smith on armor, the guards on parties, the squire on the
+// yard, the ranger on skills and levels, the witch on stamina, the herald on
+// the Pit), with a first line that changes for who is asking and how often they
+// have asked. Most of them also do something: the last line carries a button
+// that opens the wardrobe, the war table, or points the way. Local only: the
+// conversation is between the player and their own client.
 
 import { engine, Transform } from '@dcl/sdk/ecs'
 import { getPlayerCharacterState } from './playerCharacter'
 import { attendHallFolk, FolkView, hallFolkNear } from './hallFolk'
+import { showGuide } from './hallGuide'
+import { openInventory, setInventoryFilter } from './inventory'
 import { heroClassOf } from './heroClasses'
 import { localXp } from './heroXp'
-import { getLobbyState, myParty, myPhase } from './party'
+import { getLobbyState, myParty, myPhase, openLobby } from './party'
 import { HUB } from './partyLookup'
 import { MAX_LEVEL } from './shared/progression'
 import { skillsFor } from './shared/skills'
@@ -18,11 +22,16 @@ import { MAX_PARTY, REALMS } from './shared/levels'
 import { GAME_VERSION } from './version'
 import { t } from './i18n'
 
+/** What a character can do for the hero, offered on their last line. */
+export type TalkAction = { label: string; run: () => void }
+
+export type TalkOpen = { title: string; lines: string[]; index: number; action?: TalkAction }
+
 export type TalkState = {
   /** Who is near enough to talk to, when nobody is being talked to. */
   near: FolkView | undefined
   /** The conversation open right now. */
-  open: { title: string; lines: string[]; index: number } | undefined
+  open: TalkOpen | undefined
 }
 
 /** How close a hero stands to be offered a word, and how far they walk before it ends. */
@@ -44,8 +53,13 @@ export function openTalk() {
   const n = visits.get(who.title) ?? 0
   visits.set(who.title, n + 1)
   talkingTo = who
-  state.open = { title: who.title, lines: linesFor(who.title, n), index: 0 }
+  state.open = { title: who.title, lines: linesFor(who.title, n), index: 0, action: actionFor(who.title) }
   attendHallFolk(who.key)
+}
+
+/** Standing close enough to one of the folk for the prompt to be up, or already talking: E is theirs, not a swing. */
+export function talkPromptActive(): boolean {
+  return !!state.near || !!state.open
 }
 
 export function nextLine() {
@@ -82,6 +96,26 @@ function update() {
 
 export function initializeHallTalk() {
   engine.addSystem(update)
+}
+
+// --- what they do --------------------------------------------------------------------------
+
+/** The button on a character's last line: their purpose in the hall, in one press. */
+function actionFor(title: string): TalkAction | undefined {
+  switch (title) {
+    case 'Quartermaster':
+      return { label: t('Open the wardrobe'), run: () => { closeTalk(); openInventory() } }
+    case 'Sellsword':
+      return { label: t('Show me the weapons'), run: () => { closeTalk(); if (openInventory()) setInventoryFilter('weapon') } }
+    case 'Hall Guard':
+      return { label: t('Open the war table'), run: () => { closeTalk(); openLobby() } }
+    case 'Squire':
+      return { label: t('Show me the yard'), run: () => { closeTalk(); showGuide('yard') } }
+    case 'Herald':
+      return { label: t('Show me the circle'), run: () => { closeTalk(); showGuide('pit') } }
+    default:
+      return undefined
+  }
 }
 
 // --- what they say -----------------------------------------------------------------------
