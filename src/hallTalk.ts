@@ -57,11 +57,6 @@ export function openTalk() {
   attendHallFolk(who.key)
 }
 
-/** Standing close enough to one of the folk for the prompt to be up, or already talking: E is theirs, not a swing. */
-export function talkPromptActive(): boolean {
-  return !!state.near || !!state.open
-}
-
 export function nextLine() {
   const open = state.open
   if (!open) return
