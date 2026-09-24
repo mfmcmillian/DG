@@ -53,6 +53,8 @@ type Party = {
 type SavedHero = {
   cid: string; body: string; hair: string; hc: string; skin: string
   loadout: string; coins: number; unlocks: string[]; prefs?: string
+  /** "itemId:ranks" per weapon the pit has raised (absent on saves from before it). */
+  ups?: string[]
 }
 
 /** How long the party may stand on the results before the host walks it back to the hall. */
@@ -92,7 +94,7 @@ function bind() {
     const id = context.from.toLowerCase()
     const hero: SavedHero = {
       cid: msg.cid, body: msg.body, hair: msg.hair, hc: msg.hc, skin: msg.skin,
-      loadout: msg.loadout, coins: msg.coins, unlocks: [...msg.unlocks], prefs: msg.prefs
+      loadout: msg.loadout, coins: msg.coins, unlocks: [...msg.unlocks], prefs: msg.prefs, ups: [...msg.ups]
     }
     heroes.set(id, hero)
     void persist(id, 'hero', hero)
@@ -221,6 +223,7 @@ async function answerLoad(from: string) {
     coins: hero?.coins ?? 0,
     unlocks: hero?.unlocks ?? [],
     prefs: hero?.prefs ?? '',
+    ups: hero?.ups ?? [],
     progress: p,
     xp: JSON.stringify(xp)
   }, { to: [from] })

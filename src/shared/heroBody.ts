@@ -59,7 +59,9 @@ export const HeroLook = engine.defineComponent('dg::HeroLook', {
     legs: Schemas.String,
     boots: Schemas.String,
     weapon: Schemas.String
-  })
+  }),
+  /** Rarity steps the upgrade pit has given `loadout.weapon`; the host prices blows by it. */
+  weaponUp: Schemas.Int
 })
 
 export type HeroBodyValue = ReturnType<typeof HeroBody.get>

@@ -14,13 +14,17 @@ import {
   MeshCollider, MeshRenderer, PointerEventType, pointerEventsSystem, TextAlignMode, TextShape, Transform, VisibilityComponent
 } from '@dcl/sdk/ecs'
 import { Color3, Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
-import { WAR_TABLE_TAG } from './dungeon/hub'
+import { UPGRADE_PIT_REACH, UPGRADE_PIT_TAG, WAR_TABLE_TAG } from './dungeon/hub'
 import { getDungeonState } from './dungeon'
 import { getTalkState, nextLine, openTalk } from './hallTalk'
 import { billboardTarget } from './heroNameTag'
 import { t } from './i18n'
 import { isHeadless } from './multiplayer'
-import { atWarTable, getLobbyState, openLobby } from './party'
+import { atWarTable, getLobbyState, myPhase, openLobby } from './party'
+import { HUB } from './partyLookup'
+import { pitCinematicPlaying, pitHoverItem, pitResultHovering, takePitResult } from './pitCinematic'
+import { isUpgradePickerOpen, openUpgradePicker } from './upgradeUi'
+import { getEquipmentItemOrNull } from './equipmentCatalog'
 
 /** How long E is held for the ring to close. */
 const HOLD_SECONDS = 0.65
@@ -32,6 +36,10 @@ const RADIUS = 0.3
 const AT = Vector3.create(0.78, 1.3, 0)
 /** ...and over the war table: centred, a little above the map. */
 const AT_TABLE = Vector3.create(0, 1.45, 0)
+/** ...and at the upgrade pit: beside the fire, clear of the flames. */
+const AT_PIT = Vector3.create(0.9, 1.5, 0)
+/** ...and beside the weapon hovering over it. */
+const AT_HOVER = Vector3.create(0.8, 2.1, 0)
 
 const GOLD = Color4.create(1, 0.84, 0.4, 1)
 const GOLD_GLOW = Color3.create(1, 0.74, 0.22)
@@ -56,15 +64,39 @@ let systemAdded = false
 function targetNow(): Target | undefined {
   const talk = getTalkState()
   if (talk.open) return undefined
+  // The pit's shot and its sheet own the screen.
+  if (pitCinematicPlaying() || isUpgradePickerOpen()) return undefined
+  const pit = pitTarget()
   const who = talk.near
   if (who) {
-    return { key: 'folk:' + who.title, x: who.x, z: who.z, at: AT, title: t(who.title), hint: t('hold to talk'), run: openTalk }
+    // The smith stands at the pit: whichever is nearer has the ring.
+    const p = Transform.getOrNull(engine.PlayerEntity)?.position
+    const folkNearer = !pit || !p || (who.x - p.x) ** 2 + (who.z - p.z) ** 2 <= (pit.x - p.x) ** 2 + (pit.z - p.z) ** 2
+    if (folkNearer) return { key: 'folk:' + who.title, x: who.x, z: who.z, at: AT, title: t(who.title), hint: t('hold to talk'), run: openTalk }
   }
+  if (pit) return pit
   if (getLobbyState().open || !atWarTable()) return undefined
   const table = getDungeonState().instance?.tagged[WAR_TABLE_TAG]
   const tr = table !== undefined ? Transform.getOrNull(table) : undefined
   if (!tr) return undefined
   return { key: 'table', x: tr.position.x, z: tr.position.z, at: AT_TABLE, title: t('War table'), hint: t('hold to open'), run: openLobby }
+}
+
+function pitTarget(): Target | undefined {
+  if (myPhase() !== HUB || getLobbyState().open) return undefined
+  const cauldron = getDungeonState().instance?.tagged[UPGRADE_PIT_TAG]
+  const tr = cauldron !== undefined ? Transform.getOrNull(cauldron) : undefined
+  const p = Transform.getOrNull(engine.PlayerEntity)
+  if (!tr || !p) return undefined
+  const dx = p.position.x - tr.position.x
+  const dz = p.position.z - tr.position.z
+  if (dx * dx + dz * dz > UPGRADE_PIT_REACH * UPGRADE_PIT_REACH) return undefined
+  const hover = pitHoverItem()
+  if (hover && pitResultHovering()) {
+    const item = getEquipmentItemOrNull(hover.id)
+    return { key: 'pit-take', x: tr.position.x, z: tr.position.z, at: AT_HOVER, title: item ? t(item.name) : t('Upgrade pit'), hint: t('hold to take'), run: () => { takePitResult() } }
+  }
+  return { key: 'pit', x: tr.position.x, z: tr.position.z, at: AT_PIT, title: t('Upgrade pit'), hint: t('hold to offer a weapon'), run: () => { openUpgradePicker() } }
 }
 
 /** The ring is up, or a conversation is open: E belongs to the hall, not to the weapon. */

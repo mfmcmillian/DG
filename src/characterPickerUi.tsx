@@ -10,6 +10,7 @@ import { menuColors, MenuAction as Action } from './menuUi'
 import { kitTexture, UI_KIT } from './uiKit'
 import { isSettingsOpen } from './settings'
 import { SettingsUi } from './settingsUi'
+import { isUpgradePickerOpen, UpgradeUi } from './upgradeUi'
 import { isSavedHeroReady, isTitleOpen, isTitleReady, isTitleResuming, titleBegin, titleContinue, titleResumeSaved } from './titleScreen'
 import { getHeroSaveState, isHeroSavePending, isHeroSaveUnreachable, savedHeroName } from './heroSave'
 import { getLobbyState } from './party'
@@ -367,7 +368,7 @@ export function setupCharacterPickerUi() {
   ReactEcsRenderer.setUiRenderer(
     () => getCombatState().open ? <CombatUi /> : getInventoryState().open ? <InventoryUi />
       : isTitleOpen() ? <TitleScreen /> : getPickerState().open ? <Picker />
-        : isSettingsOpen() ? <SettingsUi /> : getLobbyState().open ? <LobbyUi /> : <WorldHudUi />,
+        : isSettingsOpen() ? <SettingsUi /> : getLobbyState().open ? <LobbyUi /> : isUpgradePickerOpen() ? <UpgradeUi /> : <WorldHudUi />,
     // Every scene UI already uses canvas-pixel layouts. Disable the SDK's second
     // virtual-screen scale and apply native/device insets once in those layouts.
     { virtualWidth: 0, virtualHeight: 0, screenInset: 'none' }

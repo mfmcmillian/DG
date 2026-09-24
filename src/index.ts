@@ -19,6 +19,9 @@ import { initializeHallFolk } from './hallFolk'
 import { initializeHallTalk } from './hallTalk'
 import { initializeHallGuide } from './hallGuide'
 import { initializeHallPrompt } from './hallPrompt'
+import { initializePitFire } from './pitFire'
+import { initializePitCinematic } from './pitCinematic'
+import { initializeUpgradePicker } from './upgradeUi'
 import { initializeHints } from './hints'
 import { initializeColossusClient } from './raid/colossusClient'
 import { initializeCombatFx } from './combatFx'
@@ -90,6 +93,9 @@ function initClient() {
   initializeHallTalk()
   initializeHallPrompt()
   initializeHallGuide()
+  initializePitFire()
+  initializePitCinematic()
+  initializeUpgradePicker()
   initializeHints()
   initializeColossusClient()
   // Lobby mirror and saved hero ride on the room; a client that goes solo also

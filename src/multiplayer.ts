@@ -61,13 +61,13 @@ export type ShotNet = {
 
 /** What the owner writes into its HeroBody and HeroLook each time something changed. */
 export type HeroPublish = Omit<HeroView, 'id' | 'beat'>
-const LOOK_KEYS = ['cid', 'body', 'hair', 'hc', 'skin', 'loadout'] as const
+const LOOK_KEYS = ['cid', 'body', 'hair', 'hc', 'skin', 'loadout', 'weaponUp'] as const
 type LookKey = (typeof LOOK_KEYS)[number]
 type BodyKey = Exclude<keyof HeroPublish, LookKey>
 
 function splitPublish(hero: HeroPublish): { body: Pick<HeroPublish, BodyKey>; look: Pick<HeroPublish, LookKey> } {
-  const { cid, body, hair, hc, skin, loadout, ...pose } = hero
-  return { body: pose, look: { cid, body, hair, hc, skin, loadout } }
+  const { cid, body, hair, hc, skin, loadout, weaponUp, ...pose } = hero
+  return { body: pose, look: { cid, body, hair, hc, skin, loadout, weaponUp } }
 }
 
 let initialized = false
@@ -244,6 +244,14 @@ export function heroWeapon(id: string): string {
   return 'none-weapon'
 }
 
+/** How many rarity steps the pit has given that weapon, as the hero's synced look declares. */
+export function heroWeaponRank(id: string): number {
+  for (const [entity, hero] of heroes()) {
+    if (heroOwner(entity, hero) === id) return Math.max(0, hero.weaponUp || 0)
+  }
+  return 0
+}
+
 /** The character (`cid`) of every hero body whose owner passes `member`, ours included. */
 export function heroCharacters(member: (id: string) => boolean): string[] {
   const out: string[] = []
@@ -364,7 +372,7 @@ export function publishHero(hero: HeroPublish, dt: number): boolean {
 }
 
 function sameLook(a: Pick<HeroView, LookKey>, b: HeroPublish): boolean {
-  return a.cid === b.cid && a.body === b.body && a.hair === b.hair && a.hc === b.hc && a.skin === b.skin &&
+  return a.cid === b.cid && a.body === b.body && a.hair === b.hair && a.hc === b.hc && a.skin === b.skin && a.weaponUp === b.weaponUp &&
     EQUIPMENT_SLOTS.every((slot) => a.loadout[slot.id] === b.loadout[slot.id])
 }
 

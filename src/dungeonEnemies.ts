@@ -63,7 +63,7 @@ import { clearLoot, grantLootDirect, lootKindOf, spawnLoot } from './loot'
 import { rollArmorDrop, rollWeaponDrop, weaponStats } from './weapons'
 import { AttackContext } from './roamingCombat'
 import {
-  allFighters, EnemySnap, heroCharacters, HeroHit, heroPosition, heroWeapon, ImpactNet, isHeadless, isHost, localAddress, NetFighter, publishEnemies,
+  allFighters, EnemySnap, heroCharacters, HeroHit, heroPosition, heroWeapon, heroWeaponRank, ImpactNet, isHeadless, isHost, localAddress, NetFighter, publishEnemies,
   publishHitEnemy, publishHitSkill, publishImpact, publishLoot, publishRespawn, publishShot, publishSkillCast, setMultiplayerHandlers
 } from './multiplayer'
 
@@ -1526,7 +1526,7 @@ function applyRemoteHit(id: string, index: number, motion: string, finisher: boo
   const cid = heroCharacters((owner) => owner === id)[0]
   if (!heroClassMotionAllowed(cid, attack)) return
   // The weapon is read off the hero's synced body: the client never states its own damage.
-  const hit = { finisher, weapon: weaponStats(heroWeapon(id)), might: hostMight(id, cid) }
+  const hit = { finisher, weapon: weaponStats(heroWeapon(id), true, heroWeaponRank(id)), might: hostMight(id, cid) }
   applyPlayerHit(attacker, e, attack, hit)
   const wide = isHeavyMotion(attack) || finisher
   for (const other of cleaveFrom(attacker, e, attack, wide)) {
@@ -1919,7 +1919,7 @@ function applyRemoteSkillHit(id: string, index: number, skill: string) {
   if (reach === 0 || combatDistance(attacker, e) > reach) return
   if (Math.abs(attacker.position.y - e.position.y) > COMBAT_RULES.maximumVerticalReach + (eff.kind === 'shot' ? 2 : 0.5)) return
   if (!claimSkillHit(id, def)) return
-  applySkillHit(poseToward(attacker.position, e.position), e, def, { weapon: weaponStats(heroWeapon(id)), might: hostMight(id, cid) })
+  applySkillHit(poseToward(attacker.position, e.position), e, def, { weapon: weaponStats(heroWeapon(id), true, heroWeaponRank(id)), might: hostMight(id, cid) })
 }
 
 /** Host: a blow belongs to a cast the hero made recently, and that cast has blows left to give. */
@@ -1958,7 +1958,7 @@ function hostSkillCast(id: string, def: SkillDef, x: number, z: number, _yaw: nu
       def, x, z, ticksLeft: e.ticks, interval: e.ticks > 1 ? e.seconds / (e.ticks - 1) : 0,
       // An aimed circle is a telegraph first; a slam lands with the blow.
       timer: e.at === 'aim' ? ZONE_TELEGRAPH : 0,
-      caster: id, weapon: weaponStats(heroWeapon(id)), might: hostMight(id, cid)
+      caster: id, weapon: weaponStats(heroWeapon(id), true, heroWeaponRank(id)), might: hostMight(id, cid)
     })
   }
 }

@@ -868,5 +868,15 @@
   "Can't reach the server.": "サーバーに接続できません。",
   "Your saved champion is safe there. Leave and come back in a moment, or play offline: nothing you do now is kept.": "保存された勇者はサーバーに無事あります。少し待ってから戻るか、オフラインで遊べます（今の進行は保存されません）。",
   "Play offline": "オフラインで遊ぶ",
-  "Eight seconds of a third more damage dealt.": "8秒間、与えるダメージが3分の1増える。"
+  "Eight seconds of a third more damage dealt.": "8秒間、与えるダメージが3分の1増える。",
+  "Upgrade pit": "強化の炉",
+  "hold to offer a weapon": "長押しで武器を捧げる",
+  "hold to take": "長押しで受け取る",
+  "Unchanged": "変化なし",
+  "Cannot rise further": "これ以上は上がらない",
+  "Offer a weapon to the fire and it may come back one rarity higher. The coins are spent either way.": "武器を炎に捧げると、レアリティが一段上がって戻ってくるかもしれない。コインはいずれにせよ消費される。",
+  "{n} coins · {p}% chance": "{n}コイン · 成功率{p}%",
+  "Not enough coins": "コインが足りない",
+  "Already legendary": "すでにレジェンダリー",
+  "Offer to the fire": "炎に捧げる"
 }

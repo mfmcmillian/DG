@@ -35,6 +35,7 @@ import { formatTime, heroLabel, partyTitle } from './lobbyUi'
 import { DIFFICULTIES, LEVELS, MAX_PARTY } from './shared/levels'
 import { fxSound } from './combatFx'
 import { t, tn } from './i18n'
+import { pitCinematicPlaying } from './pitCinematic'
 
 /** Still shaking hands with the party server (solo play never waits). */
 function joining() {
@@ -667,6 +668,8 @@ function LeaveConfirm({ width, height, scale: s }: { width: number; height: numb
 
 export function WorldHudUi() {
   const { width, height, scale: s, right, bottom, vitalsTop } = hudLayout()
+  // The pit's shot has the screen to itself.
+  if (pitCinematicPlaying()) return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width, height, pointerFilter: 'none' }} />
   const created = getPickerState().hasCreatedCharacter
   const player = getPlayerCharacterState()
   const ready = created && player.active && player.loading === 'ready'

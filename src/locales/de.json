@@ -868,5 +868,15 @@
   "Can't reach the server.": "Der Server ist nicht erreichbar.",
   "Your saved champion is safe there. Leave and come back in a moment, or play offline: nothing you do now is kept.": "Dein gespeicherter Held ist dort sicher. Geh kurz raus und komm gleich wieder, oder spiel offline: nichts, was du jetzt tust, wird behalten.",
   "Play offline": "Offline spielen",
-  "Eight seconds of a third more damage dealt.": "Acht Sekunden lang ein Drittel mehr Schaden."
+  "Eight seconds of a third more damage dealt.": "Acht Sekunden lang ein Drittel mehr Schaden.",
+  "Upgrade pit": "Schmiedegrube",
+  "hold to offer a weapon": "halten, um eine Waffe zu opfern",
+  "hold to take": "halten, um zu nehmen",
+  "Unchanged": "Unverändert",
+  "Cannot rise further": "Kann nicht weiter steigen",
+  "Offer a weapon to the fire and it may come back one rarity higher. The coins are spent either way.": "Opfere dem Feuer eine Waffe, und sie kommt vielleicht eine Seltenheitsstufe höher zurück. Die Münzen sind so oder so weg.",
+  "{n} coins · {p}% chance": "{n} Münzen · {p}% Chance",
+  "Not enough coins": "Nicht genug Münzen",
+  "Already legendary": "Bereits legendär",
+  "Offer to the fire": "Dem Feuer opfern"
 }

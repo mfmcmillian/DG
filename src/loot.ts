@@ -12,7 +12,7 @@ import { EquipmentItem, getEquipmentItemOrNull, WEAPON_DROP_OFFSET, WEAPON_DROP_
 import { isUsableByHero, unlockInventoryItem } from './inventory'
 import { publishPickup } from './multiplayer'
 import { getPlayerCombatPose, getPlayerVitals } from './playerCharacter'
-import { RARITIES, rarityOf } from './weapons'
+import { RARITIES, rarityOf, baseRarityOf } from './weapons'
 
 export type LootKind = 'coin' | 'heart' | 'weapon' | 'armor'
 
@@ -95,6 +95,14 @@ export function getLootState(): Readonly<{ coins: number }> {
 /** A saved hero brings its purse back. */
 export function setCoins(coins: number) {
   state.coins = Math.max(0, Math.floor(coins) || 0)
+}
+
+/** Take `amount` coins from the purse; false (and nothing taken) when the hero cannot pay. */
+export function spendCoins(amount: number): boolean {
+  const n = Math.max(0, Math.floor(amount) || 0)
+  if (state.coins < n) return false
+  state.coins -= n
+  return true
 }
 
 export function clearLoot() {
@@ -217,7 +225,8 @@ function toast(item: EquipmentItem, salvaged: number, wrongClass = false) {
 /** Gear changes hands: unlocked if new to this hero, sold on the spot if owned or another class's. */
 function award(id: string, at: Vector3) {
   const item = getEquipmentItemOrNull(id)
-  const rarity = RARITIES[rarityOf(id)]
+  // A find is worth what is printed on it; the pit's upgrades to this hero's own copy do not raise the price of a duplicate.
+  const rarity = RARITIES[baseRarityOf(id)]
   fxGlitter(at, rarity.color)
   fxGlitter(Vector3.add(at, Vector3.create(0, 0.6, 0)), rarity.color)
   if (!item) {

@@ -9,6 +9,7 @@ import { Color4 } from '@dcl/sdk/math'
 import { ArmorRealm, EQUIPMENT_ITEMS, EquipmentItem, getEquipmentItemOrNull } from './equipmentCatalog'
 import { classAllowsArmor } from './heroClasses'
 import { t } from './i18n'
+import { upgradeRankOf } from './shared/upgradeRanks'
 
 export type WeaponClass = 'sword' | 'dagger' | 'axe' | 'mace' | 'hammer' | 'club' | 'great' | 'bow' | 'staff' | 'sceptre'
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
@@ -56,22 +57,43 @@ export function weaponInfo(id: string): EquipmentItem['weapon'] | undefined {
   return getEquipmentItemOrNull(id)?.weapon
 }
 
-/** How this weapon id fights. Unknown or missing weapons fight like a plain sword. */
-export function weaponStats(id: string | undefined, withBonus = true): WeaponStats {
+/**
+ * How this weapon id fights. Unknown or missing weapons fight like a plain sword.
+ * The rarity bonus counts the pit's upgrades: this hero's by default, or `rank`
+ * steps when the host scores a blow with what the striker's HeroLook declares.
+ */
+export function weaponStats(id: string | undefined, withBonus = true, rank?: number): WeaponStats {
   const info = id ? weaponInfo(id) : undefined
   if (!info) return SWORD_STATS
   const cls = WEAPON_CLASSES[info.class]
-  return { damage: cls.damage, stagger: cls.stagger, knockback: cls.knockback, bonus: withBonus ? RARITIES[info.rarity].bonus : 0 }
+  const rarity = raiseRarity(info.rarity, rank ?? upgradeRankOf(id))
+  return { damage: cls.damage, stagger: cls.stagger, knockback: cls.knockback, bonus: withBonus ? RARITIES[rarity].bonus : 0 }
+}
+
+/** `steps` rarity tiers above `rarity`, capped at legendary. */
+export function raiseRarity(rarity: Rarity, steps: number): Rarity {
+  const at = Math.min(RARITY_ORDER.length - 1, RARITIES[rarity].rank + Math.max(0, Math.floor(steps)))
+  return RARITY_ORDER[at]
+}
+
+/** The tier above `rarity`, or undefined at legendary. */
+export function nextRarity(rarity: Rarity): Rarity | undefined {
+  return RARITY_ORDER[RARITIES[rarity].rank + 1]
 }
 
 /** An armor set's rank follows where it is found: the deeper the realm, the rarer the piece. */
 export const ARMOR_RARITY: Record<Exclude<ArmorRealm, ''>, Rarity> = { fortress: 'uncommon', castle: 'rare', forge: 'epic', raid: 'legendary' }
 
-/** How rare a loot item is: a weapon's own rarity, or an armor piece's by its realm. Starter gear is common. */
-export function rarityOf(id: string): Rarity {
+/** How rare an item is as printed: a weapon's own rarity, or an armor piece's by its realm. Starter gear is common. */
+export function baseRarityOf(id: string): Rarity {
   const item = getEquipmentItemOrNull(id)
   if (item?.weapon) return item.weapon.rarity
   return item?.realm ? ARMOR_RARITY[item.realm] : 'common'
+}
+
+/** How rare this hero's copy of an item is: its printed rarity raised by the pit's upgrades. */
+export function rarityOf(id: string): Rarity {
+  return raiseRarity(baseRarityOf(id), upgradeRankOf(id))
 }
 
 /** Armor pieces of every set found in `realm`, for a class (by its character id). */

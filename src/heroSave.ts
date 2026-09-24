@@ -15,6 +15,7 @@ import { onNet, sendNet } from './net'
 import { setProgress } from './party'
 import { requestHeroPreload } from './preloadPlan'
 import { loadSettings, serializeSettings } from './settings'
+import { loadUpgradeRanks, serializeUpgradeRanks } from './shared/upgradeRanks'
 
 type SaveState = {
   /** The host answered our load request. */
@@ -60,6 +61,7 @@ export function initializeHeroSave() {
     const loadout = parseLoadout(msg.loadout)
     if (loadout) setCommittedLoadout(msg.cid, loadout)
     for (const id of msg.unlocks) unlockInventoryItem(id)
+    loadUpgradeRanks(msg.ups)
     // Armor from before it had to be earned comes off; the class default goes back on.
     enforceOwnedLoadout(msg.cid)
     // The title's Continue waits on this outfit; fetch it ahead of the queue.
@@ -116,7 +118,7 @@ function parseLoadout(json: string): EquipmentLoadout | undefined {
 function fingerprint(cid: string): string {
   const a = getCommittedAppearance(cid)
   const l = getCommittedLoadout(cid)
-  return [cid, a.bodyType, a.hairStyle, a.hairColor, a.skinTone, ...EQUIPMENT_SLOTS.map((s) => l[s.id]), ...getUnlockedItems(), serializeSettings()].join('|')
+  return [cid, a.bodyType, a.hairStyle, a.hairColor, a.skinTone, ...EQUIPMENT_SLOTS.map((s) => l[s.id]), ...getUnlockedItems(), ...serializeUpgradeRanks(), serializeSettings()].join('|')
 }
 
 function update(dt: number) {
@@ -139,7 +141,7 @@ function update(dt: number) {
   const a = getCommittedAppearance(cid)
   sendNet('saveHero', {
     cid, body: a.bodyType, hair: a.hairStyle, hc: a.hairColor, skin: a.skinTone,
-    loadout: JSON.stringify(getCommittedLoadout(cid)), coins, unlocks: getUnlockedItems(), prefs: serializeSettings()
+    loadout: JSON.stringify(getCommittedLoadout(cid)), coins, unlocks: getUnlockedItems(), prefs: serializeSettings(), ups: serializeUpgradeRanks()
   })
   lastSaved = now
   lastSavedCoins = coins
@@ -154,7 +156,7 @@ export function flushHeroSave() {
   const coins = getLootState().coins
   sendNet('saveHero', {
     cid, body: a.bodyType, hair: a.hairStyle, hc: a.hairColor, skin: a.skinTone,
-    loadout: JSON.stringify(getCommittedLoadout(cid)), coins, unlocks: getUnlockedItems(), prefs: serializeSettings()
+    loadout: JSON.stringify(getCommittedLoadout(cid)), coins, unlocks: getUnlockedItems(), prefs: serializeSettings(), ups: serializeUpgradeRanks()
   })
   lastSaved = fingerprint(cid)
   lastSavedCoins = coins

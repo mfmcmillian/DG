@@ -868,5 +868,15 @@
   "Can't reach the server.": "Impossible de joindre le serveur.",
   "Your saved champion is safe there. Leave and come back in a moment, or play offline: nothing you do now is kept.": "Ton champion sauvegardé y est en sécurité. Quitte et reviens dans un instant, ou joue hors ligne : rien de ce que tu fais maintenant ne sera conservé.",
   "Play offline": "Jouer hors ligne",
-  "Eight seconds of a third more damage dealt.": "Huit secondes avec un tiers de dégâts infligés en plus."
+  "Eight seconds of a third more damage dealt.": "Huit secondes avec un tiers de dégâts infligés en plus.",
+  "Upgrade pit": "Fosse d'amélioration",
+  "hold to offer a weapon": "maintenez pour offrir une arme",
+  "hold to take": "maintenez pour prendre",
+  "Unchanged": "Inchangée",
+  "Cannot rise further": "Ne peut monter plus haut",
+  "Offer a weapon to the fire and it may come back one rarity higher. The coins are spent either way.": "Offrez une arme au feu et elle peut revenir d'une rareté supérieure. Les pièces sont dépensées dans tous les cas.",
+  "{n} coins · {p}% chance": "{n} pièces · {p}% de chance",
+  "Not enough coins": "Pas assez de pièces",
+  "Already legendary": "Déjà légendaire",
+  "Offer to the fire": "Offrir au feu"
 }

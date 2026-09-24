@@ -148,7 +148,9 @@ export const Messages = {
     coins: Schemas.Int,
     unlocks: Schemas.Array(Schemas.String),
     /** Player settings as JSON (camera, dev panel), same reasoning as loadout. */
-    prefs: Schemas.String
+    prefs: Schemas.String,
+    /** The pit's upgrades, "itemId:ranks" per raised weapon. */
+    ups: Schemas.Array(Schemas.String)
   }),
   /** Client -> server: send me what you have saved for my wallet. */
   loadHero: Schemas.Map({ v: Schemas.Int }),
@@ -165,6 +167,7 @@ export const Messages = {
     coins: Schemas.Int,
     unlocks: Schemas.Array(Schemas.String),
     prefs: Schemas.String,
+    ups: Schemas.Array(Schemas.String),
     progress: Schemas.Array(Schemas.Int),
     /** Experience per champion as JSON ({ cid: xp }); the server owns and awards it. */
     xp: Schemas.String

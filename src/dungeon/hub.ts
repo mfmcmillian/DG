@@ -49,6 +49,10 @@ export const WAR_TABLE_TAG = 'war-table'
 export const PIT_GATE_TAG = 'pit-gate'
 /** How close to the circle's centre counts as standing on it. */
 export const PIT_GATE_REACH = 2.4
+/** The burning cauldron in the smithy that takes a weapon and coins and gives the weapon back better (src/upgrades.ts). */
+export const UPGRADE_PIT_TAG = 'upgrade-pit'
+/** How close to the cauldron counts as standing at it. */
+export const UPGRADE_PIT_REACH = 2.6
 
 /**
  * The training yard's targets by tag: each body's size relative to a hero (the
@@ -123,8 +127,9 @@ const FURNITURE: Furniture[] = [
   { id: 'chest', x: 3, y: 8, side: 's' },
   { id: 'chest', x: 7, y: 8, side: 's' },
 
-  // --- smithy (west): the anvil the smith will work once he arrives ---------
-  { id: 'forge_anvil_tools', ...m(27.5, 50.5), yaw: 90 },
+  // --- smithy (west): the upgrade pit burns in the middle, the anvil beside it --
+  { id: 'castle_cauldron', ...m(28, 50.5), tag: UPGRADE_PIT_TAG },
+  { id: 'forge_anvil_tools', ...m(25.5, 53.5), yaw: 90 },
   { id: 'forge_smelting_pot', x: 1, y: 5, side: 'n' },
   { id: 'forge_brazier', x: 2, y: 5, side: 'n' },
   { id: 'castle_weapon_rack', x: 1, y: 6, side: 'w' },

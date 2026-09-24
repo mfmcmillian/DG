@@ -22,6 +22,7 @@ import { rearmAvatarHiding } from './avatarHiding'
 import { localAddress, publishHero, withdrawHero } from './multiplayer'
 import { CRAWLER_CAMERA, isCrawlerCameraOn, kickCrawlerCamera } from './dungeon/crawlerCamera'
 import { SkillDef } from './shared/skills'
+import { upgradeRankOf } from './shared/upgradeRanks'
 
 type Locomotion = 'idle' | 'walk' | 'run'
 export type PlayerCharacterState = {
@@ -71,6 +72,8 @@ let skillInSlotHandler: ((slot: number) => SkillDef | undefined) | undefined
 let skillRefusedHandler: ((slot: number, why: 'locked' | 'cooldown' | 'stamina') => void) | undefined
 /** World yaw the body is turned to while locked on (soft lock-on); undefined = native yaw. */
 let facingOverride: number | undefined
+/** A clip a cutscene asked for (the pit's throw): it outranks locomotion and combat until its time is up. */
+let scripted: { motion: EquipmentMotion; left: number; facing: number | undefined } | undefined
 let hitStopSeconds = 0
 let exhaustedNotice = 0
 let echoMismatches = 0
@@ -139,6 +142,19 @@ export function setPlayerEnemyWithinHandler(handler: (range: number) => boolean)
 }
 
 /** Turn the visible body to this world yaw (radians) until the swing ends. */
+/**
+ * Play `motion` on the hero for `seconds`, facing `yaw` (world radians) when
+ * given, whatever the controls say meanwhile. The cinematic freezes input
+ * itself; this only settles who owns the pose. Watchers see the clip too.
+ */
+export function playScriptedMotion(motion: EquipmentMotion, seconds: number, yaw?: number) {
+  if (characterRoot === undefined) return
+  scripted = { motion, left: Math.max(0.05, seconds), facing: yaw }
+  motionEvent = true
+  resetRoamingCombat(roamingCombat)
+  setEquipmentMotion(characterRoot, motion, true)
+}
+
 export function setPlayerFacingOverride(yaw: number | undefined) {
   facingOverride = yaw
   if (yaw === undefined && characterRoot !== undefined) Transform.getMutable(characterRoot).rotation = Quaternion.Identity()
@@ -540,8 +556,18 @@ function updatePlayerCharacter(dt: number) {
   // swing's timed move starts (those are issued a beat after the pose) and a
   // reset (menu, teleport) or a revive hands the controls straight back.
   syncInputFreeze(isRoamingRooted(roamingCombat))
-  // One owner chooses the final pose. Locomotion sampling cannot interrupt a swing.
-  setEquipmentMotion(characterRoot, actionMotion ?? locomotion)
+  // One owner chooses the final pose. Locomotion sampling cannot interrupt a swing, nor a scripted clip.
+  if (scripted) {
+    scripted.left -= dt
+    if (scripted.left <= 0) {
+      scripted = undefined
+      Transform.getMutable(characterRoot).rotation = Quaternion.Identity()
+    } else if (scripted.facing !== undefined) {
+      const delta = scripted.facing - playerYaw(player.rotation)
+      Transform.getMutable(characterRoot).rotation = Quaternion.fromEulerDegrees(0, (delta * 180) / Math.PI, 0)
+    }
+  }
+  setEquipmentMotion(characterRoot, scripted?.motion ?? actionMotion ?? locomotion)
   exhaustedNotice = Math.max(0, exhaustedNotice - dt)
   if (hitStopSeconds > 0) {
     hitStopSeconds -= dt
@@ -551,7 +577,7 @@ function updatePlayerCharacter(dt: number) {
     }
   }
   // Soft lock-on turns only the visible body; the native controller keeps its own yaw.
-  if (facingOverride !== undefined) {
+  if (facingOverride !== undefined && !scripted) {
     if (!roamingCombat.swing && !roamingCombat.dodge && roamingCombat.recovery <= 0) setPlayerFacingOverride(undefined)
     else {
       const delta = facingOverride - playerYaw(player.rotation)
@@ -590,6 +616,7 @@ function publishLocalPlayer(player: { position: Vector3; rotation: Quaternion },
     hc: appearance.hairColor,
     skin: appearance.skinTone,
     loadout: { ...requestedLoadout },
+    weaponUp: upgradeRankOf(requestedLoadout.weapon),
     block: roamingCombat.blocking,
     // The host reads `dodge` as "blows pass through right now": the roll's
     // invulnerable window, not the whole roll.
