@@ -1,8 +1,7 @@
 // Talking to the hall's folk. Stand near one and the hold-to-talk prompt
 // (src/hallPrompt.ts) offers a word; each has a few lines that teach one part
 // of the game (the smith on armor, the guards on parties, the squire on the
-// yard, the ranger on skills and levels, the witch on stamina, the herald on
-// the Pit), with a first line that changes for who is asking and how often they
+// yard, the ranger on skills and levels, the witch on stamina), with a first line that changes for who is asking and how often they
 // have asked. Most of them also do something: the last line carries a button
 // that opens the wardrobe, the war table, or points the way. Local only: the
 // conversation is between the player and their own client.
@@ -18,8 +17,7 @@ import { getLobbyState, myParty, myPhase, openLobby } from './party'
 import { HUB } from './partyLookup'
 import { MAX_LEVEL } from './shared/progression'
 import { skillsFor } from './shared/skills'
-import { MAX_PARTY, REALMS } from './shared/levels'
-import { GAME_VERSION } from './version'
+import { MAX_PARTY } from './shared/levels'
 import { t } from './i18n'
 
 /** What a character can do for the hero, offered on their last line. */
@@ -106,8 +104,6 @@ function actionFor(title: string): TalkAction | undefined {
       return { label: t('Open the war table'), run: () => { closeTalk(); openLobby() } }
     case 'Squire':
       return { label: t('Show me the yard'), run: () => { closeTalk(); showGuide('yard') } }
-    case 'Herald':
-      return { label: t('Show me the circle'), run: () => { closeTalk(); showGuide('pit') } }
     default:
       return undefined
   }
@@ -177,18 +173,6 @@ function linesFor(title: string, visit: number): string[] {
         t('Guard with Space and a blow costs you little. Roll with Ctrl and, timed right, it costs you nothing. Run out of breath and you will manage neither.'),
         t("Fall in a fortress and you are down a while before you are back on your feet. Hearts the enemies drop mend thirty; a Striker's Mend does the same for the whole party.")
       ]
-    case 'Herald': {
-      const realms = REALMS.map((r) => r.name)
-      const list = realms.length > 1 ? t('{list} and {last}', { list: realms.slice(0, -1).join(', '), last: realms[realms.length - 1] }) : realms[0] ?? t('the fortresses')
-      return [
-        visit === 0
-          ? t('Hear me! The Hall of Antrom stands, and {realms} await whoever dares them.', { realms: list })
-          : party ? t('Your party gathers, {cls}. The fortresses will not wait forever.', { cls }) : t('Hear me! Again. I am paid by the hearing.'),
-        t('Beneath the smithy floor lies the summoning circle. Stand on it and you descend to the Pit of Chains, where the Colossus is bound. Bring friends: four to eight, if you can find them.'),
-        t('The Pit is a fight for a party, not a hero. Break the chains, mind the slams, and stay near a Striker if one walks with you.'),
-        t('Version {version} of this world, should the scribes ask. They always ask.', { version: GAME_VERSION })
-      ]
-    }
     case 'Sellsword':
       return [
         visit === 0 ? t('Looking for a blade for hire? Not today. I am between wars.') : t('Still between wars. Ask me tomorrow.'),

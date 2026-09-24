@@ -56,6 +56,8 @@ const STAGGER_SECONDS = 0.45
 
 const deg = (d: number) => (d * Math.PI) / 180
 
+// No one stands or walks the line from the vestibule spawn to the war table:
+// that is the first-timer's path and the arrows' trail (src/hallGuide.ts).
 // Positions are read against src/dungeon/hub.ts: great hall x 33..58, z 38..63
 // (war table at 45.5, 50.5 with braziers at x 42.5 / 48.5; long tables at
 // x 37 and x 54); smithy x 23..33 (anvil at 27.5, 50.5); training yard
@@ -98,13 +100,6 @@ const ROLES: Role[] = [
     gestures: [], every: [0, 0], greets: 0,
     // A round of the great hall inside the long tables and outside the braziers.
     patrol: { path: [[40.5, 57], [40.5, 44.5], [50.5, 44.5], [50.5, 57]], speed: 1.15, pause: [2.5, 6] }
-  },
-  {
-    body: 'folk-herald', cid: 'striker',
-    at: [45.5, 66.2], yaw: deg(180), rest: 'idle',
-    gestures: [], every: [0, 0], greets: 0,
-    // Vestibule to the foot of the war table and back, through the arch.
-    patrol: { path: [[45.5, 66.2], [45.5, 55.2]], speed: 1.0, pause: [4, 9] }
   }
 ]
 
