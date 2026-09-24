@@ -51,9 +51,11 @@ function update(dt: number) {
     inScene.add(address)
     rememberName(address, AvatarBase.getOrNull(entity)?.name)
   }
-  for (const address of inScene) if (!present.has(address)) arrived(address)
+  const previous = new Set(present)
   present.clear()
   for (const address of inScene) present.add(address)
+  // Only now, with the count including the newcomer, announce them.
+  for (const address of inScene) if (!previous.has(address)) arrived(address)
 
   for (const [address, waited] of [...pending]) {
     const next = waited + step
