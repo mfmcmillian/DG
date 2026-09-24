@@ -3,7 +3,7 @@
 // (scripts/render-layout.py) and reused by a server. The builder only
 // instantiates what this returns.
 
-import { cellCenter, DungeonStyle, gridOrigin } from './config'
+import { cellCenter, DungeonStyle, gridOrigin, SCENE_SIZE } from './config'
 import { Dungeon, Edge, Room, Side, tileHash } from './generator'
 import { DOOR_OPENINGS, KIT, KitId, KitPiece, PRIMITIVE_TRIS } from './kit'
 
@@ -107,8 +107,8 @@ export function edgeMidpoint(style: DungeonStyle, e: Edge): { x: number; z: numb
   return { x: c.x - inward.x * (style.tile / 2), z: c.z - inward.z * (style.tile / 2) }
 }
 
-/** Side of the 6x6 parcel scene in metres. */
-const SCENE_SPAN = 96
+/** Side of the plot in metres (the black ground covers all of it). */
+const SCENE_SPAN = SCENE_SIZE
 
 export function layoutDungeon(dungeon: Dungeon, style: DungeonStyle, options: LayoutOptions = { cutaway: false }): Layout {
   const T = style.tile

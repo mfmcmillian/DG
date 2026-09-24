@@ -1,8 +1,14 @@
 import { BRICK_TEXTURE, CASTLE_TEXTURES, FLOOR_TEXTURE, FORGE_TEXTURES, KIT, KitId, PIT_TEXTURES } from './kit'
 import { RoomKind } from './generator'
 
-/** Scene is 6 x 6 parcels = 96 m. Every style's grid is centred inside it. */
-export const SCENE_SIZE = 96
+/** The plot is 10 x 10 parcels = 160 m, base at the south-west corner. */
+export const SCENE_SIZE = 160
+/**
+ * The hall, the Pit and the generated styles were laid out when the scene was
+ * 6 x 6 and are centred in that 96 m square still (their furniture, folk and
+ * spawn are hand-placed in those metres); a style may name a wider span.
+ */
+export const LEGACY_SPAN = 96
 
 /**
  * A style is a realm's look on the shared generator: which kit modules stand
@@ -19,6 +25,8 @@ export interface DungeonStyle {
   tile: number
   /** Cells per side. */
   size: number
+  /** Metres the grid is centred in (LEGACY_SPAN when unset). */
+  span?: number
   wallHeight: number
   entranceSize: number
   /** BSP leaf bounds and smallest room side, in cells. */
@@ -138,7 +146,8 @@ export const STYLES: Record<StyleId, DungeonStyle> = {
     id: 'gauntlet',
     label: 'The Dark Fortress',
     tile: 5,
-    size: 18,
+    size: 30,
+    span: SCENE_SIZE,
     wallHeight: 6,
     entranceSize: 2,
     minLeaf: 4,
@@ -392,7 +401,7 @@ export function kitSrcsForStyle(style: DungeonStyle, furniture?: KitId[]): strin
 }
 
 export function gridOrigin(style: DungeonStyle): { x: number; z: number } {
-  const margin = (SCENE_SIZE - style.size * style.tile) / 2
+  const margin = ((style.span ?? LEGACY_SPAN) - style.size * style.tile) / 2
   return { x: margin, z: margin }
 }
 

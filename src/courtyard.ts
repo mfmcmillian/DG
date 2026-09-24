@@ -15,7 +15,7 @@ export const COURTYARD = {
   characterFloorY: 0.05,
   supportTopY: 0,
   supportDepth: 1,
-  sceneSize: 96
+  sceneSize: 160
 } as const
 
 /** Entrance tile of the current dungeon; falls back to the static spawn before generation. */

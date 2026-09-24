@@ -27,7 +27,7 @@ import { Vector3 } from '@dcl/sdk/math'
  *  - The box reaches 56 m up, so an avatar dropped in from height while the
  *    ground loads is already inside when it lands.
  */
-const SCENE_SIZE = 96
+const SCENE_SIZE = 160
 const MARGIN = 8
 const AREA = Vector3.create(SCENE_SIZE + MARGIN, 64, SCENE_SIZE + MARGIN)
 const CENTER = Vector3.create(SCENE_SIZE / 2, 24, SCENE_SIZE / 2)
