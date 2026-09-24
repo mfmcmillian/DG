@@ -11,7 +11,7 @@ import { kitTexture, UI_KIT } from './uiKit'
 import { isSettingsOpen } from './settings'
 import { SettingsUi } from './settingsUi'
 import { isSavedHeroReady, isTitleOpen, isTitleReady, isTitleResuming, titleBegin, titleContinue, titleResumeSaved } from './titleScreen'
-import { getHeroSaveState, isHeroSavePending, savedHeroName } from './heroSave'
+import { getHeroSaveState, isHeroSavePending, isHeroSaveUnreachable, savedHeroName } from './heroSave'
 import { getLobbyState } from './party'
 import { LobbyUi } from './lobbyUi'
 import { GAME_VERSION } from './version'
@@ -218,6 +218,7 @@ function TitleScreen() {
   const created = getPickerState().hasCreatedCharacter
   const ready = isTitleReady()
   const saved = getHeroSaveState()
+  const unreachable = isHeroSaveUnreachable()
   const heroReady = isSavedHeroReady()
   const resuming = isTitleResuming()
   const top = Math.max(80, screenHeight * 0.18)
@@ -239,13 +240,20 @@ function TitleScreen() {
               onClick={titleResumeSaved} disabled={resuming || !heroReady} primary
               width={340} height={52} scale={s} fontSize={18} />
           </UiEntity>}
-          <Action id="title-enter" text={saved.found ? t('New champion') : t('New game')} onClick={titleBegin} disabled={resuming}
-            primary={!saved.found} accent="gold" width={340} height={52} scale={s} fontSize={18} />
+          {unreachable && !created && <UiEntity uiTransform={{ width: 480 * s, flexDirection: 'column', margin: { bottom: 12 * s }, pointerFilter: 'none' }}>
+            <Label value={t("Can't reach the server.")} color={coral} fontSize={16 * s} textAlign="middle-left" textWrap="nowrap"
+              uiTransform={{ width: 480 * s, height: 24 * s, flexShrink: 0, pointerFilter: 'none' }} />
+            <Label value={t('Your saved champion is safe there. Leave and come back in a moment, or play offline: nothing you do now is kept.')}
+              color={muted} fontSize={13 * s} textAlign="top-left"
+              uiTransform={{ width: 480 * s, height: 44 * s, flexShrink: 0, pointerFilter: 'none' }} />
+          </UiEntity>}
+          <Action id="title-enter" text={saved.found ? t('New champion') : unreachable ? t('Play offline') : t('New game')} onClick={titleBegin} disabled={resuming}
+            primary={!saved.found && !unreachable} accent="gold" width={340} height={52} scale={s} fontSize={18} />
           {created && <UiEntity uiTransform={{ margin: { top: 12 * s }, pointerFilter: 'none' }}>
             <Action id="title-continue" text={t('Continue')} onClick={titleContinue} primary
               width={340} height={52} scale={s} fontSize={18} />
           </UiEntity>}
-          {!saved.found && !created && isHeroSavePending() && <Label value={t('Looking for a saved champion…')} color={muted} fontSize={13 * s}
+          {!saved.found && !created && !unreachable && isHeroSavePending() && <Label value={t('Looking for a saved champion…')} color={muted} fontSize={13 * s}
             textAlign="middle-left" textWrap="nowrap"
             uiTransform={{ width: 400 * s, height: 24 * s, margin: { top: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
         </UiEntity>

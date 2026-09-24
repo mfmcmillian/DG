@@ -864,5 +864,8 @@
   "The Vault Warden": "El Guardián de la Cámara",
   "The Iron Warden": "El Guardián de Hierro",
   "The Warlord": "El Señor de la Guerra",
-  "The war table: pick how hard and press Go.": "La mesa de guerra: elige la dificultad y pulsa Ir."
+  "The war table: pick how hard and press Go.": "La mesa de guerra: elige la dificultad y pulsa Ir.",
+  "Can't reach the server.": "No se puede conectar con el servidor.",
+  "Your saved champion is safe there. Leave and come back in a moment, or play offline: nothing you do now is kept.": "Tu campeón guardado está a salvo allí. Sal y vuelve en un momento, o juega sin conexión: nada de lo que hagas ahora se guardará.",
+  "Play offline": "Jugar sin conexión"
 }

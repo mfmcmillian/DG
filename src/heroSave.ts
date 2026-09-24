@@ -10,7 +10,7 @@ import { EQUIPMENT_SLOTS, EquipmentLoadout } from './equipmentCatalog'
 import { getCommittedLoadout, setCommittedLoadout } from './equipmentState'
 import { enforceOwnedLoadout, getUnlockedItems, unlockInventoryItem } from './inventory'
 import { getLootState, setCoins } from './loot'
-import { isClientSynced, localAddress } from './multiplayer'
+import { isClientSynced, isSoloMode, localAddress } from './multiplayer'
 import { onNet, sendNet } from './net'
 import { setProgress } from './party'
 import { requestHeroPreload } from './preloadPlan'
@@ -87,6 +87,15 @@ export function continueSavedHero(): boolean {
 /** The title is still waiting to hear whether this wallet has a champion. */
 export function isHeroSavePending(): boolean {
   return !state.loaded && state.waited < 12
+}
+
+/**
+ * The server never answered and this client is hosting itself: whatever is
+ * saved under this wallet is out of reach, and nothing made now is kept. The
+ * title must not pass that off as "no champion saved".
+ */
+export function isHeroSaveUnreachable(): boolean {
+  return isSoloMode() && !state.found
 }
 
 export function savedHeroName(): string {

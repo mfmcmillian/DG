@@ -864,5 +864,8 @@
   "The Vault Warden": "宝物庫の番人",
   "The Iron Warden": "鉄の番人",
   "The Warlord": "ウォーロード",
-  "The war table: pick how hard and press Go.": "作戦卓：難易度を選んで Go を押そう。"
+  "The war table: pick how hard and press Go.": "作戦卓：難易度を選んで Go を押そう。",
+  "Can't reach the server.": "サーバーに接続できません。",
+  "Your saved champion is safe there. Leave and come back in a moment, or play offline: nothing you do now is kept.": "保存された勇者はサーバーに無事あります。少し待ってから戻るか、オフラインで遊べます（今の進行は保存されません）。",
+  "Play offline": "オフラインで遊ぶ"
 }

@@ -864,5 +864,8 @@
   "The Vault Warden": "Le Gardien de la crypte",
   "The Iron Warden": "Le Gardien de fer",
   "The Warlord": "Le Seigneur de guerre",
-  "The war table: pick how hard and press Go.": "La table de guerre : choisissez la difficulté et appuyez sur Go."
+  "The war table: pick how hard and press Go.": "La table de guerre : choisissez la difficulté et appuyez sur Go.",
+  "Can't reach the server.": "Impossible de joindre le serveur.",
+  "Your saved champion is safe there. Leave and come back in a moment, or play offline: nothing you do now is kept.": "Ton champion sauvegardé y est en sécurité. Quitte et reviens dans un instant, ou joue hors ligne : rien de ce que tu fais maintenant ne sera conservé.",
+  "Play offline": "Jouer hors ligne"
 }
