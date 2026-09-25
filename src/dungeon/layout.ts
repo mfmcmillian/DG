@@ -20,7 +20,7 @@ export type Placement =
   /** One plane over a `w` x `d` cell rectangle (texture repeats per cell), centred on x/z. */
   | { kind: 'floor' | 'ceiling'; x: number; y: number; z: number; w: number; d: number }
   /** `lowId`: the cutaway wall this camera-facing wall becomes for the overhead camera. */
-  | { kind: 'kit'; id: KitId; x: number; y: number; z: number; yaw: number; collide: boolean; lowId?: KitId; only?: PieceMode; tag?: string }
+  | { kind: 'kit'; id: KitId; x: number; y: number; z: number; yaw: number; collide: boolean; lowId?: KitId; only?: PieceMode; tag?: string; scale?: number }
   /** Invisible box collider (door jambs and lintels). */
   | { kind: 'box'; x: number; y: number; z: number; yaw: number; sx: number; sy: number; sz: number; only?: PieceMode }
 
@@ -233,7 +233,7 @@ export function layoutDungeon(dungeon: Dungeon, style: DungeonStyle, options: La
     if (f.side) {
       placeAgainstWall(style, f.id, c, f.side, f.yaw ?? 0, collide, kit, f.tag)
     } else {
-      push({ kind: 'kit', id: f.id, x: c.x, y: f.lift ?? 0, z: c.z, yaw: f.yaw ?? 0, collide, tag: f.tag }, piece.tris)
+      push({ kind: 'kit', id: f.id, x: c.x, y: f.lift ?? 0, z: c.z, yaw: f.yaw ?? 0, collide, tag: f.tag, scale: f.scale }, piece.tris)
     }
   }
 

@@ -9,6 +9,7 @@ import { CAMERA_OPTIONS, closeSettings, getSettings, setCameraPreference, setDev
 import { getUnlockedItems, relockAllWeapons, unlockAllWeapons } from './inventory'
 import { isDeveloper } from './devAccess'
 import { flushHeroSave } from './heroSave'
+import { getLootState, setCoins } from './loot'
 import { cycleLobbyPickLevel, getLobbyPick } from './party'
 import { LEVELS } from './shared/levels'
 import { t } from './i18n'
@@ -52,7 +53,7 @@ export function SettingsUi() {
   // jump and armoury rows only show with the panel switched on.
   const developer = isDeveloper()
   const dev = developer && settings.devTools
-  const { scale: s, width, height, x, y } = layout(developer ? (dev ? 100 : 0) : -80)
+  const { scale: s, width, height, x, y } = layout(developer ? (dev ? 150 : 0) : -80)
   const inner = FRAME.width - 80
   return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}
     uiBackground={{ color: veil }}>
@@ -142,6 +143,16 @@ export function SettingsUi() {
           <Action id="settings-armoury-all" text="Grant all" onClick={unlockAllWeapons} width={136} height={38} scale={s} fontSize={13} accent="gold" />
           <UiEntity uiTransform={{ width: 8 * s, pointerFilter: 'none' }} />
           <Action id="settings-armoury-none" text="Starter only" onClick={relockAllWeapons} width={136} height={38} scale={s} fontSize={13} accent="gold" />
+        </UiEntity>
+      </UiEntity>}
+
+      {dev && <UiEntity uiTransform={{ width: '100%', height: 44 * s, margin: { top: 6 * s }, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
+        <Label value={`Purse: ${getLootState().coins} coins (for testing the pit).`} color={muted} fontSize={11.5 * s} textAlign="middle-left" textWrap="nowrap"
+          uiTransform={{ width: (inner - 290) * s, height: '100%', pointerFilter: 'none' }} />
+        <UiEntity uiTransform={{ flexDirection: 'row', pointerFilter: 'none' }}>
+          <Action id="settings-coins-add" text="+1000 coins" onClick={() => { setCoins(getLootState().coins + 1000); flushHeroSave() }} width={136} height={38} scale={s} fontSize={13} accent="gold" />
+          <UiEntity uiTransform={{ width: 8 * s, pointerFilter: 'none' }} />
+          <Action id="settings-coins-none" text="Empty purse" onClick={() => { setCoins(0); flushHeroSave() }} width={136} height={38} scale={s} fontSize={13} accent="gold" />
         </UiEntity>
       </UiEntity>}
 

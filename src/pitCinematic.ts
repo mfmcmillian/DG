@@ -8,13 +8,13 @@
 // written. The hero's own body stays in the shot, so this does not go through
 // src/sceneCamera.ts, which hides it for the menus.
 
-import { engine, Entity, GltfContainer, InputModifier, MainCamera, Transform, VirtualCamera } from '@dcl/sdk/ecs'
-import { Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
+import { engine, Entity, GltfContainer, InputModifier, LightSource, MainCamera, Transform, VirtualCamera } from '@dcl/sdk/ecs'
+import { Color3, Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
 import { fxDeathPuff, fxGlitter, fxLootBeam, fxMagicBurst, fxNumber, fxSound } from './combatFx'
 import { onDungeonLoaded, resumeDungeonCamera, suspendDungeonCamera } from './dungeon'
 import { getEquipmentItemOrNull, WEAPON_DROP_OFFSET, WEAPON_DROP_OFFSET_LEFT } from './equipmentCatalog'
 import { t } from './i18n'
-import { flarePitFire, PIT_FLAME_HEIGHT, PIT_HOVER_HEIGHT, pitFirePosition } from './pitFire'
+import { flarePitFire, PIT_FLAME_HEIGHT, PIT_HOVER_HEIGHT, PIT_MOUTH_RADIUS, pitFirePosition } from './pitFire'
 import { playScriptedMotion } from './playerCharacter'
 import { pendingUpgrade, takeUpgrade, UpgradeResult } from './upgrades'
 import { RARITIES } from './weapons'
@@ -26,11 +26,16 @@ const T_LAND = 1.45
 const T_RESULT = 2.6
 const T_RISE = 0.7
 const T_END = 3.5
+/** A legendary takes longer to come up: the fire builds, then the reveal, then the camera cranes out. */
+const T_LEGEND_RISE = 2.2
+const T_LEGEND_END = 7.0
 const CUT_SECONDS = 0.6
 const DOLLY_SECONDS = 2.2
 
 const ORANGE = Color4.create(1, 0.55, 0.15, 1)
 const ASH = Color4.create(0.5, 0.5, 0.5, 1)
+const GOLD = Color4.create(1, 0.78, 0.3, 1)
+const WHITE = Color4.create(1, 1, 1, 1)
 
 type Phase = 'idle' | 'shot' | 'hover'
 
@@ -40,6 +45,12 @@ type Shot = {
   focus: Entity
   from: Vector3
   to: Vector3
+  /** Where a legendary's crane-out ends: higher and further back, the whole pit in frame. */
+  crane: Vector3
+  /** Beats of the legendary build-up already fired. */
+  legendBeat: number
+  /** Rig shake left (seconds). */
+  shake: number
   /** Where the throw starts (the hero's hand) and where it lands (inside the pot). */
   hand: Vector3
   pot: Vector3
@@ -57,6 +68,9 @@ let result: UpgradeResult | undefined
 let item: Entity | undefined
 let hoverT = 0
 let glitterT = 0
+let pulseT = 0
+/** A legendary hovers under its own gold light. */
+let hoverLight: Entity | undefined
 let systemAdded = false
 
 export function initializePitCinematic() {
@@ -96,9 +110,10 @@ export function startPitCinematic(upgrade: UpgradeResult): boolean {
   const dist = Math.max(0.01, Vector3.length(toFire))
   const dir = Vector3.scale(toFire, 1 / dist)
   const right = Vector3.create(dir.z, 0, -dir.x)
-  const mid = Vector3.create((player.x + fire.x) / 2, player.y + 1.1, (player.z + fire.z) / 2)
-  const from = Vector3.create(mid.x + right.x * 3.4 - dir.x * 1.2, player.y + 1.6, mid.z + right.z * 3.4 - dir.z * 1.2)
-  const to = Vector3.create(mid.x + right.x * 2.6 + dir.x * 0.6, player.y + 2.1, mid.z + right.z * 2.6 + dir.z * 0.6)
+  const mid = Vector3.create((player.x + fire.x) / 2, player.y + 1.5, (player.z + fire.z) / 2)
+  const from = Vector3.create(mid.x + right.x * 4.2 - dir.x * 1.6, player.y + 2.0, mid.z + right.z * 4.2 - dir.z * 1.6)
+  const to = Vector3.create(mid.x + right.x * 3.4 + dir.x * 0.4, player.y + 2.7, mid.z + right.z * 3.4 + dir.z * 0.4)
+  const crane = Vector3.create(mid.x + right.x * 4.6 - dir.x * 2.4, player.y + 4.2, mid.z + right.z * 4.6 - dir.z * 2.4)
   const focus = engine.addEntity()
   Transform.create(focus, { position: mid })
   const rig = engine.addEntity()
@@ -108,9 +123,9 @@ export function startPitCinematic(upgrade: UpgradeResult): boolean {
   InputModifier.createOrReplace(engine.PlayerEntity, { mode: InputModifier.Mode.Standard({ disableAll: true }) })
   MainCamera.createOrReplace(engine.CameraEntity, { virtualCameraEntity: rig })
   shot = {
-    t: 0, rig, focus, from, to,
+    t: 0, rig, focus, from, to, crane, legendBeat: 0, shake: 0,
     hand: Vector3.create(player.x + dir.x * 0.45 + right.x * 0.25, player.y + 1.25, player.z + dir.z * 0.45 + right.z * 0.25),
-    pot: Vector3.create(fire.x, fire.y + PIT_FLAME_HEIGHT - 0.35, fire.z),
+    pot: Vector3.create(fire.x, fire.y + PIT_FLAME_HEIGHT - 0.5, fire.z),
     mouth, thrown: false, landed: false, risen: false
   }
   phase = 'shot'
@@ -126,8 +141,11 @@ export function takePitResult(): boolean {
   const at = pitHoverItem()?.position
   if (taken && at) {
     const color = RARITIES[taken.to].color
-    fxMagicBurst(at, taken.success ? color : ASH, 0.8)
+    const legend = taken.success && taken.to === 'legendary'
+    fxMagicBurst(at, taken.success ? color : ASH, legend ? 1.4 : 0.8)
+    if (legend) fxGlitter(at, WHITE)
     fxSound(taken.success ? 'coin' : 'thud_straw', 0.8)
+    if (legend) fxSound('heal', 0.9)
     fxNumber(Vector3.add(at, Vector3.create(0, 0.3, 0)), taken.success ? t(RARITIES[taken.to].label) : t('Unchanged'), taken.success ? 'coin' : 'note')
   }
   clearAll()
@@ -147,6 +165,10 @@ export function settlePitResult() {
 
 function clearAll() {
   removeItem()
+  if (hoverLight !== undefined) {
+    engine.removeEntity(hoverLight)
+    hoverLight = undefined
+  }
   if (shot) {
     engine.removeEntity(shot.rig)
     engine.removeEntity(shot.focus)
@@ -196,15 +218,62 @@ function ease(x: number) {
   return k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2
 }
 
+function isLegend(r: UpgradeResult | undefined): boolean {
+  return !!r && r.success && r.to === 'legendary'
+}
+
+function above(p: Vector3, dy: number): Vector3 {
+  return Vector3.create(p.x, p.y + dy, p.z)
+}
+
+/** Glitter in a ring round the mouth of the pit, `count` points wide. */
+function ring(center: Vector3, radius: number, count: number, color: Color4) {
+  for (let i = 0; i < count; i++) {
+    const a = (i / count) * Math.PI * 2
+    fxGlitter(Vector3.create(center.x + Math.sin(a) * radius, center.y, center.z + Math.cos(a) * radius), color)
+  }
+}
+
+const HOVER_LIFT = PIT_HOVER_HEIGHT - PIT_FLAME_HEIGHT
+
+/**
+ * The legendary reveal, beat by beat after the throw lands: the fire climbs
+ * to a roar, rings of light run round the rim, white flashes at the mouth,
+ * and the weapon comes up slowly in a gold column while the camera cranes out.
+ */
+const LEGEND_BEATS: Array<{ at: number; run: (s: Shot) => void }> = [
+  { at: 0.0, run: (s) => { flarePitFire(4, 3.2); fxSound('roar', 0.6); s.shake = 0.5 } },
+  { at: 0.5, run: (s) => { ring(s.mouth, PIT_MOUTH_RADIUS * 1.3, 10, GOLD); fxSound('heal', 0.5) } },
+  { at: 0.9, run: (s) => { fxMagicBurst(s.mouth, GOLD, 1.6); flarePitFire(6, 2.4); fxSound('slam', 0.6); s.shake = 0.6 } },
+  { at: 1.3, run: (s) => { ring(above(s.mouth, 0.6), PIT_MOUTH_RADIUS * 1.6, 12, WHITE); fxLootBeam(s.mouth, GOLD) } },
+  { at: 1.7, run: (s) => { fxMagicBurst(above(s.mouth, 0.4), WHITE, 1.2); fxSound('heal', 0.8) } },
+  { at: 2.0, run: (s) => { fxLootBeam(s.mouth, GOLD); fxLootBeam(Vector3.add(s.mouth, Vector3.create(0.3, 0, 0)), WHITE); fxLootBeam(Vector3.add(s.mouth, Vector3.create(-0.3, 0, 0)), WHITE) } },
+  { at: 2.6, run: (s) => { ring(above(s.mouth, 1.2), PIT_MOUTH_RADIUS * 1.2, 10, GOLD); fxSound('coin', 0.7) } },
+  { at: 3.2, run: (s) => {
+    fxMagicBurst(above(s.mouth, HOVER_LIFT), GOLD, 1.8); fxSound('slam', 0.8); s.shake = 0.4
+    fxNumber(above(s.mouth, HOVER_LIFT + 0.6), t('LEGENDARY'), 'coin')
+  } },
+  { at: 3.8, run: (s) => { ring(above(s.mouth, HOVER_LIFT), 0.9, 12, WHITE); fxGlitter(above(s.mouth, HOVER_LIFT), GOLD) } }
+]
+
 function update(dt: number) {
   const step = Number.isFinite(dt) && dt > 0 ? Math.min(dt, 0.1) : 0
   if (phase === 'shot' && shot && result) {
     shot.t += step
     const s = shot
-    // The dolly: a slow drift round toward the fire while the hero winds up and throws.
+    const legend = isLegend(result)
+    const end = legend ? T_LEGEND_END : T_END
+    // The dolly: a slow drift round toward the fire while the hero winds up and throws; a legendary then cranes up and out.
     const d = ease((s.t - T_WINDUP) / DOLLY_SECONDS)
     const rig = Transform.getMutable(s.rig)
-    rig.position = Vector3.lerp(s.from, s.to, d)
+    let at = Vector3.lerp(s.from, s.to, d)
+    if (legend && s.t > T_RESULT) at = Vector3.lerp(s.to, s.crane, ease((s.t - T_RESULT) / (T_LEGEND_END - T_RESULT)))
+    if (s.shake > 0) {
+      s.shake = Math.max(0, s.shake - step)
+      const k = s.shake * 0.12
+      at = Vector3.add(at, Vector3.create((Math.random() - 0.5) * k, (Math.random() - 0.5) * k, (Math.random() - 0.5) * k))
+    }
+    rig.position = at
     // The throw: the weapon leaves the hand on a low arc and drops into the pot.
     if (s.t >= T_THROW && !s.thrown) {
       s.thrown = true
@@ -221,38 +290,50 @@ function update(dt: number) {
         s.landed = true
         removeItem()
         fxSound('thunk_wood', 0.9)
-        flarePitFire(3, 1.4)
-        fxMagicBurst(s.mouth, ORANGE, 1.2)
+        flarePitFire(3.5, 1.6)
+        fxMagicBurst(s.mouth, ORANGE, 1.6)
         fxSound('slam', 0.5)
         // The blast rocks the rig.
-        s.from = Vector3.add(s.from, Vector3.create(0, 0.08, 0))
+        s.shake = 0.35
       }
+    }
+    // A legendary builds from the moment the weapon lands.
+    if (legend && s.landed) {
+      while (s.legendBeat < LEGEND_BEATS.length && s.t - T_LAND >= LEGEND_BEATS[s.legendBeat].at) LEGEND_BEATS[s.legendBeat++].run(s)
     }
     // The result: it rises from the fire's mouth into the air above it.
     if (s.t >= T_RESULT && !s.risen) {
       s.risen = true
-      showItem(result.id, s.mouth)
+      const shown = showItem(result.id, s.mouth)
       const color = RARITIES[result.to].color
-      if (result.success) {
+      if (legend) {
+        // Its own light comes up with it, and the hero squares up to it.
+        hoverLight = engine.addEntity()
+        Transform.create(hoverLight, { parent: shown, position: Vector3.create(0, 0.4, 0) })
+        LightSource.create(hoverLight, { type: LightSource.Type.Point({}), color: Color3.create(1, 0.8, 0.35), intensity: 0, range: 12, shadow: false, active: true })
+        playScriptedMotion('menace_enter', 2.4, Math.atan2(s.mouth.x - s.hand.x, s.mouth.z - s.hand.z))
+      } else if (result.success) {
         fxLootBeam(s.mouth, color)
-        fxGlitter(Vector3.add(s.mouth, Vector3.create(0, 0.5, 0)), color)
+        fxGlitter(above(s.mouth, 0.5), color)
         fxSound('heal', 0.8)
       } else {
-        fxDeathPuff(Vector3.subtract(s.mouth, Vector3.create(0, 0.6, 0)))
+        fxDeathPuff(above(s.mouth, -0.6))
         fxSound('thud_straw', 0.8)
       }
     }
     if (s.risen && item !== undefined) {
-      const k = ease((s.t - T_RESULT) / T_RISE)
+      const k = ease((s.t - T_RESULT) / (legend ? T_LEGEND_RISE : T_RISE))
       const tr = Transform.getMutable(item)
-      tr.position = Vector3.create(s.mouth.x, s.mouth.y + (PIT_HOVER_HEIGHT - PIT_FLAME_HEIGHT) * k, s.mouth.z)
-      tr.rotation = Quaternion.fromEulerDegrees(0, k * 360, 0)
+      tr.position = above(s.mouth, HOVER_LIFT * k)
+      tr.rotation = Quaternion.fromEulerDegrees(0, k * (legend ? 720 : 360), 0)
+      if (hoverLight !== undefined) LightSource.getMutable(hoverLight).intensity = 8 * k
     }
-    if (s.t >= T_END) {
+    if (s.t >= end) {
       release()
       phase = 'hover'
       hoverT = 0
       glitterT = 0
+      pulseT = 0
     }
     return
   }
@@ -265,9 +346,19 @@ function update(dt: number) {
       tr.position = Vector3.create(at.x, at.y + Math.sin(hoverT * 2.2) * 0.08, at.z)
       tr.rotation = Quaternion.fromEulerDegrees(0, (hoverT * 45) % 360, 0)
     }
-    if (glitterT >= 0.9 && at) {
+    const legend = isLegend(result)
+    if (glitterT >= (legend ? 0.45 : 0.9) && at) {
       glitterT = 0
       fxGlitter(at, result.success ? RARITIES[result.to].color : ASH)
+    }
+    if (legend && at) {
+      pulseT += step
+      if (hoverLight !== undefined) LightSource.getMutable(hoverLight).intensity = 7 + 2.5 * Math.sin(hoverT * 3)
+      if (pulseT >= 2.4) {
+        pulseT = 0
+        fxLootBeam(above(at, -1.2), GOLD)
+        ring(at, 0.7, 8, GOLD)
+      }
     }
   }
 }

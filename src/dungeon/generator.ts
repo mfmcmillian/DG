@@ -61,6 +61,8 @@ export interface Furniture {
   tag?: string
   /** Metres above the floor (lava planes ride just over it). */
   lift?: number
+  /** Uniform scale on the piece (the upgrade pit's cauldron is built larger than the kit's). */
+  scale?: number
 }
 
 export interface GeneratorOptions {

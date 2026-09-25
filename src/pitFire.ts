@@ -16,13 +16,17 @@ const PLAYING = 0 as PBParticleSystem_PlaybackState
 const TEX_SOFT = 'images/fx/soft_spot.png'
 const TEX_SPARK = 'images/fx/sparkle.png'
 
-/** Where the flames sit above the cauldron's base, and where an item hovers when it comes back. */
-export const PIT_FLAME_HEIGHT = 0.8
-export const PIT_HOVER_HEIGHT = 1.9
+/** Where the flames sit above the cauldron's base (its rim, at UPGRADE_PIT_SCALE), and where an item hovers when it comes back. */
+export const PIT_FLAME_HEIGHT = 1.65
+export const PIT_HOVER_HEIGHT = 3.3
+/** The mouth of the pit: how wide the fire is. */
+export const PIT_MOUTH_RADIUS = 0.8
 
-const FLAME_RATE = 22
-const EMBER_RATE = 7
-const GLOW_INTENSITY = 4
+const FLAME_RATE = 48
+const EMBER_RATE = 16
+/** The fire's own light, on top of the hall's pooled flicker: at rest, and per unit of flare. */
+const GLOW_BASE = 5
+const GLOW_FLARE = 7
 
 type Fire = { root: Entity; flames: Entity; embers: Entity; glow: Entity; position: Vector3 }
 
@@ -67,13 +71,14 @@ function rebuild() {
   Transform.create(embers, { parent: root })
   ParticleSystem.create(embers, emberConfig(1))
   const glow = engine.addEntity()
-  Transform.create(glow, { parent: root, position: Vector3.create(0, 0.4, 0) })
+  Transform.create(glow, { parent: root, position: Vector3.create(0, 0.9, 0) })
   LightSource.create(glow, {
     type: LightSource.Type.Point({}),
     color: Color3.create(1, 0.55, 0.2),
-    intensity: 0,
-    range: 9,
-    shadow: false,
+    intensity: GLOW_BASE,
+    range: 16,
+    // One shadow caster in the hall is the pit's: the hero and the smith throw long shadows from the fire.
+    shadow: true,
     active: true
   })
   fire = { root, flames, embers, glow, position }
@@ -93,15 +98,15 @@ function flameConfig(scale: number) {
     loop: true,
     prewarm: true,
     rate: FLAME_RATE * scale,
-    maxParticles: 80,
-    lifetime: 0.55 + 0.25 * scale,
-    gravity: -1.6 * scale,
-    initialSize: { start: 0.28 * scale, end: 0.5 * scale },
+    maxParticles: 160,
+    lifetime: 0.8 + 0.35 * scale,
+    gravity: -2.2 * scale,
+    initialSize: { start: 0.6 * scale, end: 1.1 * scale },
     sizeOverTime: { start: 1, end: 0.15 },
     initialColor: { start: Color4.create(1, 0.75, 0.3, 1), end: Color4.create(1, 0.45, 0.1, 1) },
     colorOverTime: { start: Color4.create(1, 1, 1, 0.9), end: Color4.create(0.8, 0.1, 0.05, 0) },
-    initialVelocitySpeed: { start: 0.4, end: 0.9 * scale },
-    shape: ParticleSystem.Shape.Cone({ angle: 12, radius: 0.28 }),
+    initialVelocitySpeed: { start: 0.6, end: 1.4 * scale },
+    shape: ParticleSystem.Shape.Cone({ angle: 10, radius: PIT_MOUTH_RADIUS * 0.85 }),
     playbackState: PLAYING
   }
 }
@@ -114,20 +119,21 @@ function emberConfig(scale: number) {
     loop: true,
     prewarm: true,
     rate: EMBER_RATE * scale,
-    maxParticles: 40,
-    lifetime: 1.4,
-    gravity: -0.5,
-    initialSize: { start: 0.05, end: 0.1 },
+    maxParticles: 90,
+    lifetime: 2.2,
+    gravity: -0.6,
+    initialSize: { start: 0.06, end: 0.14 },
     sizeOverTime: { start: 1, end: 0 },
     initialColor: { start: Color4.create(1, 0.8, 0.4, 1), end: Color4.create(1, 0.5, 0.2, 1) },
     colorOverTime: { start: Color4.create(1, 1, 1, 1), end: Color4.create(1, 0.4, 0.1, 0) },
-    initialVelocitySpeed: { start: 0.8, end: 1.8 * scale },
-    shape: ParticleSystem.Shape.Cone({ angle: 30, radius: 0.2 }),
+    initialVelocitySpeed: { start: 1.2, end: 2.8 * scale },
+    shape: ParticleSystem.Shape.Cone({ angle: 28, radius: PIT_MOUTH_RADIUS * 0.7 }),
     playbackState: PLAYING
   }
 }
 
 let lastScale = 1
+let flickerT = 0
 
 function update(dt: number) {
   if (!fire) return
@@ -140,6 +146,10 @@ function update(dt: number) {
     ParticleSystem.createOrReplace(fire.flames, flameConfig(scale))
     ParticleSystem.createOrReplace(fire.embers, emberConfig(scale))
   }
+  // A slow breathing flicker at rest; the flare piles on top of it.
+  flickerT += step
+  const breath = 0.88 + 0.12 * Math.sin(flickerT * 5.3) * Math.sin(flickerT * 2.1 + 1) + (Math.random() - 0.5) * 0.06
   const light = LightSource.getMutable(fire.glow)
-  light.intensity = flare > 0.02 ? GLOW_INTENSITY * flare * (0.9 + Math.random() * 0.2) : 0
+  light.intensity = GLOW_BASE * breath + GLOW_FLARE * flare
+  light.range = 16 + 6 * Math.min(2, flare)
 }

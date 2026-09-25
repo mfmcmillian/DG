@@ -37,9 +37,9 @@ const AT = Vector3.create(0.78, 1.3, 0)
 /** ...and over the war table: centred, a little above the map. */
 const AT_TABLE = Vector3.create(0, 1.45, 0)
 /** ...and at the upgrade pit: beside the fire, clear of the flames. */
-const AT_PIT = Vector3.create(0.9, 1.5, 0)
+const AT_PIT = Vector3.create(1.5, 2.3, 0)
 /** ...and beside the weapon hovering over it. */
-const AT_HOVER = Vector3.create(0.8, 2.1, 0)
+const AT_HOVER = Vector3.create(1.3, 3.5, 0)
 
 const GOLD = Color4.create(1, 0.84, 0.4, 1)
 const GOLD_GLOW = Color3.create(1, 0.74, 0.22)

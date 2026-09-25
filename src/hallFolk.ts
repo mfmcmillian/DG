@@ -62,12 +62,13 @@ const deg = (d: number) => (d * Math.PI) / 180
 // that is the first-timer's path and the arrows' trail (src/hallGuide.ts).
 // Positions are read against src/dungeon/hub.ts: great hall x 33..58, z 38..63
 // (war table at 45.5, 50.5 with braziers at x 42.5 / 48.5; long tables at
-// x 37 and x 54); smithy x 23..33 (anvil at 27.5, 50.5); training yard
+// x 37 and x 54); smithy x 23..33 (upgrade pit at 28, 50.5; anvil at 25.5, 53.5); training yard
 // x 58..68 (dummies along z 47); vestibule x 38..53, z 63..73 (spawn 45.5, 68).
 const ROLES: Role[] = [
   {
     body: 'folk-quartermaster', cid: 'brute',
-    at: [29.4, 50.5], yaw: deg(-90), rest: 'combat_idle',
+    // At the anvil in the smithy's north-west corner, his back to the pit, so the fire has the room to itself.
+    at: [26.9, 53.5], yaw: deg(-90), rest: 'combat_idle',
     gestures: [{ motion: 'attack_heavy', weight: 3 }, { motion: 'flourish', weight: 1 }], every: [4, 9], greets: 0
   },
   {

@@ -79,7 +79,7 @@ function planeUvs(u: number, v = u): number[] {
  */
 const FLAMES: Partial<Record<KitId, number>> = {
   brazier: 1.15, castle_brazier: 1.0, forge_brazier: 1.0, torch_stand: 1.2,
-  castle_firepit: 0.5, forge_firepit: 0.5, forge_smelting_pot: 1.1, castle_cauldron: 0.9,
+  castle_firepit: 0.5, forge_firepit: 0.5, forge_smelting_pot: 1.1, castle_cauldron: 0.75,
   pit_brazier: 1.7, pit_brazier_b: 1.8
 }
 
@@ -145,7 +145,11 @@ export function buildDungeon(dungeon: Dungeon, style: DungeonStyle, options?: La
         if (p.only) modal.push({ entity: e, placement: p, only: p.only })
         break
       case 'kit': {
-        Transform.create(e, { position: Vector3.create(p.x, p.y, p.z), rotation: Quaternion.fromEulerDegrees(0, p.yaw, 0), parent: root })
+        const grow = p.scale ?? 1
+        Transform.create(e, {
+          position: Vector3.create(p.x, p.y, p.z), rotation: Quaternion.fromEulerDegrees(0, p.yaw, 0),
+          scale: Vector3.create(grow, grow, grow), parent: root
+        })
         const id = p.lowId && cutaway ? p.lowId : p.id
         GltfContainer.create(e, {
           src: KIT[id].src,
@@ -158,7 +162,7 @@ export function buildDungeon(dungeon: Dungeon, style: DungeonStyle, options?: La
         if (torchSet.has(index)) torches.push({ entity: e, position: Vector3.create(p.x, p.y + 0.5, p.z) })
         const flame = FLAMES[id]
         if (flame !== undefined) {
-          torches.push({ entity: e, position: Vector3.create(p.x, p.y + flame, p.z) })
+          torches.push({ entity: e, position: Vector3.create(p.x, p.y + flame * grow, p.z) })
           if (AMBIENT_STYLES.has(style.id)) {
             // Each fire crackles on its own, a touch off-pitch from the next so they never phase.
             AudioSource.create(e, { audioClipUrl: FIRE_LOOP, playing: true, loop: true, volume: 0.3, pitch: 0.92 + Math.random() * 0.16 })
