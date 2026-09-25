@@ -109,6 +109,9 @@ export function edgeMidpoint(style: DungeonStyle, e: Edge): { x: number; z: numb
 
 /** Side of the plot in metres (the black ground covers all of it). */
 const SCENE_SPAN = SCENE_SIZE
+/** Boundary walls: kept under the 133 m height limit of a 100-parcel scene. */
+const RIM_HEIGHT = 120
+const RIM_THICKNESS = 1
 
 export function layoutDungeon(dungeon: Dungeon, style: DungeonStyle, options: LayoutOptions = { cutaway: false }): Layout {
   const T = style.tile
@@ -138,6 +141,18 @@ export function layoutDungeon(dungeon: Dungeon, style: DungeonStyle, options: La
   // shows the Explorer's own terrain and sky tint. This is the void between and
   // around the rooms, the way top-down dungeons fill their negative space black.
   push({ kind: 'ground', x: SCENE_SPAN / 2, y: -0.5, z: SCENE_SPAN / 2, sx: SCENE_SPAN, sy: 1, sz: SCENE_SPAN }, PRIMITIVE_TRIS.box)
+
+  // The same void stands up around the plot: four walls, one metre inside
+  // the boundary, as tall as a 100-parcel scene may build (log2(101) * 20 is
+  // 133 m). Neighbouring scenes stay out of every camera angle short of
+  // looking straight up, and the collider keeps heroes (and the shoulder
+  // camera's probe) from wandering off the plot.
+  const rim = SCENE_SPAN - RIM_THICKNESS / 2
+  const rimY = RIM_HEIGHT / 2
+  push({ kind: 'ground', x: RIM_THICKNESS / 2, y: rimY, z: SCENE_SPAN / 2, sx: RIM_THICKNESS, sy: RIM_HEIGHT, sz: SCENE_SPAN }, PRIMITIVE_TRIS.box)
+  push({ kind: 'ground', x: rim, y: rimY, z: SCENE_SPAN / 2, sx: RIM_THICKNESS, sy: RIM_HEIGHT, sz: SCENE_SPAN }, PRIMITIVE_TRIS.box)
+  push({ kind: 'ground', x: SCENE_SPAN / 2, y: rimY, z: RIM_THICKNESS / 2, sx: SCENE_SPAN, sy: RIM_HEIGHT, sz: RIM_THICKNESS }, PRIMITIVE_TRIS.box)
+  push({ kind: 'ground', x: SCENE_SPAN / 2, y: rimY, z: rim, sx: SCENE_SPAN, sy: RIM_HEIGHT, sz: RIM_THICKNESS }, PRIMITIVE_TRIS.box)
 
   // Floors and ceilings are one plane per rectangle of open cells rather than
   // one per cell: the texture repeats per cell either way, and a 30-room
