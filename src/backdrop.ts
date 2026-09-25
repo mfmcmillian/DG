@@ -11,7 +11,7 @@ import {
 } from '@dcl/sdk/ecs'
 import { Quaternion, Vector3 } from '@dcl/sdk/math'
 import alpine from './backdrop/alpine.json'
-import { onDungeonLoaded } from './dungeon'
+import { dungeonBounds, onDungeonLoaded } from './dungeon'
 import { SCENE_SIZE } from './dungeon/config'
 
 /**
@@ -39,13 +39,6 @@ interface Put {
   sink?: number
 }
 
-/** Snow planes under everything, one per band: centre x/z and size w/d. */
-const GROUND: Array<{ x: number; z: number; w: number; d: number }> = [
-  { x: 80, z: 119, w: 158, d: 78 }, // north band
-  { x: 119, z: 40, w: 78, d: 78 }, // east band
-  { x: 9, z: 40, w: 16, d: 78 }, // west strip
-  { x: 49, z: 9, w: 62, d: 16 } // south strip
-]
 const SNOW_TEXTURE = 'models/backdrop/alpine/alpine_snow.png'
 const SNOW_METRES_PER_TILE = 6
 
@@ -146,10 +139,17 @@ function build() {
   if (root !== undefined) return
   root = engine.addEntity()
   Transform.create(root, { position: Vector3.Zero() })
-  for (const g of GROUND) ground(g.x, g.z, g.w, g.d)
+  // Snow right up to the hall's outer walls and out to the plot edge, in four
+  // planes framing the grid; inside the walls the ground stays the dungeon's black.
+  const b = dungeonBounds()
+  const S = SCENE_SIZE
+  ground(S / 2, (b.maxZ + S) / 2, S, S - b.maxZ) // north band
+  ground((b.maxX + S) / 2, b.maxZ / 2, S - b.maxX, b.maxZ) // east band
+  ground(b.minX / 2, b.maxZ / 2, b.minX, b.maxZ) // west strip
+  ground((b.minX + b.maxX) / 2, b.minZ / 2, b.maxX - b.minX, b.minZ) // south strip
   let tris = 0
   for (const put of LAYOUT) tris += place(put)
-  console.log(`[backdrop] alpine: ${LAYOUT.length + GROUND.length} entities, ${tris} tris`)
+  console.log(`[backdrop] alpine: ${LAYOUT.length + 4} entities, ${tris} tris`)
 }
 
 function clear() {
