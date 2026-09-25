@@ -20,7 +20,7 @@ import { SCENE_SIZE } from './dungeon/config'
  * 18..78 on both axes. Sheer cliffs press against the short west and south margins,
  * pines and rock spill along the walls, and the wide north and east bands run out
  * through forest to snow peaks against the black rim. Nothing here has a collider:
- * the rim keeps heroes in, and the backdrop is only ever seen over the hall walls.
+ * the hall walls keep heroes in, and the backdrop is only ever seen over them.
  *
  * It only exists while the hall is loaded; dungeons stay in their black void.
  */
@@ -49,7 +49,7 @@ const GROUND: Array<{ x: number; z: number; w: number; d: number }> = [
 const SNOW_TEXTURE = 'models/backdrop/alpine/alpine_snow.png'
 const SNOW_METRES_PER_TILE = 6
 
-/** Rim thickness (src/dungeon/layout.ts): pieces must stay inside the plot or the Explorer culls them. */
+/** Pieces must stay this far inside the plot or the Explorer culls them. */
 const INNER = 1
 /** Seconds since midnight the sky is pinned to: full night, moon up, so the peaks stay silhouettes and torchlight owns the hall. */
 const NIGHT = 75600
