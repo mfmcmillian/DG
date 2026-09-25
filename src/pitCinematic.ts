@@ -77,6 +77,13 @@ let shot: Shot | undefined
 let result: UpgradeResult | undefined
 /** The weapon on show: thrown, then risen. */
 let item: Entity | undefined
+/**
+ * The camera rig and what it looks at, made once and kept: the Explorer blends
+ * from the outgoing virtual camera when MainCamera lets go of it, so the rig
+ * must still exist (with its VirtualCamera) through the hand-back. Same as
+ * src/sceneCamera.ts, which keeps its rig for the menus.
+ */
+let rigEntities: { rig: Entity; focus: Entity } | undefined
 let hoverT = 0
 let glitterT = 0
 let pulseT = 0
@@ -164,10 +171,10 @@ export function startPitCinematic(upgrade: UpgradeResult): boolean {
   const from = Vector3.create(mid.x + right.x * 4.2 - dir.x * 1.6, player.y + 2.0, mid.z + right.z * 4.2 - dir.z * 1.6)
   const to = Vector3.create(mid.x + right.x * 3.4 + dir.x * 0.4, player.y + 2.7, mid.z + right.z * 3.4 + dir.z * 0.4)
   const crane = Vector3.create(mid.x + right.x * 4.6 - dir.x * 2.4, player.y + 4.2, mid.z + right.z * 4.6 - dir.z * 2.4)
-  const focus = engine.addEntity()
-  Transform.create(focus, { position: mid })
-  const rig = engine.addEntity()
-  Transform.create(rig, { position: Vector3.clone(from), rotation: Quaternion.lookRotation(Vector3.subtract(mid, from), Vector3.Up()) })
+  if (!rigEntities) rigEntities = { rig: engine.addEntity(), focus: engine.addEntity() }
+  const { rig, focus } = rigEntities
+  Transform.createOrReplace(focus, { position: mid })
+  Transform.createOrReplace(rig, { position: Vector3.clone(from), rotation: Quaternion.lookRotation(Vector3.subtract(mid, from), Vector3.Up()) })
   VirtualCamera.createOrReplace(rig, { lookAtEntity: focus, defaultTransition: { transitionMode: VirtualCamera.Transition.Time(CUT_SECONDS) } })
   suspendDungeonCamera()
   InputModifier.createOrReplace(engine.PlayerEntity, { mode: InputModifier.Mode.Standard({ disableAll: true }) })
@@ -230,10 +237,6 @@ function clearAll() {
     engine.removeEntity(hoverLight)
     hoverLight = undefined
   }
-  if (shot) {
-    engine.removeEntity(shot.rig)
-    engine.removeEntity(shot.focus)
-  }
   shot = undefined
   result = undefined
   phase = 'idle'
@@ -241,11 +244,16 @@ function clearAll() {
 
 function release() {
   if (!shot) return
-  MainCamera.createOrReplace(engine.CameraEntity, { virtualCameraEntity: undefined })
-  VirtualCamera.deleteFrom(shot.rig)
   const current = InputModifier.getOrNull(engine.PlayerEntity)
   if (current?.mode?.$case === 'standard' && current.mode.standard.disableAll) InputModifier.deleteFrom(engine.PlayerEntity)
+  // The follow camera comes back first, while MainCamera still names the rig: the
+  // shoulder camera sees it is taking over from a scene camera and settles behind
+  // the hero instead of reading the rig's off-axis view for its yaw and pitch.
+  // The rig stays where it is, VirtualCamera and all, so the Explorer has
+  // something to blend out from. Only if nothing took MainCamera is it let go.
   resumeDungeonCamera()
+  const mainCamera = MainCamera.getMutableOrNull(engine.CameraEntity)
+  if (mainCamera?.virtualCameraEntity === shot.rig) mainCamera.virtualCameraEntity = undefined
 }
 
 function showItem(id: string, at: Vector3): Entity {
