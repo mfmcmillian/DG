@@ -19,7 +19,7 @@ import { SCENE_SIZE } from './dungeon/config'
  * laid out in the unused band of the plot around the 60 m hall grid, which sits at
  * 18..78 on both axes. Sheer cliffs press against the short west and south margins,
  * pines and rock spill along the walls, and the wide north and east bands run out
- * through forest to snow peaks against the black rim. Nothing here has a collider:
+ * through forest to snow peaks at the plot's edge. Nothing here has a collider:
  * the hall walls keep heroes in, and the backdrop is only ever seen over them.
  *
  * It only exists while the hall is loaded; dungeons stay in their black void.
