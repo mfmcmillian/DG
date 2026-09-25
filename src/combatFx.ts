@@ -23,10 +23,12 @@ export type FxSound =
   | 'swing_light' | 'swing_heavy' | 'hit_light' | 'hit_heavy' | 'block' | 'hurt'
   | 'dodge' | 'coin' | 'heal' | 'slam' | 'roar' | 'death'
   | 'thunk_wood' | 'thud_straw'
+  /** The upgrade pit: the fire leaping, and the reveal (scripts/build-pit-sounds.py). */
+  | 'fire_flare' | 'reveal'
 
 const FX_SOUNDS: FxSound[] = [
   'swing_light', 'swing_heavy', 'hit_light', 'hit_heavy', 'block', 'hurt',
-  'dodge', 'coin', 'heal', 'slam', 'roar', 'death', 'thunk_wood', 'thud_straw'
+  'dodge', 'coin', 'heal', 'slam', 'roar', 'death', 'thunk_wood', 'thud_straw', 'fire_flare', 'reveal'
 ]
 
 /** Every clip `fxSound` can play, for the title-screen preloader. */

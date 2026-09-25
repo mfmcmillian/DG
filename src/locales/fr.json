@@ -879,5 +879,10 @@
   "Not enough coins": "Pas assez de pièces",
   "Already legendary": "Déjà légendaire",
   "Offer to the fire": "Offrir au feu",
-  "LEGENDARY": "LÉGENDAIRE"
+  "LEGENDARY": "LÉGENDAIRE",
+  "pit-forged from {rarity}": "forgée au feu depuis {rarity}",
+  "{name} is now {rarity}.": "{name} est désormais {rarity}.",
+  "The fire did not take {name}. {n} coins lost.": "Le feu n'a pas pris {name}. {n} pièces perdues.",
+  "The fire behind me is the upgrade pit. Feed it coin and steel and the steel may come back keener: the same blade, one rank rarer, hitting that much harder.": "Le feu derrière moi est la fosse d'amélioration. Donnez-lui pièces et acier, et l'acier peut revenir plus affûté : la même lame, d'un rang plus rare, frappant d'autant plus fort.",
+  "Common steel takes the fire readily. The finer the blade, the more it resists, and the more coin the fire asks. What it refuses it gives back as it was. The coin it keeps.": "L'acier commun prend bien le feu. Plus la lame est fine, plus elle résiste, et plus le feu demande de pièces. Ce qu'il refuse, il le rend tel quel. Les pièces, il les garde."
 }

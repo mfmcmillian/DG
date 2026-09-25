@@ -10,10 +10,14 @@
 
 import { engine, Entity, GltfContainer, InputModifier, LightSource, MainCamera, Transform, VirtualCamera } from '@dcl/sdk/ecs'
 import { Color3, Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
+import { movePlayerTo } from '~system/RestrictedActions'
 import { fxDeathPuff, fxGlitter, fxLootBeam, fxMagicBurst, fxNumber, fxSound } from './combatFx'
 import { onDungeonLoaded, resumeDungeonCamera, suspendDungeonCamera } from './dungeon'
 import { getEquipmentItemOrNull, WEAPON_DROP_OFFSET, WEAPON_DROP_OFFSET_LEFT } from './equipmentCatalog'
+import { flushHeroSave } from './heroSave'
 import { t } from './i18n'
+import { PitEventNet, publishPitEvent, setPitEventHandler } from './multiplayer'
+import { hallNotice } from './party'
 import { flarePitFire, PIT_FLAME_HEIGHT, PIT_HOVER_HEIGHT, PIT_MOUTH_RADIUS, pitFirePosition } from './pitFire'
 import { playScriptedMotion } from './playerCharacter'
 import { pendingUpgrade, takeUpgrade, UpgradeResult } from './upgrades'
@@ -31,6 +35,13 @@ const T_LEGEND_RISE = 2.2
 const T_LEGEND_END = 7.0
 const CUT_SECONDS = 0.6
 const DOLLY_SECONDS = 2.2
+
+/**
+ * The hero's mark: where they stand for the shot, east of the pit (toward the
+ * smithy door) facing it, so the framing is the same every time and the rig
+ * never meets a wall. Metres from the cauldron's centre.
+ */
+const MARK_OFFSET = Vector3.create(2.5, 0, 0)
 
 const ORANGE = Color4.create(1, 0.55, 0.15, 1)
 const ASH = Color4.create(0.5, 0.5, 0.5, 1)
@@ -79,6 +90,42 @@ export function initializePitCinematic() {
   engine.addSystem(update)
   // The hall is left (a run starts, or the party walks out): whatever waits over the fire is written now.
   onDungeonLoaded(settlePitResult)
+  setPitEventHandler(onRemotePitEvent)
+}
+
+/** Another hero's offering: the fire and the reveal play for us too, from the pit, without the camera. */
+function onRemotePitEvent(msg: PitEventNet) {
+  const fire = pitFirePosition()
+  if (!fire) return
+  const mouth = Vector3.create(fire.x, fire.y + PIT_FLAME_HEIGHT, fire.z)
+  if (msg.beat === 'throw') {
+    fxSound('thunk_wood', 0.6)
+    flarePitFire(3.5, 1.6)
+    fxMagicBurst(mouth, ORANGE, 1.6)
+    fxSound('fire_flare', 0.7)
+    return
+  }
+  if (msg.beat !== 'result') return
+  const rarity = (msg.rarity in RARITIES ? msg.rarity : 'common') as keyof typeof RARITIES
+  const color = RARITIES[rarity].color
+  if (!msg.success) {
+    fxDeathPuff(above(mouth, -0.6))
+    fxSound('thud_straw', 0.6)
+    return
+  }
+  if (rarity === 'legendary') {
+    flarePitFire(6, 3)
+    fxSound('roar', 0.5)
+    fxMagicBurst(mouth, GOLD, 1.8)
+    ring(mouth, PIT_MOUTH_RADIUS * 1.4, 12, GOLD)
+    fxLootBeam(mouth, GOLD)
+    fxSound('reveal', 0.9)
+    fxNumber(above(mouth, HOVER_LIFT + 0.6), t('LEGENDARY'), 'coin')
+    return
+  }
+  fxLootBeam(mouth, color)
+  fxGlitter(above(mouth, 0.5), color)
+  fxSound('reveal', 0.6)
 }
 
 /** The camera is the shot's: HUD, prompts and the hero's controls stand aside. */
@@ -101,10 +148,13 @@ export function pitHoverItem(): { id: string; position: Vector3 } | undefined {
 export function startPitCinematic(upgrade: UpgradeResult): boolean {
   if (phase !== 'idle') return false
   const fire = pitFirePosition()
-  const player = Transform.getOrNull(engine.PlayerEntity)?.position
-  if (!fire || !player) return false
+  const current = Transform.getOrNull(engine.PlayerEntity)?.position
+  if (!fire || !current) return false
   result = upgrade
   const mouth = Vector3.create(fire.x, fire.y + PIT_FLAME_HEIGHT, fire.z)
+  // The hero steps to the mark first, so the shot is framed the same every time.
+  const player = Vector3.create(fire.x + MARK_OFFSET.x, current.y, fire.z + MARK_OFFSET.z)
+  movePlayerTo({ newRelativePosition: player, avatarTarget: mouth }).catch((error: unknown) => console.log('pit mark failed', error))
   // The hero faces the pot; the camera stands off to one side, a little in front of the hero, looking across at the fire.
   const toFire = Vector3.create(fire.x - player.x, 0, fire.z - player.z)
   const dist = Math.max(0.01, Vector3.length(toFire))
@@ -148,6 +198,14 @@ export function takePitResult(): boolean {
     if (legend) fxSound('heal', 0.9)
     fxNumber(Vector3.add(at, Vector3.create(0, 0.3, 0)), taken.success ? t(RARITIES[taken.to].label) : t('Unchanged'), taken.success ? 'coin' : 'note')
   }
+  if (taken) {
+    const name = getEquipmentItemOrNull(taken.id)?.name ?? taken.id
+    hallNotice(taken.success
+      ? t('{name} is now {rarity}.', { name: t(name), rarity: t(RARITIES[taken.to].label) })
+      : t('The fire did not take {name}. {n} coins lost.', { name: t(name), n: taken.coins }))
+    // A paid-for step is not left to the next periodic save.
+    flushHeroSave()
+  }
   clearAll()
   return true
 }
@@ -159,7 +217,10 @@ export function takePitResult(): boolean {
 export function settlePitResult() {
   if (phase === 'idle') return
   if (phase === 'shot') release()
-  if (pendingUpgrade()) takeUpgrade()
+  if (pendingUpgrade()) {
+    takeUpgrade()
+    flushHeroSave()
+  }
   clearAll()
 }
 
@@ -242,7 +303,7 @@ const HOVER_LIFT = PIT_HOVER_HEIGHT - PIT_FLAME_HEIGHT
  * and the weapon comes up slowly in a gold column while the camera cranes out.
  */
 const LEGEND_BEATS: Array<{ at: number; run: (s: Shot) => void }> = [
-  { at: 0.0, run: (s) => { flarePitFire(4, 3.2); fxSound('roar', 0.6); s.shake = 0.5 } },
+  { at: 0.0, run: (s) => { flarePitFire(4, 3.2); fxSound('roar', 0.6); fxSound('fire_flare', 0.8); s.shake = 0.5 } },
   { at: 0.5, run: (s) => { ring(s.mouth, PIT_MOUTH_RADIUS * 1.3, 10, GOLD); fxSound('heal', 0.5) } },
   { at: 0.9, run: (s) => { fxMagicBurst(s.mouth, GOLD, 1.6); flarePitFire(6, 2.4); fxSound('slam', 0.6); s.shake = 0.6 } },
   { at: 1.3, run: (s) => { ring(above(s.mouth, 0.6), PIT_MOUTH_RADIUS * 1.6, 12, WHITE); fxLootBeam(s.mouth, GOLD) } },
@@ -250,7 +311,7 @@ const LEGEND_BEATS: Array<{ at: number; run: (s: Shot) => void }> = [
   { at: 2.0, run: (s) => { fxLootBeam(s.mouth, GOLD); fxLootBeam(Vector3.add(s.mouth, Vector3.create(0.3, 0, 0)), WHITE); fxLootBeam(Vector3.add(s.mouth, Vector3.create(-0.3, 0, 0)), WHITE) } },
   { at: 2.6, run: (s) => { ring(above(s.mouth, 1.2), PIT_MOUTH_RADIUS * 1.2, 10, GOLD); fxSound('coin', 0.7) } },
   { at: 3.2, run: (s) => {
-    fxMagicBurst(above(s.mouth, HOVER_LIFT), GOLD, 1.8); fxSound('slam', 0.8); s.shake = 0.4
+    fxMagicBurst(above(s.mouth, HOVER_LIFT), GOLD, 1.8); fxSound('slam', 0.8); fxSound('reveal', 1); s.shake = 0.4
     fxNumber(above(s.mouth, HOVER_LIFT + 0.6), t('LEGENDARY'), 'coin')
   } },
   { at: 3.8, run: (s) => { ring(above(s.mouth, HOVER_LIFT), 0.9, 12, WHITE); fxGlitter(above(s.mouth, HOVER_LIFT), GOLD) } }
@@ -292,9 +353,10 @@ function update(dt: number) {
         fxSound('thunk_wood', 0.9)
         flarePitFire(3.5, 1.6)
         fxMagicBurst(s.mouth, ORANGE, 1.6)
-        fxSound('slam', 0.5)
+        fxSound('fire_flare', 1)
         // The blast rocks the rig.
         s.shake = 0.35
+        publishPitEvent('throw', result.id, result.to, result.success)
       }
     }
     // A legendary builds from the moment the weapon lands.
@@ -315,11 +377,12 @@ function update(dt: number) {
       } else if (result.success) {
         fxLootBeam(s.mouth, color)
         fxGlitter(above(s.mouth, 0.5), color)
-        fxSound('heal', 0.8)
+        fxSound('reveal', 0.9)
       } else {
         fxDeathPuff(above(s.mouth, -0.6))
         fxSound('thud_straw', 0.8)
       }
+      publishPitEvent('result', result.id, result.to, result.success)
     }
     if (s.risen && item !== undefined) {
       const k = ease((s.t - T_RESULT) / (legend ? T_LEGEND_RISE : T_RISE))

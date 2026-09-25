@@ -879,5 +879,10 @@
   "Not enough coins": "コインが足りない",
   "Already legendary": "すでにレジェンダリー",
   "Offer to the fire": "炎に捧げる",
-  "LEGENDARY": "レジェンダリー"
+  "LEGENDARY": "レジェンダリー",
+  "pit-forged from {rarity}": "{rarity}から炉で強化",
+  "{name} is now {rarity}.": "{name}は{rarity}になった。",
+  "The fire did not take {name}. {n} coins lost.": "炎は{name}を受け入れなかった。{n}コインを失った。",
+  "The fire behind me is the upgrade pit. Feed it coin and steel and the steel may come back keener: the same blade, one rank rarer, hitting that much harder.": "私の後ろの炎が強化の炉だ。コインと鋼をくべれば、鋼はより鋭くなって戻るかもしれない。同じ刃で、レアリティが一段上、それだけ強く打てる。",
+  "Common steel takes the fire readily. The finer the blade, the more it resists, and the more coin the fire asks. What it refuses it gives back as it was. The coin it keeps.": "並の鋼は炎をよく受け入れる。刃が上等になるほど抵抗し、炎が求めるコインも増える。拒まれた鋼は元のまま戻ってくる。コインは返らない。"
 }

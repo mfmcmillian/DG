@@ -38,6 +38,8 @@ export type UpgradeResult = {
   from: Rarity
   /** The rarity the weapon has once taken (equals `from` on a failure). */
   to: Rarity
+  /** What the offering cost. */
+  coins: number
 }
 
 /** The result waiting over the fire, not yet written to the hero. */
@@ -69,7 +71,7 @@ export function attemptUpgrade(id: string): UpgradeResult | undefined {
   const offer = upgradeOffer(id)
   if (!offer.to || !spendCoins(offer.coins)) return undefined
   const success = Math.random() < offer.chance
-  pending = { id, success, from: offer.from, to: success ? offer.to : offer.from }
+  pending = { id, success, from: offer.from, to: success ? offer.to : offer.from, coins: offer.coins }
   return pending
 }
 

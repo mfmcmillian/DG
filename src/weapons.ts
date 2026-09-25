@@ -123,7 +123,10 @@ export function rarityColor(id: string): Color4 {
 /** "Epic · Sword · Dark Fortress" */
 export function weaponSubtitle(item: EquipmentItem): string {
   if (!item.weapon) return ''
-  return `${t(RARITIES[item.weapon.rarity].label)} · ${t(WEAPON_CLASSES[item.weapon.class].label)} · ${item.weapon.pack}`
+  const rank = upgradeRankOf(item.id)
+  const rarity = t(RARITIES[rarityOf(item.id)].label)
+  const forged = rank > 0 ? ` · ${t('pit-forged from {rarity}', { rarity: t(RARITIES[item.weapon.rarity].label) })}` : ''
+  return `${rarity}${forged} · ${t(WEAPON_CLASSES[item.weapon.class].label)} · ${item.weapon.pack}`
 }
 
 /** "+20% damage · +40% stagger · +4 damage" for the inventory. */

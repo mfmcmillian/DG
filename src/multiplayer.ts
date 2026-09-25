@@ -411,6 +411,21 @@ export function publishSkillCast(skill: string, x: number, z: number, yaw: numbe
   sendNet('skillCast', { id, skill, x, z, yaw })
 }
 
+/** Our hero's offering at the pit: the room plays the fire and the reveal too. */
+export function publishPitEvent(beat: 'throw' | 'result', item: string, rarity: string, success: boolean) {
+  const id = localAddress()
+  if (!clientReady() || !id) return
+  sendNet('pitEvent', { id, beat, item, rarity, success })
+}
+
+export type PitEventNet = { id: string; beat: string; item: string; rarity: string; success: boolean }
+let onPitEvent: ((msg: PitEventNet) => void) | undefined
+
+/** Client: another hero's offering at the pit (the FX). */
+export function setPitEventHandler(handler: (msg: PitEventNet) => void) {
+  onPitEvent = handler
+}
+
 export function publishImpact(p: ImpactNet) {
   const id = localAddress()
   if (!clientReady() || !id) return
@@ -538,6 +553,10 @@ function bindClient() {
     if (msg.id === localAddress()) return
     onShot?.(msg)
   })
+  onNet('pitEvent', (msg) => {
+    if (msg.id === localAddress()) return
+    onPitEvent?.(msg)
+  })
   onNet('skillCast', (msg) => {
     if (msg.id === localAddress()) return
     onSkillCast?.(msg.id, msg.skill, msg.x, msg.z, msg.yaw)
@@ -586,6 +605,10 @@ function bindServer() {
   onNet('shot', (msg, context) => {
     if (!context || isSolo()) return
     sendNet('shot', { ...msg, id: context.from.toLowerCase() })
+  })
+  onNet('pitEvent', (msg, context) => {
+    if (!context || isSolo()) return
+    sendNet('pitEvent', { ...msg, id: context.from.toLowerCase() })
   })
   onNet('hitSkill', (msg, context) => {
     if (!context) return

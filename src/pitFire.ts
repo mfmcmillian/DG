@@ -4,9 +4,10 @@
 // the upgrade itself is src/upgrades.ts and the shot is src/pitCinematic.ts.
 
 import {
-  ColliderLayer, engine, Entity, LightSource, MeshCollider, ParticleSystem, PBParticleSystem_BlendMode, PBParticleSystem_PlaybackState, Transform
+  AudioSource, ColliderLayer, engine, Entity, LightSource, Material, MaterialTransparencyMode, MeshCollider, MeshRenderer, ParticleSystem,
+  PBParticleSystem_BlendMode, PBParticleSystem_PlaybackState, Transform
 } from '@dcl/sdk/ecs'
-import { Color3, Color4, Vector3 } from '@dcl/sdk/math'
+import { Color3, Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
 import { getDungeonState, onDungeonLoaded } from './dungeon'
 import { UPGRADE_PIT_TAG } from './dungeon/hub'
 
@@ -15,6 +16,10 @@ const PLAYING = 0 as PBParticleSystem_PlaybackState
 
 const TEX_SOFT = 'images/fx/soft_spot.png'
 const TEX_SPARK = 'images/fx/sparkle.png'
+const TEX_DISC = 'images/fx/circle_01.png'
+/** The pit's own voice: a low roar under the hall's crackle (scripts/build-pit-sounds.py). */
+const PIT_LOOP = 'sounds/pit_loop.wav'
+const LOOP_VOLUME = 0.45
 /** A looping flame flipbook, 8 x 8 frames, drawn by scripts/build-fire-sheet.py; the loop closes on frame 64. */
 const TEX_FIRE_SHEET = 'images/fx/fire_sheet.png'
 const SHEET_TILES = 8
@@ -37,7 +42,7 @@ const EMBER_RATE = 16
 const GLOW_BASE = 5
 const GLOW_FLARE = 7
 
-type Fire = { root: Entity; guard: Entity; tongues: Entity; flames: Entity; embers: Entity; glow: Entity; position: Vector3 }
+type Fire = { root: Entity; guard: Entity; tongues: Entity; flames: Entity; embers: Entity; glow: Entity; scorch: Entity; floorGlow: Entity; position: Vector3 }
 
 let fire: Fire | undefined
 /** The flare: how far above normal the fire stands (0 = calm) and how fast it settles. */
@@ -75,6 +80,22 @@ function rebuild() {
   Transform.create(root, { position: Vector3.create(at.x, at.y + PIT_FLAME_HEIGHT, at.z) })
   const guard = engine.addEntity()
   Transform.create(guard, { position: Vector3.create(at.x, at.y + GUARD_HEIGHT / 2, at.z), scale: Vector3.create(GUARD_RADIUS * 2, GUARD_HEIGHT, GUARD_RADIUS * 2) })
+  // The floor round the pit: a scorch under it, and a warm glow over the scorch that breathes with the light.
+  const scorch = engine.addEntity()
+  Transform.create(scorch, { position: Vector3.create(at.x, at.y + 0.02, at.z), rotation: Quaternion.fromEulerDegrees(90, 0, 0), scale: Vector3.create(4.4, 4.4, 1) })
+  MeshRenderer.setPlane(scorch)
+  Material.setPbrMaterial(scorch, {
+    texture: Material.Texture.Common({ src: TEX_DISC }),
+    albedoColor: Color4.create(0.02, 0.015, 0.012, 0.88),
+    transparencyMode: MaterialTransparencyMode.MTM_ALPHA_BLEND,
+    castShadows: false
+  })
+  const floorGlow = engine.addEntity()
+  Transform.create(floorGlow, { position: Vector3.create(at.x, at.y + 0.035, at.z), rotation: Quaternion.fromEulerDegrees(90, 0, 0), scale: Vector3.create(5.2, 5.2, 1) })
+  MeshRenderer.setPlane(floorGlow)
+  Material.setPbrMaterial(floorGlow, floorGlowMaterial(1))
+  // The roar, from the fire itself.
+  AudioSource.create(root, { audioClipUrl: PIT_LOOP, playing: true, loop: true, volume: LOOP_VOLUME })
   // Physics only: the camera boom still reads the cauldron's own mesh, not this drum.
   MeshCollider.setCylinder(guard, 0.5, 0.5, ColliderLayer.CL_PHYSICS)
   const tongues = engine.addEntity()
@@ -97,13 +118,25 @@ function rebuild() {
     shadow: true,
     active: true
   })
-  fire = { root, guard, tongues, flames, embers, glow, position }
+  fire = { root, guard, tongues, flames, embers, glow, scorch, floorGlow, position }
 }
 
 function destroy() {
   if (!fire) return
-  for (const e of [fire.glow, fire.embers, fire.flames, fire.tongues, fire.root, fire.guard]) engine.removeEntity(e)
+  for (const e of [fire.glow, fire.embers, fire.flames, fire.tongues, fire.root, fire.guard, fire.scorch, fire.floorGlow]) engine.removeEntity(e)
   fire = undefined
+}
+
+function floorGlowMaterial(strength: number) {
+  return {
+    texture: Material.Texture.Common({ src: TEX_SOFT }),
+    albedoColor: Color4.create(1, 0.45, 0.12, Math.min(0.6, 0.22 * strength)),
+    emissiveTexture: Material.Texture.Common({ src: TEX_SOFT }),
+    emissiveColor: Color3.create(1, 0.4, 0.1),
+    emissiveIntensity: 1.2 * strength,
+    transparencyMode: MaterialTransparencyMode.MTM_ALPHA_BLEND,
+    castShadows: false
+  }
 }
 
 /**
@@ -179,6 +212,7 @@ function emberConfig(scale: number) {
 
 let lastScale = 1
 let flickerT = 0
+let lastGlow = 0
 
 function update(dt: number) {
   if (!fire) return
@@ -198,4 +232,11 @@ function update(dt: number) {
   const light = LightSource.getMutable(fire.glow)
   light.intensity = GLOW_BASE * breath + GLOW_FLARE * flare
   light.range = 16 + 6 * Math.min(2, flare)
+  // The floor glow and the roar follow the flare; at rest they are left alone.
+  if (flare > 0.02 || lastGlow !== 0) {
+    lastGlow = flare > 0.02 ? flare : 0
+    Material.setPbrMaterial(fire.floorGlow, floorGlowMaterial(1 + lastGlow))
+    const voice = AudioSource.getMutableOrNull(fire.root)
+    if (voice) voice.volume = Math.min(1, LOOP_VOLUME + 0.35 * Math.min(1.5, lastGlow))
+  }
 }

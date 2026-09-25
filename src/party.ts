@@ -320,6 +320,11 @@ function notice(text: string) {
   state.noticeFor = text ? NOTICE_SECONDS : 0
 }
 
+/** The same line, for the rest of the hall to use (the pit's verdicts). */
+export function hallNotice(text: string) {
+  notice(text)
+}
+
 // --- following the host ---------------------------------------------------------------
 
 /** The hall says hello the first time the hero stands in it; the lobby waits to be asked. */

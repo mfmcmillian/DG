@@ -123,6 +123,12 @@ export const Messages = {
   }),
   /** Client -> server: a one-line status the server prints, so client state shows in `server-logs`. */
   diag: Schemas.Map({ note: Schemas.String }),
+  /**
+   * Client -> server -> all: a hero's offering at the upgrade pit, for the FX
+   * everyone in the hall sees. `beat` is 'throw' (the weapon went in) or
+   * 'result' (what came out); `rarity` is the rarity it came out at.
+   */
+  pitEvent: Schemas.Map({ id: Schemas.String, beat: Schemas.String, item: Schemas.String, rarity: Schemas.String, success: Schemas.Boolean }),
 
   // --- parties and runs -------------------------------------------------------
   /**
