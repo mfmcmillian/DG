@@ -1,0 +1,175 @@
+{
+  "pieces": {
+    "mountain_01": {
+      "src": "models/backdrop/alpine/mountain_01.gltf",
+      "size": [
+        23.8,
+        5.63,
+        24.37
+      ],
+      "tris": 10771
+    },
+    "mountain_02": {
+      "src": "models/backdrop/alpine/mountain_02.gltf",
+      "size": [
+        20.01,
+        4.76,
+        21.14
+      ],
+      "tris": 5204
+    },
+    "mountain_03": {
+      "src": "models/backdrop/alpine/mountain_03.gltf",
+      "size": [
+        15.54,
+        4.24,
+        16.57
+      ],
+      "tris": 2381
+    },
+    "mountain_04": {
+      "src": "models/backdrop/alpine/mountain_04.gltf",
+      "size": [
+        7.47,
+        4.35,
+        8.43
+      ],
+      "tris": 2311
+    },
+    "cliff_01": {
+      "src": "models/backdrop/alpine/cliff_01.gltf",
+      "size": [
+        22.27,
+        10.23,
+        9.14
+      ],
+      "tris": 2484
+    },
+    "cliff_02": {
+      "src": "models/backdrop/alpine/cliff_02.gltf",
+      "size": [
+        24.49,
+        10.36,
+        12.06
+      ],
+      "tris": 2409
+    },
+    "cliff_05": {
+      "src": "models/backdrop/alpine/cliff_05.gltf",
+      "size": [
+        15.08,
+        8.49,
+        10.34
+      ],
+      "tris": 2012
+    },
+    "cliff_07": {
+      "src": "models/backdrop/alpine/cliff_07.gltf",
+      "size": [
+        28.78,
+        10.22,
+        13.86
+      ],
+      "tris": 1710
+    },
+    "mound_01": {
+      "src": "models/backdrop/alpine/mound_01.gltf",
+      "size": [
+        1.78,
+        0.85,
+        1.0
+      ],
+      "tris": 250
+    },
+    "mound_03": {
+      "src": "models/backdrop/alpine/mound_03.gltf",
+      "size": [
+        1.38,
+        0.61,
+        1.29
+      ],
+      "tris": 212
+    },
+    "pine_01": {
+      "src": "models/backdrop/alpine/pine_01.gltf",
+      "size": [
+        6.16,
+        16.68,
+        4.89
+      ],
+      "tris": 1439
+    },
+    "pine_02": {
+      "src": "models/backdrop/alpine/pine_02.gltf",
+      "size": [
+        4.43,
+        11.25,
+        5.58
+      ],
+      "tris": 2434
+    },
+    "pine_dead": {
+      "src": "models/backdrop/alpine/pine_dead.gltf",
+      "size": [
+        5.43,
+        16.32,
+        4.43
+      ],
+      "tris": 1065
+    },
+    "trees_01": {
+      "src": "models/backdrop/alpine/trees_01.gltf",
+      "size": [
+        27.41,
+        16.02,
+        8.45
+      ],
+      "tris": 32
+    },
+    "trees_02": {
+      "src": "models/backdrop/alpine/trees_02.gltf",
+      "size": [
+        18.96,
+        15.97,
+        3.62
+      ],
+      "tris": 20
+    },
+    "rock_01": {
+      "src": "models/backdrop/alpine/rock_01.gltf",
+      "size": [
+        6.21,
+        2.33,
+        2.83
+      ],
+      "tris": 786
+    },
+    "rock_05": {
+      "src": "models/backdrop/alpine/rock_05.gltf",
+      "size": [
+        3.58,
+        1.47,
+        2.39
+      ],
+      "tris": 576
+    },
+    "rock_rough_01": {
+      "src": "models/backdrop/alpine/rock_rough_01.gltf",
+      "size": [
+        8.58,
+        3.14,
+        8.23
+      ],
+      "tris": 2330
+    },
+    "rock_rough_02": {
+      "src": "models/backdrop/alpine/rock_rough_02.gltf",
+      "size": [
+        6.19,
+        1.96,
+        3.23
+      ],
+      "tris": 480
+    }
+  }
+}

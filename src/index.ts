@@ -20,6 +20,7 @@ import { initializeHallTalk } from './hallTalk'
 import { initializeHallGuide } from './hallGuide'
 import { initializeHallPrompt } from './hallPrompt'
 import { initializePitFire } from './pitFire'
+import { initializeBackdrop } from './backdrop'
 import { initializePitCinematic } from './pitCinematic'
 import { initializeUpgradePicker } from './upgradeUi'
 import { initializeHints } from './hints'
@@ -94,6 +95,7 @@ function initClient() {
   initializeHallPrompt()
   initializeHallGuide()
   initializePitFire()
+  initializeBackdrop()
   initializePitCinematic()
   initializeUpgradePicker()
   initializeHints()
