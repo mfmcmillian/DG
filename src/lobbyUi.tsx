@@ -12,7 +12,7 @@ import { playerDisplayName } from './heroNameTag'
 import { isClientSynced, localAddress } from './multiplayer'
 import { menuColors, MenuAction as Action } from './menuUi'
 import {
-  doorsWait, getLobbyPick, getLobbyState, goRun, holdDoors, isLeader, joinParty, leaveParty, myParty, openParties, PartyInfo,
+  cycleLobbyPickLevel, doorsWait, getLobbyPick, getLobbyState, goRun, holdDoors, isLeader, joinParty, leaveParty, myParty, openParties, PartyInfo,
   setLobbyPickDiff, startRun
 } from './party'
 import { devToolsOn } from './devAccess'
@@ -20,7 +20,7 @@ import { openSettings } from './settings'
 import { openInventory } from './inventory'
 import { IconButton } from './hudButtons'
 import { closeLobby, openLobby } from './party'
-import { DIFFICULTIES, difficultyAllowed, levelById, LEVELS, MAX_PARTY } from './shared/levels'
+import { DIFFICULTIES, difficultyAllowed, levelById, LEVELS, levelUnlocked, MAX_PARTY } from './shared/levels'
 import { localXp } from './heroXp'
 import { getPreloadGroup } from './preload'
 import { isRealmPreloaded, preloadCaption, realmGroupId, requestRealmPreload } from './preloadPlan'
@@ -89,25 +89,58 @@ function Heading({ title, scale: s }: { title: string; scale: number }) {
     uiTransform={{ width: '100%', height: 20 * s, margin: { bottom: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />
 }
 
-/** The one dungeon, as a card: its picture, its name, what waits inside, and the best clear so far. */
-function MapCard({ scale: s }: { scale: number }) {
-  const level = LEVELS[0]
-  const best = getLobbyState().progress[0] ?? 0
+/** Each dungeon's card picture (the fortress's is the scene thumbnail). */
+const LEVEL_PICTURES: Record<number, string> = { 0: 'images/scene-thumbnail.png', 1: 'images/levels/pass.png' }
+
+/** The ladder is linear: a dungeon opens once the one before it has been cleared (developer tools skip the gate). */
+export function lobbyLevelOpen(level: number): boolean {
+  return devToolsOn() || levelUnlocked(getLobbyState().progress, level)
+}
+
+/** One arrow of the dungeon switcher. */
+function LevelArrow({ id, glyph, scale: s, enabled, onClick }: { id: string; glyph: string; scale: number; enabled: boolean; onClick: () => void }) {
+  const hover = hovered === id && enabled
+  return <UiEntity uiTransform={{ width: 30 * s, height: 30 * s, borderRadius: 4 * s, borderWidth: s, borderColor: hover ? gold : line,
+    alignItems: 'center', justifyContent: 'center', flexShrink: 0, opacity: enabled ? 1 : 0.35, pointerFilter: enabled ? 'block' : 'none' }}
+    uiBackground={{ color: hover ? card : panel }}
+    onMouseEnter={() => { hovered = id }} onMouseLeave={() => { if (hovered === id) hovered = '' }}
+    onMouseDown={enabled ? () => { hovered = ''; onClick() } : undefined}>
+    <Label value={glyph} color={enabled ? white : muted} fontSize={16 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} />
+  </UiEntity>
+}
+
+/** The picked dungeon, as a card: its picture, its name, what waits inside, and the best clear so far; arrows step along the ladder. */
+function MapCard({ scale: s, canPick }: { scale: number; canPick: boolean }) {
+  const level = levelById(getLobbyPick().level)
+  const best = getLobbyState().progress[level.id] ?? 0
+  const open = lobbyLevelOpen(level.id)
+  const before = level.id > 0 ? LEVELS[level.id - 1] : undefined
   const picture = { w: LEFT, h: Math.round(LEFT * 400 / 570) }
   const limit = level.seconds > 0 ? formatTime(level.seconds) : ''
+  const many = LEVELS.length > 1 && canPick
   return <UiEntity uiTransform={{ width: LEFT * s, flexDirection: 'column', flexShrink: 0, pointerFilter: 'none' }}>
-    <Heading title={t('DUNGEON')} scale={s} />
-    <UiEntity uiTransform={{ width: picture.w * s, height: picture.h * s, borderRadius: 6 * s, borderWidth: s, borderColor: goldLine, flexShrink: 0, pointerFilter: 'none' }}
-      uiBackground={{ textureMode: 'stretch', texture: { src: 'images/scene-thumbnail.png' } }} />
+    <UiEntity uiTransform={{ width: '100%', height: 30 * s, margin: { bottom: 6 * s }, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
+      <Label value={t('DUNGEON')} color={gold} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
+        uiTransform={{ width: 200 * s, height: 20 * s, flexShrink: 0, pointerFilter: 'none' }} />
+      <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+        <LevelArrow id="level-prev" glyph="‹" scale={s} enabled={many} onClick={() => cycleLobbyPickLevel(-1)} />
+        <Label value={`${level.id + 1} / ${LEVELS.length}`} color={muted} fontSize={12 * s} textAlign="middle-center" textWrap="nowrap"
+          uiTransform={{ width: 56 * s, height: 20 * s, flexShrink: 0, pointerFilter: 'none' }} />
+        <LevelArrow id="level-next" glyph="›" scale={s} enabled={many} onClick={() => cycleLobbyPickLevel(1)} />
+      </UiEntity>
+    </UiEntity>
+    <UiEntity uiTransform={{ width: picture.w * s, height: picture.h * s, borderRadius: 6 * s, borderWidth: s, borderColor: goldLine, flexShrink: 0, pointerFilter: 'none', opacity: open ? 1 : 0.55 }}
+      uiBackground={{ textureMode: 'stretch', texture: { src: LEVEL_PICTURES[level.id] ?? LEVEL_PICTURES[0] } }} />
     <Label value={level.name} font="serif" color={white} fontSize={26 * s} textAlign="middle-left" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 36 * s, margin: { top: 12 * s }, flexShrink: 0, pointerFilter: 'none' }} />
     <Label value={t(level.blurb)} color={muted} fontSize={12.5 * s} textAlign="middle-left" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 20 * s, flexShrink: 0, pointerFilter: 'none' }} />
-    <Label value={`${t('Waves in every room')}  ·  ${t('Doors open when the room is clear')}${limit ? `  ·  ${t('{time} on the clock', { time: limit })}` : ''}`}
+    <Label value={`${t('Waves in every room')}  ·  ${t(level.style === 'pass' ? 'The ice breaks when the room is clear' : 'Doors open when the room is clear')}${limit ? `  ·  ${t('{time} on the clock', { time: limit })}` : ''}`}
       color={muted} fontSize={11.5 * s} textAlign="middle-left" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 18 * s, margin: { top: 2 * s }, flexShrink: 0, pointerFilter: 'none' }} />
-    <Label value={best > 0 ? t('Cleared on {difficulty}', { difficulty: t(DIFFICULTIES[best - 1]?.name ?? '') }) : t('Not cleared yet')}
-      color={best > 0 ? cyan : muted} fontSize={12 * s} textAlign="middle-left" textWrap="nowrap"
+    <Label value={!open && before ? t('Clear {name} first', { name: before.name }) : best > 0 ? t('Cleared on {difficulty}', { difficulty: t(DIFFICULTIES[best - 1]?.name ?? '') }) : t('Not cleared yet')}
+      color={!open ? coral : best > 0 ? cyan : muted} fontSize={12 * s} textAlign="middle-left" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 20 * s, margin: { top: 8 * s }, flexShrink: 0, pointerFilter: 'none' }} />
   </UiEntity>
 }
@@ -223,9 +256,10 @@ function PartyCard({ scale: s, party }: { scale: number; party: PartyInfo }) {
 function NoParty({ scale: s }: { scale: number }) {
   const synced = isClientSynced()
   const gate = realmGate(getLobbyPick().level)
+  const open = lobbyLevelOpen(getLobbyPick().level)
   return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', flexShrink: 0, margin: { top: 18 * s }, pointerFilter: 'none' }}>
-    <Action id="lobby-go" text={!synced ? t('Connecting…') : gate.ready ? t('Go') : gate.caption} onClick={() => goRun(getLobbyPick().level, getLobbyPick().diff)}
-      width={RIGHT} height={56} scale={s} fontSize={20} primary disabled={!synced || !gate.ready} />
+    <Action id="lobby-go" text={!synced ? t('Connecting…') : !open ? t('Locked') : gate.ready ? t('Go') : gate.caption} onClick={() => goRun(getLobbyPick().level, getLobbyPick().diff)}
+      width={RIGHT} height={56} scale={s} fontSize={20} primary disabled={!synced || !open || !gate.ready} />
     <Label value={!synced ? t('Connecting to the hall…') : t('Friends in the hall can step in before the doors close.')}
       color={synced ? muted : coral} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 18 * s, margin: { top: 8 * s }, flexShrink: 0, pointerFilter: 'none' }} />
@@ -285,7 +319,7 @@ export function LobbyUi() {
       </UiEntity>}
       <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
         <UiEntity uiTransform={{ width: LEFT * s, flexDirection: 'column', flexShrink: 0, pointerFilter: 'none' }}>
-          <MapCard scale={s} />
+          <MapCard scale={s} canPick={canPick} />
         </UiEntity>
         <UiEntity uiTransform={{ width: RIGHT * s, flexDirection: 'column', flexShrink: 0, pointerFilter: 'none' }}>
           <DifficultyLadder scale={s} canPick={canPick} />

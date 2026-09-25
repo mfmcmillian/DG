@@ -1,4 +1,4 @@
-import { BRICK_TEXTURE, CASTLE_TEXTURES, FLOOR_TEXTURE, FORGE_TEXTURES, KIT, KitId, PIT_TEXTURES } from './kit'
+import { BRICK_TEXTURE, CASTLE_TEXTURES, FLOOR_TEXTURE, FORGE_TEXTURES, KIT, KitId, PASS_TEXTURES, PIT_TEXTURES } from './kit'
 import { RoomKind } from './generator'
 
 /** The plot is 10 x 10 parcels = 160 m, base at the south-west corner. */
@@ -16,7 +16,7 @@ export const LEGACY_SPAN = 96
  * are the Dark Fortress; every later realm (Synty pack exported through
  * scripts/realms/) is one more entry here.
  */
-export type StyleId = 'tight' | 'open' | 'gauntlet' | 'hall' | 'castle' | 'forge' | 'pit'
+export type StyleId = 'tight' | 'open' | 'gauntlet' | 'hall' | 'castle' | 'forge' | 'pit' | 'pass'
 
 export interface DungeonStyle {
   id: StyleId
@@ -42,6 +42,8 @@ export interface DungeonStyle {
   pillar: KitId
   torch: KitId
   torchHeight: number
+  /** Metres the torch stands in from the wall line (0.35 when unset: hugging a flat wall). */
+  torchInset?: number
   /** Every n-th room wall edge carries a torch. */
   torchEvery: number
   /** Room floor cells per wall prop; the generator's default is 6. */
@@ -351,6 +353,50 @@ export const STYLES: Record<StyleId, DungeonStyle> = {
     floorTexture: PIT_TEXTURES.floor,
     floorMetres: 5,
     camera: { height: 19, pitch: 52 }
+  },
+  /**
+   * The Frozen Pass, drawn by hand in ./pass.ts: an open-air gorge through
+   * Synty's Alpine Mountain biome (scripts/realms/pass.json) held by Vikings
+   * (their camp props: scripts/realms/vik.json). Cliff modules are 10 m wide
+   * and 7 m tall with their bulk shifted behind the wall line; rock arches
+   * are the doorways, snow ledges the cutaway, pines stand on the corners and
+   * a Viking torch stick burns at the foot of every second cliff.
+   */
+  pass: {
+    id: 'pass',
+    label: 'The Frozen Pass',
+    tile: 10,
+    size: 16,
+    span: SCENE_SIZE,
+    wallHeight: 7.2,
+    entranceSize: 2,
+    minLeaf: 3,
+    maxLeaf: 5,
+    minRoom: 2,
+    ceiling: false,
+    firstPerson: false,
+    walls: ['pass_wall_a', 'pass_wall_b', 'pass_wall_c', 'pass_wall_d', 'pass_wall_e', 'pass_wall_c', 'pass_wall_b'],
+    door: 'pass_arch',
+    pillar: 'pass_pine',
+    torch: 'vik_torch',
+    torchHeight: 0,
+    torchInset: 1.5,
+    torchEvery: 2,
+    props: {
+      entrance: ['vik_flag', 'vik_skull_pole', 'vik_flag_b', 'vik_spikes'],
+      boss: ['vik_flag', 'vik_totem', 'vik_fire_ring', 'vik_flag_b', 'vik_rack', 'vik_skull_pole', 'vik_barrel', 'vik_table'],
+      treasure: ['vik_chest', 'vik_crate', 'vik_barrel', 'vik_chest', 'vik_wagon', 'vik_pot'],
+      combat: ['vik_spikes_b', 'vik_skull_pole', 'pass_rock', 'vik_cow_skull', 'vik_fence', 'pass_boulder'],
+      quiet: ['pass_rock_b', 'pass_mound', 'pass_pine_dead', 'pass_rock', 'pass_pebbles', 'vik_logs']
+    },
+    bossCentrepiece: 'vik_tower',
+    cutawayWall: 'pass_ledge',
+    torchLightCount: 8,
+    torchLightIntensity: 800,
+    torchLightRange: 20,
+    torchLightColor: [1, 0.7, 0.42],
+    floorTexture: PASS_TEXTURES.floor,
+    floorMetres: 5
   }
 }
 

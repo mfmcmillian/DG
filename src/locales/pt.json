@@ -884,5 +884,20 @@
   "{name} is now {rarity}.": "{name} agora é {rarity}.",
   "The fire did not take {name}. {n} coins lost.": "O fogo não aceitou {name}. {n} moedas perdidas.",
   "The fire behind me is the upgrade pit. Feed it coin and steel and the steel may come back keener: the same blade, one rank rarer, hitting that much harder.": "O fogo atrás de mim é o poço de melhoria. Dê-lhe moedas e aço e o aço pode voltar mais afiado: a mesma lâmina, um grau mais rara, batendo bem mais forte.",
-  "Common steel takes the fire readily. The finer the blade, the more it resists, and the more coin the fire asks. What it refuses it gives back as it was. The coin it keeps.": "O aço comum aceita bem o fogo. Quanto mais fina a lâmina, mais ela resiste e mais moedas o fogo pede. O que ele recusa, devolve como estava. As moedas, ele guarda."
+  "Common steel takes the fire readily. The finer the blade, the more it resists, and the more coin the fire asks. What it refuses it gives back as it was. The coin it keeps.": "O aço comum aceita bem o fogo. Quanto mais fina a lâmina, mais ela resiste e mais moedas o fogo pede. O que ele recusa, devolve como estava. As moedas, ele guarda.",
+  "Up the gorge: a frozen lake, two huskarls, the Jarl in his camp. Twelve minutes.": "Garganta acima: um lago congelado, dois huskarls, o Jarl em seu acampamento. Doze minutos.",
+  "A gorge through the high peaks, held by the Jarl's Vikings. Snow, ice and axes.": "Uma garganta entre os altos picos, dominada pelos vikings do Jarl. Neve, gelo e machados.",
+  "The ice breaks when the room is clear": "O gelo se quebra quando a sala está limpa",
+  "Clear {name} first": "Conclua {name} primeiro",
+  "The Frozen Pass": "A Passagem Congelada",
+  "The Narrows": "O Desfiladeiro",
+  "The Shield-Bearer": "O Portador do Escudo",
+  "The Frozen Lake": "O Lago Congelado",
+  "The Bone Field": "O Campo de Ossos",
+  "The Old Huskarl": "O Velho Huskarl",
+  "The Jarl": "O Jarl",
+  "Raider": "Saqueador",
+  "Karl": "Karl",
+  "Huskarl": "Huskarl",
+  "Jarl": "Jarl"
 }

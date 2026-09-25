@@ -17,7 +17,7 @@ export type WeaponInfo = {
 }
 
 /** Where a set's pieces are found: a realm's dungeons, the Pit, or nowhere because it is the class's starter. */
-export type ArmorRealm = '' | 'fortress' | 'castle' | 'forge' | 'raid'
+export type ArmorRealm = '' | 'fortress' | 'pass' | 'castle' | 'forge' | 'raid'
 
 export interface EquipmentItem {
   id: string

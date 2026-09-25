@@ -27,7 +27,19 @@ Manifest module fields:
   collide   false to make the piece walk-through (bones, rugs, rubble)
   sealed    true for a wall variant with an opening in its mesh (breach,
             doorway); the layout backs it with an invisible full-tile collider
-  scale     uniform scale applied before measuring (oversized Synty props)
+  scale     uniform scale, or [x, y, z] (glTF axes), applied before measuring
+            (oversized Synty props; cliffs squashed into wall modules)
+  shift     [x, y, z] metres the recentred piece is moved before export, so a
+            deep piece can keep its face on the wall line and its bulk behind
+  lod       keep only the FBX objects whose name contains this (e.g. "LOD1")
+  bake      { size, tile }: the slot is one of Synty's triplanar shaders (snow
+            on top, rock on the sides; no usable UVs). Rebuilt box-mapped in
+            object space from `textures.bakeTop` / `textures.bakeSide`, one
+            repeat per `tile` metres, smart-unwrapped and baked to a `size` px
+            texture of its own
+  leaf      pack member of a foliage sheet: the piece is a Synty tree whose one
+            slot mixes leaf cards (UVs spanning the sheet) and bark faces (a
+            small atlas patch); split into an alpha-masked leaf slot and the atlas
 
 Manifest texture fields: atlas, emissive, tiling (all pack members), and
 either `floor` (a pack member copied as the tiling floor texture) or
@@ -119,6 +131,124 @@ def make_mat(name, img, emissive=None):
 
 MAT_ATLAS = make_mat(f'{REALM}_mat', atlas, emis)
 MAT_TILING = make_mat(f'{REALM}_tiling_mat', tiling) if tiling else MAT_ATLAS
+BAKE_TOP = load_scaled(tex['bakeTop'], 512, f'{REALM}_bake_top') if tex.get('bakeTop') else None
+BAKE_SIDE = load_scaled(tex['bakeSide'], 512, f'{REALM}_bake_side') if tex.get('bakeSide') else None
+LEAF_MATS = {}
+
+
+def leaf_material(member):
+    """Alpha-masked, double-sided foliage sheet (one per distinct sheet)."""
+    if member not in LEAF_MATS:
+        stem = re.sub(r'\.(tga|png)$', '', os.path.basename(member)).lower()
+        img = bpy.data.images.load(extract(member), check_existing=True)
+        img.name = f'{REALM}_leaf_{stem}'
+        img.alpha_mode = 'STRAIGHT'
+        if img.size[0] > 1024:
+            img.scale(1024, 1024)
+        img.pack()
+        mat = bpy.data.materials.new(f'{REALM}_leaf_{stem}')
+        mat.use_nodes = True
+        nodes = mat.node_tree.nodes
+        bsdf = next(n for n in nodes if n.type == 'BSDF_PRINCIPLED')
+        t = nodes.new('ShaderNodeTexImage')
+        t.image = img
+        mat.node_tree.links.new(t.outputs['Color'], bsdf.inputs['Base Color'])
+        mat.node_tree.links.new(t.outputs['Alpha'], bsdf.inputs['Alpha'])
+        bsdf.inputs['Roughness'].default_value = 0.95
+        mat.use_backface_culling = False
+        LEAF_MATS[member] = mat
+    return LEAF_MATS[member]
+
+
+def split_leaves(obj, member):
+    """Leaf cards span the sheet (the sampler repeats); bark faces sit on a small atlas patch."""
+    me = obj.data
+    uvl = me.uv_layers.active
+    me.materials.clear()
+    me.materials.append(leaf_material(member))
+    me.materials.append(MAT_ATLAS)
+    for p in me.polygons:
+        us = [uvl.data[l].uv for l in p.loop_indices]
+        p.material_index = 0 if max(u.x for u in us) - min(u.x for u in us) > 0.5 else 1
+
+
+def snowrock_material(tile):
+    """Top texture on up-facing surfaces, side texture elsewhere, box-mapped in object space like Synty's triplanar shader."""
+    mat = bpy.data.materials.new(f'{REALM}_bake_src')
+    mat.use_nodes = True
+    nt = mat.node_tree
+    nodes, links = nt.nodes, nt.links
+    bsdf = next(n for n in nodes if n.type == 'BSDF_PRINCIPLED')
+    coord = nodes.new('ShaderNodeTexCoord')
+    mapping = nodes.new('ShaderNodeMapping')
+    mapping.inputs['Scale'].default_value = (1 / tile, 1 / tile, 1 / tile)
+    links.new(coord.outputs['Object'], mapping.inputs['Vector'])
+    top = nodes.new('ShaderNodeTexImage')
+    top.image = BAKE_TOP
+    top.projection = 'BOX'
+    top.projection_blend = 0.3
+    side = nodes.new('ShaderNodeTexImage')
+    side.image = BAKE_SIDE
+    side.projection = 'BOX'
+    side.projection_blend = 0.3
+    links.new(mapping.outputs['Vector'], top.inputs['Vector'])
+    links.new(mapping.outputs['Vector'], side.inputs['Vector'])
+    geo = nodes.new('ShaderNodeNewGeometry')
+    sep = nodes.new('ShaderNodeSeparateXYZ')
+    links.new(geo.outputs['Normal'], sep.inputs['Vector'])
+    ramp = nodes.new('ShaderNodeMapRange')
+    ramp.inputs['From Min'].default_value = 0.45
+    ramp.inputs['From Max'].default_value = 0.75
+    links.new(sep.outputs['Z'], ramp.inputs['Value'])
+    mix = nodes.new('ShaderNodeMix')
+    mix.data_type = 'RGBA'
+    links.new(ramp.outputs['Result'], mix.inputs['Factor'])
+    links.new(side.outputs['Color'], mix.inputs[6])
+    links.new(top.outputs['Color'], mix.inputs[7])
+    links.new(mix.outputs[2], bsdf.inputs['Base Color'])
+    bsdf.inputs['Roughness'].default_value = 1.0
+    return mat
+
+
+def bake_piece(obj, out_name, spec):
+    """Replace the piece's materials with one baked texture of the snow/rock shader."""
+    import math
+    size = int(spec.get('size', 512))
+    me = obj.data
+    src = snowrock_material(float(spec.get('tile', 4)))
+    me.materials.clear()
+    me.materials.append(src)
+    bpy.ops.object.select_all(action='DESELECT')
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    while me.uv_layers:
+        me.uv_layers.remove(me.uv_layers[0])
+    me.uv_layers.new(name='bake')
+    bpy.ops.object.mode_set(mode='EDIT')
+    bpy.ops.mesh.select_all(action='SELECT')
+    bpy.ops.uv.smart_project(angle_limit=math.radians(66), island_margin=0.004)
+    bpy.ops.object.mode_set(mode='OBJECT')
+    img = bpy.data.images.new(f'{REALM}_{out_name}', size, size)
+    target = src.node_tree.nodes.new('ShaderNodeTexImage')
+    target.image = img
+    src.node_tree.nodes.active = target
+    scene = bpy.context.scene
+    scene.render.engine = 'CYCLES'
+    scene.cycles.samples = 8
+    scene.cycles.device = 'CPU'
+    scene.render.bake.use_pass_direct = False
+    scene.render.bake.use_pass_indirect = False
+    scene.render.bake.use_pass_color = True
+    scene.render.bake.margin = 6
+    bpy.ops.object.bake(type='DIFFUSE', pass_filter={'COLOR'}, use_clear=True)
+    dest = os.path.join(WORK, f'{REALM}_{out_name}.png')
+    img.filepath_raw = dest
+    img.file_format = 'PNG'
+    img.save()
+    baked = make_mat(f'{REALM}_{out_name}', img)
+    me.materials.clear()
+    me.materials.append(baked)
+    bpy.data.materials.remove(src)
 
 
 def import_parts(module):
@@ -130,6 +260,19 @@ def import_parts(module):
         bpy.ops.import_scene.fbx(filepath=fbx_path(part['fbx']))
         objs = [o for o in bpy.data.objects if o not in before]
         part_meshes = [o for o in objs if o.type == 'MESH']
+        if module.get('lod'):
+            keep = [o for o in part_meshes if module['lod'] in o.name]
+            others = [o for o in objs if o.type != 'MESH']
+            for o in part_meshes:
+                if o not in keep:
+                    bpy.data.objects.remove(o)
+            part_meshes = keep
+            objs = keep + others
+            # The importer parks the FBX axis fix on a parent empty; keep the world placement.
+            for o in part_meshes:
+                mw = o.matrix_world.copy()
+                o.parent = None
+                o.matrix_world = mw
         bpy.ops.object.select_all(action='DESELECT')
         for o in objs:
             o.select_set(True)
@@ -157,8 +300,11 @@ def import_parts(module):
             o.rotation_euler.z = math.radians(module['rotate'])
         bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
     if module.get('scale'):
+        s = module['scale']
+        # glTF (x, y up, z) -> Blender (x, z, y).
+        sc = (s[0], s[2], s[1]) if isinstance(s, list) else (s,) * 3
         for o in meshes:
-            o.scale = (module['scale'],) * 3
+            o.scale = sc
         bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
     return meshes
 
@@ -183,7 +329,8 @@ for module in manifest['modules']:
     meshes = import_parts(module)
     mn, mx = bounds(meshes)
     uv_info = {}
-    for o in meshes:
+    special = module.get('bake') or module.get('leaf')
+    for o in meshes if not special else []:
         uvl = o.data.uv_layers.active
         project = []  # material indices whose UVs are degenerate and need a world-space projection
         for i, slot in enumerate(o.material_slots):
@@ -242,6 +389,16 @@ for module in manifest['modules']:
         bpy.ops.object.join()
     obj = bpy.context.view_layer.objects.active
     obj.name = out_name
+    if module.get('bake'):
+        bake_piece(obj, out_name, module['bake'])
+    elif module.get('leaf'):
+        split_leaves(obj, module['leaf'])
+    if module.get('shift'):
+        sx, sy, sz = module['shift']
+        obj.location.x += sx
+        obj.location.y += -sz
+        obj.location.z += sy
+        bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
     obj.data.calc_loop_triangles()
     entry = {
         'src': f'models/kits/{REALM}/{out_name}.gltf',
@@ -275,6 +432,18 @@ for module in manifest['modules']:
         export_lights=False,
         export_cameras=False,
     )
+    if module.get('leaf'):
+        # Foliage cuts out; the exporter's alpha handling varies by version, so set it here.
+        gltf_path = os.path.join(OUT, out_name + '.gltf')
+        with open(gltf_path, encoding='utf-8') as f:
+            doc = json.load(f)
+        for m in doc.get('materials', []):
+            if '_leaf_' in m.get('name', ''):
+                m['alphaMode'] = 'MASK'
+                m['alphaCutoff'] = 0.45
+                m['doubleSided'] = True
+        with open(gltf_path, 'w', encoding='utf-8') as f:
+            json.dump(doc, f, separators=(',', ':'))
     bpy.data.objects.remove(obj)
     for m in list(bpy.data.meshes):
         if m.users == 0:

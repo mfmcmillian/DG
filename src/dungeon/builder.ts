@@ -80,7 +80,8 @@ function planeUvs(u: number, v = u): number[] {
 const FLAMES: Partial<Record<KitId, number>> = {
   brazier: 1.15, castle_brazier: 1.0, forge_brazier: 1.0, torch_stand: 1.2,
   castle_firepit: 0.5, forge_firepit: 0.5, forge_smelting_pot: 1.1, castle_cauldron: 0.75,
-  pit_brazier: 1.7, pit_brazier_b: 1.8
+  pit_brazier: 1.7, pit_brazier_b: 1.8,
+  pass_campfire: 0.45, vik_fire_ring: 0.7
 }
 
 /** Styles whose fires crackle and whose room tone rides with the player: the places heroes linger. */

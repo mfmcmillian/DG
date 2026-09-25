@@ -124,9 +124,47 @@ const FORGE: Roster = {
   }
 }
 
+// The Frozen Pass's Vikings are Sidekick characters like the fortress's, in the
+// Vikings-pack sets the wardrobe already carries (Raider, Karl, Huskarl, Jarl)
+// with the pack's own axes and hammers in hand.
+const RAIDER: Omit<EquipmentLoadout, 'weapon'> = {
+  head: 'raider-head', chest: 'raider-chest', shoulders: 'raider-shoulders', hands: 'raider-hands', legs: 'raider-legs', boots: 'raider-boots'
+}
+const KARL: Omit<EquipmentLoadout, 'weapon'> = {
+  head: 'karl-head', chest: 'karl-chest', shoulders: 'none-shoulders', hands: 'karl-hands', legs: 'karl-legs', boots: 'karl-boots'
+}
+const HUSKARL: Omit<EquipmentLoadout, 'weapon'> = {
+  head: 'huskarl-head', chest: 'huskarl-chest', shoulders: 'huskarl-shoulders', hands: 'huskarl-hands', legs: 'huskarl-legs', boots: 'huskarl-boots'
+}
+const JARL: Omit<EquipmentLoadout, 'weapon'> = {
+  head: 'jarl-head', chest: 'jarl-chest', shoulders: 'jarl-shoulders', hands: 'jarl-hands', legs: 'jarl-legs', boots: 'jarl-boots'
+}
+
+const PASS: Roster = {
+  striker: {
+    name: 'Raider', characterId: 'striker', weapon: 'vk-axe-01', health: 105, scale: 1.02, damageScale: 1.1,
+    aggro: 6.5, leash: 11, speed: 1.15, profile: { blockChance: 0.15, pace: 0.8 }, role: 'grunt', armor: RAIDER
+  },
+  scout: {
+    name: 'Karl', characterId: 'scout', weapon: 'vk-sword-01', health: 85, scale: 0.97, damageScale: 0.9,
+    aggro: 7.5, leash: 11, speed: 1.22, profile: { blockChance: 0.2, pace: 0.9 }, role: 'grunt', armor: KARL
+  },
+  guard: {
+    name: 'Huskarl', characterId: 'vanguard', weapon: 'vk-hammer-02', health: 175, scale: 1.1, damageScale: 1.25,
+    aggro: 5, leash: 10, speed: 0.9, profile: { blockChance: 0.5, pace: 1.1 }, role: 'elite', armor: HUSKARL
+  },
+  boss: {
+    name: 'Jarl', characterId: 'brute', weapon: 'vk-largeaxe-01', health: 560, scale: 1.45,
+    damageScale: 1.85, aggro: 11, leash: 18, speed: 1.06,
+    profile: { blockChance: 0.12, pace: 0.82, pattern: ['attack_light', 'attack_heavy', 'attack_light2', 'slam'], slamRange: 3.8 },
+    role: 'boss', armor: JARL
+  }
+}
+
 const BY_STYLE: Partial<Record<StyleId, Roster>> = {
   castle: CASTLE,
-  forge: FORGE
+  forge: FORGE,
+  pass: PASS
 }
 
 export function rosterFor(style: StyleId): Roster {
@@ -135,7 +173,7 @@ export function rosterFor(style: StyleId): Roster {
 
 export function allRosterArchetypes(): Archetype[] {
   const seen = new Set<Archetype>()
-  for (const roster of [FORTRESS, CASTLE, FORGE]) {
+  for (const roster of [FORTRESS, CASTLE, FORGE, PASS]) {
     seen.add(roster.striker)
     seen.add(roster.scout)
     seen.add(roster.guard)

@@ -199,12 +199,14 @@ export function layoutDungeon(dungeon: Dungeon, style: DungeonStyle, options: La
     }
   }
 
-  for (const [vx, vy] of dungeon.pillars) kit(style.pillar, origin.x + vx * T, 0, origin.z + vy * T, 0)
+  const pillarCollides = (KIT[style.pillar] as KitPiece).collide !== false
+  for (const [vx, vy] of dungeon.pillars) kit(style.pillar, origin.x + vx * T, 0, origin.z + vy * T, 0, pillarCollides)
 
+  const torchInset = style.torchInset ?? 0.35
   for (const t of dungeon.torches) {
     const m = edgeMidpoint(style, t)
     const inward = sideInward(t.side)
-    torchIndices.push(kit(style.torch, m.x + inward.x * 0.35, style.torchHeight, m.z + inward.z * 0.35, sideYaw(t.side), false))
+    torchIndices.push(kit(style.torch, m.x + inward.x * torchInset, style.torchHeight, m.z + inward.z * torchInset, sideYaw(t.side), false))
   }
 
   const spawns: SpawnPoint[] = []

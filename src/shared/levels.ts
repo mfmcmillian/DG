@@ -1,5 +1,5 @@
-// The one dungeon and the difficulty table (this branch: one map, Dungeon
-// Quest shape, see src/dungeon/gauntlet.ts). Pure data shared by
+// The dungeons and the difficulty table (this branch: hand-drawn maps in the
+// Dungeon Quest shape, see src/dungeon/gauntlet.ts and src/dungeon/pass.ts). Pure data shared by
 // the server (which simulates each party's run) and the clients (which build
 // the layout and show the lobby), so a level is the same fortress everywhere.
 //
@@ -13,7 +13,7 @@
 
 import { StyleId } from '../dungeon/config'
 
-export type RealmId = 'fortress' | 'castle' | 'forge'
+export type RealmId = 'fortress' | 'pass' | 'castle' | 'forge'
 
 export type RealmDefinition = {
   id: RealmId
@@ -27,6 +27,10 @@ export const REALMS: RealmDefinition[] = [
   {
     id: 'fortress', name: 'The Dark Fortress', style: 'open',
     blurb: 'The Warlord\'s keep. Black stone, cages and braziers.'
+  },
+  {
+    id: 'pass', name: 'The Frozen Pass', style: 'pass',
+    blurb: 'A gorge through the high peaks, held by the Jarl\'s Vikings. Snow, ice and axes.'
   },
   {
     id: 'castle', name: 'The Fallen Crown', style: 'castle',
@@ -59,6 +63,11 @@ export const LEVELS: LevelDefinition[] = [
     id: 0, realm: 'fortress', name: 'The Dark Fortress', seed: 1337, style: 'gauntlet',
     blurb: 'Seven rooms, two wardens, one Warlord. Ten minutes.',
     health: 1, damage: 1, coins: 1.5, seconds: 600
+  },
+  {
+    id: 1, realm: 'pass', name: 'The Frozen Pass', seed: 2026, style: 'pass',
+    blurb: 'Up the gorge: a frozen lake, two huskarls, the Jarl in his camp. Twelve minutes.',
+    health: 1.35, damage: 1.25, coins: 2, seconds: 720
   }
 ]
 

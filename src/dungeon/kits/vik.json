@@ -1,0 +1,314 @@
+{
+  "realm": "vik",
+  "textures": {},
+  "pieces": {
+    "vik_gate": {
+      "src": "models/kits/vik/vik_gate.gltf",
+      "size": [
+        5.436,
+        6.121,
+        0.794
+      ],
+      "tris": 876
+    },
+    "vik_archway": {
+      "src": "models/kits/vik/vik_archway.gltf",
+      "size": [
+        3.397,
+        2.952,
+        0.363
+      ],
+      "tris": 520
+    },
+    "vik_flag": {
+      "src": "models/kits/vik/vik_flag.gltf",
+      "size": [
+        0.714,
+        4.887,
+        1.483
+      ],
+      "tris": 788
+    },
+    "vik_flag_b": {
+      "src": "models/kits/vik/vik_flag_b.gltf",
+      "size": [
+        0.713,
+        4.898,
+        1.483
+      ],
+      "tris": 860
+    },
+    "vik_totem": {
+      "src": "models/kits/vik/vik_totem.gltf",
+      "size": [
+        3.627,
+        4.833,
+        1.4
+      ],
+      "tris": 184
+    },
+    "vik_skull_pole": {
+      "src": "models/kits/vik/vik_skull_pole.gltf",
+      "size": [
+        0.236,
+        1.501,
+        0.263
+      ],
+      "tris": 224
+    },
+    "vik_spikes": {
+      "src": "models/kits/vik/vik_spikes.gltf",
+      "size": [
+        0.14,
+        2.385,
+        0.165
+      ],
+      "tris": 70
+    },
+    "vik_spikes_b": {
+      "src": "models/kits/vik/vik_spikes_b.gltf",
+      "size": [
+        3.452,
+        1.716,
+        2.44
+      ],
+      "tris": 1512
+    },
+    "vik_fence": {
+      "src": "models/kits/vik/vik_fence.gltf",
+      "size": [
+        1.957,
+        1.724,
+        0.235
+      ],
+      "tris": 806
+    },
+    "vik_barrel": {
+      "src": "models/kits/vik/vik_barrel.gltf",
+      "size": [
+        0.843,
+        0.5,
+        0.843
+      ],
+      "tris": 642
+    },
+    "vik_chest": {
+      "src": "models/kits/vik/vik_chest.gltf",
+      "size": [
+        1.234,
+        0.494,
+        0.731
+      ],
+      "tris": 404
+    },
+    "vik_crate": {
+      "src": "models/kits/vik/vik_crate.gltf",
+      "size": [
+        1.326,
+        1.034,
+        1.343
+      ],
+      "tris": 504
+    },
+    "vik_fur_roll": {
+      "src": "models/kits/vik/vik_fur_roll.gltf",
+      "size": [
+        1.241,
+        0.675,
+        0.642
+      ],
+      "tris": 400,
+      "collide": false
+    },
+    "vik_table": {
+      "src": "models/kits/vik/vik_table.gltf",
+      "size": [
+        1.133,
+        1.068,
+        2.858
+      ],
+      "tris": 558
+    },
+    "vik_seat": {
+      "src": "models/kits/vik/vik_seat.gltf",
+      "size": [
+        0.672,
+        0.594,
+        1.41
+      ],
+      "tris": 320
+    },
+    "vik_bench": {
+      "src": "models/kits/vik/vik_bench.gltf",
+      "size": [
+        2.377,
+        0.415,
+        0.529
+      ],
+      "tris": 336
+    },
+    "vik_torch": {
+      "src": "models/kits/vik/vik_torch.gltf",
+      "size": [
+        0.111,
+        1.344,
+        0.119
+      ],
+      "tris": 220
+    },
+    "vik_fire_ring": {
+      "src": "models/kits/vik/vik_fire_ring.gltf",
+      "size": [
+        2.599,
+        1.046,
+        2.575
+      ],
+      "tris": 456
+    },
+    "vik_statue": {
+      "src": "models/kits/vik/vik_statue.gltf",
+      "size": [
+        1.998,
+        4.537,
+        1.612
+      ],
+      "tris": 4209
+    },
+    "vik_glacier_a": {
+      "src": "models/kits/vik/vik_glacier_a.gltf",
+      "size": [
+        9.582,
+        4.402,
+        6.611
+      ],
+      "tris": 818
+    },
+    "vik_glacier_b": {
+      "src": "models/kits/vik/vik_glacier_b.gltf",
+      "size": [
+        9.312,
+        3.038,
+        9.296
+      ],
+      "tris": 1422
+    },
+    "vik_glacier_c": {
+      "src": "models/kits/vik/vik_glacier_c.gltf",
+      "size": [
+        3.314,
+        6.387,
+        3.928
+      ],
+      "tris": 230
+    },
+    "vik_ice_a": {
+      "src": "models/kits/vik/vik_ice_a.gltf",
+      "size": [
+        5.432,
+        0.474,
+        5.883
+      ],
+      "tris": 102
+    },
+    "vik_ice_b": {
+      "src": "models/kits/vik/vik_ice_b.gltf",
+      "size": [
+        2.547,
+        0.474,
+        2.758
+      ],
+      "tris": 102
+    },
+    "vik_boat": {
+      "src": "models/kits/vik/vik_boat.gltf",
+      "size": [
+        1.981,
+        1.87,
+        7.216
+      ],
+      "tris": 2272
+    },
+    "vik_boat_head": {
+      "src": "models/kits/vik/vik_boat_head.gltf",
+      "size": [
+        0.412,
+        2.055,
+        1.267
+      ],
+      "tris": 644
+    },
+    "vik_tower": {
+      "src": "models/kits/vik/vik_tower.gltf",
+      "size": [
+        3.614,
+        8.017,
+        3.605
+      ],
+      "tris": 6904
+    },
+    "vik_wagon": {
+      "src": "models/kits/vik/vik_wagon.gltf",
+      "size": [
+        1.534,
+        1.105,
+        3.025
+      ],
+      "tris": 2124
+    },
+    "vik_anvil": {
+      "src": "models/kits/vik/vik_anvil.gltf",
+      "size": [
+        0.718,
+        0.725,
+        0.688
+      ],
+      "tris": 136
+    },
+    "vik_cow_skull": {
+      "src": "models/kits/vik/vik_cow_skull.gltf",
+      "size": [
+        1.15,
+        0.419,
+        0.836
+      ],
+      "tris": 368,
+      "collide": false
+    },
+    "vik_logs": {
+      "src": "models/kits/vik/vik_logs.gltf",
+      "size": [
+        1.133,
+        1.009,
+        1.677
+      ],
+      "tris": 1184
+    },
+    "vik_rack": {
+      "src": "models/kits/vik/vik_rack.gltf",
+      "size": [
+        1.566,
+        0.835,
+        0.318
+      ],
+      "tris": 784
+    },
+    "vik_pot": {
+      "src": "models/kits/vik/vik_pot.gltf",
+      "size": [
+        0.586,
+        0.544,
+        0.604
+      ],
+      "tris": 360
+    },
+    "vik_dock": {
+      "src": "models/kits/vik/vik_dock.gltf",
+      "size": [
+        4.078,
+        4.493,
+        5.02
+      ],
+      "tris": 2428
+    }
+  }
+}

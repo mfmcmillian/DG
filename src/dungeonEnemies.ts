@@ -6,7 +6,7 @@
 // Presentation (particles, numbers, sounds, telegraph decals, camera kicks,
 // hit-stop) lives in combatFx; loot in loot.ts.
 
-import { ColliderLayer, EasingFunction, engine, Entity, Material, MeshCollider, MeshRenderer, Transform, Tween } from '@dcl/sdk/ecs'
+import { ColliderLayer, EasingFunction, engine, Entity, Material, MaterialTransparencyMode, MeshCollider, MeshRenderer, Transform, Tween } from '@dcl/sdk/ecs'
 import { Color3, Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
 import { COURTYARD } from './courtyard'
 import { ArmorRealm, DEFAULT_LOADOUTS, EquipmentLoadout, getEquipmentItemOrNull } from './equipmentCatalog'
@@ -48,8 +48,8 @@ import { DOOR_OPENINGS } from './dungeon/kit'
 import { edgeMidpoint, sideInward, sideYaw } from './dungeon/layout'
 import { Archetype, Roster, rosterFor } from './dungeon/rosters'
 import { Dungeon, generateDungeon, RoomKind, Side } from './dungeon/generator'
-import { authoredLayout } from './dungeon/layouts'
-import { Stage, stageAtCell, STAGES, WAVE_GAP_SECONDS, wavePlaces, WaveUnit } from './dungeon/gauntlet'
+import { authoredLayout, stagesFor } from './dungeon/layouts'
+import { Stage, stageAtCell, WAVE_GAP_SECONDS, wavePlaces, WaveUnit } from './dungeon/stages'
 import {
   DifficultyDefinition, difficultyById, HUB_LEVEL, LevelDefinition, levelById, RAID_PARTY
 } from './shared/levels'
@@ -198,8 +198,8 @@ type Sim = {
   traps: Array<{ x: number; z: number; radius: number; damage: number; cool: number }>
   /** Host-owned skill zones (a slam's ring, burning ground, falling arrows) still delivering blows. */
   zones: Zone[]
-  /** The gauntlet's bookkeeping when the level is one (src/dungeon/gauntlet.ts). */
-  gauntlet?: { waveTimer: number; gates: Gate[] }
+  /** The staged fights' bookkeeping when the level is hand-drawn (src/dungeon/stages.ts): its stages, the wave clock, the sealed doors. */
+  gauntlet?: { stages: readonly Stage[]; waveTimer: number; gates: Gate[] }
 }
 
 /** A zone skill the host is resolving: the ground it covers and the blows it has left. */
@@ -430,8 +430,9 @@ function createSim(
   sim = s
   const healthScale = level.health * diff.health
   const roster = rosterFor(style.id)
-  if (style.id === 'gauntlet') {
-    spawnGauntlet(s, roster, healthScale, diff.extra)
+  const stages = stagesFor(style.id)
+  if (stages) {
+    spawnGauntlet(s, stages, roster, healthScale, diff.extra)
     sim = previous ?? s
     return s
   }
@@ -497,9 +498,9 @@ const GAUNTLET_LEASH = 30
  * Every enemy of every wave is spawned up front, asleep, so the snapshot index
  * is the same on the host and every member; a wave is woken when its turn comes.
  */
-function spawnGauntlet(s: Sim, roster: Roster, healthScale: number, extra: number) {
-  s.gauntlet = { waveTimer: 0, gates: [] }
-  STAGES.forEach((stage, si) => {
+function spawnGauntlet(s: Sim, stages: readonly Stage[], roster: Roster, healthScale: number, extra: number) {
+  s.gauntlet = { stages, waveTimer: 0, gates: [] }
+  stages.forEach((stage, si) => {
     stage.waves.forEach((wave, wi) => {
       const units: WaveUnit[] = [...wave]
       // Harder settings add to every wave of grunts, never to a warden or the Warlord alone.
@@ -529,18 +530,19 @@ function buildGate(s: Sim, stage: number, gate: [[number, number], [number, numb
   const [[x, y], [bx, by]] = gate
   const side: Side = by < y ? 'n' : by > y ? 's' : bx < x ? 'w' : 'e'
   const m = edgeMidpoint(s.style, { x, y, side })
+  const opening = DOOR_OPENINGS[s.style.door] ?? { width: 3.8, height: 4.5 }
   const entity = engine.addEntity()
   Transform.create(entity, {
-    position: Vector3.create(m.x, COURTYARD.characterFloorY + 2.25, m.z),
+    position: Vector3.create(m.x, COURTYARD.characterFloorY + opening.height / 2, m.z),
     rotation: Quaternion.fromEulerDegrees(0, sideYaw(side), 0),
-    scale: Vector3.create(3.8, 4.5, 0.3)
+    scale: Vector3.create(opening.width, opening.height, 0.3)
   })
   MeshRenderer.setBox(entity)
   MeshCollider.setBox(entity, ColliderLayer.CL_PHYSICS | ColliderLayer.CL_POINTER)
-  Material.setPbrMaterial(entity, {
-    albedoColor: Color4.create(0.16, 0.14, 0.15, 1), emissiveColor: Color3.create(0.6, 0.08, 0.03), emissiveIntensity: 1.4,
-    metallic: 0.7, roughness: 0.55
-  })
+  // The fortress bars its doors with dark iron; the pass seals its arches with ice.
+  Material.setPbrMaterial(entity, s.style.id === 'pass'
+    ? { albedoColor: Color4.create(0.62, 0.8, 0.95, 0.82), emissiveColor: Color3.create(0.25, 0.45, 0.7), emissiveIntensity: 0.9, metallic: 0.1, roughness: 0.15, transparencyMode: MaterialTransparencyMode.MTM_ALPHA_BLEND }
+    : { albedoColor: Color4.create(0.16, 0.14, 0.15, 1), emissiveColor: Color3.create(0.6, 0.08, 0.03), emissiveIntensity: 1.4, metallic: 0.7, roughness: 0.55 })
   return { stage, entity, open: false }
 }
 
@@ -548,9 +550,12 @@ function openGate(g: Gate) {
   if (g.open) return
   g.open = true
   MeshCollider.deleteFrom(g.entity)
-  const from = { ...Transform.get(g.entity).position }
-  Tween.setMove(g.entity, from, Vector3.create(from.x, from.y + 4.8, from.z), 1400, EasingFunction.EF_EASEINQUAD)
-  fxSound('thunk_wood', 0.7)
+  const t = Transform.get(g.entity)
+  const from = { ...t.position }
+  // Iron lifts; ice drops into the ground.
+  const ice = sim?.style.id === 'pass'
+  Tween.setMove(g.entity, from, Vector3.create(from.x, from.y + (ice ? -(t.scale.y + 0.2) : 4.8), from.z), 1400, EasingFunction.EF_EASEINQUAD)
+  fxSound(ice ? 'hit_heavy' : 'thunk_wood', 0.7)
 }
 
 function destroyGates(s: Sim) {
@@ -566,8 +571,9 @@ function stageCleared(s: Sim, stage: number): boolean {
 
 /** The stage the party is on: the first not yet cleared. */
 function currentStage(s: Sim): number {
-  for (let i = 0; i < STAGES.length; i++) if (!stageCleared(s, i)) return i
-  return STAGES.length
+  const n = s.gauntlet?.stages.length ?? 0
+  for (let i = 0; i < n; i++) if (!stageCleared(s, i)) return i
+  return n
 }
 
 /** Host: call the waves. The first when a hero steps into the room, each next one a breath after the last falls. */
@@ -575,12 +581,12 @@ function tickGauntlet(s: Sim, dt: number, fighters: NetFighter[]) {
   const g = s.gauntlet
   if (!g) return
   const si = currentStage(s)
-  if (si >= STAGES.length) return
+  if (si >= g.stages.length) return
   const mine = s.enemies.filter((e) => e.stage === si)
   const awake = mine.filter((e) => !e.asleep)
   if (awake.length === 0) {
     // Nobody called yet: the first wave arrives when a living hero stands in the room.
-    const inside = fighters.some((f) => f.health > 0 && stageAtCell(simCell(f.position.x, f.position.z).cx, simCell(f.position.x, f.position.z).cy) === si)
+    const inside = fighters.some((f) => f.health > 0 && stageAtCell(g.stages, simCell(f.position.x, f.position.z).cx, simCell(f.position.x, f.position.z).cy) === si)
     if (inside) {
       wakeWave(s, si, 0)
       g.waveTimer = 0
@@ -592,7 +598,7 @@ function tickGauntlet(s: Sim, dt: number, fighters: NetFighter[]) {
     return
   }
   const nextWave = Math.max(...awake.map((e) => e.wave)) + 1
-  if (nextWave >= STAGES[si].waves.length) return
+  if (nextWave >= g.stages[si].waves.length) return
   g.waveTimer += dt
   if (g.waveTimer >= WAVE_GAP_SECONDS) {
     wakeWave(s, si, nextWave)
@@ -602,7 +608,8 @@ function tickGauntlet(s: Sim, dt: number, fighters: NetFighter[]) {
 
 function wakeWave(s: Sim, stage: number, wave: number) {
   for (const e of s.enemies) if (e.stage === stage && e.wave === wave && e.asleep) wake(e)
-  if (isHost()) console.log(`[Server] run ${s.party}: ${STAGES[stage].name}, wave ${wave + 1}/${STAGES[stage].waves.length}`)
+  const st = s.gauntlet?.stages[stage]
+  if (isHost() && st) console.log(`[Server] run ${s.party}: ${st.name}, wave ${wave + 1}/${st.waves.length}`)
 }
 
 /** An enemy arrives: seen, armed, and looking for the party. */
@@ -618,7 +625,7 @@ function wake(e: Enemy) {
   fxMagicBurst(Vector3.create(e.position.x, e.position.y + 0.9, e.position.z), Color4.create(0.85, 0.2, 0.1, 1), e.boss ? 1.1 : 0.55)
   if (e.boss || e.archetype.role === 'elite') fxSound('roar', 0.5)
   if (e.boss) showNotice(`${e.archetype.name}!`, 2)
-  else if (e.archetype.role === 'elite' && e.stage >= 0 && STAGES[e.stage]?.kind === 'warden') showNotice(`${e.archetype.name}!`, 2)
+  else if (e.archetype.role === 'elite' && e.stage >= 0 && sim?.gauntlet?.stages[e.stage]?.kind === 'warden') showNotice(`${e.archetype.name}!`, 2)
 }
 
 /** Client: lift the gates of cleared stages. */
@@ -628,7 +635,7 @@ function tickGates(s: Sim) {
   for (const gate of g.gates) {
     if (gate.open || !stageCleared(s, gate.stage)) continue
     openGate(gate)
-    showNotice(`${STAGES[gate.stage].name} cleared. The door opens.`, 2.5)
+    showNotice(`${g.stages[gate.stage].name} cleared. ${s.style.id === 'pass' ? 'The ice breaks.' : 'The door opens.'}`, 2.5)
   }
 }
 
@@ -639,11 +646,11 @@ export function gauntletProgress(): GauntletProgress | undefined {
   const s = clientSim
   if (!s?.gauntlet) return undefined
   const si = currentStage(s)
-  if (si >= STAGES.length) return undefined
-  const stage = STAGES[si]
+  if (si >= s.gauntlet.stages.length) return undefined
+  const stage = s.gauntlet.stages[si]
   const mine = s.enemies.filter((e) => e.stage === si && !e.asleep)
   const wave = mine.length ? Math.max(...mine.map((e) => e.wave)) + 1 : 0
-  return { stage: si, stages: STAGES.length, name: stage.name, wave, waves: stage.waves.length, alive: mine.filter((e) => !e.dead).length, kind: stage.kind }
+  return { stage: si, stages: s.gauntlet.stages.length, name: stage.name, wave, waves: stage.waves.length, alive: mine.filter((e) => !e.dead).length, kind: stage.kind }
 }
 
 function indexEdges(s: Sim) {

@@ -1,0 +1,199 @@
+{
+  "realm": "pass",
+  "textures": {
+    "floor": "models/kits/pass/floor.png"
+  },
+  "pieces": {
+    "pass_wall_a": {
+      "src": "models/kits/pass/pass_wall_a.gltf",
+      "size": [
+        10.697,
+        7.214,
+        2.568
+      ],
+      "tris": 302
+    },
+    "pass_wall_b": {
+      "src": "models/kits/pass/pass_wall_b.gltf",
+      "size": [
+        10.708,
+        7.219,
+        2.585
+      ],
+      "tris": 2012
+    },
+    "pass_wall_c": {
+      "src": "models/kits/pass/pass_wall_c.gltf",
+      "size": [
+        10.914,
+        7.159,
+        2.56
+      ],
+      "tris": 2484
+    },
+    "pass_wall_d": {
+      "src": "models/kits/pass/pass_wall_d.gltf",
+      "size": [
+        10.776,
+        7.251,
+        2.532
+      ],
+      "tris": 2409
+    },
+    "pass_wall_e": {
+      "src": "models/kits/pass/pass_wall_e.gltf",
+      "size": [
+        10.935,
+        7.152,
+        2.494
+      ],
+      "tris": 1710
+    },
+    "pass_arch": {
+      "src": "models/kits/pass/pass_arch.gltf",
+      "size": [
+        10.744,
+        8.211,
+        4.699
+      ],
+      "tris": 1226
+    },
+    "pass_ledge": {
+      "src": "models/kits/pass/pass_ledge.gltf",
+      "size": [
+        9.9,
+        1.37,
+        1.614
+      ],
+      "tris": 480
+    },
+    "pass_boulder": {
+      "src": "models/kits/pass/pass_boulder.gltf",
+      "size": [
+        3.103,
+        1.165,
+        1.415
+      ],
+      "tris": 786
+    },
+    "pass_pine": {
+      "src": "models/kits/pass/pass_pine.gltf",
+      "size": [
+        4.621,
+        12.514,
+        3.665
+      ],
+      "tris": 1439,
+      "collide": false
+    },
+    "pass_pine_dead": {
+      "src": "models/kits/pass/pass_pine_dead.gltf",
+      "size": [
+        3.258,
+        9.795,
+        2.656
+      ],
+      "tris": 1065
+    },
+    "pass_rock": {
+      "src": "models/kits/pass/pass_rock.gltf",
+      "size": [
+        2.864,
+        1.18,
+        1.915
+      ],
+      "tris": 576
+    },
+    "pass_rock_b": {
+      "src": "models/kits/pass/pass_rock_b.gltf",
+      "size": [
+        3.431,
+        1.256,
+        3.291
+      ],
+      "tris": 2330
+    },
+    "pass_mound": {
+      "src": "models/kits/pass/pass_mound.gltf",
+      "size": [
+        2.941,
+        1.582,
+        1.596
+      ],
+      "tris": 212
+    },
+    "pass_pebbles": {
+      "src": "models/kits/pass/pass_pebbles.gltf",
+      "size": [
+        0.468,
+        0.047,
+        0.347
+      ],
+      "tris": 114,
+      "collide": false
+    },
+    "pass_lookout": {
+      "src": "models/kits/pass/pass_lookout.gltf",
+      "size": [
+        3.243,
+        5.798,
+        5.467
+      ],
+      "tris": 8303
+    },
+    "pass_hut": {
+      "src": "models/kits/pass/pass_hut.gltf",
+      "size": [
+        3.338,
+        3.411,
+        3.59
+      ],
+      "tris": 4499
+    },
+    "pass_campfire": {
+      "src": "models/kits/pass/pass_campfire.gltf",
+      "size": [
+        0.9,
+        0.357,
+        0.971
+      ],
+      "tris": 1112
+    },
+    "pass_woodpile": {
+      "src": "models/kits/pass/pass_woodpile.gltf",
+      "size": [
+        1.41,
+        0.614,
+        0.682
+      ],
+      "tris": 1468
+    },
+    "pass_woodpile_b": {
+      "src": "models/kits/pass/pass_woodpile_b.gltf",
+      "size": [
+        1.528,
+        0.496,
+        0.682
+      ],
+      "tris": 1416
+    },
+    "pass_fishrack": {
+      "src": "models/kits/pass/pass_fishrack.gltf",
+      "size": [
+        3.409,
+        2.083,
+        1.656
+      ],
+      "tris": 4032
+    },
+    "pass_bench": {
+      "src": "models/kits/pass/pass_bench.gltf",
+      "size": [
+        1.799,
+        1.021,
+        0.587
+      ],
+      "tris": 1026
+    }
+  }
+}

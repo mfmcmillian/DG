@@ -1,0 +1,43 @@
+{
+  "realm": "vik",
+  "pack": "POLYGON_Vikings_Source_Files_v3.zip",
+  "textures": {
+    "atlas": "Source_Files/Textures/Texture_01.png"
+  },
+  "modules": [
+    {"id": "vik_gate", "fbx": "SM_Prop_Village_Entrance_01_Snow", "scale": 1.6},
+    {"id": "vik_archway", "fbx": "SM_Prop_Archway_01_Snow"},
+    {"id": "vik_flag", "fbx": "SM_Prop_Flag_01_Snow"},
+    {"id": "vik_flag_b", "fbx": "SM_Prop_Flag_02_Snow"},
+    {"id": "vik_totem", "fbx": "SM_Prop_Rock_Totem_01_Snow", "scale": 1.4},
+    {"id": "vik_skull_pole", "fbx": "SM_Prop_Skull_Pole_01_Snow"},
+    {"id": "vik_spikes", "fbx": "SM_Prop_Wood_Spike_01_Snow"},
+    {"id": "vik_spikes_b", "fbx": "SM_Prop_Spikes_01_Snow"},
+    {"id": "vik_fence", "fbx": "SM_Prop_Fence_Wood_01_Snow"},
+    {"id": "vik_barrel", "fbx": "SM_Prop_Barrel_Half_01_Snow"},
+    {"id": "vik_chest", "fbx": "SM_Prop_Chest_01_Snow"},
+    {"id": "vik_crate", "fbx": "SM_Prop_Crate_Open_01_Snow"},
+    {"id": "vik_fur_roll", "fbx": "SM_Prop_Fur_Roll_01", "collide": false},
+    {"id": "vik_table", "fbx": "SM_Prop_Table_01_Snow"},
+    {"id": "vik_seat", "fbx": "SM_Prop_Seat_01_Snow"},
+    {"id": "vik_bench", "fbx": "SM_Prop_Bench_01_Snow"},
+    {"id": "vik_torch", "fbx": "SM_Prop_TorchStick_01"},
+    {"id": "vik_fire_ring", "fbx": "SM_Prop_Rock_Circle_01_Snow"},
+    {"id": "vik_statue", "fbx": "SM_Stone_Statue_01_Snow", "scale": 2.4},
+    {"id": "vik_glacier_a", "fbx": "SM_Env_Glacier_01", "scale": 0.35},
+    {"id": "vik_glacier_b", "fbx": "SM_Env_Glacier_02", "scale": 0.25},
+    {"id": "vik_glacier_c", "fbx": "SM_Env_Glacier_03", "scale": 0.6},
+    {"id": "vik_ice_a", "fbx": "SM_Env_IceChunk_01"},
+    {"id": "vik_ice_b", "fbx": "SM_Env_IceChunk_03"},
+    {"id": "vik_boat", "fbx": "SM_Prop_Boat_Broken_01_Snow", "scale": 0.8},
+    {"id": "vik_boat_head", "fbx": "SM_Veh_BoatHead_01_Snow"},
+    {"id": "vik_tower", "fbx": "SM_Bld_Guard_Tower_01_Snow"},
+    {"id": "vik_wagon", "fbx": "SM_Prop_Wagon_01_Snow"},
+    {"id": "vik_anvil", "fbx": "SM_Prop_Anvil_Stump_01_Snow"},
+    {"id": "vik_cow_skull", "fbx": "SM_Prop_Cow_Skull_01_Snow", "collide": false},
+    {"id": "vik_logs", "fbx": "SM_Prop_Logs_01_Snow"},
+    {"id": "vik_rack", "fbx": "SM_Prop_Rack_01_Snow"},
+    {"id": "vik_pot", "fbx": "SM_Prop_Clay_Pot_01_Snow"},
+    {"id": "vik_dock", "fbx": "SM_Prop_Dock_01_Snow"}
+  ]
+}

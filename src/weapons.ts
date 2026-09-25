@@ -82,7 +82,7 @@ export function nextRarity(rarity: Rarity): Rarity | undefined {
 }
 
 /** An armor set's rank follows where it is found: the deeper the realm, the rarer the piece. */
-export const ARMOR_RARITY: Record<Exclude<ArmorRealm, ''>, Rarity> = { fortress: 'uncommon', castle: 'rare', forge: 'epic', raid: 'legendary' }
+export const ARMOR_RARITY: Record<Exclude<ArmorRealm, ''>, Rarity> = { fortress: 'uncommon', pass: 'rare', castle: 'rare', forge: 'epic', raid: 'legendary' }
 
 /** How rare an item is as printed: a weapon's own rarity, or an armor piece's by its realm. Starter gear is common. */
 export function baseRarityOf(id: string): Rarity {

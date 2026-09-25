@@ -1,0 +1,33 @@
+{
+  "realm": "pass",
+  "pack": "POLYGON_NatureBiomes_AlpineMountain_SourceFiles_v3.zip",
+  "textures": {
+    "atlas": "Textures/PolygonNatureBiomesS2_Alpine_Texture_01.png",
+    "bakeTop": "Textures/Snow_01.png",
+    "bakeSide": "Textures/RiverRocks4_Texture.png",
+    "floor": "Textures/Snow_01.png"
+  },
+  "modules": [
+    {"id": "pass_wall_a", "fbx": "SM_Env_Rock_Cliff_03", "scale": [1.0, 0.85, 0.25], "shift": [0, 0, -0.95], "bake": {"size": 512, "tile": 3}},
+    {"id": "pass_wall_b", "fbx": "SM_Env_Rock_Cliff_05", "scale": [0.71, 0.85, 0.25], "shift": [0, 0, -0.95], "bake": {"size": 512, "tile": 3}},
+    {"id": "pass_wall_c", "fbx": "SM_Env_Rock_Cliff_01", "scale": [0.49, 0.7, 0.28], "shift": [0, 0, -0.95], "bake": {"size": 512, "tile": 3}},
+    {"id": "pass_wall_d", "fbx": "SM_Env_Rock_Cliff_02", "scale": [0.44, 0.7, 0.21], "shift": [0, 0, -0.95], "bake": {"size": 512, "tile": 3}},
+    {"id": "pass_wall_e", "fbx": "SM_Env_Rock_Cliff_07", "scale": [0.38, 0.7, 0.18], "shift": [0, 0, -0.95], "bake": {"size": 512, "tile": 3}},
+    {"id": "pass_arch", "fbx": "SM_Env_Rock_Cliff_Arch_01", "bake": {"size": 512, "tile": 3}, "scale": [0.82, 0.9, 0.5]},
+    {"id": "pass_ledge", "fbx": "SM_Env_Rock_Rough_02", "scale": [1.6, 0.7, 0.5], "bake": {"size": 256, "tile": 2}},
+    {"id": "pass_boulder", "fbx": "SM_Env_Rock_01", "scale": 0.5, "bake": {"size": 256, "tile": 2}},
+    {"id": "pass_pine", "fbx": "SM_Env_Pine_01", "lod": "LOD1", "scale": 0.75, "leaf": "Textures/Pine_cluster_01_Vibrant.tga", "collide": false},
+    {"id": "pass_pine_dead", "fbx": "SM_Env_Pine_NoLeaves_01", "lod": "LOD1", "scale": 0.6},
+    {"id": "pass_rock", "fbx": "SM_Env_Rock_05", "scale": 0.8, "bake": {"size": 256, "tile": 2}},
+    {"id": "pass_rock_b", "fbx": "SM_Env_Rock_Rough_01", "scale": 0.4, "bake": {"size": 256, "tile": 2}},
+    {"id": "pass_mound", "fbx": "SM_Env_Snow_Mound_02", "scale": 1.5, "bake": {"size": 256, "tile": 1.5}},
+    {"id": "pass_pebbles", "fbx": "SM_Env_Rock_Pebbles_01", "collide": false},
+    {"id": "pass_lookout", "fbx": "SM_Prop_Lookout_01"},
+    {"id": "pass_hut", "fbx": "SM_Prop_Ice_Fishing_Hut_01"},
+    {"id": "pass_campfire", "fbx": "SM_Prop_Campfire_01"},
+    {"id": "pass_woodpile", "fbx": "SM_Prop_Wood_Pile_01"},
+    {"id": "pass_woodpile_b", "fbx": "SM_Prop_Wood_Pile_02"},
+    {"id": "pass_fishrack", "fbx": "SM_Prop_Fish_Rack_01"},
+    {"id": "pass_bench", "fbx": "SM_Prop_Bench_01"}
+  ]
+}

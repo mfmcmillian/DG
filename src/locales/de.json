@@ -884,5 +884,20 @@
   "{name} is now {rarity}.": "{name} ist jetzt {rarity}.",
   "The fire did not take {name}. {n} coins lost.": "Das Feuer nahm {name} nicht an. {n} Münzen verloren.",
   "The fire behind me is the upgrade pit. Feed it coin and steel and the steel may come back keener: the same blade, one rank rarer, hitting that much harder.": "Das Feuer hinter mir ist die Schmiedegrube. Gib ihm Münzen und Stahl, und der Stahl kommt vielleicht schärfer zurück: dieselbe Klinge, einen Rang seltener, und um so viel härter.",
-  "Common steel takes the fire readily. The finer the blade, the more it resists, and the more coin the fire asks. What it refuses it gives back as it was. The coin it keeps.": "Gewöhnlicher Stahl nimmt das Feuer willig an. Je feiner die Klinge, desto mehr widersteht sie, und desto mehr Münzen verlangt das Feuer. Was es verweigert, gibt es zurück, wie es war. Die Münzen behält es."
+  "Common steel takes the fire readily. The finer the blade, the more it resists, and the more coin the fire asks. What it refuses it gives back as it was. The coin it keeps.": "Gewöhnlicher Stahl nimmt das Feuer willig an. Je feiner die Klinge, desto mehr widersteht sie, und desto mehr Münzen verlangt das Feuer. Was es verweigert, gibt es zurück, wie es war. Die Münzen behält es.",
+  "Up the gorge: a frozen lake, two huskarls, the Jarl in his camp. Twelve minutes.": "Die Schlucht hinauf: ein gefrorener See, zwei Huskarls, der Jarl in seinem Lager. Zwölf Minuten.",
+  "A gorge through the high peaks, held by the Jarl's Vikings. Snow, ice and axes.": "Eine Schlucht durch die hohen Gipfel, gehalten von den Wikingern des Jarls. Schnee, Eis und Äxte.",
+  "The ice breaks when the room is clear": "Das Eis bricht, wenn der Raum leer ist",
+  "Clear {name} first": "Erst {name} schaffen",
+  "The Frozen Pass": "Der Gefrorene Pass",
+  "The Narrows": "Die Enge",
+  "The Shield-Bearer": "Der Schildträger",
+  "The Frozen Lake": "Der Gefrorene See",
+  "The Bone Field": "Das Knochenfeld",
+  "The Old Huskarl": "Der Alte Huskarl",
+  "The Jarl": "Der Jarl",
+  "Raider": "Plünderer",
+  "Karl": "Karl",
+  "Huskarl": "Huskarl",
+  "Jarl": "Jarl"
 }

@@ -884,5 +884,20 @@
   "{name} is now {rarity}.": "{name} est désormais {rarity}.",
   "The fire did not take {name}. {n} coins lost.": "Le feu n'a pas pris {name}. {n} pièces perdues.",
   "The fire behind me is the upgrade pit. Feed it coin and steel and the steel may come back keener: the same blade, one rank rarer, hitting that much harder.": "Le feu derrière moi est la fosse d'amélioration. Donnez-lui pièces et acier, et l'acier peut revenir plus affûté : la même lame, d'un rang plus rare, frappant d'autant plus fort.",
-  "Common steel takes the fire readily. The finer the blade, the more it resists, and the more coin the fire asks. What it refuses it gives back as it was. The coin it keeps.": "L'acier commun prend bien le feu. Plus la lame est fine, plus elle résiste, et plus le feu demande de pièces. Ce qu'il refuse, il le rend tel quel. Les pièces, il les garde."
+  "Common steel takes the fire readily. The finer the blade, the more it resists, and the more coin the fire asks. What it refuses it gives back as it was. The coin it keeps.": "L'acier commun prend bien le feu. Plus la lame est fine, plus elle résiste, et plus le feu demande de pièces. Ce qu'il refuse, il le rend tel quel. Les pièces, il les garde.",
+  "Up the gorge: a frozen lake, two huskarls, the Jarl in his camp. Twelve minutes.": "En remontant la gorge : un lac gelé, deux huskarls, le Jarl dans son camp. Douze minutes.",
+  "A gorge through the high peaks, held by the Jarl's Vikings. Snow, ice and axes.": "Une gorge à travers les hauts sommets, tenue par les Vikings du Jarl. Neige, glace et haches.",
+  "The ice breaks when the room is clear": "La glace se brise quand la salle est vide",
+  "Clear {name} first": "Terminez d'abord {name}",
+  "The Frozen Pass": "Le Col Gelé",
+  "The Narrows": "Le Défilé",
+  "The Shield-Bearer": "Le Porte-Bouclier",
+  "The Frozen Lake": "Le Lac Gelé",
+  "The Bone Field": "Le Champ d'Os",
+  "The Old Huskarl": "Le Vieux Huskarl",
+  "The Jarl": "Le Jarl",
+  "Raider": "Pillard",
+  "Karl": "Karl",
+  "Huskarl": "Huskarl",
+  "Jarl": "Jarl"
 }

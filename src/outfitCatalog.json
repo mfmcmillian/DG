@@ -82,7 +82,7 @@
       "hero": "scout",
       "set": "sentinel",
       "setLabel": "Sentinel",
-      "realm": "castle"
+      "realm": "pass"
     },
     {
       "id": "sentinel-chest",
@@ -96,7 +96,7 @@
       "hero": "scout",
       "set": "sentinel",
       "setLabel": "Sentinel",
-      "realm": "castle"
+      "realm": "pass"
     },
     {
       "id": "sentinel-shoulders",
@@ -110,7 +110,7 @@
       "hero": "scout",
       "set": "sentinel",
       "setLabel": "Sentinel",
-      "realm": "castle"
+      "realm": "pass"
     },
     {
       "id": "sentinel-hands",
@@ -124,7 +124,7 @@
       "hero": "scout",
       "set": "sentinel",
       "setLabel": "Sentinel",
-      "realm": "castle"
+      "realm": "pass"
     },
     {
       "id": "sentinel-legs",
@@ -138,7 +138,7 @@
       "hero": "scout",
       "set": "sentinel",
       "setLabel": "Sentinel",
-      "realm": "castle"
+      "realm": "pass"
     },
     {
       "id": "sentinel-boots",
@@ -152,7 +152,7 @@
       "hero": "scout",
       "set": "sentinel",
       "setLabel": "Sentinel",
-      "realm": "castle"
+      "realm": "pass"
     },
     {
       "id": "dusk-chest",
@@ -544,7 +544,7 @@
       "hero": "striker",
       "set": "hexer",
       "setLabel": "Hexer",
-      "realm": "castle"
+      "realm": "pass"
     },
     {
       "id": "hexer-chest",
@@ -558,7 +558,7 @@
       "hero": "striker",
       "set": "hexer",
       "setLabel": "Hexer",
-      "realm": "castle"
+      "realm": "pass"
     },
     {
       "id": "hexer-shoulders",
@@ -572,7 +572,7 @@
       "hero": "striker",
       "set": "hexer",
       "setLabel": "Hexer",
-      "realm": "castle"
+      "realm": "pass"
     },
     {
       "id": "hexer-hands",
@@ -586,7 +586,7 @@
       "hero": "striker",
       "set": "hexer",
       "setLabel": "Hexer",
-      "realm": "castle"
+      "realm": "pass"
     },
     {
       "id": "hexer-legs",
@@ -600,7 +600,7 @@
       "hero": "striker",
       "set": "hexer",
       "setLabel": "Hexer",
-      "realm": "castle"
+      "realm": "pass"
     },
     {
       "id": "hexer-boots",
@@ -614,7 +614,7 @@
       "hero": "striker",
       "set": "hexer",
       "setLabel": "Hexer",
-      "realm": "castle"
+      "realm": "pass"
     },
     {
       "id": "druid-head",
@@ -1048,7 +1048,7 @@
       "hero": "vanguard",
       "set": "blackguard",
       "setLabel": "Blackguard",
-      "realm": "castle"
+      "realm": "pass"
     },
     {
       "id": "blackguard-chest",
@@ -1062,7 +1062,7 @@
       "hero": "vanguard",
       "set": "blackguard",
       "setLabel": "Blackguard",
-      "realm": "castle"
+      "realm": "pass"
     },
     {
       "id": "blackguard-shoulders",
@@ -1076,7 +1076,7 @@
       "hero": "vanguard",
       "set": "blackguard",
       "setLabel": "Blackguard",
-      "realm": "castle"
+      "realm": "pass"
     },
     {
       "id": "blackguard-hands",
@@ -1090,7 +1090,7 @@
       "hero": "vanguard",
       "set": "blackguard",
       "setLabel": "Blackguard",
-      "realm": "castle"
+      "realm": "pass"
     },
     {
       "id": "blackguard-legs",
@@ -1104,7 +1104,7 @@
       "hero": "vanguard",
       "set": "blackguard",
       "setLabel": "Blackguard",
-      "realm": "castle"
+      "realm": "pass"
     },
     {
       "id": "blackguard-boots",
@@ -1118,7 +1118,7 @@
       "hero": "vanguard",
       "set": "blackguard",
       "setLabel": "Blackguard",
-      "realm": "castle"
+      "realm": "pass"
     },
     {
       "id": "crusader-head",
@@ -1552,7 +1552,7 @@
       "hero": "brute",
       "set": "jarl",
       "setLabel": "Jarl",
-      "realm": "castle"
+      "realm": "pass"
     },
     {
       "id": "jarl-chest",
@@ -1566,7 +1566,7 @@
       "hero": "brute",
       "set": "jarl",
       "setLabel": "Jarl",
-      "realm": "castle"
+      "realm": "pass"
     },
     {
       "id": "jarl-shoulders",
@@ -1580,7 +1580,7 @@
       "hero": "brute",
       "set": "jarl",
       "setLabel": "Jarl",
-      "realm": "castle"
+      "realm": "pass"
     },
     {
       "id": "jarl-hands",
@@ -1594,7 +1594,7 @@
       "hero": "brute",
       "set": "jarl",
       "setLabel": "Jarl",
-      "realm": "castle"
+      "realm": "pass"
     },
     {
       "id": "jarl-legs",
@@ -1608,7 +1608,7 @@
       "hero": "brute",
       "set": "jarl",
       "setLabel": "Jarl",
-      "realm": "castle"
+      "realm": "pass"
     },
     {
       "id": "jarl-boots",
@@ -1622,7 +1622,7 @@
       "hero": "brute",
       "set": "jarl",
       "setLabel": "Jarl",
-      "realm": "castle"
+      "realm": "pass"
     },
     {
       "id": "raider-head",
