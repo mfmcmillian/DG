@@ -20,7 +20,7 @@ import { RARITIES } from './weapons'
 const { white, muted, gold, panel, card, line, goldLine, coral } = menuColors
 const veil = Color4.create(0.01, 0.02, 0.03, 0.62)
 const sheet = Color4.create(0.025, 0.045, 0.07, 0.97)
-const FRAME = { width: 720, height: 560 }
+const FRAME = { width: 760, height: 600 }
 const CARD = { width: 148, height: 172, gap: 12 }
 const PER_ROW = 4
 const PER_PAGE = 8
@@ -65,6 +65,13 @@ function confirm() {
   if (!result) return
   closeUpgradePicker()
   startPitCinematic(result)
+}
+
+/** Turn the page; the selection follows onto it so the footer always describes a card in view. */
+function turnPage(step: number, offers: UpgradeOffer[], pages: number) {
+  page = Math.max(0, Math.min(pages - 1, page + step))
+  const shown = offers.slice(page * PER_PAGE, page * PER_PAGE + PER_PAGE)
+  if (!shown.some((o) => o.id === selectedId)) selectedId = (shown.find((o) => !!o.to && o.affordable) ?? shown[0])?.id ?? selectedId
 }
 
 function layout() {
@@ -124,7 +131,8 @@ export function UpgradeUi() {
   const chosen = offers.find((o) => o.id === selectedId)
   const coins = getLootState().coins
   const canOffer = !!chosen?.to && chosen.affordable
-  const gridWidth = PER_ROW * (CARD.width + CARD.gap) - CARD.gap
+  // Every card carries a right margin, the last one too, so the row is measured with it.
+  const gridWidth = PER_ROW * (CARD.width + CARD.gap)
   return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}
     uiBackground={{ color: veil }}>
     <UiEntity uiTransform={{ width, height, positionType: 'absolute', position: { left: x, top: y },
@@ -150,16 +158,16 @@ export function UpgradeUi() {
         color={muted} fontSize={11.5 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={{ width: '100%', height: 18 * s, margin: { bottom: 12 * s }, flexShrink: 0, pointerFilter: 'none' }} />
 
-      <UiEntity uiTransform={{ width: gridWidth * s, flexDirection: 'row', flexWrap: 'wrap', alignSelf: 'center', flexGrow: 1, pointerFilter: 'none' }}>
+      <UiEntity uiTransform={{ width: gridWidth * s, height: (PER_PAGE / PER_ROW) * (CARD.height + CARD.gap) * s, flexDirection: 'row', flexWrap: 'wrap', alignContent: 'flex-start', alignSelf: 'center', flexShrink: 0, pointerFilter: 'none' }}>
         {shown.map((offer) => <WeaponCard key={offer.id} offer={offer} scale={s} />)}
       </UiEntity>
 
       <UiEntity uiTransform={{ width: '100%', height: 44 * s, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
         <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', pointerFilter: 'none' }}>
-          {pages > 1 && <Action id="upgrade-prev" text="‹" onClick={() => { page = Math.max(0, page - 1) }} width={38} height={38} scale={s} fontSize={20} accent="gold" disabled={page === 0} />}
+          {pages > 1 && <Action id="upgrade-prev" text="‹" onClick={() => turnPage(-1, offers, pages)} width={38} height={38} scale={s} fontSize={20} accent="gold" disabled={page === 0} />}
           {pages > 1 && <Label value={`${page + 1} / ${pages}`} color={muted} fontSize={12 * s} textAlign="middle-center" textWrap="nowrap"
             uiTransform={{ width: 60 * s, height: 38 * s, pointerFilter: 'none' }} />}
-          {pages > 1 && <Action id="upgrade-next" text="›" onClick={() => { page = Math.min(pages - 1, page + 1) }} width={38} height={38} scale={s} fontSize={20} accent="gold" disabled={page >= pages - 1} />}
+          {pages > 1 && <Action id="upgrade-next" text="›" onClick={() => turnPage(1, offers, pages)} width={38} height={38} scale={s} fontSize={20} accent="gold" disabled={page >= pages - 1} />}
         </UiEntity>
         <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', pointerFilter: 'none' }}>
           <Label value={chosen?.to ? (chosen.affordable ? t('{n} coins · {p}% chance', { n: chosen.coins, p: Math.round(chosen.chance * 100) }) : t('Not enough coins'))
