@@ -4,7 +4,7 @@
 // the upgrade itself is src/upgrades.ts and the shot is src/pitCinematic.ts.
 
 import {
-  engine, Entity, LightSource, ParticleSystem, PBParticleSystem_BlendMode, PBParticleSystem_PlaybackState, Transform
+  ColliderLayer, engine, Entity, LightSource, MeshCollider, ParticleSystem, PBParticleSystem_BlendMode, PBParticleSystem_PlaybackState, Transform
 } from '@dcl/sdk/ecs'
 import { Color3, Color4, Vector3 } from '@dcl/sdk/math'
 import { getDungeonState, onDungeonLoaded } from './dungeon'
@@ -25,6 +25,9 @@ export const PIT_FLAME_HEIGHT = 1.65
 export const PIT_HOVER_HEIGHT = 3.3
 /** The mouth of the pit: how wide the fire is. */
 export const PIT_MOUTH_RADIUS = 0.8
+/** An invisible drum round the cauldron, so nobody walks up its side or into the fire. */
+const GUARD_RADIUS = 1.3
+const GUARD_HEIGHT = 2.4
 
 /** Tongues of flame (the flipbook), the soft glow under them, and the embers over them, per second at rest. */
 const TONGUE_RATE = 9
@@ -34,7 +37,7 @@ const EMBER_RATE = 16
 const GLOW_BASE = 5
 const GLOW_FLARE = 7
 
-type Fire = { root: Entity; tongues: Entity; flames: Entity; embers: Entity; glow: Entity; position: Vector3 }
+type Fire = { root: Entity; guard: Entity; tongues: Entity; flames: Entity; embers: Entity; glow: Entity; position: Vector3 }
 
 let fire: Fire | undefined
 /** The flare: how far above normal the fire stands (0 = calm) and how fast it settles. */
@@ -70,6 +73,10 @@ function rebuild() {
   const position = Vector3.create(at.x, at.y, at.z)
   const root = engine.addEntity()
   Transform.create(root, { position: Vector3.create(at.x, at.y + PIT_FLAME_HEIGHT, at.z) })
+  const guard = engine.addEntity()
+  Transform.create(guard, { position: Vector3.create(at.x, at.y + GUARD_HEIGHT / 2, at.z), scale: Vector3.create(GUARD_RADIUS * 2, GUARD_HEIGHT, GUARD_RADIUS * 2) })
+  // Physics only: the camera boom still reads the cauldron's own mesh, not this drum.
+  MeshCollider.setCylinder(guard, 0.5, 0.5, ColliderLayer.CL_PHYSICS)
   const tongues = engine.addEntity()
   Transform.create(tongues, { parent: root })
   ParticleSystem.create(tongues, tongueConfig(1))
@@ -90,12 +97,12 @@ function rebuild() {
     shadow: true,
     active: true
   })
-  fire = { root, tongues, flames, embers, glow, position }
+  fire = { root, guard, tongues, flames, embers, glow, position }
 }
 
 function destroy() {
   if (!fire) return
-  for (const e of [fire.glow, fire.embers, fire.flames, fire.tongues, fire.root]) engine.removeEntity(e)
+  for (const e of [fire.glow, fire.embers, fire.flames, fire.tongues, fire.root, fire.guard]) engine.removeEntity(e)
   fire = undefined
 }
 
