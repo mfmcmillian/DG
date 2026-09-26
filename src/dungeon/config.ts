@@ -35,6 +35,12 @@ export interface DungeonStyle {
   minRoom: number
   /** Roofed dungeons get ceiling planes and force first person (no room for the camera boom). */
   ceiling: boolean
+  /**
+   * Open to the sky for the overhead camera, roofed for the third-person one:
+   * ceiling planes that show only with the full walls, so the player behind the
+   * hero sees a hall and not a set of walls under the Explorer's sky.
+   */
+  roof?: boolean
   firstPerson: boolean
   /** Weighted pick list for plain wall edges. */
   walls: KitId[]
@@ -175,7 +181,9 @@ export const STYLES: Record<StyleId, DungeonStyle> = {
     torchLightCount: 8,
     torchLightIntensity: 900,
     torchLightRange: 22,
-    floorTexture: FLOOR_TEXTURE
+    floorTexture: FLOOR_TEXTURE,
+    ceilingTexture: BRICK_TEXTURE,
+    roof: true
   },
   /**
    * The hub between runs: the Hall of Antrom, drawn by hand in ./hub.ts on
@@ -215,7 +223,9 @@ export const STYLES: Record<StyleId, DungeonStyle> = {
     torchLightCount: 8,
     torchLightIntensity: 900,
     torchLightRange: 22,
-    floorTexture: FLOOR_TEXTURE
+    floorTexture: FLOOR_TEXTURE,
+    ceilingTexture: BRICK_TEXTURE,
+    roof: true
   },
   /**
    * First realm off the Dark Fortress: a king's castle from Synty's Fantasy

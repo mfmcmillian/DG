@@ -17,8 +17,8 @@ export type PieceMode = 'full' | 'cutaway'
 
 export type Placement =
   | { kind: 'ground'; x: number; y: number; z: number; sx: number; sy: number; sz: number }
-  /** One plane over a `w` x `d` cell rectangle (texture repeats per cell), centred on x/z. */
-  | { kind: 'floor' | 'ceiling'; x: number; y: number; z: number; w: number; d: number }
+  /** One plane over a `w` x `d` cell rectangle (texture repeats per cell), centred on x/z. A style's `roof` is a ceiling `only: 'full'`. */
+  | { kind: 'floor' | 'ceiling'; x: number; y: number; z: number; w: number; d: number; only?: PieceMode }
   /** `lowId`: the cutaway wall this camera-facing wall becomes for the overhead camera. */
   | { kind: 'kit'; id: KitId; x: number; y: number; z: number; yaw: number; collide: boolean; lowId?: KitId; only?: PieceMode; tag?: string; scale?: number }
   /** Invisible box collider (door jambs and lintels). */
@@ -149,6 +149,7 @@ export function layoutDungeon(dungeon: Dungeon, style: DungeonStyle, options: La
     const z = (a.z + b.z) / 2
     push({ kind: 'floor', x, y: 0.005, z, w: r.w, d: r.d }, PRIMITIVE_TRIS.plane)
     if (style.ceiling) push({ kind: 'ceiling', x, y: H, z, w: r.w, d: r.d }, PRIMITIVE_TRIS.plane)
+    else if (style.roof) push({ kind: 'ceiling', only: 'full', x, y: H, z, w: r.w, d: r.d }, PRIMITIVE_TRIS.plane)
   }
 
   for (const w of dungeon.walls) {

@@ -16,6 +16,7 @@ import {
 } from './multiplayer'
 import { createHeroNameTag, destroyHeroNameTag, updateHeroNameTag } from './heroNameTag'
 import { heroLevel } from './heroXp'
+import { syncNativeExclusions, syncNativeWeapon } from './nativeHero'
 import { partyOf } from './partyLookup'
 import { HeroView } from './shared/heroBody'
 
@@ -123,6 +124,7 @@ function presentMotion(replica: Replica, motion: EquipmentMotion) {
 }
 
 function removeReplica(entity: Entity, replica: Replica) {
+  syncNativeWeapon(replica.id, undefined, undefined)
   destroyHeroNameTag(replica.nameTag)
   destroyEquipmentAvatar(replica.root)
   engine.removeEntity(replica.root)
@@ -222,6 +224,7 @@ function updateRemotePlayers(dt: number) {
   const live = new Set<Entity>()
   let attached = 0
   let ready = 0
+  const natives: string[] = []
   const myPhase = partyOf(localAddress())
   for (const [entity, hero] of remoteHeroes()) {
     live.add(entity)
@@ -287,8 +290,14 @@ function updateRemotePlayers(dt: number) {
     // session is hidden until the server takes it down. Heroes in another
     // party's run share these 96 m with us but are in their own phase: unseen.
     const shown = loaded && !!reported && replicaByAddress(id) === replica && partyOf(id) === myPhase
-    setEquipmentVisible(replica.root, shown)
-    updateHeroNameTag(replica.nameTag, id, shown, heroLevel(id, hero.cid))
+    // A hero fighting as their own avatar: the renderer shows them and plays
+    // their clips; we show no body and no tag of our own, only their weapon.
+    const speaking = replicaByAddress(id) === replica
+    const native = hero.native && !!reported && speaking && partyOf(id) === myPhase
+    if (native && reported) natives.push(reported)
+    setEquipmentVisible(replica.root, shown && !native)
+    updateHeroNameTag(replica.nameTag, id, shown && !native, heroLevel(id, hero.cid))
+    if (speaking) syncNativeWeapon(id, native ? reported : undefined, hero.loadout.weapon)
     // The anchor turns with the native avatar, which the renderer interpolates
     // smoothly; the body normally adds nothing, so a turn shows the instant the
     // avatar makes it. Only while the owner is locked on does the body take the
@@ -303,6 +312,7 @@ function updateRemotePlayers(dt: number) {
   for (const [entity, replica] of [...replicas]) {
     if (!live.has(entity)) removeReplica(entity, replica)
   }
+  syncNativeExclusions(natives)
 
   diagAge += Number.isFinite(dt) && dt > 0 ? dt : 0
   if (diagAge >= DIAG_SECONDS) {

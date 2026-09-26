@@ -5,7 +5,7 @@ import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { engine, UiCanvasInformation } from '@dcl/sdk/ecs'
 import { Color4 } from '@dcl/sdk/math'
 import { menuColors, MenuAction as Action } from './menuUi'
-import { CAMERA_OPTIONS, closeSettings, getSettings, setCameraPreference, setDevTools } from './settings'
+import { CAMERA_OPTIONS, closeSettings, getSettings, setCameraPreference, setDevTools, setNativeAvatar } from './settings'
 import { getUnlockedItems, relockAllWeapons, unlockAllWeapons } from './inventory'
 import { isDeveloper } from './devAccess'
 import { flushHeroSave } from './heroSave'
@@ -53,7 +53,7 @@ export function SettingsUi() {
   // jump and armoury rows only show with the panel switched on.
   const developer = isDeveloper()
   const dev = developer && settings.devTools
-  const { scale: s, width, height, x, y } = layout(developer ? (dev ? 150 : 0) : -80)
+  const { scale: s, width, height, x, y } = layout(80 + (developer ? (dev ? 150 : 0) : -80))
   const inner = FRAME.width - 80
   return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}
     uiBackground={{ color: veil }}>
@@ -112,6 +112,19 @@ export function SettingsUi() {
             uiTransform={{ width: '100%', height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
         </UiEntity>
       })}
+
+      <UiEntity uiTransform={{ width: '100%', height: 20 * s, margin: { top: 10 * s }, flexShrink: 0, pointerFilter: 'none' }}>
+        <Heading title={t('HERO')} scale={s} />
+      </UiEntity>
+      <UiEntity uiTransform={{ width: '100%', height: 44 * s, margin: { top: 6 * s }, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
+        <Label value={t('Fight as your own avatar (experimental). Your clips play on it; the weapon rides its hand.')} color={muted} fontSize={11.5 * s} textAlign="middle-left" textWrap="nowrap"
+          uiTransform={{ width: (inner - 150) * s, height: '100%', pointerFilter: 'none' }} />
+        <Action id="settings-native" text={settings.nativeAvatar ? t('My avatar') : t('Hero body')} onClick={() => {
+          setNativeAvatar(!getSettings().nativeAvatar)
+          flushHeroSave()
+        }}
+          width={136} height={38} scale={s} fontSize={13} accent="gold" active={settings.nativeAvatar} />
+      </UiEntity>
 
       {developer && <UiEntity uiTransform={{ width: '100%', height: 20 * s, margin: { top: 10 * s }, flexShrink: 0, pointerFilter: 'none' }}>
         <Heading title="DEVELOPER" scale={s} />

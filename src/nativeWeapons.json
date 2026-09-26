@@ -1,0 +1,982 @@
+{
+  "bw-longbow-01": {
+    "src": "models/native/weapons/bw-longbow-01.glb",
+    "hand": "l"
+  },
+  "bw-longbow-02": {
+    "src": "models/native/weapons/bw-longbow-02.glb",
+    "hand": "l"
+  },
+  "bw-longbow-03": {
+    "src": "models/native/weapons/bw-longbow-03.glb",
+    "hand": "l"
+  },
+  "bw-longbow-04": {
+    "src": "models/native/weapons/bw-longbow-04.glb",
+    "hand": "l"
+  },
+  "bw-longbow-05": {
+    "src": "models/native/weapons/bw-longbow-05.glb",
+    "hand": "l"
+  },
+  "bw-longbow-06": {
+    "src": "models/native/weapons/bw-longbow-06.glb",
+    "hand": "l"
+  },
+  "bw-recurve-01": {
+    "src": "models/native/weapons/bw-recurve-01.glb",
+    "hand": "l"
+  },
+  "bw-recurve-02": {
+    "src": "models/native/weapons/bw-recurve-02.glb",
+    "hand": "l"
+  },
+  "bw-recurve-03": {
+    "src": "models/native/weapons/bw-recurve-03.glb",
+    "hand": "l"
+  },
+  "bw-recurve-04": {
+    "src": "models/native/weapons/bw-recurve-04.glb",
+    "hand": "l"
+  },
+  "bw-recurve-05": {
+    "src": "models/native/weapons/bw-recurve-05.glb",
+    "hand": "l"
+  },
+  "bw-recurve-06": {
+    "src": "models/native/weapons/bw-recurve-06.glb",
+    "hand": "l"
+  },
+  "bw-recurve-07": {
+    "src": "models/native/weapons/bw-recurve-07.glb",
+    "hand": "l"
+  },
+  "bw-recurve-08": {
+    "src": "models/native/weapons/bw-recurve-08.glb",
+    "hand": "l"
+  },
+  "bw-recurve-09": {
+    "src": "models/native/weapons/bw-recurve-09.glb",
+    "hand": "l"
+  },
+  "bw-recurve-10": {
+    "src": "models/native/weapons/bw-recurve-10.glb",
+    "hand": "l"
+  },
+  "df-axe-01": {
+    "src": "models/native/weapons/df-axe-01.glb",
+    "hand": "r"
+  },
+  "df-axe-01-gold": {
+    "src": "models/native/weapons/df-axe-01-gold.glb",
+    "hand": "r"
+  },
+  "df-club-01": {
+    "src": "models/native/weapons/df-club-01.glb",
+    "hand": "r"
+  },
+  "df-hammer-01": {
+    "src": "models/native/weapons/df-hammer-01.glb",
+    "hand": "r"
+  },
+  "df-hammer-01-gold": {
+    "src": "models/native/weapons/df-hammer-01-gold.glb",
+    "hand": "r"
+  },
+  "df-mace-01": {
+    "src": "models/native/weapons/df-mace-01.glb",
+    "hand": "r"
+  },
+  "df-mace-02": {
+    "src": "models/native/weapons/df-mace-02.glb",
+    "hand": "r"
+  },
+  "df-saw-01": {
+    "src": "models/native/weapons/df-saw-01.glb",
+    "hand": "r"
+  },
+  "df-staff-01": {
+    "src": "models/native/weapons/df-staff-01.glb",
+    "hand": "r"
+  },
+  "df-staff-02": {
+    "src": "models/native/weapons/df-staff-02.glb",
+    "hand": "r"
+  },
+  "df-staff-03": {
+    "src": "models/native/weapons/df-staff-03.glb",
+    "hand": "r"
+  },
+  "df-sword-01": {
+    "src": "models/native/weapons/df-sword-01.glb",
+    "hand": "r"
+  },
+  "df-sword-01-ember": {
+    "src": "models/native/weapons/df-sword-01-ember.glb",
+    "hand": "r"
+  },
+  "df-sword-01-gold": {
+    "src": "models/native/weapons/df-sword-01-gold.glb",
+    "hand": "r"
+  },
+  "df-sword-02": {
+    "src": "models/native/weapons/df-sword-02.glb",
+    "hand": "r"
+  },
+  "df-sword-02-frost": {
+    "src": "models/native/weapons/df-sword-02-frost.glb",
+    "hand": "r"
+  },
+  "df-sword-02-gold": {
+    "src": "models/native/weapons/df-sword-02-gold.glb",
+    "hand": "r"
+  },
+  "df-sword-03": {
+    "src": "models/native/weapons/df-sword-03.glb",
+    "hand": "r"
+  },
+  "df-sword-03-gold": {
+    "src": "models/native/weapons/df-sword-03-gold.glb",
+    "hand": "r"
+  },
+  "dk-staff-01": {
+    "src": "models/native/weapons/dk-staff-01.glb",
+    "hand": "r"
+  },
+  "dk-staff-02": {
+    "src": "models/native/weapons/dk-staff-02.glb",
+    "hand": "r"
+  },
+  "dr-axe-large-01": {
+    "src": "models/native/weapons/dr-axe-large-01.glb",
+    "hand": "r"
+  },
+  "dr-axe-large-02": {
+    "src": "models/native/weapons/dr-axe-large-02.glb",
+    "hand": "r"
+  },
+  "dr-axe-large-03": {
+    "src": "models/native/weapons/dr-axe-large-03.glb",
+    "hand": "r"
+  },
+  "dr-axe-large-04": {
+    "src": "models/native/weapons/dr-axe-large-04.glb",
+    "hand": "r"
+  },
+  "dr-axe-large-05": {
+    "src": "models/native/weapons/dr-axe-large-05.glb",
+    "hand": "r"
+  },
+  "dr-axe-large-06": {
+    "src": "models/native/weapons/dr-axe-large-06.glb",
+    "hand": "r"
+  },
+  "dr-axe-large-07": {
+    "src": "models/native/weapons/dr-axe-large-07.glb",
+    "hand": "r"
+  },
+  "dr-axe-small-01": {
+    "src": "models/native/weapons/dr-axe-small-01.glb",
+    "hand": "r"
+  },
+  "dr-axe-small-02": {
+    "src": "models/native/weapons/dr-axe-small-02.glb",
+    "hand": "r"
+  },
+  "dr-axe-small-03": {
+    "src": "models/native/weapons/dr-axe-small-03.glb",
+    "hand": "r"
+  },
+  "dr-axe-small-04": {
+    "src": "models/native/weapons/dr-axe-small-04.glb",
+    "hand": "r"
+  },
+  "dr-axe-small-05": {
+    "src": "models/native/weapons/dr-axe-small-05.glb",
+    "hand": "r"
+  },
+  "dr-axe-small-06": {
+    "src": "models/native/weapons/dr-axe-small-06.glb",
+    "hand": "r"
+  },
+  "dr-knife-large-01": {
+    "src": "models/native/weapons/dr-knife-large-01.glb",
+    "hand": "r"
+  },
+  "dr-knife-large-02": {
+    "src": "models/native/weapons/dr-knife-large-02.glb",
+    "hand": "r"
+  },
+  "dr-knife-medium-01": {
+    "src": "models/native/weapons/dr-knife-medium-01.glb",
+    "hand": "r"
+  },
+  "dr-knife-small-01": {
+    "src": "models/native/weapons/dr-knife-small-01.glb",
+    "hand": "r"
+  },
+  "dr-knife-small-02": {
+    "src": "models/native/weapons/dr-knife-small-02.glb",
+    "hand": "r"
+  },
+  "dr-mace-large-01": {
+    "src": "models/native/weapons/dr-mace-large-01.glb",
+    "hand": "r"
+  },
+  "dr-mace-large-02": {
+    "src": "models/native/weapons/dr-mace-large-02.glb",
+    "hand": "r"
+  },
+  "dr-mace-large-03": {
+    "src": "models/native/weapons/dr-mace-large-03.glb",
+    "hand": "r"
+  },
+  "dr-mace-large-05": {
+    "src": "models/native/weapons/dr-mace-large-05.glb",
+    "hand": "r"
+  },
+  "dr-mace-medium-01": {
+    "src": "models/native/weapons/dr-mace-medium-01.glb",
+    "hand": "r"
+  },
+  "dr-mace-medium-02": {
+    "src": "models/native/weapons/dr-mace-medium-02.glb",
+    "hand": "r"
+  },
+  "dr-mace-medium-03": {
+    "src": "models/native/weapons/dr-mace-medium-03.glb",
+    "hand": "r"
+  },
+  "dr-staff-01": {
+    "src": "models/native/weapons/dr-staff-01.glb",
+    "hand": "r"
+  },
+  "dr-staff-02": {
+    "src": "models/native/weapons/dr-staff-02.glb",
+    "hand": "r"
+  },
+  "dr-staff-03": {
+    "src": "models/native/weapons/dr-staff-03.glb",
+    "hand": "r"
+  },
+  "dr-staff-04": {
+    "src": "models/native/weapons/dr-staff-04.glb",
+    "hand": "r"
+  },
+  "dr-staff-05": {
+    "src": "models/native/weapons/dr-staff-05.glb",
+    "hand": "r"
+  },
+  "dr-staff-06": {
+    "src": "models/native/weapons/dr-staff-06.glb",
+    "hand": "r"
+  },
+  "dr-staff-07": {
+    "src": "models/native/weapons/dr-staff-07.glb",
+    "hand": "r"
+  },
+  "dr-staff-08": {
+    "src": "models/native/weapons/dr-staff-08.glb",
+    "hand": "r"
+  },
+  "dr-staff-09": {
+    "src": "models/native/weapons/dr-staff-09.glb",
+    "hand": "r"
+  },
+  "dr-staff-10": {
+    "src": "models/native/weapons/dr-staff-10.glb",
+    "hand": "r"
+  },
+  "dr-staff-11": {
+    "src": "models/native/weapons/dr-staff-11.glb",
+    "hand": "r"
+  },
+  "dr-staff-12": {
+    "src": "models/native/weapons/dr-staff-12.glb",
+    "hand": "r"
+  },
+  "dr-sword-large-01": {
+    "src": "models/native/weapons/dr-sword-large-01.glb",
+    "hand": "r"
+  },
+  "dr-sword-large-02": {
+    "src": "models/native/weapons/dr-sword-large-02.glb",
+    "hand": "r"
+  },
+  "dr-sword-large-03": {
+    "src": "models/native/weapons/dr-sword-large-03.glb",
+    "hand": "r"
+  },
+  "dr-sword-large-04": {
+    "src": "models/native/weapons/dr-sword-large-04.glb",
+    "hand": "r"
+  },
+  "dr-sword-large-05": {
+    "src": "models/native/weapons/dr-sword-large-05.glb",
+    "hand": "r"
+  },
+  "dr-sword-large-06": {
+    "src": "models/native/weapons/dr-sword-large-06.glb",
+    "hand": "r"
+  },
+  "dr-sword-large-07": {
+    "src": "models/native/weapons/dr-sword-large-07.glb",
+    "hand": "r"
+  },
+  "dr-sword-large-08": {
+    "src": "models/native/weapons/dr-sword-large-08.glb",
+    "hand": "r"
+  },
+  "dr-sword-large-09": {
+    "src": "models/native/weapons/dr-sword-large-09.glb",
+    "hand": "r"
+  },
+  "dr-sword-large-10": {
+    "src": "models/native/weapons/dr-sword-large-10.glb",
+    "hand": "r"
+  },
+  "dr-sword-large-11": {
+    "src": "models/native/weapons/dr-sword-large-11.glb",
+    "hand": "r"
+  },
+  "dr-sword-large-12": {
+    "src": "models/native/weapons/dr-sword-large-12.glb",
+    "hand": "r"
+  },
+  "dr-sword-medium-01": {
+    "src": "models/native/weapons/dr-sword-medium-01.glb",
+    "hand": "r"
+  },
+  "dr-sword-medium-02": {
+    "src": "models/native/weapons/dr-sword-medium-02.glb",
+    "hand": "r"
+  },
+  "dr-sword-medium-03": {
+    "src": "models/native/weapons/dr-sword-medium-03.glb",
+    "hand": "r"
+  },
+  "dr-sword-medium-04": {
+    "src": "models/native/weapons/dr-sword-medium-04.glb",
+    "hand": "r"
+  },
+  "dr-sword-medium-05": {
+    "src": "models/native/weapons/dr-sword-medium-05.glb",
+    "hand": "r"
+  },
+  "dr-sword-medium-06": {
+    "src": "models/native/weapons/dr-sword-medium-06.glb",
+    "hand": "r"
+  },
+  "dr-sword-medium-07": {
+    "src": "models/native/weapons/dr-sword-medium-07.glb",
+    "hand": "r"
+  },
+  "dr-sword-medium-08": {
+    "src": "models/native/weapons/dr-sword-medium-08.glb",
+    "hand": "r"
+  },
+  "dr-sword-medium-09": {
+    "src": "models/native/weapons/dr-sword-medium-09.glb",
+    "hand": "r"
+  },
+  "dr-sword-small-01": {
+    "src": "models/native/weapons/dr-sword-small-01.glb",
+    "hand": "r"
+  },
+  "dr-sword-small-02": {
+    "src": "models/native/weapons/dr-sword-small-02.glb",
+    "hand": "r"
+  },
+  "dr-sword-small-03": {
+    "src": "models/native/weapons/dr-sword-small-03.glb",
+    "hand": "r"
+  },
+  "dr-sword-small-04": {
+    "src": "models/native/weapons/dr-sword-small-04.glb",
+    "hand": "r"
+  },
+  "dr-sword-small-05": {
+    "src": "models/native/weapons/dr-sword-small-05.glb",
+    "hand": "r"
+  },
+  "dr-sword-small-06": {
+    "src": "models/native/weapons/dr-sword-small-06.glb",
+    "hand": "r"
+  },
+  "dr-warhammer-large-01": {
+    "src": "models/native/weapons/dr-warhammer-large-01.glb",
+    "hand": "r"
+  },
+  "dr-warhammer-large-02": {
+    "src": "models/native/weapons/dr-warhammer-large-02.glb",
+    "hand": "r"
+  },
+  "dr-warhammer-large-03": {
+    "src": "models/native/weapons/dr-warhammer-large-03.glb",
+    "hand": "r"
+  },
+  "dr-warhammer-large-04": {
+    "src": "models/native/weapons/dr-warhammer-large-04.glb",
+    "hand": "r"
+  },
+  "dr-warhammer-small-01": {
+    "src": "models/native/weapons/dr-warhammer-small-01.glb",
+    "hand": "r"
+  },
+  "dr-warhammer-small-02": {
+    "src": "models/native/weapons/dr-warhammer-small-02.glb",
+    "hand": "r"
+  },
+  "er-bow-01": {
+    "src": "models/native/weapons/er-bow-01.glb",
+    "hand": "l"
+  },
+  "er-bow-02": {
+    "src": "models/native/weapons/er-bow-02.glb",
+    "hand": "l"
+  },
+  "er-bow-03": {
+    "src": "models/native/weapons/er-bow-03.glb",
+    "hand": "l"
+  },
+  "er-bow-04": {
+    "src": "models/native/weapons/er-bow-04.glb",
+    "hand": "l"
+  },
+  "er-bow-05": {
+    "src": "models/native/weapons/er-bow-05.glb",
+    "hand": "l"
+  },
+  "er-bow-06": {
+    "src": "models/native/weapons/er-bow-06.glb",
+    "hand": "l"
+  },
+  "er-staff-01": {
+    "src": "models/native/weapons/er-staff-01.glb",
+    "hand": "r"
+  },
+  "er-staff-02": {
+    "src": "models/native/weapons/er-staff-02.glb",
+    "hand": "r"
+  },
+  "er-staff-03": {
+    "src": "models/native/weapons/er-staff-03.glb",
+    "hand": "r"
+  },
+  "er-staff-04": {
+    "src": "models/native/weapons/er-staff-04.glb",
+    "hand": "r"
+  },
+  "fc-sceptre-01": {
+    "src": "models/native/weapons/fc-sceptre-01.glb",
+    "hand": "r"
+  },
+  "fc-sceptre-02": {
+    "src": "models/native/weapons/fc-sceptre-02.glb",
+    "hand": "r"
+  },
+  "fc-staff-01": {
+    "src": "models/native/weapons/fc-staff-01.glb",
+    "hand": "r"
+  },
+  "fc-staff-02": {
+    "src": "models/native/weapons/fc-staff-02.glb",
+    "hand": "r"
+  },
+  "fc-staff-03": {
+    "src": "models/native/weapons/fc-staff-03.glb",
+    "hand": "r"
+  },
+  "fc-staff-04": {
+    "src": "models/native/weapons/fc-staff-04.glb",
+    "hand": "r"
+  },
+  "fc-wand-01": {
+    "src": "models/native/weapons/fc-wand-01.glb",
+    "hand": "r"
+  },
+  "fc-wand-02": {
+    "src": "models/native/weapons/fc-wand-02.glb",
+    "hand": "r"
+  },
+  "fk-axe-01": {
+    "src": "models/native/weapons/fk-axe-01.glb",
+    "hand": "r"
+  },
+  "fk-axe-02": {
+    "src": "models/native/weapons/fk-axe-02.glb",
+    "hand": "r"
+  },
+  "fk-axe-03": {
+    "src": "models/native/weapons/fk-axe-03.glb",
+    "hand": "r"
+  },
+  "fk-axe-04": {
+    "src": "models/native/weapons/fk-axe-04.glb",
+    "hand": "r"
+  },
+  "fk-axe-05": {
+    "src": "models/native/weapons/fk-axe-05.glb",
+    "hand": "r"
+  },
+  "fk-axe-06": {
+    "src": "models/native/weapons/fk-axe-06.glb",
+    "hand": "r"
+  },
+  "fk-axe-07": {
+    "src": "models/native/weapons/fk-axe-07.glb",
+    "hand": "r"
+  },
+  "fk-axe-08": {
+    "src": "models/native/weapons/fk-axe-08.glb",
+    "hand": "r"
+  },
+  "fk-axe-09": {
+    "src": "models/native/weapons/fk-axe-09.glb",
+    "hand": "r"
+  },
+  "fk-axe-10": {
+    "src": "models/native/weapons/fk-axe-10.glb",
+    "hand": "r"
+  },
+  "fk-axe-11": {
+    "src": "models/native/weapons/fk-axe-11.glb",
+    "hand": "r"
+  },
+  "fk-bow-01": {
+    "src": "models/native/weapons/fk-bow-01.glb",
+    "hand": "l"
+  },
+  "fk-bow-02": {
+    "src": "models/native/weapons/fk-bow-02.glb",
+    "hand": "l"
+  },
+  "fk-dagger-01": {
+    "src": "models/native/weapons/fk-dagger-01.glb",
+    "hand": "r"
+  },
+  "fk-dagger-02": {
+    "src": "models/native/weapons/fk-dagger-02.glb",
+    "hand": "r"
+  },
+  "fk-dagger-03": {
+    "src": "models/native/weapons/fk-dagger-03.glb",
+    "hand": "r"
+  },
+  "fk-dagger-04": {
+    "src": "models/native/weapons/fk-dagger-04.glb",
+    "hand": "r"
+  },
+  "fk-dagger-05": {
+    "src": "models/native/weapons/fk-dagger-05.glb",
+    "hand": "r"
+  },
+  "fk-dagger-06": {
+    "src": "models/native/weapons/fk-dagger-06.glb",
+    "hand": "r"
+  },
+  "fk-dagger-07": {
+    "src": "models/native/weapons/fk-dagger-07.glb",
+    "hand": "r"
+  },
+  "fk-hammer-01": {
+    "src": "models/native/weapons/fk-hammer-01.glb",
+    "hand": "r"
+  },
+  "fk-hammer-02": {
+    "src": "models/native/weapons/fk-hammer-02.glb",
+    "hand": "r"
+  },
+  "fk-hammer-03": {
+    "src": "models/native/weapons/fk-hammer-03.glb",
+    "hand": "r"
+  },
+  "fk-hammer-04": {
+    "src": "models/native/weapons/fk-hammer-04.glb",
+    "hand": "r"
+  },
+  "fk-hammer-05": {
+    "src": "models/native/weapons/fk-hammer-05.glb",
+    "hand": "r"
+  },
+  "fk-hammer-06": {
+    "src": "models/native/weapons/fk-hammer-06.glb",
+    "hand": "r"
+  },
+  "fk-knife-01": {
+    "src": "models/native/weapons/fk-knife-01.glb",
+    "hand": "r"
+  },
+  "fk-knife-02": {
+    "src": "models/native/weapons/fk-knife-02.glb",
+    "hand": "r"
+  },
+  "fk-knife-03": {
+    "src": "models/native/weapons/fk-knife-03.glb",
+    "hand": "r"
+  },
+  "fk-knife-04": {
+    "src": "models/native/weapons/fk-knife-04.glb",
+    "hand": "r"
+  },
+  "fk-mace-01": {
+    "src": "models/native/weapons/fk-mace-01.glb",
+    "hand": "r"
+  },
+  "fk-mace-02": {
+    "src": "models/native/weapons/fk-mace-02.glb",
+    "hand": "r"
+  },
+  "fk-mace-03": {
+    "src": "models/native/weapons/fk-mace-03.glb",
+    "hand": "r"
+  },
+  "fk-mace-04": {
+    "src": "models/native/weapons/fk-mace-04.glb",
+    "hand": "r"
+  },
+  "fk-mace-05": {
+    "src": "models/native/weapons/fk-mace-05.glb",
+    "hand": "r"
+  },
+  "fk-mace-06": {
+    "src": "models/native/weapons/fk-mace-06.glb",
+    "hand": "r"
+  },
+  "fk-sceptre-01": {
+    "src": "models/native/weapons/fk-sceptre-01.glb",
+    "hand": "r"
+  },
+  "fk-sceptre-02": {
+    "src": "models/native/weapons/fk-sceptre-02.glb",
+    "hand": "r"
+  },
+  "fk-sceptre-03": {
+    "src": "models/native/weapons/fk-sceptre-03.glb",
+    "hand": "r"
+  },
+  "fk-sceptre-04": {
+    "src": "models/native/weapons/fk-sceptre-04.glb",
+    "hand": "r"
+  },
+  "fk-sceptre-05": {
+    "src": "models/native/weapons/fk-sceptre-05.glb",
+    "hand": "r"
+  },
+  "fk-sceptre-06": {
+    "src": "models/native/weapons/fk-sceptre-06.glb",
+    "hand": "r"
+  },
+  "fk-sceptre-07": {
+    "src": "models/native/weapons/fk-sceptre-07.glb",
+    "hand": "r"
+  },
+  "fk-sceptre-08": {
+    "src": "models/native/weapons/fk-sceptre-08.glb",
+    "hand": "r"
+  },
+  "fk-sceptre-09": {
+    "src": "models/native/weapons/fk-sceptre-09.glb",
+    "hand": "r"
+  },
+  "fk-sceptre-10": {
+    "src": "models/native/weapons/fk-sceptre-10.glb",
+    "hand": "r"
+  },
+  "fk-sceptre-11": {
+    "src": "models/native/weapons/fk-sceptre-11.glb",
+    "hand": "r"
+  },
+  "fk-sceptre-12": {
+    "src": "models/native/weapons/fk-sceptre-12.glb",
+    "hand": "r"
+  },
+  "fk-staff-01": {
+    "src": "models/native/weapons/fk-staff-01.glb",
+    "hand": "r"
+  },
+  "fk-staff-02": {
+    "src": "models/native/weapons/fk-staff-02.glb",
+    "hand": "r"
+  },
+  "fk-staff-03": {
+    "src": "models/native/weapons/fk-staff-03.glb",
+    "hand": "r"
+  },
+  "fk-staff-04": {
+    "src": "models/native/weapons/fk-staff-04.glb",
+    "hand": "r"
+  },
+  "fk-staff-05": {
+    "src": "models/native/weapons/fk-staff-05.glb",
+    "hand": "r"
+  },
+  "fk-staff-06": {
+    "src": "models/native/weapons/fk-staff-06.glb",
+    "hand": "r"
+  },
+  "fk-staff-07": {
+    "src": "models/native/weapons/fk-staff-07.glb",
+    "hand": "r"
+  },
+  "fk-staff-08": {
+    "src": "models/native/weapons/fk-staff-08.glb",
+    "hand": "r"
+  },
+  "fk-staff-09": {
+    "src": "models/native/weapons/fk-staff-09.glb",
+    "hand": "r"
+  },
+  "fk-staff-10": {
+    "src": "models/native/weapons/fk-staff-10.glb",
+    "hand": "r"
+  },
+  "fk-staff-11": {
+    "src": "models/native/weapons/fk-staff-11.glb",
+    "hand": "r"
+  },
+  "fk-staff-12": {
+    "src": "models/native/weapons/fk-staff-12.glb",
+    "hand": "r"
+  },
+  "fk-staff-13": {
+    "src": "models/native/weapons/fk-staff-13.glb",
+    "hand": "r"
+  },
+  "fk-staff-14": {
+    "src": "models/native/weapons/fk-staff-14.glb",
+    "hand": "r"
+  },
+  "fk-staff-15": {
+    "src": "models/native/weapons/fk-staff-15.glb",
+    "hand": "r"
+  },
+  "fk-staff-16": {
+    "src": "models/native/weapons/fk-staff-16.glb",
+    "hand": "r"
+  },
+  "fk-sword-01": {
+    "src": "models/native/weapons/fk-sword-01.glb",
+    "hand": "r"
+  },
+  "fk-sword-02": {
+    "src": "models/native/weapons/fk-sword-02.glb",
+    "hand": "r"
+  },
+  "fk-sword-03": {
+    "src": "models/native/weapons/fk-sword-03.glb",
+    "hand": "r"
+  },
+  "fk-sword-04": {
+    "src": "models/native/weapons/fk-sword-04.glb",
+    "hand": "r"
+  },
+  "fk-sword-05": {
+    "src": "models/native/weapons/fk-sword-05.glb",
+    "hand": "r"
+  },
+  "fk-sword-06": {
+    "src": "models/native/weapons/fk-sword-06.glb",
+    "hand": "r"
+  },
+  "fk-sword-07": {
+    "src": "models/native/weapons/fk-sword-07.glb",
+    "hand": "r"
+  },
+  "fk-sword-08": {
+    "src": "models/native/weapons/fk-sword-08.glb",
+    "hand": "r"
+  },
+  "fk-sword-09": {
+    "src": "models/native/weapons/fk-sword-09.glb",
+    "hand": "r"
+  },
+  "fk-sword-10": {
+    "src": "models/native/weapons/fk-sword-10.glb",
+    "hand": "r"
+  },
+  "fk-sword-11": {
+    "src": "models/native/weapons/fk-sword-11.glb",
+    "hand": "r"
+  },
+  "fk-sword-12": {
+    "src": "models/native/weapons/fk-sword-12.glb",
+    "hand": "r"
+  },
+  "fk-sword-13": {
+    "src": "models/native/weapons/fk-sword-13.glb",
+    "hand": "r"
+  },
+  "fk-sword-14": {
+    "src": "models/native/weapons/fk-sword-14.glb",
+    "hand": "r"
+  },
+  "fk-sword-15": {
+    "src": "models/native/weapons/fk-sword-15.glb",
+    "hand": "r"
+  },
+  "fk-sword-16": {
+    "src": "models/native/weapons/fk-sword-16.glb",
+    "hand": "r"
+  },
+  "fk-sword-17": {
+    "src": "models/native/weapons/fk-sword-17.glb",
+    "hand": "r"
+  },
+  "fk-sword-18": {
+    "src": "models/native/weapons/fk-sword-18.glb",
+    "hand": "r"
+  },
+  "gb-axe-01": {
+    "src": "models/native/weapons/gb-axe-01.glb",
+    "hand": "r"
+  },
+  "gb-axe-02": {
+    "src": "models/native/weapons/gb-axe-02.glb",
+    "hand": "r"
+  },
+  "gb-bow-01": {
+    "src": "models/native/weapons/gb-bow-01.glb",
+    "hand": "l"
+  },
+  "gb-bow-02": {
+    "src": "models/native/weapons/gb-bow-02.glb",
+    "hand": "l"
+  },
+  "gb-cleaver-01": {
+    "src": "models/native/weapons/gb-cleaver-01.glb",
+    "hand": "r"
+  },
+  "gb-cleaver-02": {
+    "src": "models/native/weapons/gb-cleaver-02.glb",
+    "hand": "r"
+  },
+  "gb-club-01": {
+    "src": "models/native/weapons/gb-club-01.glb",
+    "hand": "r"
+  },
+  "gb-club-02": {
+    "src": "models/native/weapons/gb-club-02.glb",
+    "hand": "r"
+  },
+  "gb-club-03": {
+    "src": "models/native/weapons/gb-club-03.glb",
+    "hand": "r"
+  },
+  "gb-club-04": {
+    "src": "models/native/weapons/gb-club-04.glb",
+    "hand": "r"
+  },
+  "gb-dagger-01": {
+    "src": "models/native/weapons/gb-dagger-01.glb",
+    "hand": "r"
+  },
+  "gb-staff-01": {
+    "src": "models/native/weapons/gb-staff-01.glb",
+    "hand": "r"
+  },
+  "gb-staff-02": {
+    "src": "models/native/weapons/gb-staff-02.glb",
+    "hand": "r"
+  },
+  "gb-sword-01": {
+    "src": "models/native/weapons/gb-sword-01.glb",
+    "hand": "r"
+  },
+  "gb-sword-02": {
+    "src": "models/native/weapons/gb-sword-02.glb",
+    "hand": "r"
+  },
+  "gb-sword-03": {
+    "src": "models/native/weapons/gb-sword-03.glb",
+    "hand": "r"
+  },
+  "kn-broadsword-01": {
+    "src": "models/native/weapons/kn-broadsword-01.glb",
+    "hand": "r"
+  },
+  "kn-rapier-01": {
+    "src": "models/native/weapons/kn-rapier-01.glb",
+    "hand": "r"
+  },
+  "kn-zweihander-01": {
+    "src": "models/native/weapons/kn-zweihander-01.glb",
+    "hand": "r"
+  },
+  "pr-bow-01": {
+    "src": "models/native/weapons/pr-bow-01.glb",
+    "hand": "l"
+  },
+  "pr-bow-02": {
+    "src": "models/native/weapons/pr-bow-02.glb",
+    "hand": "l"
+  },
+  "pr-bow-03": {
+    "src": "models/native/weapons/pr-bow-03.glb",
+    "hand": "l"
+  },
+  "pr-bow-04": {
+    "src": "models/native/weapons/pr-bow-04.glb",
+    "hand": "l"
+  },
+  "pr-bow-05": {
+    "src": "models/native/weapons/pr-bow-05.glb",
+    "hand": "l"
+  },
+  "pride-sword": {
+    "src": "models/native/weapons/pride-sword.glb",
+    "hand": "r"
+  },
+  "pride-sword-dawn": {
+    "src": "models/native/weapons/pride-sword-dawn.glb",
+    "hand": "r"
+  },
+  "pride-sword-dusk": {
+    "src": "models/native/weapons/pride-sword-dusk.glb",
+    "hand": "r"
+  },
+  "pride-sword-tide": {
+    "src": "models/native/weapons/pride-sword-tide.glb",
+    "hand": "r"
+  },
+  "pride-sword-verdant": {
+    "src": "models/native/weapons/pride-sword-verdant.glb",
+    "hand": "r"
+  },
+  "vk-axe-01": {
+    "src": "models/native/weapons/vk-axe-01.glb",
+    "hand": "r"
+  },
+  "vk-axe-02": {
+    "src": "models/native/weapons/vk-axe-02.glb",
+    "hand": "r"
+  },
+  "vk-ball-hammer-01": {
+    "src": "models/native/weapons/vk-ball-hammer-01.glb",
+    "hand": "r"
+  },
+  "vk-club-01": {
+    "src": "models/native/weapons/vk-club-01.glb",
+    "hand": "r"
+  },
+  "vk-hammer-01": {
+    "src": "models/native/weapons/vk-hammer-01.glb",
+    "hand": "r"
+  },
+  "vk-hammer-02": {
+    "src": "models/native/weapons/vk-hammer-02.glb",
+    "hand": "r"
+  },
+  "vk-hammerlarge-01": {
+    "src": "models/native/weapons/vk-hammerlarge-01.glb",
+    "hand": "r"
+  },
+  "vk-largeaxe-01": {
+    "src": "models/native/weapons/vk-largeaxe-01.glb",
+    "hand": "r"
+  },
+  "vk-sword-01": {
+    "src": "models/native/weapons/vk-sword-01.glb",
+    "hand": "r"
+  }
+}

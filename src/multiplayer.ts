@@ -61,13 +61,13 @@ export type ShotNet = {
 
 /** What the owner writes into its HeroBody and HeroLook each time something changed. */
 export type HeroPublish = Omit<HeroView, 'id' | 'beat'>
-const LOOK_KEYS = ['cid', 'body', 'hair', 'hc', 'skin', 'loadout', 'weaponUp'] as const
+const LOOK_KEYS = ['cid', 'body', 'hair', 'hc', 'skin', 'loadout', 'weaponUp', 'native'] as const
 type LookKey = (typeof LOOK_KEYS)[number]
 type BodyKey = Exclude<keyof HeroPublish, LookKey>
 
 function splitPublish(hero: HeroPublish): { body: Pick<HeroPublish, BodyKey>; look: Pick<HeroPublish, LookKey> } {
-  const { cid, body, hair, hc, skin, loadout, weaponUp, ...pose } = hero
-  return { body: pose, look: { cid, body, hair, hc, skin, loadout, weaponUp } }
+  const { cid, body, hair, hc, skin, loadout, weaponUp, native, ...pose } = hero
+  return { body: pose, look: { cid, body, hair, hc, skin, loadout, weaponUp, native } }
 }
 
 let initialized = false
@@ -388,7 +388,7 @@ export function publishHero(hero: HeroPublish, dt: number): boolean {
 }
 
 function sameLook(a: Pick<HeroView, LookKey>, b: HeroPublish): boolean {
-  return a.cid === b.cid && a.body === b.body && a.hair === b.hair && a.hc === b.hc && a.skin === b.skin && a.weaponUp === b.weaponUp &&
+  return a.cid === b.cid && a.body === b.body && a.hair === b.hair && a.hc === b.hc && a.skin === b.skin && a.weaponUp === b.weaponUp && a.native === b.native &&
     EQUIPMENT_SLOTS.every((slot) => a.loadout[slot.id] === b.loadout[slot.id])
 }
 

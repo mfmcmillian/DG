@@ -246,11 +246,9 @@ function release() {
   if (!shot) return
   const current = InputModifier.getOrNull(engine.PlayerEntity)
   if (current?.mode?.$case === 'standard' && current.mode.standard.disableAll) InputModifier.deleteFrom(engine.PlayerEntity)
-  // The follow camera comes back first, while MainCamera still names the rig: the
-  // shoulder camera sees it is taking over from a scene camera and settles behind
-  // the hero instead of reading the rig's off-axis view for its yaw and pitch.
-  // The rig stays where it is, VirtualCamera and all, so the Explorer has
-  // something to blend out from. Only if nothing took MainCamera is it let go.
+  // The follow camera comes back first, while MainCamera still names the rig. The
+  // rig stays where it is, VirtualCamera and all, so the Explorer has something
+  // to blend out from. Only if nothing took MainCamera is it let go.
   resumeDungeonCamera()
   const mainCamera = MainCamera.getMutableOrNull(engine.CameraEntity)
   if (mainCamera?.virtualCameraEntity === shot.rig) mainCamera.virtualCameraEntity = undefined

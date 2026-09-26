@@ -8,10 +8,10 @@ import {
   setCameraChoice,
   toggleSpawnMarkers
 } from './index'
+import { nativeHeroOn, nativeNotes, nudgeWeaponTweak, weaponTweakLabel } from '../nativeHero'
 
 const CAMERAS: Array<{ id: CameraChoice; label: string; hint: string; openOnly: boolean }> = [
   { id: 'native', label: 'Native cam', hint: 'Explorer camera, player can zoom', openOnly: false },
-  { id: 'shoulder', label: 'Shoulder cam', hint: 'Fixed 3.2 m boom, smooth de-occlusion', openOnly: false },
   { id: 'crawler', label: 'Crawler cam', hint: 'Top-down follow, camera-facing walls drop', openOnly: true }
 ]
 
@@ -134,6 +134,35 @@ function DevPanel() {
         uiTransform={{ height: 18 }}
         textAlign="middle-left"
       />
+      {nativeHeroOn() && <WeaponTweak />}
+    </UiEntity>
+  )
+}
+
+/** Find the weapon's seat in the avatar's hand live: each button turns or moves every held weapon a step. */
+function WeaponTweak() {
+  const small = { width: 44, height: 24, margin: { right: 3, bottom: 3 } }
+  const row = (kind: 'rotate' | 'move', step: number, label: string) => (
+    <UiEntity uiTransform={{ flexDirection: 'row' }}>
+      <Label value={label} fontSize={11} color={MUTED} uiTransform={{ width: 40, height: 24 }} textAlign="middle-left" />
+      {(['x', 'y', 'z'] as const).map((axis) => (
+        <UiEntity key={`${kind}-${axis}`} uiTransform={{ flexDirection: 'row' }}>
+          <Button value={`${axis}-`} fontSize={11} variant="secondary" uiTransform={small} onMouseDown={() => nudgeWeaponTweak(kind, axis, -step)} />
+          <Button value={`${axis}+`} fontSize={11} variant="secondary" uiTransform={small} onMouseDown={() => nudgeWeaponTweak(kind, axis, step)} />
+        </UiEntity>
+      ))}
+    </UiEntity>
+  )
+  return (
+    <UiEntity uiTransform={{ flexDirection: 'column', margin: { top: 8 } }}>
+      <Label value="Weapon in hand" fontSize={12} color={MUTED} uiTransform={{ height: 18 }} textAlign="middle-left" />
+      {row('rotate', 90, 'turn 90')}
+      {row('rotate', 15, 'turn 15')}
+      {row('move', 0.05, 'move 5cm')}
+      <Label value={weaponTweakLabel()} fontSize={11} color={TEXT} uiTransform={{ height: 16 }} textAlign="middle-left" textWrap="nowrap" />
+      {nativeNotes().map((line, i) => (
+        <Label key={`${i}-${line}`} value={line} fontSize={11} color={i === 0 ? TEXT : MUTED} uiTransform={{ height: 16 }} textAlign="middle-left" textWrap="nowrap" />
+      ))}
     </UiEntity>
   )
 }

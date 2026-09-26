@@ -138,7 +138,6 @@
   "A riveted mail coif; the face is left to take the weather.": "Eine genietete Kettenhaube; das Gesicht bleibt dem Wetter überlassen.",
   "A rose-carved head on a straight shaft. Pretty, and it hits.": "Ein rosengeschnitzter Kopf auf geradem Schaft. Hübsch, und er trifft.",
   "A Runeblade quenched in fire. The blade burns red.": "Eine Runenklinge, im Feuer abgeschreckt. Die Klinge brennt rot.",
-  "A short boom behind the hero that turns with them.": "Ein kurzer Ausleger hinter dem Helden, der sich mit ihm dreht.",
   "A short haft and a heavy head, made to be swung from a boat.": "Ein kurzer Schaft und ein schwerer Kopf, gemacht, um vom Boot aus geschwungen zu werden.",
   "A silver crescent cradling a gem. The bolt leaves in an arc.": "Ein silberner Halbmond, der einen Edelstein wiegt. Der Blitz verlässt ihn im Bogen.",
   "A single heavy edge, bronze-backed.": "Eine einzige schwere Schneide, mit Bronzerücken.",
@@ -511,7 +510,6 @@
   "Orange and gold robes over a long grey beard; the books are in the sleeves.": "Orange-goldene Roben über einem langen grauen Bart; die Bücher sind in den Ärmeln.",
   "Other": "Sonstiges",
   "OUTFIT": "KLEIDUNG",
-  "Over the shoulder": "Über die Schulter",
   "Overhead": "Von oben",
   "Pale wood cut under a full moon, a gem set in the riser. It hums on the draw.": "Helles Holz, unter Vollmond geschlagen, ein Edelstein im Griff. Es summt beim Spannen.",
   "Party": "Gruppe",
@@ -899,5 +897,11 @@
   "Raider": "Plünderer",
   "Karl": "Karl",
   "Huskarl": "Huskarl",
-  "Jarl": "Jarl"
+  "Jarl": "Jarl",
+  "HERO": "HELD",
+  "Fight as your own avatar (experimental). Your clips play on it; the weapon rides its hand.": "Als eigener Avatar kämpfen (experimentell). Deine Animationen laufen auf ihm; die Waffe sitzt in seiner Hand.",
+  "My avatar": "Mein Avatar",
+  "Hero body": "Heldenkörper",
+  "Third person": "Dritte Person",
+  "The Decentraland camera: behind the hero, turns with the mouse, zoom as you like.": "Die Decentraland-Kamera: hinter dem Helden, dreht sich mit der Maus, Zoom nach Belieben."
 }

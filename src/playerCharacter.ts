@@ -1,5 +1,5 @@
 import {
-  CameraMode, CameraType, engine, Entity, InputAction, InputModifier, inputSystem, Transform
+  CameraMode, CameraType, engine, Entity, InputAction, InputModifier, inputSystem, PointerLock, PrimaryPointerInfo, Transform
 } from '@dcl/sdk/ecs'
 import { hallPromptActive } from './hallPrompt'
 import { Quaternion, Vector3 } from '@dcl/sdk/math'
@@ -10,16 +10,17 @@ import {
   AttackContext, createRoamingCombat, healRoamingCharacter, hitRoamingCharacter, isRoamingBlocking, isRoamingInvulnerable, isRoamingSwinging,
   isRoamingRooted, maxStamina, resetRoamingCombat, restoreRoamingHealth, RoamingCombatHooks, setRoamingClass, setRoamingHealth, updateRoamingCombat
 } from './roamingCombat'
-import { CombatPose, HeroAttackMotion, isHeavyMotion, isRangedAttack, isSlashMotion, MAX_COMBAT_HEALTH } from './combatActions'
+import { CombatPose, HeroAttackMotion, isHeavyMotion, isRangedAttack, isSlashMotion, MAX_COMBAT_HEALTH, WeaponMotion } from './combatActions'
 import { getCommittedAppearance } from './appearance'
 import {
   destroyEquipmentAvatar, EquipmentAvatarOptions, EquipmentLoading, EquipmentMotion,
-  getEquipmentLoading, getEquipmentMotion, setEquipmentAvatar, setEquipmentMotion, setEquipmentStride, setEquipmentTimeScale, setEquipmentVisible,
-  transferEquipmentAvatar
+  getEquipmentLoading, getEquipmentMotion, setEquipmentAvatar, setEquipmentMotion, setEquipmentMotionMirror, setEquipmentStride, setEquipmentTimeScale,
+  setEquipmentVisible, transferEquipmentAvatar
 } from './equipmentAvatar'
 import { fxNumber, fxSlash, fxSound } from './combatFx'
 import { rearmAvatarHiding } from './avatarHiding'
-import { localAddress, publishHero, withdrawHero } from './multiplayer'
+import { localAddress, playerAddressAsReported, publishHero, withdrawHero } from './multiplayer'
+import { flushNativeMotion, mirrorLocalMotion, nativeHeroOn, nativeNote, setLocalNativeShown, stopNativeMotion, syncNativeWeapon } from './nativeHero'
 import { CRAWLER_CAMERA, isCrawlerCameraOn, kickCrawlerCamera } from './dungeon/crawlerCamera'
 import { SkillDef } from './shared/skills'
 import { upgradeRankOf } from './shared/upgradeRanks'
@@ -155,6 +156,37 @@ export function playScriptedMotion(motion: EquipmentMotion, seconds: number, yaw
   setEquipmentMotion(characterRoot, motion, true)
 }
 
+/** Radians the avatar may be off a lock-on before it is turned to face it (native hero). */
+const LOCK_TURN_MIN = 0.12
+/** The turn's step toward the target and its time: a heading for the controller, not a visible move. */
+const TURN_NUDGE = 0.02
+const TURN_SECONDS = 0.08
+
+/**
+ * Where the free cursor points, as a heading from the player: the cursor's world
+ * ray met with the ground at the player's feet (or, pointing at the sky, the
+ * ray's own heading). Undefined while the pointer is locked or nothing is known.
+ */
+function cursorAimYaw(): number | undefined {
+  if (PointerLock.getOrNull(engine.CameraEntity)?.isPointerLocked !== false) return undefined
+  // The ray leaves the camera; the component carries only its direction.
+  const dir = PrimaryPointerInfo.getOrNull(engine.RootEntity)?.worldRayDirection
+  const player = Transform.getOrNull(engine.PlayerEntity)
+  const origin = Transform.getOrNull(engine.CameraEntity)?.position
+  if (!player || !origin || !dir) return undefined
+  let dx = dir.x
+  let dz = dir.z
+  if (dir.y < -0.001) {
+    const t = (player.position.y - origin.y) / dir.y
+    if (t > 0) {
+      dx = origin.x + dir.x * t - player.position.x
+      dz = origin.z + dir.z * t - player.position.z
+    }
+  }
+  if (dx * dx + dz * dz < 0.0001) return undefined
+  return Math.atan2(dx, dz)
+}
+
 export function setPlayerFacingOverride(yaw: number | undefined) {
   facingOverride = yaw
   if (yaw === undefined && characterRoot !== undefined) Transform.getMutable(characterRoot).rotation = Quaternion.Identity()
@@ -194,6 +226,32 @@ function glidePlayer(direction: Vector3, distance: number, seconds: number) {
 }
 
 /**
+ * Turn the player to face `yaw` (native hero, a shot locked on from a standstill);
+ * resolves when the renderer has done it. The renderer's interpolated
+ * movePlayerTo turns the controller along its travel and snaps it to
+ * `avatarTarget` at the end, so the player takes a two-centimetre step toward the
+ * target over a few frames (an instant move with only an avatarTarget left the
+ * heading as it was). Swings with a lunge need none of this: the lunge's own
+ * travel turns them.
+ */
+function turnPlayer(yaw: number): Promise<void> | undefined {
+  const player = Transform.getOrNull(engine.PlayerEntity)
+  if (!player) return undefined
+  const p = player.position
+  const before = playerYaw(player.rotation)
+  const to = Vector3.create(p.x + Math.sin(yaw) * TURN_NUDGE, p.y, p.z + Math.cos(yaw) * TURN_NUDGE)
+  if (!footprintOnFloor(to)) return undefined
+  const avatarTarget = Vector3.create(to.x + Math.sin(yaw) * 2, to.y, to.z + Math.cos(yaw) * 2)
+  return movePlayerTo({ newRelativePosition: to, avatarTarget, duration: TURN_SECONDS })
+    .then((r) => {
+      const now = Transform.getOrNull(engine.PlayerEntity)
+      const deg = (r: number) => Math.round((r * 180) / Math.PI)
+      nativeNote(`turn ${r.success ? 'ok' : 'refused'}: wanted ${deg(yaw)}, was ${deg(before)}, now ${now ? deg(playerYaw(now.rotation)) : '?'}`)
+    })
+    .catch((error: unknown) => nativeNote(`turn failed: ${String(error)}`))
+}
+
+/**
  * Ground the swing clips are animated to cover when nothing is locked on. With a
  * target, `lockOn` sizes the step to land at sword reach instead.
  */
@@ -214,12 +272,17 @@ export function setPlayerStepIn(distance: number) {
   stepIn = Math.max(0, distance)
 }
 
-/** The wind-up carries the body toward where it faces, arriving as the blow lands. */
-function lungePlayer(motion: HeroAttackMotion, seconds: number) {
+/** How far this swing's wind-up will carry the hero, before the floor has its say (0 = stand and swing). */
+function lungeDistance(motion: HeroAttackMotion): number {
   // A skill's clip has no authored step: the lock-on sets its carry, up to a leap's reach.
   const authored = LUNGE_DISTANCE[motion] as number | undefined
   const max = motion === 'leap' || authored === undefined ? LEAP_MAX : LUNGE_MAX
-  const distance = isRangedAttack(motion) ? 0 : Math.min(max, stepIn ?? authored ?? 0)
+  return isRangedAttack(motion) ? 0 : Math.min(max, stepIn ?? authored ?? 0)
+}
+
+/** The wind-up carries the body toward where it faces, arriving as the blow lands. */
+function lungePlayer(motion: HeroAttackMotion, seconds: number) {
+  const distance = lungeDistance(motion)
   stepIn = undefined
   const player = Transform.getOrNull(engine.PlayerEntity)
   if (!player || distance < 0.05) return
@@ -227,27 +290,29 @@ function lungePlayer(motion: HeroAttackMotion, seconds: number) {
   glidePlayer(Vector3.create(Math.sin(yaw), 0, Math.cos(yaw)), distance, seconds)
 }
 
-let inputFrozen = false
-
 /**
  * While rooted (rolling, mid-swing on the ground, or dead) WASD and jump are
  * muted at the renderer: a timed move is cancelled by any movement input, and a
- * hero that keeps jogging through a roll or a swing slides. Menus own
+ * hero that keeps jogging through a roll or a swing slides. Shown as the avatar,
+ * jump stays muted throughout: the renderer cuts a full-body emote the moment
+ * the jump key is read as pressed, and Space is the guard here (the scene still
+ * receives the key; only the controller's jump is gated). Menus own
  * `InputModifier` while they are open (disableAll), so only a modifier of our
- * own shape is ever removed.
+ * own shape is ever touched; they delete it on closing, so this re-checks every tick.
  */
-function syncInputFreeze(rooted: boolean) {
-  if (rooted === inputFrozen) return
-  inputFrozen = rooted
+function syncInputModifier(rooted: boolean, noJump: boolean) {
   const current = InputModifier.getOrNull(engine.PlayerEntity)
-  const menuOwned = current?.mode?.$case === 'standard' && !!current.mode.standard.disableAll
-  if (rooted) {
-    if (!menuOwned) InputModifier.createOrReplace(engine.PlayerEntity, {
-      mode: InputModifier.Mode.Standard({ disableWalk: true, disableJog: true, disableRun: true, disableJump: true })
-    })
-  } else if (current && !menuOwned) {
-    InputModifier.deleteFrom(engine.PlayerEntity)
+  const standard = current?.mode?.$case === 'standard' ? current.mode.standard : undefined
+  if (standard?.disableAll) return
+  if (!rooted && !noJump) {
+    if (current) InputModifier.deleteFrom(engine.PlayerEntity)
+    return
   }
+  const jump = rooted || noJump
+  if (standard && !!standard.disableWalk === rooted && !!standard.disableJump === jump) return
+  InputModifier.createOrReplace(engine.PlayerEntity, {
+    mode: InputModifier.Mode.Standard({ disableWalk: rooted, disableJog: rooted, disableRun: rooted, disableJump: jump })
+  })
 }
 
 /** Briefly freeze the player's animation (impact weight). */
@@ -381,7 +446,16 @@ const combatHooks: RoamingCombatHooks = {
   onAttackStart: (motion, context) => {
     // The world's lock-on may size the step-in for this swing; otherwise the clip's own step is used.
     stepIn = undefined
+    // Shown as the avatar with the cursor free, the attack goes where the cursor
+    // points on the ground: set first, so the lock-on looks for its target in
+    // that direction and only refines it to an enemy standing there.
+    const cursor = nativeHeroOn() ? cursorAimYaw() : undefined
+    if (cursor !== undefined) setPlayerFacingOverride(cursor)
     attackStartHandler?.(motion, context)
+    // Shown as the avatar, a swing or shot made on the move goes the way the
+    // player is moving, which is the way the avatar faces; the lock-on only
+    // steers swings made from a standstill.
+    if (nativeHeroOn() && cursor === undefined && (locomotion !== 'idle' || moveDirection() !== undefined)) setPlayerFacingOverride(undefined)
     // Swings announce themselves; a shot's sound is the projectile leaving at the contact frame.
     if (context.skill?.effect.kind === 'aura') {
       fxSound('roar', 0.55)
@@ -532,7 +606,7 @@ function updatePlayerCharacter(dt: number) {
   const player = Transform.getOrNull(engine.PlayerEntity)
   if (!player || !isInsideScene(player.position)) {
     resetRoamingCombat(roamingCombat)
-    syncInputFreeze(false)
+    syncInputModifier(false, false)
     setCharacterVisible(false)
     samplePosition = undefined
     sampleElapsed = 0
@@ -555,7 +629,7 @@ function updatePlayerCharacter(dt: number) {
   // Rooting follows the combat state every tick, so it is up before a roll's or
   // swing's timed move starts (those are issued a beat after the pose) and a
   // reset (menu, teleport) or a revive hands the controls straight back.
-  syncInputFreeze(isRoamingRooted(roamingCombat))
+  syncInputModifier(isRoamingRooted(roamingCombat), nativeHeroOn())
   // One owner chooses the final pose. Locomotion sampling cannot interrupt a swing, nor a scripted clip.
   if (scripted) {
     scripted.left -= dt
@@ -567,6 +641,8 @@ function updatePlayerCharacter(dt: number) {
       Transform.getMutable(characterRoot).rotation = Quaternion.fromEulerDegrees(0, (delta * 180) / Math.PI, 0)
     }
   }
+  // Every clip the body starts is echoed onto the native avatar when that is the hero shown.
+  setEquipmentMotionMirror(characterRoot, mirrorMotion)
   setEquipmentMotion(characterRoot, scripted?.motion ?? actionMotion ?? locomotion)
   exhaustedNotice = Math.max(0, exhaustedNotice - dt)
   if (hitStopSeconds > 0) {
@@ -577,20 +653,44 @@ function updatePlayerCharacter(dt: number) {
     }
   }
   // Soft lock-on turns only the visible body; the native controller keeps its own yaw.
+  let lockDelta = 0
   if (facingOverride !== undefined && !scripted) {
     if (!roamingCombat.swing && !roamingCombat.dodge && roamingCombat.recovery <= 0) setPlayerFacingOverride(undefined)
     else {
       const delta = facingOverride - playerYaw(player.rotation)
+      lockDelta = Math.atan2(Math.sin(delta), Math.cos(delta))
       Transform.getMutable(characterRoot).rotation = Quaternion.fromEulerDegrees(0, (delta * 180) / Math.PI, 0)
     }
   }
+  // Shown as the avatar, the clip queued this tick goes out now, after a turn to
+  // the lock-on when the avatar is off it (shots only: a swing's lunge turns the
+  // player on its own). A swing whose lunge will carry the player is masked to
+  // the upper body even from a standstill: the travel would cut a full-body clip.
+  const face = facingOverride
+  flushNativeMotion(
+    face !== undefined && Math.abs(lockDelta) > LOCK_TURN_MIN
+      ? (motion) => (isRangedAttack(motion as WeaponMotion) ? turnPlayer(face) : undefined)
+      : undefined,
+    (motion) => roamingCombat.swing?.motion === motion && lungeDistance(motion as HeroAttackMotion) >= 0.05
+  )
 
   const canReplace = hasReadyCharacter && !!localAddress()
 
   const firstPerson = CameraMode.getOrNull(engine.CameraEntity)?.mode === CameraType.CT_FIRST_PERSON
   const shown = canReplace && !suspended && !firstPerson
-  setCharacterVisible(shown)
+  // Fighting as the avatar: the body keeps fighting unseen; the weapon rides the avatar's hand.
+  const native = nativeHeroOn()
+  setCharacterVisible(shown && !native)
+  if (!shown || !native) stopNativeMotion()
+  const me = localAddress()
+  setLocalNativeShown(shown && native)
+  syncNativeWeapon('local', shown && native && me ? playerAddressAsReported(me) : undefined, requestedLoadout?.weapon)
   publishLocalPlayer(player, dt)
+}
+
+function mirrorMotion(motion: EquipmentMotion, restart: boolean) {
+  // A held movement key counts as moving before the feet have covered ground: the clip is masked from its first frame.
+  mirrorLocalMotion(motion, restart, locomotion !== 'idle' || moveDirection() !== undefined)
 }
 
 /** Our HeroBody: what everyone else needs to show this hero. */
@@ -617,6 +717,7 @@ function publishLocalPlayer(player: { position: Vector3; rotation: Quaternion },
     skin: appearance.skinTone,
     loadout: { ...requestedLoadout },
     weaponUp: upgradeRankOf(requestedLoadout.weapon),
+    native: nativeHeroOn(),
     block: roamingCombat.blocking,
     // The host reads `dodge` as "blows pass through right now": the roll's
     // invulnerable window, not the whole roll.

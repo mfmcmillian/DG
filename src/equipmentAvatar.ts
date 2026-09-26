@@ -59,6 +59,8 @@ type EquipmentAvatar = {
   timeScale: number
   /** The ready outfit switched to a spare weapon that is still downloading or unplayed; show it once in step. */
   weaponSync?: boolean
+  /** Told every clip start on this body (src/nativeHero.ts plays the same on the player's own avatar). */
+  mirror?: (motion: EquipmentMotion, restart: boolean) => void
 }
 
 // Retain recently used alternatives, not every body/color combination in the pack.
@@ -189,9 +191,16 @@ export function setEquipmentMotion(root: Entity, motion: EquipmentMotion, reset 
   const avatar = avatars.get(root)
   if (!avatar) return
   if (avatar.motion === motion && !reset) return
+  avatar.mirror?.(motion, reset)
   avatar.motion = motion
   const assembly = avatar.current ?? avatar.pending
   if (assembly) startPose(avatar, assemblyPose(avatar, assembly))
+}
+
+/** Hear every clip this body starts (the motion and whether it is a restart of the same one). */
+export function setEquipmentMotionMirror(root: Entity, mirror: ((motion: EquipmentMotion, restart: boolean) => void) | undefined) {
+  const avatar = avatars.get(root)
+  if (avatar) avatar.mirror = mirror
 }
 
 /** Hit-stop: scale the playing clip's speed on every loaded part (1 = normal). */

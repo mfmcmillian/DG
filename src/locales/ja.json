@@ -138,7 +138,6 @@
   "A riveted mail coif; the face is left to take the weather.": "鋲打ちの鎖頭巾。顔は風雨に任せる。",
   "A rose-carved head on a straight shaft. Pretty, and it hits.": "真っ直ぐな柄に据えた薔薇彫りの頭部。美しく、そして殴れる。",
   "A Runeblade quenched in fire. The blade burns red.": "炎で焼き入れしたルーンブレード。刃が赤く燃える。",
-  "A short boom behind the hero that turns with them.": "英雄の背後の短いアームで、一緒に向きを変える。",
   "A short haft and a heavy head, made to be swung from a boat.": "短い柄に重い頭部。船の上から振るために作られた。",
   "A silver crescent cradling a gem. The bolt leaves in an arc.": "宝石を抱く銀の三日月。矢弾は弧を描いて飛ぶ。",
   "A single heavy edge, bronze-backed.": "青銅で背打ちした一枚の重い刃。",
@@ -511,7 +510,6 @@
   "Orange and gold robes over a long grey beard; the books are in the sleeves.": "長い灰色の髭に橙と金のローブ。本は袖の中。",
   "Other": "その他",
   "OUTFIT": "装い",
-  "Over the shoulder": "肩越し",
   "Overhead": "俯瞰",
   "Pale wood cut under a full moon, a gem set in the riser. It hums on the draw.": "満月の下で切った淡い木、握りに宝石。引けば唸る。",
   "Party": "パーティ",
@@ -899,5 +897,11 @@
   "Raider": "襲撃者",
   "Karl": "カール",
   "Huskarl": "フスカール",
-  "Jarl": "ヤール"
+  "Jarl": "ヤール",
+  "HERO": "ヒーロー",
+  "Fight as your own avatar (experimental). Your clips play on it; the weapon rides its hand.": "自分のアバターで戦う（実験的）。アニメーションはアバターで再生され、武器はその手に持たれます。",
+  "My avatar": "自分のアバター",
+  "Hero body": "ヒーローの体",
+  "Third person": "三人称",
+  "The Decentraland camera: behind the hero, turns with the mouse, zoom as you like.": "Decentralandのカメラ：ヒーローの後ろから、マウスで回転、ズームは自由。"
 }

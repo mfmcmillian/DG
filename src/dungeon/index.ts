@@ -4,12 +4,11 @@ import { movePlayerTo } from '~system/RestrictedActions'
 import { buildDungeon, destroyDungeon, DungeonInstance, setDungeonCutaway, setSpawnMarkers, setTorchLightTarget } from './builder'
 import { cellCenter, DungeonStyle, gridOrigin, StyleId, styleGeneratorOptions, STYLES } from './config'
 import { setCrawlerBoom, setCrawlerCamera } from './crawlerCamera'
-import { setShoulderCamera } from './shoulderCamera'
 
 import { Dungeon, generateDungeon } from './generator'
 import { authoredLayout } from './layouts'
 
-export type CameraChoice = 'native' | 'shoulder' | 'crawler'
+export type CameraChoice = 'native' | 'crawler'
 
 export interface DungeonState {
   seed: number
@@ -17,7 +16,7 @@ export interface DungeonState {
   dungeon: Dungeon | undefined
   instance: DungeonInstance | undefined
   showSpawns: boolean
-  /** native = Explorer camera, shoulder = fixed short boom, crawler = top-down follow (open style only). */
+  /** native = Explorer camera, crawler = top-down follow (open style only). */
   camera: CameraChoice
 }
 
@@ -78,7 +77,6 @@ export function dungeonCell(x: number, z: number): { cx: number; cy: number } {
  */
 export function suspendDungeonCamera() {
   cameraSuspended = true
-  setShoulderCamera(false)
   setCrawlerCamera(false)
 }
 
@@ -130,7 +128,6 @@ export function switchStyle(styleId: StyleId) {
 function applyCamera() {
   if (cameraSuspended) return
   const crawler = state.camera === 'crawler' && crawlerCameraAvailable()
-  setShoulderCamera(state.camera === 'shoulder')
   setCrawlerBoom(state.style.camera)
   setCrawlerCamera(crawler)
 }

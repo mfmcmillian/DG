@@ -17,7 +17,6 @@ import {
 } from '@dcl/sdk/ecs'
 import { Color3, Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
 import { DungeonStyle, gridOrigin } from './config'
-import { CAMERA_LAYER } from './shoulderCamera'
 import { Dungeon } from './generator'
 import { BRICK_TEXTURE, KIT, KitId } from './kit'
 import { Layout, layoutDungeon, LayoutOptions, PieceMode, Placement, SpawnPoint } from './layout'
@@ -105,10 +104,7 @@ export function buildDungeon(dungeon: Dungeon, style: DungeonStyle, options?: La
   const tagged: DungeonInstance['tagged'] = {}
   const cutaway = !!options?.cutaway && style.cutawayWall !== undefined
   const torchSet = new Set(layout.torchIndices)
-  // Real geometry also sits on CAMERA_LAYER so the shoulder camera's boom ray can
-  // see it; door jambs and lintels deliberately do not, so the boom glides through
-  // doorways instead of pulling in at every threshold.
-  const solid = ColliderLayer.CL_PHYSICS | ColliderLayer.CL_POINTER | CAMERA_LAYER
+  const solid = ColliderLayer.CL_PHYSICS | ColliderLayer.CL_POINTER
   // Texture repeats per cell; a rectangle plane repeats it per cell it covers.
   const floorRepeat = Math.max(1, Math.round(T / (style.floorMetres ?? 2.5)))
   const floorMat = floorMaterial(style)
@@ -134,6 +130,7 @@ export function buildDungeon(dungeon: Dungeon, style: DungeonStyle, options?: La
         })
         MeshRenderer.setPlane(e, planeUvs(floorRepeat * p.w, floorRepeat * p.d))
         Material.setPbrMaterial(e, p.kind === 'floor' ? floorMat : ceilingMat)
+        if (p.only) modal.push({ entity: e, placement: p, only: p.only })
         break
       case 'box':
         Transform.create(e, {
@@ -199,14 +196,14 @@ export function buildDungeon(dungeon: Dungeon, style: DungeonStyle, options?: La
 }
 
 /**
- * Switch the camera-facing edges between full walls with doorways (shoulder
+ * Switch the camera-facing edges between full walls with doorways (third-person
  * camera) and low parapets with open gaps (overhead camera), in place. No
  * rebuild, so loot, enemies and the player stay exactly where they are.
  */
 export function setDungeonCutaway(instance: DungeonInstance, cutaway: boolean) {
   if (instance.cutaway === cutaway || instance.style.cutawayWall === undefined) return
   instance.cutaway = cutaway
-  const solid = ColliderLayer.CL_PHYSICS | ColliderLayer.CL_POINTER | CAMERA_LAYER
+  const solid = ColliderLayer.CL_PHYSICS | ColliderLayer.CL_POINTER
   for (const w of instance.swapWalls) {
     const gltf = GltfContainer.getMutableOrNull(w.entity)
     if (gltf) gltf.src = KIT[cutaway ? w.low : w.full].src
@@ -224,6 +221,8 @@ function setPieceEnabled(m: { entity: Entity; placement: Placement }, enabled: b
     VisibilityComponent.createOrReplace(m.entity, { visible: enabled })
     const gltf = GltfContainer.getMutableOrNull(m.entity)
     if (gltf) gltf.visibleMeshesCollisionMask = enabled && p.collide ? solid : ColliderLayer.CL_NONE
+  } else if (p.kind === 'ceiling') {
+    VisibilityComponent.createOrReplace(m.entity, { visible: enabled })
   }
 }
 

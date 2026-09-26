@@ -54,6 +54,13 @@ export function initializeAvatarHiding() {
   engine.addSystem(update)
 }
 
+/** Players the area leaves alone (their native avatar stays visible), as the renderer spells their ids. */
+export function setAvatarHidingExclusions(ids: string[]) {
+  if (area === undefined) return
+  AvatarModifierArea.getMutable(area).excludeIds = ids
+  rearmAvatarHiding()
+}
+
 /** Force every avatar in the scene through a fresh exit/enter of the area, re-applying the hide. */
 export function rearmAvatarHiding() {
   if (area === undefined) return
