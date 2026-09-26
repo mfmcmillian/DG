@@ -5,7 +5,6 @@ import {
   GltfContainer,
   Material,
   MeshRenderer,
-  SkyboxTime,
   TextureWrapMode,
   Transform
 } from '@dcl/sdk/ecs'
@@ -46,8 +45,6 @@ const SNOW_METRES_PER_TILE = 6
 
 /** Pieces must stay this far inside the plot or the Explorer culls them. */
 const INNER = 1
-/** Seconds since midnight the sky is pinned to: full night, moon up, so the peaks stay silhouettes and torchlight owns the hall. */
-const NIGHT = 75600
 
 const HALL_LAYOUT: Put[] = [
   // --- far peaks, north ------------------------------------------------------
@@ -192,7 +189,6 @@ const PASS_LAYOUT: Put[] = [
 let root: Entity | undefined
 
 export function initializeBackdrop() {
-  SkyboxTime.createOrReplace(engine.RootEntity, { fixedTime: NIGHT })
   onDungeonLoaded((state) => {
     clear()
     if (state.style.id === 'hall') build(HALL_LAYOUT, 'hall')

@@ -195,19 +195,35 @@ export function remoteCount(): number {
   return n
 }
 
+/** The runtime transform's last reading per hero, to tell a live one from one that has stopped following. */
+const runtimeSeen = new Map<string, { x: number; z: number; at: number }>()
+/** A runtime transform this far from the body, unmoved this long, has stopped following the avatar. */
+const RUNTIME_DISAGREE_METRES = 3
+const RUNTIME_STALE_MS = 2000
+
 /**
- * Where a hero stands: the runtime's avatar transform when it has one, else
- * the position the hero last wrote (the headless host is not always handed
- * player transforms).
+ * Where a hero stands. The runtime's avatar transform when it has one and it
+ * is following: it has been seen to stall at the last place before a scene
+ * teleport (the war table, while the hero walks the dungeon), so when it sits
+ * still far from where the hero's body says it is, the body speaks instead.
+ * Without a transform at all (the headless host is not always handed them),
+ * the body speaks too.
  */
 export function heroPosition(id: string): Vector3 | undefined {
   const entity = playerEntityByAddress(id)
   const tracked = entity !== undefined ? Transform.getOrNull(entity)?.position : undefined
-  if (tracked) return tracked
+  let body: Vector3 | undefined
   for (const [e, hero] of engine.getEntitiesWith(HeroBody)) {
-    if (heroOwner(e, hero) === id) return Vector3.create(hero.x, hero.y, hero.z)
+    if (heroOwner(e, hero) === id) { body = Vector3.create(hero.x, hero.y, hero.z); break }
   }
-  return undefined
+  if (!tracked) return body
+  if (!body) return tracked
+  const now = Date.now()
+  const seen = runtimeSeen.get(id)
+  if (!seen || seen.x !== tracked.x || seen.z !== tracked.z) runtimeSeen.set(id, { x: tracked.x, z: tracked.z, at: now })
+  const agree = Math.hypot(tracked.x - body.x, tracked.z - body.z) <= RUNTIME_DISAGREE_METRES
+  const live = !seen || seen.x !== tracked.x || seen.z !== tracked.z || now - seen.at < RUNTIME_STALE_MS
+  return agree || live ? tracked : body
 }
 
 export function allFighters(local?: (CombatPose & { health: number; invulnerable: boolean; blocking: boolean; swinging: boolean })): NetFighter[] {
@@ -731,5 +747,11 @@ function trackHeroes(dt: number) {
   if (heartbeatAge >= HEARTBEAT_SECONDS) {
     heartbeatAge = 0
     console.log(`[Server] heartbeat: ${present.size} player entit(ies), ${withTransform} with transform, ${tracked.size} hero(es)`)
+    // Where the runtime says each hero is against where their body says: the two should agree.
+    for (const [id, list] of byOwner) {
+      const runtime = (() => { const e = playerEntityByAddress(id); return e !== undefined ? Transform.getOrNull(e)?.position : undefined })()
+      const b = list[0].hero
+      console.log(`[Server]   ${id.slice(0, 8)} runtime ${runtime ? `${runtime.x.toFixed(1)}, ${runtime.z.toFixed(1)}` : 'none'} | body ${b.x.toFixed(1)}, ${b.z.toFixed(1)}`)
+    }
   }
 }
