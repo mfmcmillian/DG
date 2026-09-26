@@ -89,8 +89,8 @@ function Heading({ title, scale: s }: { title: string; scale: number }) {
     uiTransform={{ width: '100%', height: 20 * s, margin: { bottom: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />
 }
 
-/** Each dungeon's card picture (the fortress's is the scene thumbnail). */
-const LEVEL_PICTURES: Record<number, string> = { 0: 'images/scene-thumbnail.png', 1: 'images/levels/pass.png' }
+/** Each dungeon's card picture: a diorama of its kit. */
+const LEVEL_PICTURES: Record<number, string> = { 0: 'images/levels/fortress.png', 1: 'images/levels/pass.png' }
 
 /** The ladder is linear: a dungeon opens once the one before it has been cleared (developer tools skip the gate). */
 export function lobbyLevelOpen(level: number): boolean {
