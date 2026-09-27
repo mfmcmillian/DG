@@ -96,6 +96,48 @@ const EMOTES: Partial<Record<EquipmentMotion, Emote>> = {
 
 /** The looping (or held) clip we last asked for, so it is not re-triggered every tick and is stopped when the body moves on. */
 let activeLoop: EquipmentMotion | undefined
+
+// --- comms budget ------------------------------------------------------------
+// Every emote the avatar starts or stops is a reliable message on the Explorer's
+// comms transport (Pulse), on top of its own 10/s movement stream, and the server
+// drops a client that sends too many (INPUT_RATE_EXCEEDED; the Explorer does not
+// reconnect from that one). A rolling budget keeps a fight under it. Nothing is
+// held back until the budget runs low; then the least visible clips go first:
+// stances and hit reactions, never the swing itself unless the budget is gone.
+const COMMS = { windowMs: 4000, messages: 24 }
+/** A one-shot costs its start and the stop the renderer sends when it ends; a stance costs its start now and its stop later. */
+const ONE_SHOT_COST = 2
+/** Messages left below which a stance or a hit reaction is not worth the risk. */
+const HEADROOM = 8
+const HIT_SPACING_MS = 500
+const sentAt: number[] = []
+let lastHitAt = 0
+
+function commsLeft(now: number): number {
+  while (sentAt.length > 0 && now - sentAt[0] > COMMS.windowMs) sentAt.shift()
+  return COMMS.messages - sentAt.length
+}
+
+function commsSpend(now: number, count: number) {
+  for (let i = 0; i < count; i++) sentAt.push(now)
+}
+
+/** Whether this clip may go out now; spends its cost when it may. */
+function commsAllow(motion: EquipmentMotion, loop: boolean): boolean {
+  const now = Date.now()
+  const left = commsLeft(now)
+  const cost = loop ? 1 : ONE_SHOT_COST
+  let need = cost
+  if (loop || motion === 'hit') need = HEADROOM
+  if (motion === 'hit' && now - lastHitAt < HIT_SPACING_MS) need = Infinity
+  if (left < need) {
+    nativeNote(`${motion}: held back, ${left} comms msgs left`)
+    return false
+  }
+  if (motion === 'hit') lastHitAt = now
+  commsSpend(now, cost)
+  return true
+}
 /** The clip the body started this tick, sent by flushNativeMotion once the tick's lock-on is known. */
 let pending: { motion: EquipmentMotion; loop: boolean; upper: boolean } | undefined
 let watching = false
@@ -113,6 +155,7 @@ export function mirrorLocalMotion(motion: EquipmentMotion, restart: boolean, mov
     // Back to locomotion: the avatar's own clips take over; end a stance we were holding.
     if (activeLoop !== undefined) {
       activeLoop = undefined
+      commsSpend(Date.now(), 1)
       stopEmote({}).catch(() => undefined)
     }
     return
@@ -144,6 +187,11 @@ export function flushNativeMotion(
   const { motion, loop } = pending
   const upper = pending.upper || (!!EMOTES[motion]?.upperWhenMoving && !!carried?.(motion))
   pending = undefined
+  if (!commsAllow(motion, loop)) {
+    // A stance held back is not being played: let it be asked for again on the next change.
+    if (activeLoop === motion) activeLoop = undefined
+    return
+  }
   const turning = turn?.(motion)
   if (turning) turning.then(() => play(motion, loop, upper), () => play(motion, loop, upper))
   else play(motion, loop, upper)
@@ -172,6 +220,7 @@ export function stopNativeMotion() {
   pending = undefined
   if (activeLoop === undefined) return
   activeLoop = undefined
+  commsSpend(Date.now(), 1)
   stopEmote({}).catch(() => undefined)
 }
 
