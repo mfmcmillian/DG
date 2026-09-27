@@ -1,7 +1,7 @@
 """
 Build a hero's armor set from a Sidekick preset (Blender, headless):
 
-  "C:/Program Files/Blender Foundation/Blender 5.1/blender.exe" -b --python scripts/build-hero-outfits.py -- [--previews] [--only scout,striker]
+  "C:/Program Files/Blender Foundation/Blender 5.1/blender.exe" -b --python scripts/build-hero-outfits.py -- [--previews [--packs a.unitypackage,b.unitypackage]] [--only scout,striker] [--sets goblin,deathless]
 
 Driven by scripts/outfits/outfits.json: each hero names a .unitypackage in
 ~/Downloads, one of its presets (`Pack_0N.sk`) and a `set` prefix. The
@@ -18,10 +18,13 @@ modular hero (same rig, same bind frame, same clips):
 
 Head, hair, eyes, ears, teeth and the like stay the player's own body parts.
 
-A hero's `collectibles` list builds further presets of the same pack as
-full sets under their own prefix (the class's outfits to find), and its
-`extras` list adds single items from named parts (usually another preset's
-helmet or pauldrons, with that preset's palette).
+A hero's `collectibles` list builds further presets as full sets under
+their own prefix (the class's outfits to find), from the hero's pack or from
+a collectible's own `pack` (every Sidekick species shares one rig and bind
+pose, so goblin and skeleton parts dress the human hero as they are), and
+its `extras` list adds single items from named parts (usually another
+preset's helmet or pauldrons, with that preset's palette). `--sets` rebuilds
+only the named sets and leaves the rest of the catalog alone.
 
 How the GLB is made (no Blender exporter involved, so nothing can drift):
 every Sidekick part is skinned to the one shared bind pose, and every
@@ -399,24 +402,43 @@ def build_glb(reference, clips, vertices, tex_tris, skin_tris, palette_png, set_
 
 # -------------------------------------------------------------------- main ---
 
-def build_hero(hero_id, hero, config, reference, joint_index):
-    pack = UnityPackage(DOWNLOADS / hero['pack'])
+PACKS = {}
+
+
+def open_pack(name):
+    if name not in PACKS:
+        PACKS[name] = UnityPackage(DOWNLOADS / name)
+    return PACKS[name]
+
+
+def build_hero(hero_id, hero, config, reference, joint_index, sets=None):
+    """Build the hero's sets (only those named in `sets`, if given) and return their items."""
+    pack = open_pack(hero['pack'])
     items = []
     skin_variants = []
-    build_set(pack, hero_id, hero['preset'], hero['set'], hero['names'], hero['descriptions'], config, reference, joint_index, items, skin_variants)
-    # Further presets of the same pack become collectible sets with their own
-    # prefix, so a class has two more full outfits to find beyond its basic one.
+    if sets is None or hero['set'] in sets:
+        build_set(pack, hero_id, hero['preset'], hero['set'], hero['names'], hero['descriptions'], config, reference, joint_index, items, skin_variants)
+    # Further presets, of this pack or another, become collectible sets with
+    # their own prefix, so a class has more full outfits to find beyond its basic one.
     for coll in hero.get('collectibles', []):
-        build_set(pack, hero_id, coll['preset'], coll['set'], coll['names'], coll['descriptions'], config, reference, joint_index, items, skin_variants)
+        if sets is not None and coll['set'] not in sets:
+            continue
+        build_set(open_pack(coll.get('pack', hero['pack'])), hero_id, coll['preset'], coll['set'], coll['names'], coll['descriptions'], config, reference, joint_index, items, skin_variants)
     # Extra pieces from the pack's other presets, so a class has a pool to
     # collect from rather than one fixed look. An extra whose id is exactly
     # `<set>-<slot>` fills a slot the main preset left empty and becomes the
     # hero's default for it.
+    # An extra may come from a collectible's pack (`pack`, with that pack's `palette` preset)
+    # and fill a slot that collectible's preset left empty, under the collectible's prefix.
     palette = pack.palette(hero['preset'])
     for extra in hero.get('extras', []):
-        pal = pack.palette(extra['palette']) if extra.get('palette') else palette
-        build_item(pack, extra['id'], extra['slot'], extra['parts'], pal, extra['name'], extra['description'],
-                   hero['set'], config, reference, joint_index, items, skin_variants)
+        owner = max((s_ for s_ in hero_prefixes(hero) if extra['id'].startswith(s_)), key=len)[:-1]
+        if sets is not None and owner not in sets:
+            continue
+        src = open_pack(extra['pack']) if extra.get('pack') else pack
+        pal = src.palette(extra['palette']) if extra.get('palette') else palette
+        build_item(src, extra['id'], extra['slot'], extra['parts'], pal, extra['name'], extra['description'],
+                   owner, config, reference, joint_index, items, skin_variants)
     # Who wears it and where it is found: the game filters the wardrobe by class
     # and drops a set's pieces in its realm. The hero's own set has no realm: it
     # is the starter, always owned.
@@ -502,13 +524,12 @@ def build_item(pack, item_id, slot, names, palette, name, description, set_id, c
     })
 
 
-def render_previews(config, only):
+def render_previews(config, only, packs):
     out = TMP / 'previews'
     out.mkdir(parents=True, exist_ok=True)
-    for hero_id, hero in config['heroes'].items():
-        if only and hero_id not in only:
-            continue
-        pack = UnityPackage(DOWNLOADS / hero['pack'])
+    names = packs or [hero['pack'] for hero_id, hero in config['heroes'].items() if not only or hero_id in only]
+    for name in names:
+        pack = open_pack(name)
         for preset in pack.presets():
             reset_scene()
             meshes = []
@@ -529,9 +550,11 @@ def main():
     only = set()
     if '--only' in argv:
         only = set(argv[argv.index('--only') + 1].split(','))
+    sets = set(argv[argv.index('--sets') + 1].split(',')) if '--sets' in argv else None
     config = json.loads(CONFIG.read_text(encoding='utf-8'))
     if '--previews' in argv:
-        render_previews(config, only)
+        packs = argv[argv.index('--packs') + 1].split(',') if '--packs' in argv else []
+        render_previews(config, only, packs)
         return
     reference = sb.load_glb(ROOT / config['reference'])
     ref_gltf = reference[0]
@@ -542,12 +565,15 @@ def main():
     for hero_id, hero in config['heroes'].items():
         if only and hero_id not in only:
             continue
-        items, skin_variants = build_hero(hero_id, hero, config, reference, joint_index)
+        items, skin_variants = build_hero(hero_id, hero, config, reference, joint_index, sets)
+        if not items:
+            continue
         built = {i['id'] for i in items}
-        prefixes = tuple(hero_prefixes(hero))
+        prefixes = tuple(p for p in hero_prefixes(hero) if sets is None or p[:-1] in sets)
         catalog['items'] = [i for i in catalog['items'] if not i['id'].startswith(prefixes)] + items
         catalog['skinVariants'] = sorted((set(catalog['skinVariants']) - {i for i in catalog['skinVariants'] if i.startswith(prefixes)}) | set(skin_variants))
-        catalog['defaults'][hero_id] = {slot: (f'{hero["set"]}-{slot}' if f'{hero["set"]}-{slot}' in built else f'none-{slot}') for slot in SLOTS}
+        if sets is None or hero['set'] in sets:
+            catalog['defaults'][hero_id] = {slot: (f'{hero["set"]}-{slot}' if f'{hero["set"]}-{slot}' in built else f'none-{slot}') for slot in SLOTS}
     catalog['note'] = 'Generated by scripts/build-hero-outfits.py from scripts/outfits/outfits.json; do not edit.'
     CATALOG.write_text(json.dumps(catalog, indent=2) + '\n', encoding='utf-8')
     print('WROTE', CATALOG)

@@ -151,16 +151,18 @@ export function realmOfLevel(level: number): RealmDefinition {
 
 /**
  * Whose armor sets a realm's dungeons drop. Sets were cut per realm (src/outfitCatalog.json),
- * but not every realm has a map on this branch: the Forge's sets fall in Bogmaw, whose goblins
- * wear what they stole from the dwarves. A realm without sets (the castle) drops none.
+ * but not every realm has a map on this branch, so a map may drop a mapless realm's sets
+ * too: Bogmaw's goblins wear what they stole from the Dwarven Forge, and the Fallen Crown's
+ * guard fled into the Frozen Pass. Rarity follows the set's own realm (ARMOR_RARITY), so a
+ * realm only lends to a map of the same rank. Move a realm to its own map when that map ships.
  */
-export const ARMOR_DROP_REALM: Record<RealmId, RealmId> = {
-  fortress: 'fortress', pass: 'pass', castle: 'castle', forge: 'forge', bog: 'forge'
+export const ARMOR_DROP_REALMS: Record<RealmId, readonly RealmId[]> = {
+  fortress: ['fortress'], pass: ['pass', 'castle'], castle: ['castle'], forge: ['forge'], bog: ['bog', 'forge']
 }
 
 /** The maps whose enemies drop a realm's armor sets, by name. */
 export function armorDropLevels(realm: RealmId): LevelDefinition[] {
-  return LEVELS.filter((l) => ARMOR_DROP_REALM[l.realm] === realm)
+  return LEVELS.filter((l) => ARMOR_DROP_REALMS[l.realm].includes(realm))
 }
 
 /** The level that follows a cleared one on the linear ladder, or undefined after the last. */

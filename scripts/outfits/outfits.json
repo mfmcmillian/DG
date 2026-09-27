@@ -1,5 +1,5 @@
 {
-  "note": "Input for scripts/build-hero-outfits.py. One Sidekick preset per hero becomes a six-slot armor set; `set` prefixes the item ids and file names. Change `preset` to any of the pack's six (see .tmp-outfits/previews after --previews) and rebuild. `extras` add more items from the same pack (explicit part names, usually from other presets, rendered with that preset's palette); an extra whose id is `<set>-<slot>` fills an empty slot and becomes the default. Each collectible names the `realm` whose dungeons drop its pieces ('fortress', 'castle', 'forge' or 'raid' for the Pit); the hero's own preset is the starter set and is always owned. Items carry `hero`, `set` and `realm` into the catalog.",
+  "note": "Input for scripts/build-hero-outfits.py. One Sidekick preset per hero becomes a six-slot armor set; `set` prefixes the item ids and file names. Change `preset` to any of the pack's six (see .tmp-outfits/previews after --previews) and rebuild. `extras` add more items from the same pack (explicit part names, usually from other presets, rendered with that preset's palette); an extra whose id is `<set>-<slot>` fills an empty slot and becomes the default. Each collectible names the `realm` whose dungeons drop its pieces ('fortress', 'pass', 'bog', 'castle', 'forge' or 'raid' for the Pit; ARMOR_DROP_REALMS in src/shared/levels.ts says which map drops which). A collectible may name its own `pack`; the hero's own preset is the starter set and is always owned. Items carry `hero`, `set` and `realm` into the catalog.",
   "reference": "scripts/clips/hero-clips.glb",
   "clips": [
     "A_MOD_BL_Idle_Standing_Masc",
@@ -61,7 +61,7 @@
           "preset": "ElvenWarriors_03",
           "set": "sentinel",
           "label": "Sentinel",
-          "realm": "castle",
+          "realm": "pass",
           "names": {
             "head": "Antlered War Helm",
             "chest": "Sentinel Plate",
@@ -166,6 +166,157 @@
             "legs": "A red skirt over blue-grey leggings.",
             "boots": "Plated boots for the long hunt."
           }
+        },
+        {
+          "pack": "SIDEKICK_Goblin_Fighters_Unity_2021_3_v1_0_4.unitypackage",
+          "preset": "GoblinFighter_01",
+          "set": "stalker",
+          "label": "Bog Stalker",
+          "realm": "bog",
+          "names": {
+            "head": "Stalker's Cap",
+            "chest": "Stalker's Jerkin",
+            "shoulders": "Stalker's Pads",
+            "hands": "Stalker's Wraps",
+            "legs": "Stalker's Breeches",
+            "boots": "Stalker's Boots"
+          },
+          "descriptions": {
+            "head": "A goblin scout's cap, feathers still damp from the reeds.",
+            "chest": "Scrap leather and hide, cut to move quietly through the mire.",
+            "shoulders": "Bone and hide pads that catch no light.",
+            "hands": "Wrapped hands, stained with bog water.",
+            "legs": "Breeches patched from whatever the camp had.",
+            "boots": "Boots wrapped in reed against the mud."
+          }
+        },
+        {
+          "pack": "SIDEKICK_Fantasy_Skeletons_Unity_2021_3_v1_0_4.unitypackage",
+          "preset": "FantasySkeletons_03",
+          "set": "barrow",
+          "label": "Barrow Hunter",
+          "realm": "raid",
+          "names": {
+            "head": "Barrow Hood",
+            "chest": "Barrow Coat",
+            "shoulders": "Barrow Pauldrons",
+            "hands": "Barrow Gloves",
+            "legs": "Barrow Leggings",
+            "boots": "Barrow Boots"
+          },
+          "descriptions": {
+            "head": "A green hood worn over a skull the Pit never let rest.",
+            "chest": "A hunter's coat that went into the barrow and came back out.",
+            "shoulders": "Bone-studded leather that once belonged to the wearer.",
+            "hands": "Gloves over hands that no longer feel the string.",
+            "legs": "Ragged leggings over what is left of the legs.",
+            "boots": "Boots that walked a long way after their owner died."
+          }
+        },
+        {
+          "pack": "SIDEKICK_Samurai_Warriors_Unity_2021_3_v1_0_7.unitypackage",
+          "preset": "SamuraiWarriors_02",
+          "set": "ronin",
+          "label": "Ronin",
+          "realm": "castle",
+          "names": {
+            "head": "Ronin's Jingasa",
+            "chest": "Ronin's Dou",
+            "shoulders": "Ronin's Sode",
+            "hands": "Ronin's Kote",
+            "legs": "Ronin's Hakama",
+            "boots": "Ronin's Tabi"
+          },
+          "descriptions": {
+            "head": "A lacquered travelling hat, brim turned against the rain.",
+            "chest": "Blue-laced plates over a wanderer's coat, a banner rising from the back.",
+            "shoulders": "Small lacquered shoulder plates for a fast draw.",
+            "hands": "Sleeve armour of split plates over cloth.",
+            "legs": "Wide pleated trousers, bound at the knee for the road.",
+            "boots": "Split-toed boots and greaves, quiet on a stone floor."
+          }
+        },
+        {
+          "pack": "SIDEKICK_Pirate_Captains_Unity_2021_3_v1_0_7.unitypackage",
+          "preset": "PirateCaptain_04",
+          "set": "freebooter",
+          "label": "Freebooter",
+          "realm": "pass",
+          "names": {
+            "head": "Freebooter's Tricorn",
+            "chest": "Freebooter's Coat",
+            "shoulders": "Freebooter's Baldric",
+            "hands": "Freebooter's Gloves",
+            "legs": "Freebooter's Breeches",
+            "boots": "Freebooter's Boots"
+          },
+          "descriptions": {
+            "head": "A black tricorn with a feather taken from somebody who complained.",
+            "chest": "A long dark coat cut for climbing rigging and running.",
+            "shoulders": "A shoulder baldric heavy with pistol and powder.",
+            "hands": "Thin leather gloves for knots and knives.",
+            "legs": "Salt-stained breeches, one knife sheathed at the thigh.",
+            "boots": "Sea boots folded down for the run up the fjord."
+          }
+        },
+        {
+          "pack": "SIDEKICK_Pirate_Captains_Unity_2021_3_v1_0_7.unitypackage",
+          "preset": "PirateCaptain_05",
+          "set": "buccaneer",
+          "label": "Buccaneer",
+          "realm": "pass",
+          "names": {
+            "head": "Buccaneer's Hat",
+            "chest": "Buccaneer's Waistcoat",
+            "shoulders": "Buccaneer's Bandolier",
+            "hands": "Buccaneer's Cuffs",
+            "legs": "Buccaneer's Trousers",
+            "boots": "Buccaneer's Boots"
+          },
+          "descriptions": {
+            "head": "A green hat with one great feather, worn at an angle that means trouble.",
+            "chest": "A tan coat over a striped shirt, sleeves rolled for the deck.",
+            "shoulders": "A bandolier of shot across one shoulder.",
+            "hands": "Leather cuffs worn thin by rope.",
+            "legs": "Loose trousers tucked into the boots.",
+            "boots": "Buckled boots that have known salt and snow."
+          }
+        },
+        {
+          "pack": "SIDEKICK_Fantasy_Villagers_Unity_2021_3_v1_0_1.unitypackage",
+          "preset": "FantasyVillagers_03",
+          "set": "trapper",
+          "label": "Trapper",
+          "realm": "fortress",
+          "names": {
+            "head": "Trapper's Hood",
+            "chest": "Trapper's Tunic",
+            "shoulders": "Trapper's Pelts",
+            "hands": "Trapper's Gloves",
+            "legs": "Trapper's Leggings",
+            "boots": "Trapper's Boots"
+          },
+          "descriptions": {
+            "head": "A pale hood pulled low, the way the woods teach.",
+            "chest": "A green tunic under a hide vest, a hare hanging from the belt.",
+            "shoulders": "Pelts across the shoulders, still the colour of the animal.",
+            "hands": "Gloves scuffed by wire and cold.",
+            "legs": "Leather leggings for brambles.",
+            "boots": "Soft-soled boots that leave nothing behind."
+          }
+        }
+      ],
+      "extras": [
+        {
+          "id": "stalker-head",
+          "slot": "head",
+          "pack": "SIDEKICK_Goblin_Fighters_Unity_2021_3_v1_0_4.unitypackage",
+          "palette": "GoblinFighter_01",
+          "parts": [
+            "SK_GOBL_FIGT_08_22AHED_GO01"
+          ],
+          "name": "Stalker's Cap",
+          "description": "A scrap-iron cap with arrows and feathers stuck through it, the way the camp's scouts wear them."
         }
       ]
     },
@@ -200,6 +351,17 @@
           ],
           "name": "Sorcerer's Pauldrons",
           "description": "Weighted pauldrons that keep the sleeves from the casting hand."
+        },
+        {
+          "id": "hearth-head",
+          "slot": "head",
+          "pack": "SIDEKICK_Fantasy_Villagers_Unity_2021_3_v1_0_1.unitypackage",
+          "palette": "FantasyVillagers_04",
+          "parts": [
+            "SK_FANT_VILL_10_22AHED_HU01"
+          ],
+          "name": "Hearthkeeper's Wrap",
+          "description": "A teal head wrap, tied for a day of work."
         }
       ],
       "collectibles": [
@@ -207,7 +369,7 @@
           "preset": "FantasySorcerers_02",
           "set": "hexer",
           "label": "Hexer",
-          "realm": "castle",
+          "realm": "pass",
           "names": {
             "head": "Horned Skull",
             "chest": "Hexer's Robe",
@@ -312,6 +474,167 @@
             "legs": "Ochre skirts hemmed with runes.",
             "boots": "Sensible boots."
           }
+        },
+        {
+          "pack": "SIDEKICK_Goblin_Fighters_Unity_2021_3_v1_0_4.unitypackage",
+          "preset": "GoblinFighter_04",
+          "set": "hexroot",
+          "label": "Hexroot",
+          "realm": "bog",
+          "names": {
+            "head": "Hexroot Hat",
+            "chest": "Hexroot Robe",
+            "shoulders": "Hexroot Charms",
+            "hands": "Hexroot Wraps",
+            "legs": "Hexroot Skirts",
+            "boots": "Hexroot Sandals"
+          },
+          "descriptions": {
+            "head": "A shaman's hat hung with teeth and a small skull that still seems to watch.",
+            "chest": "A robe of bog-dyed cloth and stitched hide, rattling with charms.",
+            "shoulders": "Bone charms and feathers bound over each shoulder.",
+            "hands": "Hand wraps marked with the shaman's signs.",
+            "legs": "Layered skirts of hide, heavy at the hem with mud.",
+            "boots": "Sandals bound with reed. The bog does not bother them."
+          }
+        },
+        {
+          "pack": "SIDEKICK_Fantasy_Skeletons_Unity_2021_3_v1_0_4.unitypackage",
+          "preset": "FantasySkeletons_02",
+          "set": "lich",
+          "label": "Lich",
+          "realm": "raid",
+          "names": {
+            "head": "Lich Crown",
+            "chest": "Lich Vestments",
+            "shoulders": "Lich Mantle",
+            "hands": "Lich Gauntlets",
+            "legs": "Lich Robes",
+            "boots": "Lich Sabatons"
+          },
+          "descriptions": {
+            "head": "A gilded crown that rises behind the skull like a sunburst.",
+            "chest": "Gold-worked vestments over purple cloth, worn by something that stopped breathing long ago.",
+            "shoulders": "A mantle of gold and bone across the shoulders.",
+            "hands": "Gauntlets of gold over finger bones.",
+            "legs": "Long robes of purple and gold, the hem never touching the ground.",
+            "boots": "Gilded sabatons that make no sound."
+          }
+        },
+        {
+          "pack": "SIDEKICK_Fantasy_Skeletons_Unity_2021_3_v1_0_4.unitypackage",
+          "preset": "FantasySkeletons_05",
+          "set": "gravebound",
+          "label": "Gravebound",
+          "realm": "raid",
+          "names": {
+            "head": "Gravebound Helm",
+            "chest": "Gravebound Ribs",
+            "shoulders": "Gravebound Spines",
+            "hands": "Gravebound Claws",
+            "legs": "Gravebound Legs",
+            "boots": "Gravebound Feet"
+          },
+          "descriptions": {
+            "head": "A dark closed helm from which something looks out.",
+            "chest": "A cage of blackened ribs over dark cloth; the heart it kept is gone.",
+            "shoulders": "Spines of bone rising from each shoulder.",
+            "hands": "Long-fingered gauntlets of dark bone.",
+            "legs": "Dark bone and rag over the legs.",
+            "boots": "Bone feet wrapped in what was once a shroud."
+          }
+        },
+        {
+          "pack": "SIDEKICK_Samurai_Warriors_Unity_2021_3_v1_0_7.unitypackage",
+          "preset": "SamuraiWarriors_04",
+          "set": "shrine",
+          "label": "Shrine Warden",
+          "realm": "castle",
+          "names": {
+            "head": "Warden's Kabuto",
+            "chest": "Warden's Dou",
+            "shoulders": "Warden's Sode",
+            "hands": "Warden's Kote",
+            "legs": "Warden's Hakama",
+            "boots": "Warden's Suneate"
+          },
+          "descriptions": {
+            "head": "A green-lacquered helm with a crescent crest.",
+            "chest": "Green plates laced with gold over a warden's robe.",
+            "shoulders": "Broad shoulder plates carrying the shrine's mark.",
+            "hands": "Lacquered sleeve armour for hands that cast as often as they cut.",
+            "legs": "Pleated trousers over light plate.",
+            "boots": "Shin guards and split-toed boots."
+          }
+        },
+        {
+          "pack": "SIDEKICK_Pirate_Captains_Unity_2021_3_v1_0_7.unitypackage",
+          "preset": "PirateCaptain_02",
+          "set": "corsair",
+          "label": "Corsair",
+          "realm": "pass",
+          "names": {
+            "head": "Corsair's Hat",
+            "chest": "Corsair's Coat",
+            "shoulders": "Corsair's Parrot",
+            "hands": "Corsair's Gloves",
+            "legs": "Corsair's Skirts",
+            "boots": "Corsair's Boots"
+          },
+          "descriptions": {
+            "head": "A red captain's hat with a green plume and a parrot who disapproves of everyone.",
+            "chest": "A red coat over a white shirt, cut for a captain who does her own fighting.",
+            "shoulders": "A perch for the parrot and a mantle for the shoulders.",
+            "hands": "Lace-cuffed gloves that have held a wheel in a storm.",
+            "legs": "Layered skirts and breeches, a cutlass at the hip.",
+            "boots": "Tall boots with brass buckles."
+          }
+        },
+        {
+          "pack": "SIDEKICK_Fantasy_Villagers_Unity_2021_3_v1_0_1.unitypackage",
+          "preset": "FantasyVillagers_02",
+          "set": "herbalist",
+          "label": "Herbalist",
+          "realm": "fortress",
+          "names": {
+            "head": "Herbalist's Kerchief",
+            "chest": "Herbalist's Bodice",
+            "shoulders": "Herbalist's Shawl",
+            "hands": "Herbalist's Gloves",
+            "legs": "Herbalist's Skirts",
+            "boots": "Herbalist's Shoes"
+          },
+          "descriptions": {
+            "head": "A purple kerchief tied back from the face.",
+            "chest": "A bodice over a linen blouse, a basket of cuttings on the back.",
+            "shoulders": "A shawl for the cold of the drying room.",
+            "hands": "Gloves for nettles and thorns.",
+            "legs": "Long skirts with pockets full of roots.",
+            "boots": "Sensible shoes for a long walk to the hedgerows."
+          }
+        },
+        {
+          "pack": "SIDEKICK_Fantasy_Villagers_Unity_2021_3_v1_0_1.unitypackage",
+          "preset": "FantasyVillagers_04",
+          "set": "hearth",
+          "label": "Hearthkeeper",
+          "realm": "fortress",
+          "names": {
+            "head": "Hearthkeeper's Wrap",
+            "chest": "Hearthkeeper's Dress",
+            "shoulders": "Hearthkeeper's Shawl",
+            "hands": "Hearthkeeper's Mitts",
+            "legs": "Hearthkeeper's Apron",
+            "boots": "Hearthkeeper's Clogs"
+          },
+          "descriptions": {
+            "head": "A teal head wrap, tied for a day of work.",
+            "chest": "A red dress under a blue smock, a ladle at the belt.",
+            "shoulders": "A knitted shawl for the draught from the door.",
+            "hands": "Mitts for lifting what has been on the fire.",
+            "legs": "A long apron over layered skirts.",
+            "boots": "Wooden clogs that echo in the hall."
+          }
         }
       ]
     },
@@ -341,7 +664,7 @@
           "preset": "FantasyKnights_02",
           "set": "blackguard",
           "label": "Blackguard",
-          "realm": "castle",
+          "realm": "pass",
           "names": {
             "head": "Blackguard Helm",
             "chest": "Blackguard Plate",
@@ -446,6 +769,158 @@
             "legs": "Cuisses over riding hose.",
             "boots": "Pointed sabatons that fit a stirrup."
           }
+        },
+        {
+          "pack": "SIDEKICK_Goblin_Fighters_Unity_2021_3_v1_0_4.unitypackage",
+          "preset": "GoblinFighter_02",
+          "set": "warboss",
+          "label": "Warboss",
+          "realm": "bog",
+          "names": {
+            "head": "Warboss Helm",
+            "chest": "Warboss Plate",
+            "shoulders": "Warboss Pauldron",
+            "hands": "Warboss Gauntlets",
+            "legs": "Warboss Greaves",
+            "boots": "Warboss Boots"
+          },
+          "descriptions": {
+            "head": "A heavy iron helm with tusks, hammered from stolen dwarven plate.",
+            "chest": "Mismatched plate over hide, held on with rope and spite.",
+            "shoulders": "One great pauldron, because the goblins only stole one.",
+            "hands": "Iron gauntlets a size too big.",
+            "legs": "Greaves of scrap iron bound over cloth.",
+            "boots": "Iron-toed boots for kicking the gong."
+          }
+        },
+        {
+          "pack": "SIDEKICK_Fantasy_Skeletons_Unity_2021_3_v1_0_4.unitypackage",
+          "preset": "FantasySkeletons_01",
+          "set": "deathless",
+          "label": "Deathless",
+          "realm": "raid",
+          "names": {
+            "head": "Deathless Hood",
+            "chest": "Deathless Plate",
+            "shoulders": "Deathless Pauldrons",
+            "hands": "Deathless Gauntlets",
+            "legs": "Deathless Greaves",
+            "boots": "Deathless Sabatons"
+          },
+          "descriptions": {
+            "head": "A dark hood over a skull with red light behind the eyes.",
+            "chest": "Blackened plate over green cloth, worn by a knight the Pit would not let die.",
+            "shoulders": "Dark steel pauldrons edged in bone.",
+            "hands": "Steel gauntlets over hands of bone.",
+            "legs": "Plate greaves over legs that no longer tire.",
+            "boots": "Black sabatons that have walked the Pit for a century."
+          }
+        },
+        {
+          "pack": "SIDEKICK_Samurai_Warriors_Unity_2021_3_v1_0_7.unitypackage",
+          "preset": "SamuraiWarriors_01",
+          "set": "crimson",
+          "label": "Crimson Guard",
+          "realm": "castle",
+          "names": {
+            "head": "Crimson Kabuto",
+            "chest": "Crimson Dou",
+            "shoulders": "Crimson Sode",
+            "hands": "Crimson Kote",
+            "legs": "Crimson Haidate",
+            "boots": "Crimson Suneate"
+          },
+          "descriptions": {
+            "head": "A red-lacquered helm with a great golden crest.",
+            "chest": "Red laced plates over gold, the armour of a king's foreign guard.",
+            "shoulders": "Broad lacquered shoulder plates.",
+            "hands": "Plate sleeves laced in gold.",
+            "legs": "Lacquered thigh guards over pleated cloth.",
+            "boots": "Red shin plates and split-toed boots."
+          }
+        },
+        {
+          "pack": "SIDEKICK_Samurai_Warriors_Unity_2021_3_v1_0_7.unitypackage",
+          "preset": "SamuraiWarriors_05",
+          "set": "shogun",
+          "label": "Shogun",
+          "realm": "castle",
+          "names": {
+            "head": "Shogun's Kabuto",
+            "chest": "Shogun's Dou",
+            "shoulders": "Shogun's Sode",
+            "hands": "Shogun's Kote",
+            "legs": "Shogun's Haidate",
+            "boots": "Shogun's Suneate"
+          },
+          "descriptions": {
+            "head": "A dark blue helm with tall golden horns.",
+            "chest": "Blue and gold plates over black cloth. It has never lost.",
+            "shoulders": "Great shoulder plates carrying the crest.",
+            "hands": "Gold-laced sleeve armour.",
+            "legs": "Heavy thigh plates over dark cloth.",
+            "boots": "Blue greaves and black boots."
+          }
+        },
+        {
+          "pack": "SIDEKICK_Pirate_Captains_Unity_2021_3_v1_0_7.unitypackage",
+          "preset": "PirateCaptain_01",
+          "set": "admiral",
+          "label": "Admiral",
+          "realm": "pass",
+          "names": {
+            "head": "Admiral's Bicorn",
+            "chest": "Admiral's Coat",
+            "shoulders": "Admiral's Epaulettes",
+            "hands": "Admiral's Gloves",
+            "legs": "Admiral's Breeches",
+            "boots": "Admiral's Boots"
+          },
+          "descriptions": {
+            "head": "A black bicorn with gold trim and a skull where the cockade should be.",
+            "chest": "A long black coat with gold buttons, taken off a ship of the line.",
+            "shoulders": "Gold epaulettes, one slightly singed.",
+            "hands": "White gloves that have not been white for years.",
+            "legs": "Black breeches with a sabre at the hip.",
+            "boots": "Tall black boots for a frozen deck."
+          }
+        },
+        {
+          "pack": "SIDEKICK_Fantasy_Villagers_Unity_2021_3_v1_0_1.unitypackage",
+          "preset": "FantasyVillagers_05",
+          "set": "smith",
+          "label": "Smith",
+          "realm": "fortress",
+          "names": {
+            "head": "Smith's Pipe",
+            "chest": "Smith's Apron",
+            "shoulders": "Smith's Straps",
+            "hands": "Smith's Gloves",
+            "legs": "Smith's Trousers",
+            "boots": "Smith's Boots"
+          },
+          "descriptions": {
+            "head": "A clay pipe lit from the forge. The smoke follows whoever wears it.",
+            "chest": "A leather apron over a blue shirt, hammer and tongs at the belt.",
+            "shoulders": "Leather straps for the apron, scorched at the edges.",
+            "hands": "Thick gloves for iron fresh from the fire.",
+            "legs": "Heavy trousers that have caught a hundred sparks.",
+            "boots": "Boots with iron toes for dropped anvils."
+          }
+        }
+      ],
+      "extras": [
+        {
+          "id": "admiral-boots",
+          "slot": "boots",
+          "pack": "SIDEKICK_Pirate_Captains_Unity_2021_3_v1_0_7.unitypackage",
+          "palette": "PirateCaptain_01",
+          "parts": [
+            "SK_PIRT_CAPT_01_20FOTL_HU01",
+            "SK_PIRT_CAPT_01_21FOTR_HU01"
+          ],
+          "name": "Admiral's Boots",
+          "description": "Tall black boots for a frozen deck."
         }
       ]
     },
@@ -475,7 +950,7 @@
           "preset": "VikingWarrior_04",
           "set": "jarl",
           "label": "Jarl",
-          "realm": "castle",
+          "realm": "pass",
           "names": {
             "head": "Antlered Helm",
             "chest": "Jarl's Scale",
@@ -579,6 +1054,144 @@
             "hands": "Leather wraps for the axe hand.",
             "legs": "Breeches of hide and fur.",
             "boots": "Fur-bound boots."
+          }
+        },
+        {
+          "pack": "SIDEKICK_Goblin_Fighters_Unity_2021_3_v1_0_4.unitypackage",
+          "preset": "GoblinFighter_03",
+          "set": "bonegnaw",
+          "label": "Bonegnaw",
+          "realm": "bog",
+          "names": {
+            "head": "Bonegnaw Crest",
+            "chest": "Bonegnaw Harness",
+            "shoulders": "Bonegnaw Pauldrons",
+            "hands": "Bonegnaw Wraps",
+            "legs": "Bonegnaw Kilt",
+            "boots": "Bonegnaw Boots"
+          },
+          "descriptions": {
+            "head": "A crest of red hair and bone, worn to be seen across the camp.",
+            "chest": "A harness of hide and iron over a chest that wants none.",
+            "shoulders": "Iron pauldrons studded with teeth.",
+            "hands": "Hide wraps on the fists.",
+            "legs": "A kilt of hide and plate, heavy at the front.",
+            "boots": "Iron-shod boots for the palisade."
+          }
+        },
+        {
+          "pack": "SIDEKICK_Goblin_Fighters_Unity_2021_3_v1_0_4.unitypackage",
+          "preset": "GoblinFighter_05",
+          "set": "kingsown",
+          "label": "King's Own",
+          "realm": "bog",
+          "names": {
+            "head": "King's Own Horns",
+            "chest": "King's Own Hauberk",
+            "shoulders": "King's Own Furs",
+            "hands": "King's Own Gauntlets",
+            "legs": "King's Own Greaves",
+            "boots": "King's Own Boots"
+          },
+          "descriptions": {
+            "head": "A horned helm of the Goblin King's guard, the horns real and the head not.",
+            "chest": "Fur and stolen plate over a red tunic.",
+            "shoulders": "Thick furs across the shoulders, the pelt of something large.",
+            "hands": "Iron gauntlets from the dwarven hoard.",
+            "legs": "Plate greaves over fur-lined breeches.",
+            "boots": "Fur boots for the cold nights in the reeds."
+          }
+        },
+        {
+          "pack": "SIDEKICK_Fantasy_Skeletons_Unity_2021_3_v1_0_4.unitypackage",
+          "preset": "FantasySkeletons_04",
+          "set": "gravelord",
+          "label": "Gravelord",
+          "realm": "raid",
+          "names": {
+            "head": "Gravelord Horns",
+            "chest": "Gravelord Plate",
+            "shoulders": "Gravelord Skulls",
+            "hands": "Gravelord Gauntlets",
+            "legs": "Gravelord Greaves",
+            "boots": "Gravelord Sabatons"
+          },
+          "descriptions": {
+            "head": "A horned helm of black iron over a skull that grins.",
+            "chest": "Dark plate over purple cloth, worn by a chieftain buried with his weapons.",
+            "shoulders": "A skull on each shoulder, neither his own.",
+            "hands": "Black gauntlets over long fingers.",
+            "legs": "Iron and bone over the legs.",
+            "boots": "Iron sabatons that dragged through the barrow."
+          }
+        },
+        {
+          "pack": "SIDEKICK_Samurai_Warriors_Unity_2021_3_v1_0_7.unitypackage",
+          "preset": "SamuraiWarriors_03",
+          "set": "oni",
+          "label": "Oni",
+          "realm": "castle",
+          "names": {
+            "head": "Oni Kabuto",
+            "chest": "Oni Dou",
+            "shoulders": "Oni Sode",
+            "hands": "Oni Kote",
+            "legs": "Oni Haidate",
+            "boots": "Oni Suneate"
+          },
+          "descriptions": {
+            "head": "A dark helm with a demon's horns and a snarling mask.",
+            "chest": "Black-lacquered plates over red, made to frighten before the fight.",
+            "shoulders": "Heavy shoulder plates with the demon's face.",
+            "hands": "Dark sleeve armour for a two-handed blade.",
+            "legs": "Heavy thigh guards over black cloth.",
+            "boots": "Black shin plates and boots."
+          }
+        },
+        {
+          "pack": "SIDEKICK_Pirate_Captains_Unity_2021_3_v1_0_7.unitypackage",
+          "preset": "PirateCaptain_03",
+          "set": "seadog",
+          "label": "Sea Dog",
+          "realm": "pass",
+          "names": {
+            "head": "Sea Dog's Hat",
+            "chest": "Sea Dog's Coat",
+            "shoulders": "Sea Dog's Mantle",
+            "hands": "Sea Dog's Gloves",
+            "legs": "Sea Dog's Breeches",
+            "boots": "Sea Dog's Boots"
+          },
+          "descriptions": {
+            "head": "A blue captain's hat over a beard that has its own weather.",
+            "chest": "A blue coat over a broad chest, buttons long given up.",
+            "shoulders": "A heavy mantle across the shoulders.",
+            "hands": "Rough gloves for hauling and hitting.",
+            "legs": "Patched breeches with a cutlass and a bottle.",
+            "boots": "Boots that have stood on more decks than docks."
+          }
+        },
+        {
+          "pack": "SIDEKICK_Fantasy_Villagers_Unity_2021_3_v1_0_1.unitypackage",
+          "preset": "FantasyVillagers_01",
+          "set": "herder",
+          "label": "Herder",
+          "realm": "fortress",
+          "names": {
+            "head": "Herder's Cap",
+            "chest": "Herder's Coat",
+            "shoulders": "Herder's Goat",
+            "hands": "Herder's Mitts",
+            "legs": "Herder's Trousers",
+            "boots": "Herder's Boots"
+          },
+          "descriptions": {
+            "head": "A wool cap for the high pastures.",
+            "chest": "A blue coat over a leather vest, cut for a broad back.",
+            "shoulders": "A goat across the shoulders. It is not a decoration.",
+            "hands": "Wool mitts for cold mornings.",
+            "legs": "Red wool trousers, patched at the knee.",
+            "boots": "Boots for rocks and mud."
           }
         }
       ]

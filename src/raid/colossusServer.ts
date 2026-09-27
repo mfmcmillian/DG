@@ -615,7 +615,7 @@ function fall() {
     const at = f ? f.position : { x: center.x, z: center.z + 6 }
     sendNet('loot', { party: RAID_PARTY, x: at.x, z: at.z, coin: 60, heart: 1, item, boss: true }, { to: [id] })
     // And a piece of the class's raid set: the armour only the Pit gives up.
-    const armor = mine.length ? rollArmorDrop('boss', 'raid', mine) : ''
+    const armor = mine.length ? rollArmorDrop('boss', ['raid'], mine) : ''
     if (armor) sendNet('loot', { party: RAID_PARTY, x: at.x + 0.6, z: at.z - 0.6, coin: 0, heart: 0, item: armor, boss: true }, { to: [id] })
     announce('kill', item ? 'The Colossus yields a Legendary.' : 'The Colossus is broken.', xp, [id])
   }

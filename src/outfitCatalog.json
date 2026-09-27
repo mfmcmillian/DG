@@ -1945,41 +1945,2100 @@
       "set": "ulfhednar",
       "setLabel": "Ulfhednar",
       "realm": "raid"
+    },
+    {
+      "id": "barrow-head",
+      "name": "Barrow Hood",
+      "slot": "head",
+      "description": "A green hood worn over a skull the Pit never let rest.",
+      "icon": "images/equipment/barrow-head.png",
+      "models": [
+        "models/roaming/combat/equipment/barrow-head.glb"
+      ],
+      "hero": "scout",
+      "set": "barrow",
+      "setLabel": "Barrow Hunter",
+      "realm": "raid"
+    },
+    {
+      "id": "barrow-chest",
+      "name": "Barrow Coat",
+      "slot": "chest",
+      "description": "A hunter's coat that went into the barrow and came back out.",
+      "icon": "images/equipment/barrow-chest.png",
+      "models": [
+        "models/roaming/combat/equipment/barrow-chest.glb"
+      ],
+      "hero": "scout",
+      "set": "barrow",
+      "setLabel": "Barrow Hunter",
+      "realm": "raid"
+    },
+    {
+      "id": "barrow-shoulders",
+      "name": "Barrow Pauldrons",
+      "slot": "shoulders",
+      "description": "Bone-studded leather that once belonged to the wearer.",
+      "icon": "images/equipment/barrow-shoulders.png",
+      "models": [
+        "models/roaming/combat/equipment/barrow-shoulders.glb"
+      ],
+      "hero": "scout",
+      "set": "barrow",
+      "setLabel": "Barrow Hunter",
+      "realm": "raid"
+    },
+    {
+      "id": "barrow-hands",
+      "name": "Barrow Gloves",
+      "slot": "hands",
+      "description": "Gloves over hands that no longer feel the string.",
+      "icon": "images/equipment/barrow-hands.png",
+      "models": [
+        "models/roaming/combat/equipment/barrow-hands.glb"
+      ],
+      "hero": "scout",
+      "set": "barrow",
+      "setLabel": "Barrow Hunter",
+      "realm": "raid"
+    },
+    {
+      "id": "barrow-legs",
+      "name": "Barrow Leggings",
+      "slot": "legs",
+      "description": "Ragged leggings over what is left of the legs.",
+      "icon": "images/equipment/barrow-legs.png",
+      "models": [
+        "models/roaming/combat/equipment/barrow-legs.glb"
+      ],
+      "hero": "scout",
+      "set": "barrow",
+      "setLabel": "Barrow Hunter",
+      "realm": "raid"
+    },
+    {
+      "id": "barrow-boots",
+      "name": "Barrow Boots",
+      "slot": "boots",
+      "description": "Boots that walked a long way after their owner died.",
+      "icon": "images/equipment/barrow-boots.png",
+      "models": [
+        "models/roaming/combat/equipment/barrow-boots.glb"
+      ],
+      "hero": "scout",
+      "set": "barrow",
+      "setLabel": "Barrow Hunter",
+      "realm": "raid"
+    },
+    {
+      "id": "ronin-head",
+      "name": "Ronin's Jingasa",
+      "slot": "head",
+      "description": "A lacquered travelling hat, brim turned against the rain.",
+      "icon": "images/equipment/ronin-head.png",
+      "models": [
+        "models/roaming/combat/equipment/ronin-head.glb"
+      ],
+      "hero": "scout",
+      "set": "ronin",
+      "setLabel": "Ronin",
+      "realm": "castle"
+    },
+    {
+      "id": "ronin-chest",
+      "name": "Ronin's Dou",
+      "slot": "chest",
+      "description": "Blue-laced plates over a wanderer's coat, a banner rising from the back.",
+      "icon": "images/equipment/ronin-chest.png",
+      "models": [
+        "models/roaming/combat/equipment/ronin-chest.glb"
+      ],
+      "hero": "scout",
+      "set": "ronin",
+      "setLabel": "Ronin",
+      "realm": "castle"
+    },
+    {
+      "id": "ronin-shoulders",
+      "name": "Ronin's Sode",
+      "slot": "shoulders",
+      "description": "Small lacquered shoulder plates for a fast draw.",
+      "icon": "images/equipment/ronin-shoulders.png",
+      "models": [
+        "models/roaming/combat/equipment/ronin-shoulders.glb"
+      ],
+      "hero": "scout",
+      "set": "ronin",
+      "setLabel": "Ronin",
+      "realm": "castle"
+    },
+    {
+      "id": "ronin-hands",
+      "name": "Ronin's Kote",
+      "slot": "hands",
+      "description": "Sleeve armour of split plates over cloth.",
+      "icon": "images/equipment/ronin-hands.png",
+      "models": [
+        "models/roaming/customization/armor/warm/ronin-hands.glb"
+      ],
+      "hero": "scout",
+      "set": "ronin",
+      "setLabel": "Ronin",
+      "realm": "castle"
+    },
+    {
+      "id": "ronin-legs",
+      "name": "Ronin's Hakama",
+      "slot": "legs",
+      "description": "Wide pleated trousers, bound at the knee for the road.",
+      "icon": "images/equipment/ronin-legs.png",
+      "models": [
+        "models/roaming/combat/equipment/ronin-legs.glb"
+      ],
+      "hero": "scout",
+      "set": "ronin",
+      "setLabel": "Ronin",
+      "realm": "castle"
+    },
+    {
+      "id": "ronin-boots",
+      "name": "Ronin's Tabi",
+      "slot": "boots",
+      "description": "Split-toed boots and greaves, quiet on a stone floor.",
+      "icon": "images/equipment/ronin-boots.png",
+      "models": [
+        "models/roaming/combat/equipment/ronin-boots.glb"
+      ],
+      "hero": "scout",
+      "set": "ronin",
+      "setLabel": "Ronin",
+      "realm": "castle"
+    },
+    {
+      "id": "freebooter-head",
+      "name": "Freebooter's Tricorn",
+      "slot": "head",
+      "description": "A black tricorn with a feather taken from somebody who complained.",
+      "icon": "images/equipment/freebooter-head.png",
+      "models": [
+        "models/roaming/combat/equipment/freebooter-head.glb"
+      ],
+      "hero": "scout",
+      "set": "freebooter",
+      "setLabel": "Freebooter",
+      "realm": "pass"
+    },
+    {
+      "id": "freebooter-chest",
+      "name": "Freebooter's Coat",
+      "slot": "chest",
+      "description": "A long dark coat cut for climbing rigging and running.",
+      "icon": "images/equipment/freebooter-chest.png",
+      "models": [
+        "models/roaming/customization/armor/warm/freebooter-chest.glb"
+      ],
+      "hero": "scout",
+      "set": "freebooter",
+      "setLabel": "Freebooter",
+      "realm": "pass"
+    },
+    {
+      "id": "freebooter-shoulders",
+      "name": "Freebooter's Baldric",
+      "slot": "shoulders",
+      "description": "A shoulder baldric heavy with pistol and powder.",
+      "icon": "images/equipment/freebooter-shoulders.png",
+      "models": [
+        "models/roaming/combat/equipment/freebooter-shoulders.glb"
+      ],
+      "hero": "scout",
+      "set": "freebooter",
+      "setLabel": "Freebooter",
+      "realm": "pass"
+    },
+    {
+      "id": "freebooter-hands",
+      "name": "Freebooter's Gloves",
+      "slot": "hands",
+      "description": "Thin leather gloves for knots and knives.",
+      "icon": "images/equipment/freebooter-hands.png",
+      "models": [
+        "models/roaming/customization/armor/warm/freebooter-hands.glb"
+      ],
+      "hero": "scout",
+      "set": "freebooter",
+      "setLabel": "Freebooter",
+      "realm": "pass"
+    },
+    {
+      "id": "freebooter-legs",
+      "name": "Freebooter's Breeches",
+      "slot": "legs",
+      "description": "Salt-stained breeches, one knife sheathed at the thigh.",
+      "icon": "images/equipment/freebooter-legs.png",
+      "models": [
+        "models/roaming/combat/equipment/freebooter-legs.glb"
+      ],
+      "hero": "scout",
+      "set": "freebooter",
+      "setLabel": "Freebooter",
+      "realm": "pass"
+    },
+    {
+      "id": "freebooter-boots",
+      "name": "Freebooter's Boots",
+      "slot": "boots",
+      "description": "Sea boots folded down for the run up the fjord.",
+      "icon": "images/equipment/freebooter-boots.png",
+      "models": [
+        "models/roaming/combat/equipment/freebooter-boots.glb"
+      ],
+      "hero": "scout",
+      "set": "freebooter",
+      "setLabel": "Freebooter",
+      "realm": "pass"
+    },
+    {
+      "id": "buccaneer-head",
+      "name": "Buccaneer's Hat",
+      "slot": "head",
+      "description": "A green hat with one great feather, worn at an angle that means trouble.",
+      "icon": "images/equipment/buccaneer-head.png",
+      "models": [
+        "models/roaming/combat/equipment/buccaneer-head.glb"
+      ],
+      "hero": "scout",
+      "set": "buccaneer",
+      "setLabel": "Buccaneer",
+      "realm": "pass"
+    },
+    {
+      "id": "buccaneer-chest",
+      "name": "Buccaneer's Waistcoat",
+      "slot": "chest",
+      "description": "A tan coat over a striped shirt, sleeves rolled for the deck.",
+      "icon": "images/equipment/buccaneer-chest.png",
+      "models": [
+        "models/roaming/customization/armor/warm/buccaneer-chest.glb"
+      ],
+      "hero": "scout",
+      "set": "buccaneer",
+      "setLabel": "Buccaneer",
+      "realm": "pass"
+    },
+    {
+      "id": "buccaneer-shoulders",
+      "name": "Buccaneer's Bandolier",
+      "slot": "shoulders",
+      "description": "A bandolier of shot across one shoulder.",
+      "icon": "images/equipment/buccaneer-shoulders.png",
+      "models": [
+        "models/roaming/combat/equipment/buccaneer-shoulders.glb"
+      ],
+      "hero": "scout",
+      "set": "buccaneer",
+      "setLabel": "Buccaneer",
+      "realm": "pass"
+    },
+    {
+      "id": "buccaneer-hands",
+      "name": "Buccaneer's Cuffs",
+      "slot": "hands",
+      "description": "Leather cuffs worn thin by rope.",
+      "icon": "images/equipment/buccaneer-hands.png",
+      "models": [
+        "models/roaming/customization/armor/warm/buccaneer-hands.glb"
+      ],
+      "hero": "scout",
+      "set": "buccaneer",
+      "setLabel": "Buccaneer",
+      "realm": "pass"
+    },
+    {
+      "id": "buccaneer-legs",
+      "name": "Buccaneer's Trousers",
+      "slot": "legs",
+      "description": "Loose trousers tucked into the boots.",
+      "icon": "images/equipment/buccaneer-legs.png",
+      "models": [
+        "models/roaming/combat/equipment/buccaneer-legs.glb"
+      ],
+      "hero": "scout",
+      "set": "buccaneer",
+      "setLabel": "Buccaneer",
+      "realm": "pass"
+    },
+    {
+      "id": "buccaneer-boots",
+      "name": "Buccaneer's Boots",
+      "slot": "boots",
+      "description": "Buckled boots that have known salt and snow.",
+      "icon": "images/equipment/buccaneer-boots.png",
+      "models": [
+        "models/roaming/combat/equipment/buccaneer-boots.glb"
+      ],
+      "hero": "scout",
+      "set": "buccaneer",
+      "setLabel": "Buccaneer",
+      "realm": "pass"
+    },
+    {
+      "id": "trapper-head",
+      "name": "Trapper's Hood",
+      "slot": "head",
+      "description": "A pale hood pulled low, the way the woods teach.",
+      "icon": "images/equipment/trapper-head.png",
+      "models": [
+        "models/roaming/combat/equipment/trapper-head.glb"
+      ],
+      "hero": "scout",
+      "set": "trapper",
+      "setLabel": "Trapper",
+      "realm": "fortress"
+    },
+    {
+      "id": "trapper-chest",
+      "name": "Trapper's Tunic",
+      "slot": "chest",
+      "description": "A green tunic under a hide vest, a hare hanging from the belt.",
+      "icon": "images/equipment/trapper-chest.png",
+      "models": [
+        "models/roaming/customization/armor/warm/trapper-chest.glb"
+      ],
+      "hero": "scout",
+      "set": "trapper",
+      "setLabel": "Trapper",
+      "realm": "fortress"
+    },
+    {
+      "id": "trapper-hands",
+      "name": "Trapper's Gloves",
+      "slot": "hands",
+      "description": "Gloves scuffed by wire and cold.",
+      "icon": "images/equipment/trapper-hands.png",
+      "models": [
+        "models/roaming/customization/armor/warm/trapper-hands.glb"
+      ],
+      "hero": "scout",
+      "set": "trapper",
+      "setLabel": "Trapper",
+      "realm": "fortress"
+    },
+    {
+      "id": "trapper-legs",
+      "name": "Trapper's Leggings",
+      "slot": "legs",
+      "description": "Leather leggings for brambles.",
+      "icon": "images/equipment/trapper-legs.png",
+      "models": [
+        "models/roaming/combat/equipment/trapper-legs.glb"
+      ],
+      "hero": "scout",
+      "set": "trapper",
+      "setLabel": "Trapper",
+      "realm": "fortress"
+    },
+    {
+      "id": "trapper-boots",
+      "name": "Trapper's Boots",
+      "slot": "boots",
+      "description": "Soft-soled boots that leave nothing behind.",
+      "icon": "images/equipment/trapper-boots.png",
+      "models": [
+        "models/roaming/combat/equipment/trapper-boots.glb"
+      ],
+      "hero": "scout",
+      "set": "trapper",
+      "setLabel": "Trapper",
+      "realm": "fortress"
+    },
+    {
+      "id": "hexroot-head",
+      "name": "Hexroot Hat",
+      "slot": "head",
+      "description": "A shaman's hat hung with teeth and a small skull that still seems to watch.",
+      "icon": "images/equipment/hexroot-head.png",
+      "models": [
+        "models/roaming/combat/equipment/hexroot-head.glb"
+      ],
+      "hero": "striker",
+      "set": "hexroot",
+      "setLabel": "Hexroot",
+      "realm": "bog"
+    },
+    {
+      "id": "hexroot-chest",
+      "name": "Hexroot Robe",
+      "slot": "chest",
+      "description": "A robe of bog-dyed cloth and stitched hide, rattling with charms.",
+      "icon": "images/equipment/hexroot-chest.png",
+      "models": [
+        "models/roaming/customization/armor/warm/hexroot-chest.glb"
+      ],
+      "hero": "striker",
+      "set": "hexroot",
+      "setLabel": "Hexroot",
+      "realm": "bog"
+    },
+    {
+      "id": "hexroot-shoulders",
+      "name": "Hexroot Charms",
+      "slot": "shoulders",
+      "description": "Bone charms and feathers bound over each shoulder.",
+      "icon": "images/equipment/hexroot-shoulders.png",
+      "models": [
+        "models/roaming/combat/equipment/hexroot-shoulders.glb"
+      ],
+      "hero": "striker",
+      "set": "hexroot",
+      "setLabel": "Hexroot",
+      "realm": "bog"
+    },
+    {
+      "id": "hexroot-hands",
+      "name": "Hexroot Wraps",
+      "slot": "hands",
+      "description": "Hand wraps marked with the shaman's signs.",
+      "icon": "images/equipment/hexroot-hands.png",
+      "models": [
+        "models/roaming/customization/armor/warm/hexroot-hands.glb"
+      ],
+      "hero": "striker",
+      "set": "hexroot",
+      "setLabel": "Hexroot",
+      "realm": "bog"
+    },
+    {
+      "id": "hexroot-legs",
+      "name": "Hexroot Skirts",
+      "slot": "legs",
+      "description": "Layered skirts of hide, heavy at the hem with mud.",
+      "icon": "images/equipment/hexroot-legs.png",
+      "models": [
+        "models/roaming/customization/armor/warm/hexroot-legs.glb"
+      ],
+      "hero": "striker",
+      "set": "hexroot",
+      "setLabel": "Hexroot",
+      "realm": "bog"
+    },
+    {
+      "id": "hexroot-boots",
+      "name": "Hexroot Sandals",
+      "slot": "boots",
+      "description": "Sandals bound with reed. The bog does not bother them.",
+      "icon": "images/equipment/hexroot-boots.png",
+      "models": [
+        "models/roaming/customization/armor/warm/hexroot-boots.glb"
+      ],
+      "hero": "striker",
+      "set": "hexroot",
+      "setLabel": "Hexroot",
+      "realm": "bog"
+    },
+    {
+      "id": "lich-head",
+      "name": "Lich Crown",
+      "slot": "head",
+      "description": "A gilded crown that rises behind the skull like a sunburst.",
+      "icon": "images/equipment/lich-head.png",
+      "models": [
+        "models/roaming/combat/equipment/lich-head.glb"
+      ],
+      "hero": "striker",
+      "set": "lich",
+      "setLabel": "Lich",
+      "realm": "raid"
+    },
+    {
+      "id": "lich-chest",
+      "name": "Lich Vestments",
+      "slot": "chest",
+      "description": "Gold-worked vestments over purple cloth, worn by something that stopped breathing long ago.",
+      "icon": "images/equipment/lich-chest.png",
+      "models": [
+        "models/roaming/combat/equipment/lich-chest.glb"
+      ],
+      "hero": "striker",
+      "set": "lich",
+      "setLabel": "Lich",
+      "realm": "raid"
+    },
+    {
+      "id": "lich-shoulders",
+      "name": "Lich Mantle",
+      "slot": "shoulders",
+      "description": "A mantle of gold and bone across the shoulders.",
+      "icon": "images/equipment/lich-shoulders.png",
+      "models": [
+        "models/roaming/combat/equipment/lich-shoulders.glb"
+      ],
+      "hero": "striker",
+      "set": "lich",
+      "setLabel": "Lich",
+      "realm": "raid"
+    },
+    {
+      "id": "lich-hands",
+      "name": "Lich Gauntlets",
+      "slot": "hands",
+      "description": "Gauntlets of gold over finger bones.",
+      "icon": "images/equipment/lich-hands.png",
+      "models": [
+        "models/roaming/combat/equipment/lich-hands.glb"
+      ],
+      "hero": "striker",
+      "set": "lich",
+      "setLabel": "Lich",
+      "realm": "raid"
+    },
+    {
+      "id": "lich-legs",
+      "name": "Lich Robes",
+      "slot": "legs",
+      "description": "Long robes of purple and gold, the hem never touching the ground.",
+      "icon": "images/equipment/lich-legs.png",
+      "models": [
+        "models/roaming/combat/equipment/lich-legs.glb"
+      ],
+      "hero": "striker",
+      "set": "lich",
+      "setLabel": "Lich",
+      "realm": "raid"
+    },
+    {
+      "id": "lich-boots",
+      "name": "Lich Sabatons",
+      "slot": "boots",
+      "description": "Gilded sabatons that make no sound.",
+      "icon": "images/equipment/lich-boots.png",
+      "models": [
+        "models/roaming/combat/equipment/lich-boots.glb"
+      ],
+      "hero": "striker",
+      "set": "lich",
+      "setLabel": "Lich",
+      "realm": "raid"
+    },
+    {
+      "id": "gravebound-head",
+      "name": "Gravebound Helm",
+      "slot": "head",
+      "description": "A dark closed helm from which something looks out.",
+      "icon": "images/equipment/gravebound-head.png",
+      "models": [
+        "models/roaming/combat/equipment/gravebound-head.glb"
+      ],
+      "hero": "striker",
+      "set": "gravebound",
+      "setLabel": "Gravebound",
+      "realm": "raid"
+    },
+    {
+      "id": "gravebound-chest",
+      "name": "Gravebound Ribs",
+      "slot": "chest",
+      "description": "A cage of blackened ribs over dark cloth; the heart it kept is gone.",
+      "icon": "images/equipment/gravebound-chest.png",
+      "models": [
+        "models/roaming/combat/equipment/gravebound-chest.glb"
+      ],
+      "hero": "striker",
+      "set": "gravebound",
+      "setLabel": "Gravebound",
+      "realm": "raid"
+    },
+    {
+      "id": "gravebound-shoulders",
+      "name": "Gravebound Spines",
+      "slot": "shoulders",
+      "description": "Spines of bone rising from each shoulder.",
+      "icon": "images/equipment/gravebound-shoulders.png",
+      "models": [
+        "models/roaming/combat/equipment/gravebound-shoulders.glb"
+      ],
+      "hero": "striker",
+      "set": "gravebound",
+      "setLabel": "Gravebound",
+      "realm": "raid"
+    },
+    {
+      "id": "gravebound-hands",
+      "name": "Gravebound Claws",
+      "slot": "hands",
+      "description": "Long-fingered gauntlets of dark bone.",
+      "icon": "images/equipment/gravebound-hands.png",
+      "models": [
+        "models/roaming/combat/equipment/gravebound-hands.glb"
+      ],
+      "hero": "striker",
+      "set": "gravebound",
+      "setLabel": "Gravebound",
+      "realm": "raid"
+    },
+    {
+      "id": "gravebound-legs",
+      "name": "Gravebound Legs",
+      "slot": "legs",
+      "description": "Dark bone and rag over the legs.",
+      "icon": "images/equipment/gravebound-legs.png",
+      "models": [
+        "models/roaming/combat/equipment/gravebound-legs.glb"
+      ],
+      "hero": "striker",
+      "set": "gravebound",
+      "setLabel": "Gravebound",
+      "realm": "raid"
+    },
+    {
+      "id": "gravebound-boots",
+      "name": "Gravebound Feet",
+      "slot": "boots",
+      "description": "Bone feet wrapped in what was once a shroud.",
+      "icon": "images/equipment/gravebound-boots.png",
+      "models": [
+        "models/roaming/combat/equipment/gravebound-boots.glb"
+      ],
+      "hero": "striker",
+      "set": "gravebound",
+      "setLabel": "Gravebound",
+      "realm": "raid"
+    },
+    {
+      "id": "shrine-head",
+      "name": "Warden's Kabuto",
+      "slot": "head",
+      "description": "A green-lacquered helm with a crescent crest.",
+      "icon": "images/equipment/shrine-head.png",
+      "models": [
+        "models/roaming/combat/equipment/shrine-head.glb"
+      ],
+      "hero": "striker",
+      "set": "shrine",
+      "setLabel": "Shrine Warden",
+      "realm": "castle"
+    },
+    {
+      "id": "shrine-chest",
+      "name": "Warden's Dou",
+      "slot": "chest",
+      "description": "Green plates laced with gold over a warden's robe.",
+      "icon": "images/equipment/shrine-chest.png",
+      "models": [
+        "models/roaming/combat/equipment/shrine-chest.glb"
+      ],
+      "hero": "striker",
+      "set": "shrine",
+      "setLabel": "Shrine Warden",
+      "realm": "castle"
+    },
+    {
+      "id": "shrine-shoulders",
+      "name": "Warden's Sode",
+      "slot": "shoulders",
+      "description": "Broad shoulder plates carrying the shrine's mark.",
+      "icon": "images/equipment/shrine-shoulders.png",
+      "models": [
+        "models/roaming/combat/equipment/shrine-shoulders.glb"
+      ],
+      "hero": "striker",
+      "set": "shrine",
+      "setLabel": "Shrine Warden",
+      "realm": "castle"
+    },
+    {
+      "id": "shrine-hands",
+      "name": "Warden's Kote",
+      "slot": "hands",
+      "description": "Lacquered sleeve armour for hands that cast as often as they cut.",
+      "icon": "images/equipment/shrine-hands.png",
+      "models": [
+        "models/roaming/customization/armor/warm/shrine-hands.glb"
+      ],
+      "hero": "striker",
+      "set": "shrine",
+      "setLabel": "Shrine Warden",
+      "realm": "castle"
+    },
+    {
+      "id": "shrine-legs",
+      "name": "Warden's Hakama",
+      "slot": "legs",
+      "description": "Pleated trousers over light plate.",
+      "icon": "images/equipment/shrine-legs.png",
+      "models": [
+        "models/roaming/combat/equipment/shrine-legs.glb"
+      ],
+      "hero": "striker",
+      "set": "shrine",
+      "setLabel": "Shrine Warden",
+      "realm": "castle"
+    },
+    {
+      "id": "shrine-boots",
+      "name": "Warden's Suneate",
+      "slot": "boots",
+      "description": "Shin guards and split-toed boots.",
+      "icon": "images/equipment/shrine-boots.png",
+      "models": [
+        "models/roaming/combat/equipment/shrine-boots.glb"
+      ],
+      "hero": "striker",
+      "set": "shrine",
+      "setLabel": "Shrine Warden",
+      "realm": "castle"
+    },
+    {
+      "id": "corsair-head",
+      "name": "Corsair's Hat",
+      "slot": "head",
+      "description": "A red captain's hat with a green plume and a parrot who disapproves of everyone.",
+      "icon": "images/equipment/corsair-head.png",
+      "models": [
+        "models/roaming/combat/equipment/corsair-head.glb"
+      ],
+      "hero": "striker",
+      "set": "corsair",
+      "setLabel": "Corsair",
+      "realm": "pass"
+    },
+    {
+      "id": "corsair-chest",
+      "name": "Corsair's Coat",
+      "slot": "chest",
+      "description": "A red coat over a white shirt, cut for a captain who does her own fighting.",
+      "icon": "images/equipment/corsair-chest.png",
+      "models": [
+        "models/roaming/customization/armor/warm/corsair-chest.glb"
+      ],
+      "hero": "striker",
+      "set": "corsair",
+      "setLabel": "Corsair",
+      "realm": "pass"
+    },
+    {
+      "id": "corsair-shoulders",
+      "name": "Corsair's Parrot",
+      "slot": "shoulders",
+      "description": "A perch for the parrot and a mantle for the shoulders.",
+      "icon": "images/equipment/corsair-shoulders.png",
+      "models": [
+        "models/roaming/combat/equipment/corsair-shoulders.glb"
+      ],
+      "hero": "striker",
+      "set": "corsair",
+      "setLabel": "Corsair",
+      "realm": "pass"
+    },
+    {
+      "id": "corsair-hands",
+      "name": "Corsair's Gloves",
+      "slot": "hands",
+      "description": "Lace-cuffed gloves that have held a wheel in a storm.",
+      "icon": "images/equipment/corsair-hands.png",
+      "models": [
+        "models/roaming/combat/equipment/corsair-hands.glb"
+      ],
+      "hero": "striker",
+      "set": "corsair",
+      "setLabel": "Corsair",
+      "realm": "pass"
+    },
+    {
+      "id": "corsair-legs",
+      "name": "Corsair's Skirts",
+      "slot": "legs",
+      "description": "Layered skirts and breeches, a cutlass at the hip.",
+      "icon": "images/equipment/corsair-legs.png",
+      "models": [
+        "models/roaming/combat/equipment/corsair-legs.glb"
+      ],
+      "hero": "striker",
+      "set": "corsair",
+      "setLabel": "Corsair",
+      "realm": "pass"
+    },
+    {
+      "id": "corsair-boots",
+      "name": "Corsair's Boots",
+      "slot": "boots",
+      "description": "Tall boots with brass buckles.",
+      "icon": "images/equipment/corsair-boots.png",
+      "models": [
+        "models/roaming/combat/equipment/corsair-boots.glb"
+      ],
+      "hero": "striker",
+      "set": "corsair",
+      "setLabel": "Corsair",
+      "realm": "pass"
+    },
+    {
+      "id": "herbalist-head",
+      "name": "Herbalist's Kerchief",
+      "slot": "head",
+      "description": "A purple kerchief tied back from the face.",
+      "icon": "images/equipment/herbalist-head.png",
+      "models": [
+        "models/roaming/combat/equipment/herbalist-head.glb"
+      ],
+      "hero": "striker",
+      "set": "herbalist",
+      "setLabel": "Herbalist",
+      "realm": "fortress"
+    },
+    {
+      "id": "herbalist-chest",
+      "name": "Herbalist's Bodice",
+      "slot": "chest",
+      "description": "A bodice over a linen blouse, a basket of cuttings on the back.",
+      "icon": "images/equipment/herbalist-chest.png",
+      "models": [
+        "models/roaming/customization/armor/warm/herbalist-chest.glb"
+      ],
+      "hero": "striker",
+      "set": "herbalist",
+      "setLabel": "Herbalist",
+      "realm": "fortress"
+    },
+    {
+      "id": "herbalist-hands",
+      "name": "Herbalist's Gloves",
+      "slot": "hands",
+      "description": "Gloves for nettles and thorns.",
+      "icon": "images/equipment/herbalist-hands.png",
+      "models": [
+        "models/roaming/customization/armor/warm/herbalist-hands.glb"
+      ],
+      "hero": "striker",
+      "set": "herbalist",
+      "setLabel": "Herbalist",
+      "realm": "fortress"
+    },
+    {
+      "id": "herbalist-legs",
+      "name": "Herbalist's Skirts",
+      "slot": "legs",
+      "description": "Long skirts with pockets full of roots.",
+      "icon": "images/equipment/herbalist-legs.png",
+      "models": [
+        "models/roaming/customization/armor/warm/herbalist-legs.glb"
+      ],
+      "hero": "striker",
+      "set": "herbalist",
+      "setLabel": "Herbalist",
+      "realm": "fortress"
+    },
+    {
+      "id": "herbalist-boots",
+      "name": "Herbalist's Shoes",
+      "slot": "boots",
+      "description": "Sensible shoes for a long walk to the hedgerows.",
+      "icon": "images/equipment/herbalist-boots.png",
+      "models": [
+        "models/roaming/combat/equipment/herbalist-boots.glb"
+      ],
+      "hero": "striker",
+      "set": "herbalist",
+      "setLabel": "Herbalist",
+      "realm": "fortress"
+    },
+    {
+      "id": "warboss-head",
+      "name": "Warboss Helm",
+      "slot": "head",
+      "description": "A heavy iron helm with tusks, hammered from stolen dwarven plate.",
+      "icon": "images/equipment/warboss-head.png",
+      "models": [
+        "models/roaming/combat/equipment/warboss-head.glb"
+      ],
+      "hero": "vanguard",
+      "set": "warboss",
+      "setLabel": "Warboss",
+      "realm": "bog"
+    },
+    {
+      "id": "warboss-chest",
+      "name": "Warboss Plate",
+      "slot": "chest",
+      "description": "Mismatched plate over hide, held on with rope and spite.",
+      "icon": "images/equipment/warboss-chest.png",
+      "models": [
+        "models/roaming/customization/armor/warm/warboss-chest.glb"
+      ],
+      "hero": "vanguard",
+      "set": "warboss",
+      "setLabel": "Warboss",
+      "realm": "bog"
+    },
+    {
+      "id": "warboss-shoulders",
+      "name": "Warboss Pauldron",
+      "slot": "shoulders",
+      "description": "One great pauldron, because the goblins only stole one.",
+      "icon": "images/equipment/warboss-shoulders.png",
+      "models": [
+        "models/roaming/combat/equipment/warboss-shoulders.glb"
+      ],
+      "hero": "vanguard",
+      "set": "warboss",
+      "setLabel": "Warboss",
+      "realm": "bog"
+    },
+    {
+      "id": "warboss-hands",
+      "name": "Warboss Gauntlets",
+      "slot": "hands",
+      "description": "Iron gauntlets a size too big.",
+      "icon": "images/equipment/warboss-hands.png",
+      "models": [
+        "models/roaming/customization/armor/warm/warboss-hands.glb"
+      ],
+      "hero": "vanguard",
+      "set": "warboss",
+      "setLabel": "Warboss",
+      "realm": "bog"
+    },
+    {
+      "id": "warboss-legs",
+      "name": "Warboss Greaves",
+      "slot": "legs",
+      "description": "Greaves of scrap iron bound over cloth.",
+      "icon": "images/equipment/warboss-legs.png",
+      "models": [
+        "models/roaming/customization/armor/warm/warboss-legs.glb"
+      ],
+      "hero": "vanguard",
+      "set": "warboss",
+      "setLabel": "Warboss",
+      "realm": "bog"
+    },
+    {
+      "id": "warboss-boots",
+      "name": "Warboss Boots",
+      "slot": "boots",
+      "description": "Iron-toed boots for kicking the gong.",
+      "icon": "images/equipment/warboss-boots.png",
+      "models": [
+        "models/roaming/combat/equipment/warboss-boots.glb"
+      ],
+      "hero": "vanguard",
+      "set": "warboss",
+      "setLabel": "Warboss",
+      "realm": "bog"
+    },
+    {
+      "id": "deathless-head",
+      "name": "Deathless Hood",
+      "slot": "head",
+      "description": "A dark hood over a skull with red light behind the eyes.",
+      "icon": "images/equipment/deathless-head.png",
+      "models": [
+        "models/roaming/combat/equipment/deathless-head.glb"
+      ],
+      "hero": "vanguard",
+      "set": "deathless",
+      "setLabel": "Deathless",
+      "realm": "raid"
+    },
+    {
+      "id": "deathless-chest",
+      "name": "Deathless Plate",
+      "slot": "chest",
+      "description": "Blackened plate over green cloth, worn by a knight the Pit would not let die.",
+      "icon": "images/equipment/deathless-chest.png",
+      "models": [
+        "models/roaming/combat/equipment/deathless-chest.glb"
+      ],
+      "hero": "vanguard",
+      "set": "deathless",
+      "setLabel": "Deathless",
+      "realm": "raid"
+    },
+    {
+      "id": "deathless-shoulders",
+      "name": "Deathless Pauldrons",
+      "slot": "shoulders",
+      "description": "Dark steel pauldrons edged in bone.",
+      "icon": "images/equipment/deathless-shoulders.png",
+      "models": [
+        "models/roaming/combat/equipment/deathless-shoulders.glb"
+      ],
+      "hero": "vanguard",
+      "set": "deathless",
+      "setLabel": "Deathless",
+      "realm": "raid"
+    },
+    {
+      "id": "deathless-hands",
+      "name": "Deathless Gauntlets",
+      "slot": "hands",
+      "description": "Steel gauntlets over hands of bone.",
+      "icon": "images/equipment/deathless-hands.png",
+      "models": [
+        "models/roaming/combat/equipment/deathless-hands.glb"
+      ],
+      "hero": "vanguard",
+      "set": "deathless",
+      "setLabel": "Deathless",
+      "realm": "raid"
+    },
+    {
+      "id": "deathless-legs",
+      "name": "Deathless Greaves",
+      "slot": "legs",
+      "description": "Plate greaves over legs that no longer tire.",
+      "icon": "images/equipment/deathless-legs.png",
+      "models": [
+        "models/roaming/combat/equipment/deathless-legs.glb"
+      ],
+      "hero": "vanguard",
+      "set": "deathless",
+      "setLabel": "Deathless",
+      "realm": "raid"
+    },
+    {
+      "id": "deathless-boots",
+      "name": "Deathless Sabatons",
+      "slot": "boots",
+      "description": "Black sabatons that have walked the Pit for a century.",
+      "icon": "images/equipment/deathless-boots.png",
+      "models": [
+        "models/roaming/combat/equipment/deathless-boots.glb"
+      ],
+      "hero": "vanguard",
+      "set": "deathless",
+      "setLabel": "Deathless",
+      "realm": "raid"
+    },
+    {
+      "id": "crimson-head",
+      "name": "Crimson Kabuto",
+      "slot": "head",
+      "description": "A red-lacquered helm with a great golden crest.",
+      "icon": "images/equipment/crimson-head.png",
+      "models": [
+        "models/roaming/combat/equipment/crimson-head.glb"
+      ],
+      "hero": "vanguard",
+      "set": "crimson",
+      "setLabel": "Crimson Guard",
+      "realm": "castle"
+    },
+    {
+      "id": "crimson-chest",
+      "name": "Crimson Dou",
+      "slot": "chest",
+      "description": "Red laced plates over gold, the armour of a king's foreign guard.",
+      "icon": "images/equipment/crimson-chest.png",
+      "models": [
+        "models/roaming/combat/equipment/crimson-chest.glb"
+      ],
+      "hero": "vanguard",
+      "set": "crimson",
+      "setLabel": "Crimson Guard",
+      "realm": "castle"
+    },
+    {
+      "id": "crimson-shoulders",
+      "name": "Crimson Sode",
+      "slot": "shoulders",
+      "description": "Broad lacquered shoulder plates.",
+      "icon": "images/equipment/crimson-shoulders.png",
+      "models": [
+        "models/roaming/combat/equipment/crimson-shoulders.glb"
+      ],
+      "hero": "vanguard",
+      "set": "crimson",
+      "setLabel": "Crimson Guard",
+      "realm": "castle"
+    },
+    {
+      "id": "crimson-hands",
+      "name": "Crimson Kote",
+      "slot": "hands",
+      "description": "Plate sleeves laced in gold.",
+      "icon": "images/equipment/crimson-hands.png",
+      "models": [
+        "models/roaming/combat/equipment/crimson-hands.glb"
+      ],
+      "hero": "vanguard",
+      "set": "crimson",
+      "setLabel": "Crimson Guard",
+      "realm": "castle"
+    },
+    {
+      "id": "crimson-legs",
+      "name": "Crimson Haidate",
+      "slot": "legs",
+      "description": "Lacquered thigh guards over pleated cloth.",
+      "icon": "images/equipment/crimson-legs.png",
+      "models": [
+        "models/roaming/combat/equipment/crimson-legs.glb"
+      ],
+      "hero": "vanguard",
+      "set": "crimson",
+      "setLabel": "Crimson Guard",
+      "realm": "castle"
+    },
+    {
+      "id": "crimson-boots",
+      "name": "Crimson Suneate",
+      "slot": "boots",
+      "description": "Red shin plates and split-toed boots.",
+      "icon": "images/equipment/crimson-boots.png",
+      "models": [
+        "models/roaming/combat/equipment/crimson-boots.glb"
+      ],
+      "hero": "vanguard",
+      "set": "crimson",
+      "setLabel": "Crimson Guard",
+      "realm": "castle"
+    },
+    {
+      "id": "shogun-head",
+      "name": "Shogun's Kabuto",
+      "slot": "head",
+      "description": "A dark blue helm with tall golden horns.",
+      "icon": "images/equipment/shogun-head.png",
+      "models": [
+        "models/roaming/combat/equipment/shogun-head.glb"
+      ],
+      "hero": "vanguard",
+      "set": "shogun",
+      "setLabel": "Shogun",
+      "realm": "castle"
+    },
+    {
+      "id": "shogun-chest",
+      "name": "Shogun's Dou",
+      "slot": "chest",
+      "description": "Blue and gold plates over black cloth. It has never lost.",
+      "icon": "images/equipment/shogun-chest.png",
+      "models": [
+        "models/roaming/combat/equipment/shogun-chest.glb"
+      ],
+      "hero": "vanguard",
+      "set": "shogun",
+      "setLabel": "Shogun",
+      "realm": "castle"
+    },
+    {
+      "id": "shogun-hands",
+      "name": "Shogun's Kote",
+      "slot": "hands",
+      "description": "Gold-laced sleeve armour.",
+      "icon": "images/equipment/shogun-hands.png",
+      "models": [
+        "models/roaming/combat/equipment/shogun-hands.glb"
+      ],
+      "hero": "vanguard",
+      "set": "shogun",
+      "setLabel": "Shogun",
+      "realm": "castle"
+    },
+    {
+      "id": "shogun-legs",
+      "name": "Shogun's Haidate",
+      "slot": "legs",
+      "description": "Heavy thigh plates over dark cloth.",
+      "icon": "images/equipment/shogun-legs.png",
+      "models": [
+        "models/roaming/combat/equipment/shogun-legs.glb"
+      ],
+      "hero": "vanguard",
+      "set": "shogun",
+      "setLabel": "Shogun",
+      "realm": "castle"
+    },
+    {
+      "id": "shogun-boots",
+      "name": "Shogun's Suneate",
+      "slot": "boots",
+      "description": "Blue greaves and black boots.",
+      "icon": "images/equipment/shogun-boots.png",
+      "models": [
+        "models/roaming/combat/equipment/shogun-boots.glb"
+      ],
+      "hero": "vanguard",
+      "set": "shogun",
+      "setLabel": "Shogun",
+      "realm": "castle"
+    },
+    {
+      "id": "bonegnaw-head",
+      "name": "Bonegnaw Crest",
+      "slot": "head",
+      "description": "A crest of red hair and bone, worn to be seen across the camp.",
+      "icon": "images/equipment/bonegnaw-head.png",
+      "models": [
+        "models/roaming/combat/equipment/bonegnaw-head.glb"
+      ],
+      "hero": "brute",
+      "set": "bonegnaw",
+      "setLabel": "Bonegnaw",
+      "realm": "bog"
+    },
+    {
+      "id": "bonegnaw-chest",
+      "name": "Bonegnaw Harness",
+      "slot": "chest",
+      "description": "A harness of hide and iron over a chest that wants none.",
+      "icon": "images/equipment/bonegnaw-chest.png",
+      "models": [
+        "models/roaming/customization/armor/warm/bonegnaw-chest.glb"
+      ],
+      "hero": "brute",
+      "set": "bonegnaw",
+      "setLabel": "Bonegnaw",
+      "realm": "bog"
+    },
+    {
+      "id": "bonegnaw-shoulders",
+      "name": "Bonegnaw Pauldrons",
+      "slot": "shoulders",
+      "description": "Iron pauldrons studded with teeth.",
+      "icon": "images/equipment/bonegnaw-shoulders.png",
+      "models": [
+        "models/roaming/combat/equipment/bonegnaw-shoulders.glb"
+      ],
+      "hero": "brute",
+      "set": "bonegnaw",
+      "setLabel": "Bonegnaw",
+      "realm": "bog"
+    },
+    {
+      "id": "bonegnaw-hands",
+      "name": "Bonegnaw Wraps",
+      "slot": "hands",
+      "description": "Hide wraps on the fists.",
+      "icon": "images/equipment/bonegnaw-hands.png",
+      "models": [
+        "models/roaming/customization/armor/warm/bonegnaw-hands.glb"
+      ],
+      "hero": "brute",
+      "set": "bonegnaw",
+      "setLabel": "Bonegnaw",
+      "realm": "bog"
+    },
+    {
+      "id": "bonegnaw-legs",
+      "name": "Bonegnaw Kilt",
+      "slot": "legs",
+      "description": "A kilt of hide and plate, heavy at the front.",
+      "icon": "images/equipment/bonegnaw-legs.png",
+      "models": [
+        "models/roaming/combat/equipment/bonegnaw-legs.glb"
+      ],
+      "hero": "brute",
+      "set": "bonegnaw",
+      "setLabel": "Bonegnaw",
+      "realm": "bog"
+    },
+    {
+      "id": "bonegnaw-boots",
+      "name": "Bonegnaw Boots",
+      "slot": "boots",
+      "description": "Iron-shod boots for the palisade.",
+      "icon": "images/equipment/bonegnaw-boots.png",
+      "models": [
+        "models/roaming/customization/armor/warm/bonegnaw-boots.glb"
+      ],
+      "hero": "brute",
+      "set": "bonegnaw",
+      "setLabel": "Bonegnaw",
+      "realm": "bog"
+    },
+    {
+      "id": "kingsown-head",
+      "name": "King's Own Horns",
+      "slot": "head",
+      "description": "A horned helm of the Goblin King's guard, the horns real and the head not.",
+      "icon": "images/equipment/kingsown-head.png",
+      "models": [
+        "models/roaming/combat/equipment/kingsown-head.glb"
+      ],
+      "hero": "brute",
+      "set": "kingsown",
+      "setLabel": "King's Own",
+      "realm": "bog"
+    },
+    {
+      "id": "kingsown-chest",
+      "name": "King's Own Hauberk",
+      "slot": "chest",
+      "description": "Fur and stolen plate over a red tunic.",
+      "icon": "images/equipment/kingsown-chest.png",
+      "models": [
+        "models/roaming/customization/armor/warm/kingsown-chest.glb"
+      ],
+      "hero": "brute",
+      "set": "kingsown",
+      "setLabel": "King's Own",
+      "realm": "bog"
+    },
+    {
+      "id": "kingsown-shoulders",
+      "name": "King's Own Furs",
+      "slot": "shoulders",
+      "description": "Thick furs across the shoulders, the pelt of something large.",
+      "icon": "images/equipment/kingsown-shoulders.png",
+      "models": [
+        "models/roaming/combat/equipment/kingsown-shoulders.glb"
+      ],
+      "hero": "brute",
+      "set": "kingsown",
+      "setLabel": "King's Own",
+      "realm": "bog"
+    },
+    {
+      "id": "kingsown-hands",
+      "name": "King's Own Gauntlets",
+      "slot": "hands",
+      "description": "Iron gauntlets from the dwarven hoard.",
+      "icon": "images/equipment/kingsown-hands.png",
+      "models": [
+        "models/roaming/customization/armor/warm/kingsown-hands.glb"
+      ],
+      "hero": "brute",
+      "set": "kingsown",
+      "setLabel": "King's Own",
+      "realm": "bog"
+    },
+    {
+      "id": "kingsown-legs",
+      "name": "King's Own Greaves",
+      "slot": "legs",
+      "description": "Plate greaves over fur-lined breeches.",
+      "icon": "images/equipment/kingsown-legs.png",
+      "models": [
+        "models/roaming/customization/armor/warm/kingsown-legs.glb"
+      ],
+      "hero": "brute",
+      "set": "kingsown",
+      "setLabel": "King's Own",
+      "realm": "bog"
+    },
+    {
+      "id": "kingsown-boots",
+      "name": "King's Own Boots",
+      "slot": "boots",
+      "description": "Fur boots for the cold nights in the reeds.",
+      "icon": "images/equipment/kingsown-boots.png",
+      "models": [
+        "models/roaming/customization/armor/warm/kingsown-boots.glb"
+      ],
+      "hero": "brute",
+      "set": "kingsown",
+      "setLabel": "King's Own",
+      "realm": "bog"
+    },
+    {
+      "id": "gravelord-head",
+      "name": "Gravelord Horns",
+      "slot": "head",
+      "description": "A horned helm of black iron over a skull that grins.",
+      "icon": "images/equipment/gravelord-head.png",
+      "models": [
+        "models/roaming/combat/equipment/gravelord-head.glb"
+      ],
+      "hero": "brute",
+      "set": "gravelord",
+      "setLabel": "Gravelord",
+      "realm": "raid"
+    },
+    {
+      "id": "gravelord-chest",
+      "name": "Gravelord Plate",
+      "slot": "chest",
+      "description": "Dark plate over purple cloth, worn by a chieftain buried with his weapons.",
+      "icon": "images/equipment/gravelord-chest.png",
+      "models": [
+        "models/roaming/combat/equipment/gravelord-chest.glb"
+      ],
+      "hero": "brute",
+      "set": "gravelord",
+      "setLabel": "Gravelord",
+      "realm": "raid"
+    },
+    {
+      "id": "gravelord-shoulders",
+      "name": "Gravelord Skulls",
+      "slot": "shoulders",
+      "description": "A skull on each shoulder, neither his own.",
+      "icon": "images/equipment/gravelord-shoulders.png",
+      "models": [
+        "models/roaming/combat/equipment/gravelord-shoulders.glb"
+      ],
+      "hero": "brute",
+      "set": "gravelord",
+      "setLabel": "Gravelord",
+      "realm": "raid"
+    },
+    {
+      "id": "gravelord-hands",
+      "name": "Gravelord Gauntlets",
+      "slot": "hands",
+      "description": "Black gauntlets over long fingers.",
+      "icon": "images/equipment/gravelord-hands.png",
+      "models": [
+        "models/roaming/combat/equipment/gravelord-hands.glb"
+      ],
+      "hero": "brute",
+      "set": "gravelord",
+      "setLabel": "Gravelord",
+      "realm": "raid"
+    },
+    {
+      "id": "gravelord-legs",
+      "name": "Gravelord Greaves",
+      "slot": "legs",
+      "description": "Iron and bone over the legs.",
+      "icon": "images/equipment/gravelord-legs.png",
+      "models": [
+        "models/roaming/combat/equipment/gravelord-legs.glb"
+      ],
+      "hero": "brute",
+      "set": "gravelord",
+      "setLabel": "Gravelord",
+      "realm": "raid"
+    },
+    {
+      "id": "gravelord-boots",
+      "name": "Gravelord Sabatons",
+      "slot": "boots",
+      "description": "Iron sabatons that dragged through the barrow.",
+      "icon": "images/equipment/gravelord-boots.png",
+      "models": [
+        "models/roaming/combat/equipment/gravelord-boots.glb"
+      ],
+      "hero": "brute",
+      "set": "gravelord",
+      "setLabel": "Gravelord",
+      "realm": "raid"
+    },
+    {
+      "id": "oni-head",
+      "name": "Oni Kabuto",
+      "slot": "head",
+      "description": "A dark helm with a demon's horns and a snarling mask.",
+      "icon": "images/equipment/oni-head.png",
+      "models": [
+        "models/roaming/combat/equipment/oni-head.glb"
+      ],
+      "hero": "brute",
+      "set": "oni",
+      "setLabel": "Oni",
+      "realm": "castle"
+    },
+    {
+      "id": "oni-chest",
+      "name": "Oni Dou",
+      "slot": "chest",
+      "description": "Black-lacquered plates over red, made to frighten before the fight.",
+      "icon": "images/equipment/oni-chest.png",
+      "models": [
+        "models/roaming/combat/equipment/oni-chest.glb"
+      ],
+      "hero": "brute",
+      "set": "oni",
+      "setLabel": "Oni",
+      "realm": "castle"
+    },
+    {
+      "id": "oni-shoulders",
+      "name": "Oni Sode",
+      "slot": "shoulders",
+      "description": "Heavy shoulder plates with the demon's face.",
+      "icon": "images/equipment/oni-shoulders.png",
+      "models": [
+        "models/roaming/combat/equipment/oni-shoulders.glb"
+      ],
+      "hero": "brute",
+      "set": "oni",
+      "setLabel": "Oni",
+      "realm": "castle"
+    },
+    {
+      "id": "oni-hands",
+      "name": "Oni Kote",
+      "slot": "hands",
+      "description": "Dark sleeve armour for a two-handed blade.",
+      "icon": "images/equipment/oni-hands.png",
+      "models": [
+        "models/roaming/customization/armor/warm/oni-hands.glb"
+      ],
+      "hero": "brute",
+      "set": "oni",
+      "setLabel": "Oni",
+      "realm": "castle"
+    },
+    {
+      "id": "oni-legs",
+      "name": "Oni Haidate",
+      "slot": "legs",
+      "description": "Heavy thigh guards over black cloth.",
+      "icon": "images/equipment/oni-legs.png",
+      "models": [
+        "models/roaming/combat/equipment/oni-legs.glb"
+      ],
+      "hero": "brute",
+      "set": "oni",
+      "setLabel": "Oni",
+      "realm": "castle"
+    },
+    {
+      "id": "oni-boots",
+      "name": "Oni Suneate",
+      "slot": "boots",
+      "description": "Black shin plates and boots.",
+      "icon": "images/equipment/oni-boots.png",
+      "models": [
+        "models/roaming/combat/equipment/oni-boots.glb"
+      ],
+      "hero": "brute",
+      "set": "oni",
+      "setLabel": "Oni",
+      "realm": "castle"
+    },
+    {
+      "id": "seadog-head",
+      "name": "Sea Dog's Hat",
+      "slot": "head",
+      "description": "A blue captain's hat over a beard that has its own weather.",
+      "icon": "images/equipment/seadog-head.png",
+      "models": [
+        "models/roaming/combat/equipment/seadog-head.glb"
+      ],
+      "hero": "brute",
+      "set": "seadog",
+      "setLabel": "Sea Dog",
+      "realm": "pass"
+    },
+    {
+      "id": "seadog-chest",
+      "name": "Sea Dog's Coat",
+      "slot": "chest",
+      "description": "A blue coat over a broad chest, buttons long given up.",
+      "icon": "images/equipment/seadog-chest.png",
+      "models": [
+        "models/roaming/customization/armor/warm/seadog-chest.glb"
+      ],
+      "hero": "brute",
+      "set": "seadog",
+      "setLabel": "Sea Dog",
+      "realm": "pass"
+    },
+    {
+      "id": "seadog-shoulders",
+      "name": "Sea Dog's Mantle",
+      "slot": "shoulders",
+      "description": "A heavy mantle across the shoulders.",
+      "icon": "images/equipment/seadog-shoulders.png",
+      "models": [
+        "models/roaming/combat/equipment/seadog-shoulders.glb"
+      ],
+      "hero": "brute",
+      "set": "seadog",
+      "setLabel": "Sea Dog",
+      "realm": "pass"
+    },
+    {
+      "id": "seadog-hands",
+      "name": "Sea Dog's Gloves",
+      "slot": "hands",
+      "description": "Rough gloves for hauling and hitting.",
+      "icon": "images/equipment/seadog-hands.png",
+      "models": [
+        "models/roaming/customization/armor/warm/seadog-hands.glb"
+      ],
+      "hero": "brute",
+      "set": "seadog",
+      "setLabel": "Sea Dog",
+      "realm": "pass"
+    },
+    {
+      "id": "seadog-legs",
+      "name": "Sea Dog's Breeches",
+      "slot": "legs",
+      "description": "Patched breeches with a cutlass and a bottle.",
+      "icon": "images/equipment/seadog-legs.png",
+      "models": [
+        "models/roaming/combat/equipment/seadog-legs.glb"
+      ],
+      "hero": "brute",
+      "set": "seadog",
+      "setLabel": "Sea Dog",
+      "realm": "pass"
+    },
+    {
+      "id": "seadog-boots",
+      "name": "Sea Dog's Boots",
+      "slot": "boots",
+      "description": "Boots that have stood on more decks than docks.",
+      "icon": "images/equipment/seadog-boots.png",
+      "models": [
+        "models/roaming/combat/equipment/seadog-boots.glb"
+      ],
+      "hero": "brute",
+      "set": "seadog",
+      "setLabel": "Sea Dog",
+      "realm": "pass"
+    },
+    {
+      "id": "herder-head",
+      "name": "Herder's Cap",
+      "slot": "head",
+      "description": "A wool cap for the high pastures.",
+      "icon": "images/equipment/herder-head.png",
+      "models": [
+        "models/roaming/combat/equipment/herder-head.glb"
+      ],
+      "hero": "brute",
+      "set": "herder",
+      "setLabel": "Herder",
+      "realm": "fortress"
+    },
+    {
+      "id": "herder-chest",
+      "name": "Herder's Coat",
+      "slot": "chest",
+      "description": "A blue coat over a leather vest, cut for a broad back.",
+      "icon": "images/equipment/herder-chest.png",
+      "models": [
+        "models/roaming/customization/armor/warm/herder-chest.glb"
+      ],
+      "hero": "brute",
+      "set": "herder",
+      "setLabel": "Herder",
+      "realm": "fortress"
+    },
+    {
+      "id": "herder-shoulders",
+      "name": "Herder's Goat",
+      "slot": "shoulders",
+      "description": "A goat across the shoulders. It is not a decoration.",
+      "icon": "images/equipment/herder-shoulders.png",
+      "models": [
+        "models/roaming/combat/equipment/herder-shoulders.glb"
+      ],
+      "hero": "brute",
+      "set": "herder",
+      "setLabel": "Herder",
+      "realm": "fortress"
+    },
+    {
+      "id": "herder-hands",
+      "name": "Herder's Mitts",
+      "slot": "hands",
+      "description": "Wool mitts for cold mornings.",
+      "icon": "images/equipment/herder-hands.png",
+      "models": [
+        "models/roaming/customization/armor/warm/herder-hands.glb"
+      ],
+      "hero": "brute",
+      "set": "herder",
+      "setLabel": "Herder",
+      "realm": "fortress"
+    },
+    {
+      "id": "herder-legs",
+      "name": "Herder's Trousers",
+      "slot": "legs",
+      "description": "Red wool trousers, patched at the knee.",
+      "icon": "images/equipment/herder-legs.png",
+      "models": [
+        "models/roaming/combat/equipment/herder-legs.glb"
+      ],
+      "hero": "brute",
+      "set": "herder",
+      "setLabel": "Herder",
+      "realm": "fortress"
+    },
+    {
+      "id": "herder-boots",
+      "name": "Herder's Boots",
+      "slot": "boots",
+      "description": "Boots for rocks and mud.",
+      "icon": "images/equipment/herder-boots.png",
+      "models": [
+        "models/roaming/combat/equipment/herder-boots.glb"
+      ],
+      "hero": "brute",
+      "set": "herder",
+      "setLabel": "Herder",
+      "realm": "fortress"
+    },
+    {
+      "id": "admiral-head",
+      "name": "Admiral's Bicorn",
+      "slot": "head",
+      "description": "A black bicorn with gold trim and a skull where the cockade should be.",
+      "icon": "images/equipment/admiral-head.png",
+      "models": [
+        "models/roaming/combat/equipment/admiral-head.glb"
+      ],
+      "hero": "vanguard",
+      "set": "admiral",
+      "setLabel": "Admiral",
+      "realm": "pass"
+    },
+    {
+      "id": "admiral-chest",
+      "name": "Admiral's Coat",
+      "slot": "chest",
+      "description": "A long black coat with gold buttons, taken off a ship of the line.",
+      "icon": "images/equipment/admiral-chest.png",
+      "models": [
+        "models/roaming/customization/armor/warm/admiral-chest.glb"
+      ],
+      "hero": "vanguard",
+      "set": "admiral",
+      "setLabel": "Admiral",
+      "realm": "pass"
+    },
+    {
+      "id": "admiral-hands",
+      "name": "Admiral's Gloves",
+      "slot": "hands",
+      "description": "White gloves that have not been white for years.",
+      "icon": "images/equipment/admiral-hands.png",
+      "models": [
+        "models/roaming/customization/armor/warm/admiral-hands.glb"
+      ],
+      "hero": "vanguard",
+      "set": "admiral",
+      "setLabel": "Admiral",
+      "realm": "pass"
+    },
+    {
+      "id": "admiral-legs",
+      "name": "Admiral's Breeches",
+      "slot": "legs",
+      "description": "Black breeches with a sabre at the hip.",
+      "icon": "images/equipment/admiral-legs.png",
+      "models": [
+        "models/roaming/customization/armor/warm/admiral-legs.glb"
+      ],
+      "hero": "vanguard",
+      "set": "admiral",
+      "setLabel": "Admiral",
+      "realm": "pass"
+    },
+    {
+      "id": "admiral-boots",
+      "name": "Admiral's Boots",
+      "slot": "boots",
+      "description": "Tall black boots for a frozen deck.",
+      "icon": "images/equipment/admiral-boots.png",
+      "models": [
+        "models/roaming/customization/armor/warm/admiral-boots.glb"
+      ],
+      "hero": "vanguard",
+      "set": "admiral",
+      "setLabel": "Admiral",
+      "realm": "pass"
+    },
+    {
+      "id": "stalker-chest",
+      "name": "Stalker's Jerkin",
+      "slot": "chest",
+      "description": "Scrap leather and hide, cut to move quietly through the mire.",
+      "icon": "images/equipment/stalker-chest.png",
+      "models": [
+        "models/roaming/customization/armor/warm/stalker-chest.glb"
+      ],
+      "hero": "scout",
+      "set": "stalker",
+      "setLabel": "Bog Stalker",
+      "realm": "bog"
+    },
+    {
+      "id": "stalker-shoulders",
+      "name": "Stalker's Pads",
+      "slot": "shoulders",
+      "description": "Bone and hide pads that catch no light.",
+      "icon": "images/equipment/stalker-shoulders.png",
+      "models": [
+        "models/roaming/combat/equipment/stalker-shoulders.glb"
+      ],
+      "hero": "scout",
+      "set": "stalker",
+      "setLabel": "Bog Stalker",
+      "realm": "bog"
+    },
+    {
+      "id": "stalker-hands",
+      "name": "Stalker's Wraps",
+      "slot": "hands",
+      "description": "Wrapped hands, stained with bog water.",
+      "icon": "images/equipment/stalker-hands.png",
+      "models": [
+        "models/roaming/customization/armor/warm/stalker-hands.glb"
+      ],
+      "hero": "scout",
+      "set": "stalker",
+      "setLabel": "Bog Stalker",
+      "realm": "bog"
+    },
+    {
+      "id": "stalker-legs",
+      "name": "Stalker's Breeches",
+      "slot": "legs",
+      "description": "Breeches patched from whatever the camp had.",
+      "icon": "images/equipment/stalker-legs.png",
+      "models": [
+        "models/roaming/combat/equipment/stalker-legs.glb"
+      ],
+      "hero": "scout",
+      "set": "stalker",
+      "setLabel": "Bog Stalker",
+      "realm": "bog"
+    },
+    {
+      "id": "stalker-boots",
+      "name": "Stalker's Boots",
+      "slot": "boots",
+      "description": "Boots wrapped in reed against the mud.",
+      "icon": "images/equipment/stalker-boots.png",
+      "models": [
+        "models/roaming/customization/armor/warm/stalker-boots.glb"
+      ],
+      "hero": "scout",
+      "set": "stalker",
+      "setLabel": "Bog Stalker",
+      "realm": "bog"
+    },
+    {
+      "id": "stalker-head",
+      "name": "Stalker's Cap",
+      "slot": "head",
+      "description": "A scrap-iron cap with arrows and feathers stuck through it, the way the camp's scouts wear them.",
+      "icon": "images/equipment/stalker-head.png",
+      "models": [
+        "models/roaming/combat/equipment/stalker-head.glb"
+      ],
+      "hero": "scout",
+      "set": "stalker",
+      "setLabel": "Bog Stalker",
+      "realm": "bog"
+    },
+    {
+      "id": "hearth-chest",
+      "name": "Hearthkeeper's Dress",
+      "slot": "chest",
+      "description": "A red dress under a blue smock, a ladle at the belt.",
+      "icon": "images/equipment/hearth-chest.png",
+      "models": [
+        "models/roaming/customization/armor/warm/hearth-chest.glb"
+      ],
+      "hero": "striker",
+      "set": "hearth",
+      "setLabel": "Hearthkeeper",
+      "realm": "fortress"
+    },
+    {
+      "id": "hearth-hands",
+      "name": "Hearthkeeper's Mitts",
+      "slot": "hands",
+      "description": "Mitts for lifting what has been on the fire.",
+      "icon": "images/equipment/hearth-hands.png",
+      "models": [
+        "models/roaming/customization/armor/warm/hearth-hands.glb"
+      ],
+      "hero": "striker",
+      "set": "hearth",
+      "setLabel": "Hearthkeeper",
+      "realm": "fortress"
+    },
+    {
+      "id": "hearth-legs",
+      "name": "Hearthkeeper's Apron",
+      "slot": "legs",
+      "description": "A long apron over layered skirts.",
+      "icon": "images/equipment/hearth-legs.png",
+      "models": [
+        "models/roaming/customization/armor/warm/hearth-legs.glb"
+      ],
+      "hero": "striker",
+      "set": "hearth",
+      "setLabel": "Hearthkeeper",
+      "realm": "fortress"
+    },
+    {
+      "id": "hearth-boots",
+      "name": "Hearthkeeper's Clogs",
+      "slot": "boots",
+      "description": "Wooden clogs that echo in the hall.",
+      "icon": "images/equipment/hearth-boots.png",
+      "models": [
+        "models/roaming/combat/equipment/hearth-boots.glb"
+      ],
+      "hero": "striker",
+      "set": "hearth",
+      "setLabel": "Hearthkeeper",
+      "realm": "fortress"
+    },
+    {
+      "id": "hearth-head",
+      "name": "Hearthkeeper's Wrap",
+      "slot": "head",
+      "description": "A teal head wrap, tied for a day of work.",
+      "icon": "images/equipment/hearth-head.png",
+      "models": [
+        "models/roaming/combat/equipment/hearth-head.glb"
+      ],
+      "hero": "striker",
+      "set": "hearth",
+      "setLabel": "Hearthkeeper",
+      "realm": "fortress"
+    },
+    {
+      "id": "smith-head",
+      "name": "Smith's Pipe",
+      "slot": "head",
+      "description": "A clay pipe lit from the forge. The smoke follows whoever wears it.",
+      "icon": "images/equipment/smith-head.png",
+      "models": [
+        "models/roaming/combat/equipment/smith-head.glb"
+      ],
+      "hero": "vanguard",
+      "set": "smith",
+      "setLabel": "Smith",
+      "realm": "fortress"
+    },
+    {
+      "id": "smith-chest",
+      "name": "Smith's Apron",
+      "slot": "chest",
+      "description": "A leather apron over a blue shirt, hammer and tongs at the belt.",
+      "icon": "images/equipment/smith-chest.png",
+      "models": [
+        "models/roaming/customization/armor/warm/smith-chest.glb"
+      ],
+      "hero": "vanguard",
+      "set": "smith",
+      "setLabel": "Smith",
+      "realm": "fortress"
+    },
+    {
+      "id": "smith-hands",
+      "name": "Smith's Gloves",
+      "slot": "hands",
+      "description": "Thick gloves for iron fresh from the fire.",
+      "icon": "images/equipment/smith-hands.png",
+      "models": [
+        "models/roaming/customization/armor/warm/smith-hands.glb"
+      ],
+      "hero": "vanguard",
+      "set": "smith",
+      "setLabel": "Smith",
+      "realm": "fortress"
+    },
+    {
+      "id": "smith-legs",
+      "name": "Smith's Trousers",
+      "slot": "legs",
+      "description": "Heavy trousers that have caught a hundred sparks.",
+      "icon": "images/equipment/smith-legs.png",
+      "models": [
+        "models/roaming/combat/equipment/smith-legs.glb"
+      ],
+      "hero": "vanguard",
+      "set": "smith",
+      "setLabel": "Smith",
+      "realm": "fortress"
+    },
+    {
+      "id": "smith-boots",
+      "name": "Smith's Boots",
+      "slot": "boots",
+      "description": "Boots with iron toes for dropped anvils.",
+      "icon": "images/equipment/smith-boots.png",
+      "models": [
+        "models/roaming/combat/equipment/smith-boots.glb"
+      ],
+      "hero": "vanguard",
+      "set": "smith",
+      "setLabel": "Smith",
+      "realm": "fortress"
     }
   ],
   "skinVariants": [
+    "admiral-boots",
+    "admiral-chest",
+    "admiral-hands",
+    "admiral-legs",
+    "bonegnaw-boots",
+    "bonegnaw-chest",
+    "bonegnaw-hands",
+    "buccaneer-chest",
+    "buccaneer-hands",
+    "corsair-chest",
     "druid-chest",
     "druid-hands",
     "dusk-chest",
     "dusk-hands",
     "elf-chest",
     "elf-hands",
+    "freebooter-chest",
+    "freebooter-hands",
+    "hearth-chest",
+    "hearth-hands",
+    "hearth-legs",
+    "herbalist-chest",
+    "herbalist-hands",
+    "herbalist-legs",
+    "herder-chest",
+    "herder-hands",
     "hexer-chest",
     "hexer-hands",
+    "hexroot-boots",
+    "hexroot-chest",
+    "hexroot-hands",
+    "hexroot-legs",
     "huskarl-chest",
     "huskarl-hands",
     "jarl-chest",
     "jarl-hands",
     "karl-chest",
     "karl-hands",
+    "kingsown-boots",
+    "kingsown-chest",
+    "kingsown-hands",
+    "kingsown-legs",
+    "oni-hands",
     "raider-chest",
     "raider-hands",
+    "ronin-hands",
     "sage-chest",
     "sage-hands",
+    "seadog-chest",
+    "seadog-hands",
     "sentinel-chest",
     "sentinel-hands",
+    "shrine-hands",
+    "smith-chest",
+    "smith-hands",
     "sorc-chest",
     "sorc-hands",
     "spectral-hands",
     "stag-chest",
     "stag-hands",
+    "stalker-boots",
+    "stalker-chest",
+    "stalker-hands",
     "sunleaf-chest",
     "sunleaf-hands",
     "thorn-chest",
     "thorn-hands",
+    "trapper-chest",
+    "trapper-hands",
     "ulfhednar-chest",
     "ulfhednar-hands",
     "viking-hands",
+    "warboss-chest",
+    "warboss-hands",
+    "warboss-legs",
     "witch-chest",
     "witch-hands"
   ],

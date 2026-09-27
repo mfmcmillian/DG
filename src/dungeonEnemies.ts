@@ -54,7 +54,7 @@ import { Dungeon, generateDungeon, RoomKind, Side } from './dungeon/generator'
 import { authoredLayout, stagesFor } from './dungeon/layouts'
 import { Stage, stageAtCell, WAVE_GAP_SECONDS, wavePlaces, WaveUnit } from './dungeon/stages'
 import {
-  ARMOR_DROP_REALM, DifficultyDefinition, difficultyById, HUB_LEVEL, LevelDefinition, levelById, RAID_PARTY
+  ARMOR_DROP_REALMS, DifficultyDefinition, difficultyById, HUB_LEVEL, LevelDefinition, levelById, RAID_PARTY
 } from './shared/levels'
 import { HUB, partyOf } from './partyLookup'
 import { armorBonuses } from './armor'
@@ -2613,7 +2613,7 @@ function kill(e: Enemy) {
   // boss always leaves one; the rest only when they left no weapon.
   if (e.boss || !item) {
     const source = e.boss ? 'boss' : e.archetype.role === 'elite' ? 'elite' : 'grunt'
-    const armor = rollArmorDrop(source, ARMOR_DROP_REALM[sim.level.realm] as ArmorRealm, partyCharacters(sim.party))
+    const armor = rollArmorDrop(source, ARMOR_DROP_REALMS[sim.level.realm] as ArmorRealm[], partyCharacters(sim.party))
     if (armor) publishLoot(sim.party, e.position.x + 0.4, e.position.z - 0.4, 0, 0, armor, e.boss)
   }
 }

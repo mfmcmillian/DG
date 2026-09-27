@@ -82,7 +82,7 @@ export function nextRarity(rarity: Rarity): Rarity | undefined {
 }
 
 /** An armor set's rank follows where it is found: the deeper the realm, the rarer the piece. */
-export const ARMOR_RARITY: Record<Exclude<ArmorRealm, ''>, Rarity> = { fortress: 'uncommon', pass: 'rare', castle: 'rare', forge: 'epic', raid: 'legendary' }
+export const ARMOR_RARITY: Record<Exclude<ArmorRealm, ''>, Rarity> = { fortress: 'uncommon', pass: 'rare', castle: 'rare', forge: 'epic', bog: 'epic', raid: 'legendary' }
 
 /** How rare an item is as printed: a weapon's own rarity, or an armor piece's by its realm. Starter gear is common. */
 export function baseRarityOf(id: string): Rarity {
@@ -96,22 +96,22 @@ export function rarityOf(id: string): Rarity {
   return raiseRarity(baseRarityOf(id), upgradeRankOf(id))
 }
 
-/** Armor pieces of every set found in `realm`, for a class (by its character id). */
-export function armorDropsFor(characterId: string, realm: Exclude<ArmorRealm, ''>): EquipmentItem[] {
-  return EQUIPMENT_ITEMS.filter((item) => !item.weapon && item.realm === realm && classAllowsArmor(characterId, item.hero))
+/** Armor pieces of every set found in `realms`, for a class (by its character id). */
+export function armorDropsFor(characterId: string, realms: readonly ArmorRealm[]): EquipmentItem[] {
+  return EQUIPMENT_ITEMS.filter((item) => !item.weapon && !!item.realm && realms.includes(item.realm) && classAllowsArmor(characterId, item.hero))
 }
 
 /** How often a slain enemy leaves a piece of armor when it left no weapon. The boss always does. */
 const ARMOR_CHANCE: Record<DropSource, number> = { grunt: 0.04, elite: 0.14, boss: 1 }
 
 /**
- * Roll an armor drop for a slain enemy: a piece of one of the realm's sets for
- * a random character present, or '' for nothing.
+ * Roll an armor drop for a slain enemy: a piece of one of the sets the map
+ * drops (ARMOR_DROP_REALMS) for a random character present, or '' for nothing.
  */
-export function rollArmorDrop(source: DropSource, realm: ArmorRealm, characterIds: string[], rng: () => number = Math.random): string {
-  if (!realm || !characterIds.length || rng() >= ARMOR_CHANCE[source]) return ''
+export function rollArmorDrop(source: DropSource, realms: readonly ArmorRealm[], characterIds: string[], rng: () => number = Math.random): string {
+  if (!realms.length || !characterIds.length || rng() >= ARMOR_CHANCE[source]) return ''
   const cid = characterIds[Math.min(characterIds.length - 1, Math.floor(rng() * characterIds.length))]
-  const pieces = armorDropsFor(cid, realm)
+  const pieces = armorDropsFor(cid, realms)
   if (!pieces.length) return ''
   return pieces[Math.min(pieces.length - 1, Math.floor(rng() * pieces.length))].id
 }
