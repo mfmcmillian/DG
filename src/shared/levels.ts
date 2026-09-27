@@ -13,7 +13,7 @@
 
 import { StyleId } from '../dungeon/config'
 
-export type RealmId = 'fortress' | 'pass' | 'castle' | 'forge' | 'bog' | 'thornwood' | 'crypt' | 'jade'
+export type RealmId = 'fortress' | 'pass' | 'castle' | 'forge' | 'bog' | 'thornwood' | 'crypt' | 'jade' | 'coast'
 
 export type RealmDefinition = {
   id: RealmId
@@ -36,7 +36,7 @@ export const REALMS: RealmDefinition[] = [
     blurb: 'The Warlord\'s keep. Black stone, cages and braziers.'
   },
   {
-    id: 'pass', name: 'The Frozen Pass', style: 'pass', packs: 'Viking Warriors, Pirate Captains',
+    id: 'pass', name: 'The Frozen Pass', style: 'pass', packs: 'Viking Warriors',
     blurb: 'A gorge through the high peaks, held by the Jarl\'s Vikings. Snow, ice and axes.'
   },
   {
@@ -58,6 +58,10 @@ export const REALMS: RealmDefinition[] = [
   {
     id: 'jade', name: 'The Jade Gate', style: 'open', packs: 'Samurai Warriors', comingSoon: true,
     blurb: 'A shrine fortress beyond the eastern sea. Lacquered plate and very sharp steel.'
+  },
+  {
+    id: 'coast', name: 'The Drowned Coast', style: 'open', packs: 'Pirate Captains', comingSoon: true,
+    blurb: 'A smugglers\' harbour of wrecks and sea caves. Cutlasses, powder and the Admiral\'s flag.'
   },
   {
     // The raid's ground only (RAID_LEVEL): no pack dresses it and no ladder level is set in it.
@@ -179,7 +183,7 @@ export function realmOfLevel(level: number): RealmDefinition {
  * the realm's: a piece is as rare as the difficulty it fell on (src/weapons.ts rollArmorRank).
  */
 export const ARMOR_DROP_REALMS: Record<RealmId, readonly RealmId[]> = {
-  fortress: ['fortress'], pass: ['pass'], bog: ['bog'], castle: ['castle'], forge: ['forge'], thornwood: ['thornwood'], crypt: ['crypt'], jade: ['jade']
+  fortress: ['fortress'], pass: ['pass'], bog: ['bog'], castle: ['castle'], forge: ['forge'], thornwood: ['thornwood'], crypt: ['crypt'], jade: ['jade'], coast: ['coast']
 }
 
 /** The maps whose enemies drop a realm's armor sets, by name. */

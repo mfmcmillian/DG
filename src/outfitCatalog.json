@@ -2126,7 +2126,7 @@
       "hero": "scout",
       "set": "freebooter",
       "setLabel": "Freebooter",
-      "realm": "pass"
+      "realm": "coast"
     },
     {
       "id": "freebooter-chest",
@@ -2140,7 +2140,7 @@
       "hero": "scout",
       "set": "freebooter",
       "setLabel": "Freebooter",
-      "realm": "pass"
+      "realm": "coast"
     },
     {
       "id": "freebooter-shoulders",
@@ -2154,7 +2154,7 @@
       "hero": "scout",
       "set": "freebooter",
       "setLabel": "Freebooter",
-      "realm": "pass"
+      "realm": "coast"
     },
     {
       "id": "freebooter-hands",
@@ -2168,7 +2168,7 @@
       "hero": "scout",
       "set": "freebooter",
       "setLabel": "Freebooter",
-      "realm": "pass"
+      "realm": "coast"
     },
     {
       "id": "freebooter-legs",
@@ -2182,7 +2182,7 @@
       "hero": "scout",
       "set": "freebooter",
       "setLabel": "Freebooter",
-      "realm": "pass"
+      "realm": "coast"
     },
     {
       "id": "freebooter-boots",
@@ -2196,7 +2196,7 @@
       "hero": "scout",
       "set": "freebooter",
       "setLabel": "Freebooter",
-      "realm": "pass"
+      "realm": "coast"
     },
     {
       "id": "buccaneer-head",
@@ -2210,7 +2210,7 @@
       "hero": "scout",
       "set": "buccaneer",
       "setLabel": "Buccaneer",
-      "realm": "pass"
+      "realm": "coast"
     },
     {
       "id": "buccaneer-chest",
@@ -2224,7 +2224,7 @@
       "hero": "scout",
       "set": "buccaneer",
       "setLabel": "Buccaneer",
-      "realm": "pass"
+      "realm": "coast"
     },
     {
       "id": "buccaneer-shoulders",
@@ -2238,7 +2238,7 @@
       "hero": "scout",
       "set": "buccaneer",
       "setLabel": "Buccaneer",
-      "realm": "pass"
+      "realm": "coast"
     },
     {
       "id": "buccaneer-hands",
@@ -2252,7 +2252,7 @@
       "hero": "scout",
       "set": "buccaneer",
       "setLabel": "Buccaneer",
-      "realm": "pass"
+      "realm": "coast"
     },
     {
       "id": "buccaneer-legs",
@@ -2266,7 +2266,7 @@
       "hero": "scout",
       "set": "buccaneer",
       "setLabel": "Buccaneer",
-      "realm": "pass"
+      "realm": "coast"
     },
     {
       "id": "buccaneer-boots",
@@ -2280,7 +2280,7 @@
       "hero": "scout",
       "set": "buccaneer",
       "setLabel": "Buccaneer",
-      "realm": "pass"
+      "realm": "coast"
     },
     {
       "id": "trapper-head",
@@ -2700,7 +2700,7 @@
       "hero": "striker",
       "set": "corsair",
       "setLabel": "Corsair",
-      "realm": "pass"
+      "realm": "coast"
     },
     {
       "id": "corsair-chest",
@@ -2714,7 +2714,7 @@
       "hero": "striker",
       "set": "corsair",
       "setLabel": "Corsair",
-      "realm": "pass"
+      "realm": "coast"
     },
     {
       "id": "corsair-shoulders",
@@ -2728,7 +2728,7 @@
       "hero": "striker",
       "set": "corsair",
       "setLabel": "Corsair",
-      "realm": "pass"
+      "realm": "coast"
     },
     {
       "id": "corsair-hands",
@@ -2742,7 +2742,7 @@
       "hero": "striker",
       "set": "corsair",
       "setLabel": "Corsair",
-      "realm": "pass"
+      "realm": "coast"
     },
     {
       "id": "corsair-legs",
@@ -2756,7 +2756,7 @@
       "hero": "striker",
       "set": "corsair",
       "setLabel": "Corsair",
-      "realm": "pass"
+      "realm": "coast"
     },
     {
       "id": "corsair-boots",
@@ -2770,7 +2770,7 @@
       "hero": "striker",
       "set": "corsair",
       "setLabel": "Corsair",
-      "realm": "pass"
+      "realm": "coast"
     },
     {
       "id": "herbalist-head",
@@ -3512,7 +3512,7 @@
       "hero": "brute",
       "set": "seadog",
       "setLabel": "Sea Dog",
-      "realm": "pass"
+      "realm": "coast"
     },
     {
       "id": "seadog-chest",
@@ -3526,7 +3526,7 @@
       "hero": "brute",
       "set": "seadog",
       "setLabel": "Sea Dog",
-      "realm": "pass"
+      "realm": "coast"
     },
     {
       "id": "seadog-shoulders",
@@ -3540,7 +3540,7 @@
       "hero": "brute",
       "set": "seadog",
       "setLabel": "Sea Dog",
-      "realm": "pass"
+      "realm": "coast"
     },
     {
       "id": "seadog-hands",
@@ -3554,7 +3554,7 @@
       "hero": "brute",
       "set": "seadog",
       "setLabel": "Sea Dog",
-      "realm": "pass"
+      "realm": "coast"
     },
     {
       "id": "seadog-legs",
@@ -3568,7 +3568,7 @@
       "hero": "brute",
       "set": "seadog",
       "setLabel": "Sea Dog",
-      "realm": "pass"
+      "realm": "coast"
     },
     {
       "id": "seadog-boots",
@@ -3582,7 +3582,7 @@
       "hero": "brute",
       "set": "seadog",
       "setLabel": "Sea Dog",
-      "realm": "pass"
+      "realm": "coast"
     },
     {
       "id": "herder-head",
@@ -3680,7 +3680,7 @@
       "hero": "vanguard",
       "set": "admiral",
       "setLabel": "Admiral",
-      "realm": "pass"
+      "realm": "coast"
     },
     {
       "id": "admiral-chest",
@@ -3694,7 +3694,7 @@
       "hero": "vanguard",
       "set": "admiral",
       "setLabel": "Admiral",
-      "realm": "pass"
+      "realm": "coast"
     },
     {
       "id": "admiral-hands",
@@ -3708,7 +3708,7 @@
       "hero": "vanguard",
       "set": "admiral",
       "setLabel": "Admiral",
-      "realm": "pass"
+      "realm": "coast"
     },
     {
       "id": "admiral-legs",
@@ -3722,7 +3722,7 @@
       "hero": "vanguard",
       "set": "admiral",
       "setLabel": "Admiral",
-      "realm": "pass"
+      "realm": "coast"
     },
     {
       "id": "admiral-boots",
@@ -3736,7 +3736,7 @@
       "hero": "vanguard",
       "set": "admiral",
       "setLabel": "Admiral",
-      "realm": "pass"
+      "realm": "coast"
     },
     {
       "id": "stalker-chest",

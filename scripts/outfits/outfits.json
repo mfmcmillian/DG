@@ -1,5 +1,5 @@
 {
-  "note": "Input for scripts/build-hero-outfits.py. One Sidekick preset per hero becomes a six-slot armor set; `set` prefixes the item ids and file names. Change `preset` to any of the pack's six (see .tmp-outfits/previews after --previews) and rebuild. `extras` add more items from the same pack (explicit part names, usually from other presets, rendered with that preset's palette); an extra whose id is `<set>-<slot>` fills an empty slot and becomes the default. Each collectible names the `realm` whose dungeons drop its pieces ('fortress', 'pass', 'bog', 'castle', 'forge' or 'raid' for the Pit; ARMOR_DROP_REALMS in src/shared/levels.ts says which map drops which). A collectible may name its own `pack`; the hero's own preset is the starter set and is always owned. Items carry `hero`, `set` and `realm` into the catalog. Each pack dresses one realm (`realm` on the hero and on every collectible); `starter` is the outfit every new hero wears, whatever the class.",
+  "note": "Input for scripts/build-hero-outfits.py. One Sidekick preset per hero becomes a six-slot armor set; `set` prefixes the item ids and file names. Change `preset` to any of the pack's six (see .tmp-outfits/previews after --previews) and rebuild. `extras` add more items from the same pack (explicit part names, usually from other presets, rendered with that preset's palette); an extra whose id is `<set>-<slot>` fills an empty slot and becomes the default. Each collectible names the `realm` whose dungeons drop its pieces (any RealmId, e.g. 'fortress', 'pass', 'bog', 'castle', 'coast'; ARMOR_DROP_REALMS in src/shared/levels.ts says which map drops which). A collectible may name its own `pack`; the hero's own preset is the starter set and is always owned. Items carry `hero`, `set` and `realm` into the catalog. Each pack dresses one realm (`realm` on the hero and on every collectible); `starter` is the outfit every new hero wears, whatever the class.",
   "reference": "scripts/clips/hero-clips.glb",
   "clips": [
     "A_MOD_BL_Idle_Standing_Masc",
@@ -241,7 +241,7 @@
           "preset": "PirateCaptain_04",
           "set": "freebooter",
           "label": "Freebooter",
-          "realm": "pass",
+          "realm": "coast",
           "names": {
             "head": "Freebooter's Tricorn",
             "chest": "Freebooter's Coat",
@@ -264,7 +264,7 @@
           "preset": "PirateCaptain_05",
           "set": "buccaneer",
           "label": "Buccaneer",
-          "realm": "pass",
+          "realm": "coast",
           "names": {
             "head": "Buccaneer's Hat",
             "chest": "Buccaneer's Waistcoat",
@@ -573,7 +573,7 @@
           "preset": "PirateCaptain_02",
           "set": "corsair",
           "label": "Corsair",
-          "realm": "pass",
+          "realm": "coast",
           "names": {
             "head": "Corsair's Hat",
             "chest": "Corsair's Coat",
@@ -869,7 +869,7 @@
           "preset": "PirateCaptain_01",
           "set": "admiral",
           "label": "Admiral",
-          "realm": "pass",
+          "realm": "coast",
           "names": {
             "head": "Admiral's Bicorn",
             "chest": "Admiral's Coat",
@@ -1156,7 +1156,7 @@
           "preset": "PirateCaptain_03",
           "set": "seadog",
           "label": "Sea Dog",
-          "realm": "pass",
+          "realm": "coast",
           "names": {
             "head": "Sea Dog's Hat",
             "chest": "Sea Dog's Coat",
