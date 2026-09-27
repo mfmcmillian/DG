@@ -13,9 +13,8 @@
 
 import { engine } from '@dcl/sdk/ecs'
 import { Storage } from '@dcl/sdk/server'
-import { MAX_COMBAT_HEALTH } from './combatActions'
 import { createRunSim, destroyRunSim, runStatus } from './dungeonEnemies'
-import { healHero, heroHealth, RAID_RECOVER_SECONDS, RECOVER_SECONDS, reviveHero, setRecoverPolicy } from './heroVitals'
+import { healHero, heroHealth, heroMaxHealth, RAID_RECOVER_SECONDS, RECOVER_SECONDS, reviveHero, setRecoverPolicy } from './heroVitals'
 import { addXp, heroLevel, setXpRecord, xpRecordOf } from './heroXp'
 import { heroCharacters, isHeadless, onHostStart, setMultiplayerHandlers } from './multiplayer'
 import { onNet, sendNet } from './net'
@@ -412,7 +411,7 @@ function returnToHall(party: Party) {
 /** Full health, up if down; the ledger broadcasts whichever it did. */
 function restoreHero(id: string) {
   if (heroHealth(id) <= 0) reviveHero(id)
-  else healHero(id, MAX_COMBAT_HEALTH)
+  else healHero(id, heroMaxHealth(id))
 }
 
 function leaveParty(id: string, announce = true) {

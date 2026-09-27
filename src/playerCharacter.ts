@@ -8,9 +8,9 @@ import { COURTYARD, isInCourtyard } from './courtyard'
 import { EquipmentLoadout } from './equipmentCatalog'
 import {
   AttackContext, createRoamingCombat, healRoamingCharacter, hitRoamingCharacter, isRoamingBlocking, isRoamingInvulnerable, isRoamingSwinging,
-  isRoamingRooted, maxStamina, resetRoamingCombat, restoreRoamingHealth, RoamingCombatHooks, setGearStamina, setRoamingClass, setRoamingHealth, updateRoamingCombat
+  isRoamingRooted, maxHealth, maxStamina, resetRoamingCombat, restoreRoamingHealth, RoamingCombatHooks, setGearHealth, setGearStamina, setRoamingClass, setRoamingHealth, updateRoamingCombat
 } from './roamingCombat'
-import { CombatPose, HeroAttackMotion, isHeavyMotion, isRangedAttack, isSlashMotion, MAX_COMBAT_HEALTH, WeaponMotion } from './combatActions'
+import { CombatPose, HeroAttackMotion, isHeavyMotion, isRangedAttack, isSlashMotion, WeaponMotion } from './combatActions'
 import { getCommittedAppearance } from './appearance'
 import {
   destroyEquipmentAvatar, EquipmentAvatarOptions, EquipmentLoading, EquipmentMotion,
@@ -115,7 +115,7 @@ export function getPlayerWeapon(): string {
 
 export function getPlayerVitals(): PlayerVitals {
   return {
-    health: roamingCombat.health, maxHealth: MAX_COMBAT_HEALTH, stamina: roamingCombat.stamina, maxStamina: maxStamina(),
+    health: roamingCombat.health, maxHealth: maxHealth(), stamina: roamingCombat.stamina, maxStamina: maxStamina(),
     comboStep: roamingCombat.comboStep, dodging: !!roamingCombat.dodge, blocking: roamingCombat.blocking,
     exhausted: exhaustedNotice > 0, cooldowns: roamingCombat.cooldowns, casting: roamingCombat.swing?.skill
   }
@@ -391,7 +391,7 @@ export function healPlayer(amount: number, health: number) {
 export function reconcilePlayerHealth(health: number): 'died' | 'revived' | undefined {
   if (characterRoot === undefined || !Number.isFinite(health)) return undefined
   const before = roamingCombat.health
-  const after = Math.max(0, Math.min(MAX_COMBAT_HEALTH, health))
+  const after = Math.max(0, Math.min(maxHealth(), health))
   if (Math.abs(before - after) < 0.5) {
     echoMismatches = 0
     return undefined
@@ -520,6 +520,7 @@ export function setPlayerCharacter(
   requestedLoadout = { ...loadout }
   requestedOptions = { ...options }
   setGearStamina(armorBonuses(requestedLoadout).stamina)
+  setGearHealth(armorBonuses(requestedLoadout).health)
   active = true
   setEquipmentAvatar(root, nextCharacterId, requestedLoadout, false, requestedOptions)
   // The equipment adapter retains the previous ready assembly during replacement.
@@ -542,6 +543,7 @@ export function adoptPlayerCharacter(
   requestedLoadout = { ...loadout }
   requestedOptions = { ...options }
   setGearStamina(armorBonuses(requestedLoadout).stamina)
+  setGearHealth(armorBonuses(requestedLoadout).health)
   active = true
   hasReadyCharacter = true
   samplePosition = undefined
@@ -589,6 +591,7 @@ export function disposePlayerCharacter() {
   requestedLoadout = undefined
   requestedOptions = {}
   setGearStamina(0)
+  setGearHealth(0)
   samplePosition = undefined
   sampleElapsed = 0
   locomotion = 'idle'

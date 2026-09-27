@@ -48,7 +48,7 @@
   "+{n} per wave": "ウェーブごとに +{n}",
   "+{n} stamina": "スタミナ +{n}",
   "+{pct}% damage dealt": "与ダメージ +{pct}%",
-  "+{pct}% dealt, -{pct}% taken": "与ダメージ +{pct}%、被ダメージ -{pct}%",
+  "+{pct}% dealt, -{pct}% taken, +{n} health": "与ダメージ +{pct}%、被ダメージ -{pct}%、体力+{n}",
   "A ball of iron spikes from the fortress armory.": "要塞の武器庫から出てきた鉄棘の球。",
   "A ball of spikes on a bronze haft.": "青銅の柄に据えた棘の球。",
   "A bandolier of shot across one shoulder.": "片肩に掛けた弾帯。",

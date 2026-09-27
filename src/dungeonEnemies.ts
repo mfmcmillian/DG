@@ -65,7 +65,7 @@ import {
 import { kickCrawlerCamera } from './dungeon/crawlerCamera'
 import { clearLoot, grantLootDirect, lootKindOf, spawnLoot } from './loot'
 import { rollArmorDrop, rollWeaponDrop, weaponStats } from './weapons'
-import { AttackContext } from './roamingCombat'
+import { AttackContext, maxHealth } from './roamingCombat'
 import {
   allFighters, EnemyFxNet, EnemySnap, heroCharacters, HeroHit, heroLoadout, heroPosition, heroWeapon, heroWeaponRank, ImpactNet, isHeadless, isHost, localAddress, NetFighter, publishEnemies,
   publishEnemyFx, publishHitEnemy, publishHitSkill, publishImpact, publishLoot, publishRespawn, publishShot, publishSkillCast, setMultiplayerHandlers
@@ -175,7 +175,7 @@ const STRAY_DISTANCE = 1.5
 const PATH_REPLAN_SECONDS = 0.4
 
 const state: WorldRivalState = {
-  visible: false, phase: 'loading', name: '', health: 0, playerHealth: MAX_COMBAT_HEALTH,
+  visible: false, phase: 'loading', name: '', health: 0, playerHealth: maxHealth(),
   maxHealth: MAX_COMBAT_HEALTH, message: '', respawnSeconds: 0, telegraph: '',
   alive: 0, total: 0, bossAlive: false, party: 1, bossPhase: 0, bossLabel: ''
 }
@@ -2798,7 +2798,7 @@ function recoverPlayer(inPlace = false) {
   if (clientSim) clientSim.graceSeconds = 2
   state.phase = 'idle'
   state.respawnSeconds = 0
-  state.playerHealth = MAX_COMBAT_HEALTH
+  state.playerHealth = maxHealth()
   state.message = ''
   if (!inPlace) movePlayerToSpawn()
 }

@@ -10,8 +10,8 @@ import { fxSound } from './combatFx'
 import { localAddress } from './multiplayer'
 import { onNet } from './net'
 import { inRun } from './party'
-import { setStaminaBonus } from './roamingCombat'
-import { heroBonuses, HeroBonuses, levelForXp, levelGains, levelProgress, parseXp, XpRecord } from './shared/progression'
+import { setHealthBonus, setStaminaBonus } from './roamingCombat'
+import { HEALTH_PER_LEVEL, heroBonuses, HeroBonuses, levelForXp, levelGains, levelProgress, parseXp, XpRecord } from './shared/progression'
 import { t } from './i18n'
 
 const table = new Map<string, XpRecord>()
@@ -87,7 +87,9 @@ function refreshLocal() {
     fxSound('heal', 0.9)
   }
   knownLevel = p.level
-  setStaminaBonus(heroBonuses(cid, p.level).stamina)
+  const bonuses = heroBonuses(cid, p.level)
+  setStaminaBonus(bonuses.stamina)
+  setHealthBonus(bonuses.health)
 }
 
 export function initializeHeroXp() {
@@ -136,6 +138,7 @@ export function bonusLinesText(cid: string): string[] {
   return [
     t('+{pct}% damage dealt', { pct: (g.might * 100).toFixed(1) }),
     t('-{pct}% damage taken', { pct: (g.toughness * 100).toFixed(1) }),
-    t('+{n} stamina', { n: g.stamina })
+    t('+{n} stamina', { n: g.stamina }),
+    t('+{n} health', { n: HEALTH_PER_LEVEL })
   ]
 }

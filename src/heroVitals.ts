@@ -109,20 +109,30 @@ export function initializeHeroVitals() {
 function record(id: string): Vitals {
   let v = vitals.get(id)
   if (!v) {
-    v = { health: MAX_COMBAT_HEALTH, deadFor: 0 }
+    v = { health: heroMaxHealth(id), deadFor: 0 }
     vitals.set(id, v)
   }
   return v
 }
 
+/**
+ * A hero's health bar as the host sizes it: the base, the level's share and
+ * the armor on their synced body (the client mirrors this in
+ * src/roamingCombat.ts maxHealth, so the two never disagree on gear it can see).
+ */
+export function heroMaxHealth(id: string): number {
+  const cid = heroCharacters((owner) => owner === id)[0] ?? ''
+  return MAX_COMBAT_HEALTH + heroBonusesFor(id, cid).health + armorBonuses(heroLoadout(id)).health
+}
+
 /** Authoritative health; a hero the host has not met yet is at full. */
 export function heroHealth(id: string): number {
-  return vitals.get(id)?.health ?? MAX_COMBAT_HEALTH
+  return vitals.get(id)?.health ?? heroMaxHealth(id)
 }
 
 /** A fresh hero (first sight, character change, return from the title) starts full. */
 export function resetHero(id: string) {
-  vitals.set(id, { health: MAX_COMBAT_HEALTH, deadFor: 0 })
+  vitals.set(id, { health: heroMaxHealth(id), deadFor: 0 })
 }
 
 export function dropHero(id: string) {
@@ -155,7 +165,7 @@ export function healHero(id: string, amount: number): number {
   const v = record(id)
   if (v.health <= 0) return 0
   const before = v.health
-  v.health = Math.min(MAX_COMBAT_HEALTH, v.health + Math.max(0, Math.round(amount)))
+  v.health = Math.min(Math.max(v.health, heroMaxHealth(id)), v.health + Math.max(0, Math.round(amount)))
   const healed = v.health - before
   if (healed > 0) sendNet('heal', { id, amount: healed, health: v.health })
   return healed
@@ -164,7 +174,7 @@ export function healHero(id: string, amount: number): number {
 export function reviveHero(id: string, inPlace = false) {
   const v = record(id)
   if (v.health > 0) return
-  v.health = MAX_COMBAT_HEALTH
+  v.health = heroMaxHealth(id)
   v.deadFor = 0
   sendNet('revive', { id, health: v.health, inPlace })
 }
@@ -183,7 +193,7 @@ export function rememberHeartDrop(x: number, z: number, hearts: number) {
 
 function claimHeart(id: string, x: number, z: number) {
   const v = record(id)
-  if (v.health <= 0 || v.health >= MAX_COMBAT_HEALTH) return
+  if (v.health <= 0 || v.health >= heroMaxHealth(id)) return
   const here = heroPosition(id)
   let best: HeartDrop | undefined
   let bestDistance = Infinity

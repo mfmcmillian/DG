@@ -19,6 +19,24 @@ export function setStaminaBonus(amount: number) {
   staminaBonus = Math.max(0, Math.round(amount))
 }
 
+let levelHealth = 0
+let gearHealth = 0
+
+/** Health the hero's level adds (src/heroXp.ts keeps it current). */
+export function setHealthBonus(amount: number) {
+  levelHealth = Math.max(0, Math.round(amount))
+}
+
+/** Health the armor on the body adds (src/playerCharacter.ts sets it with the loadout). */
+export function setGearHealth(amount: number) {
+  gearHealth = Math.max(0, Math.round(amount))
+}
+
+/** The local hero's health bar: the base, the level's share and the armor's. The host computes the same in src/heroVitals.ts. */
+export function maxHealth(): number {
+  return MAX_COMBAT_HEALTH + levelHealth + gearHealth
+}
+
 export function setGearStamina(amount: number) {
   gearStamina = Math.max(0, Math.round(amount))
 }
@@ -106,7 +124,7 @@ export function createRoamingCombat() {
     controls: createCombatControls(),
     /** The move set: what light/heavy/guard come out as (src/heroClasses.ts). */
     cls: HERO_CLASSES.blade as HeroClassDefinition,
-    health: MAX_COMBAT_HEALTH, stagger: 0,
+    health: maxHealth(), stagger: 0,
     stamina: maxStamina(), staminaDelay: 0,
     elapsed: 0, recovery: 0,
     /** Index of the next light in the string (0..2); the third is the finisher. */
@@ -151,7 +169,7 @@ export function resetRoamingCombat(combat: RoamingCombat) {
 
 export function restoreRoamingHealth(combat: RoamingCombat) {
   resetRoamingCombat(combat)
-  combat.health = MAX_COMBAT_HEALTH
+  combat.health = maxHealth()
   combat.stamina = maxStamina()
   combat.staminaDelay = 0
 }
@@ -175,7 +193,7 @@ export function isRoamingSwinging(combat: RoamingCombat): boolean {
  */
 export function hitRoamingCharacter(combat: RoamingCombat, health: number, stagger: number): boolean {
   if (combat.health <= 0) return false
-  combat.health = Math.max(0, Math.min(MAX_COMBAT_HEALTH, health))
+  combat.health = Math.max(0, Math.min(maxHealth(), health))
   combat.stagger = Math.max(combat.stagger, stagger)
   combat.swing = undefined
   combat.buffered = undefined
@@ -201,13 +219,13 @@ export function isRoamingDead(combat: RoamingCombat): boolean {
 /** Adopt the host's number after a heal; returns how much it rose locally. */
 export function healRoamingCharacter(combat: RoamingCombat, health: number): number {
   const before = combat.health
-  combat.health = Math.max(0, Math.min(MAX_COMBAT_HEALTH, health))
+  combat.health = Math.max(0, Math.min(maxHealth(), health))
   return combat.health - before
 }
 
 /** Silent correction from the host's echo of our own packet (a lost message). */
 export function setRoamingHealth(combat: RoamingCombat, health: number) {
-  combat.health = Math.max(0, Math.min(MAX_COMBAT_HEALTH, health))
+  combat.health = Math.max(0, Math.min(maxHealth(), health))
 }
 
 /** Only owns the outfit's action pose. Explorer owns movement, jump and camera. */

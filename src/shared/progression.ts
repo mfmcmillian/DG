@@ -48,9 +48,12 @@ export function clearXp(level: LevelDefinition, diff: DifficultyDefinition, firs
 
 /**
  * What a level is worth in a fight. `might` multiplies damage dealt,
- * `toughness` multiplies damage taken, `stamina` is added to the bar.
+ * `toughness` multiplies damage taken, `stamina` and `health` are added to their bars.
  */
-export type HeroBonuses = { might: number; toughness: number; stamina: number }
+export type HeroBonuses = { might: number; toughness: number; stamina: number; health: number }
+
+/** Health every champion gains per level, on top of the base 100 (src/combatActions.ts MAX_COMBAT_HEALTH). */
+export const HEALTH_PER_LEVEL = 5
 
 /** Per level gains by champion: the two who fight in reach harden, the berserker hits harder too, the scout runs longer. */
 const GAINS: Record<string, { might: number; toughness: number; stamina: number }> = {
@@ -64,7 +67,7 @@ const DEFAULT_GAINS = { might: 0.01, toughness: 0.005, stamina: 1 }
 export function heroBonuses(cid: string, level: number): HeroBonuses {
   const g = GAINS[cid] ?? DEFAULT_GAINS
   const steps = Math.max(0, Math.min(MAX_LEVEL, Math.floor(level)) - 1)
-  return { might: 1 + g.might * steps, toughness: 1 - g.toughness * steps, stamina: g.stamina * steps }
+  return { might: 1 + g.might * steps, toughness: 1 - g.toughness * steps, stamina: g.stamina * steps, health: HEALTH_PER_LEVEL * steps }
 }
 
 /** What this champion gains per level, for the level-up notice to put into words. */

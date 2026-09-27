@@ -48,7 +48,7 @@
   "+{n} per wave": "+{n} por oleada",
   "+{n} stamina": "+{n} de aguante",
   "+{pct}% damage dealt": "+{pct}% de daño infligido",
-  "+{pct}% dealt, -{pct}% taken": "+{pct}% infligido, -{pct}% recibido",
+  "+{pct}% dealt, -{pct}% taken, +{n} health": "+{pct}% infligido, -{pct}% recibido, +{n} de salud",
   "A ball of iron spikes from the fortress armory.": "Una bola de púas de hierro de la armería de la fortaleza.",
   "A ball of spikes on a bronze haft.": "Una bola de púas sobre un astil de bronce.",
   "A bandolier of shot across one shoulder.": "Una bandolera de munición cruzada al hombro.",
