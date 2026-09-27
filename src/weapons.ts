@@ -53,6 +53,13 @@ export type DropSource = 'grunt' | 'elite' | 'boss'
 
 const SWORD_STATS: WeaponStats = { damage: 1, stagger: 1, knockback: 1, bonus: 0 }
 
+/**
+ * Pride weapons sit above legendary: legendary's flat bonus and more, and a
+ * multiplier on top of the class's. They never roll in the common loot; the
+ * Colossus leaves one now and then, and a Hard fortress boss rarely.
+ */
+export const PRIDE = { damage: 1.15, bonus: 5, raidChance: 0.12, bossChance: 0.04 }
+
 export function weaponInfo(id: string): EquipmentItem['weapon'] | undefined {
   return getEquipmentItemOrNull(id)?.weapon
 }
@@ -67,7 +74,11 @@ export function weaponStats(id: string | undefined, withBonus = true, rank?: num
   if (!info) return SWORD_STATS
   const cls = WEAPON_CLASSES[info.class]
   const rarity = raiseRarity(info.rarity, rank ?? upgradeRankOf(id))
-  return { damage: cls.damage, stagger: cls.stagger, knockback: cls.knockback, bonus: withBonus ? RARITIES[rarity].bonus : 0 }
+  const pride = info.pride ? PRIDE.damage : 1
+  return {
+    damage: cls.damage * pride, stagger: cls.stagger, knockback: cls.knockback,
+    bonus: withBonus ? RARITIES[rarity].bonus + (info.pride ? PRIDE.bonus : 0) : 0
+  }
 }
 
 /** `steps` rarity tiers above `rarity`, capped at legendary. */
@@ -126,7 +137,8 @@ export function weaponSubtitle(item: EquipmentItem): string {
   const rank = upgradeRankOf(item.id)
   const rarity = t(RARITIES[rarityOf(item.id)].label)
   const forged = rank > 0 ? ` · ${t('pit-forged from {rarity}', { rarity: t(RARITIES[item.weapon.rarity].label) })}` : ''
-  return `${rarity}${forged} · ${t(WEAPON_CLASSES[item.weapon.class].label)} · ${item.weapon.pack}`
+  const pride = item.weapon.pride ? `${t('Pride')} · ` : ''
+  return `${pride}${rarity}${forged} · ${t(WEAPON_CLASSES[item.weapon.class].label)} · ${item.weapon.pack}`
 }
 
 /** "+20% damage · +40% stagger · +4 damage" for the inventory. */
@@ -173,15 +185,31 @@ export function allWeapons(): EquipmentItem[] {
   return EQUIPMENT_ITEMS.filter((item) => !!item.weapon)
 }
 
+/** The weapons ordinary drops draw from: everything but the Pride tier. */
+function lootWeapons(): EquipmentItem[] {
+  return allWeapons().filter((item) => !item.weapon!.pride)
+}
+
+/** A Pride weapon somebody in `pool` can wield, or '' when the pack has none for them. */
+export function rollPrideDrop(pool: WeaponClass[] | undefined, rng: () => number = Math.random): string {
+  const candidates = allWeapons().filter((item) => item.weapon!.pride && (!pool || pool.includes(item.weapon!.class)))
+  if (!candidates.length) return ''
+  return candidates[Math.min(candidates.length - 1, Math.floor(rng() * candidates.length))].id
+}
+
 /**
  * Roll a weapon drop for a slain enemy: the item id, or '' for nothing.
  * `level` and `diff` are the run's indices (0-based); `rng` is 0..1. `pool`
  * restricts the draw to weapon classes somebody in the party can use
  * (src/heroClasses.ts weaponPoolFor); undefined means every class.
  */
-/** The Colossus's reward: a Legendary the hero's class can wield, or the best below it. */
+/** The Colossus's reward: now and then a Pride weapon, else a Legendary the hero's class can wield, or the best below it. */
 export function rollRaidDrop(pool: WeaponClass[], rng: () => number = Math.random): string {
-  const usable = allWeapons().filter((item) => pool.includes(item.weapon!.class))
+  if (rng() < PRIDE.raidChance) {
+    const pride = rollPrideDrop(pool, rng)
+    if (pride) return pride
+  }
+  const usable = lootWeapons().filter((item) => pool.includes(item.weapon!.class))
   let candidates: EquipmentItem[] = []
   for (let rank = RARITIES.legendary.rank; rank >= 0 && !candidates.length; rank--) {
     candidates = usable.filter((item) => item.weapon!.rarity === RARITY_ORDER[rank])
@@ -194,6 +222,11 @@ export function rollWeaponDrop(
   source: DropSource, level: number, diff: number, rng: () => number = Math.random, pool?: WeaponClass[]
 ): string {
   if (rng() >= DROP_CHANCE[source]) return ''
+  // A Hard fortress boss, rarely, leaves a Pride weapon.
+  if (source === 'boss' && diff >= 2 && rng() < PRIDE.bossChance) {
+    const pride = rollPrideDrop(pool, rng)
+    if (pride) return pride
+  }
   const steps = level + diff + (source === 'boss' ? 2 : source === 'elite' ? 1 : 0)
   const weights = rarityWeights(steps)
   if (source === 'boss') {
@@ -212,7 +245,7 @@ export function rollWeaponDrop(
       break
     }
   }
-  const usable = pool ? allWeapons().filter((item) => pool.includes(item.weapon!.class)) : allWeapons()
+  const usable = pool ? lootWeapons().filter((item) => pool.includes(item.weapon!.class)) : lootWeapons()
   // A class with no weapon at the rolled rarity takes the nearest rarity below it.
   let candidates: EquipmentItem[] = []
   for (let rank = RARITIES[rarity].rank; rank >= 0 && !candidates.length; rank--) {

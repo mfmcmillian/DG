@@ -2423,8 +2423,9 @@
    ],
    "weapon": {
     "class": "sword",
-    "rarity": "rare",
-    "pack": "Pride Weapons"
+    "rarity": "legendary",
+    "pack": "Pride Weapons",
+    "pride": true
    }
   },
   {
@@ -2438,8 +2439,9 @@
    ],
    "weapon": {
     "class": "sword",
-    "rarity": "epic",
-    "pack": "Pride Weapons"
+    "rarity": "legendary",
+    "pack": "Pride Weapons",
+    "pride": true
    }
   },
   {
@@ -2454,7 +2456,8 @@
    "weapon": {
     "class": "sword",
     "rarity": "legendary",
-    "pack": "Pride Weapons"
+    "pack": "Pride Weapons",
+    "pride": true
    }
   },
   {
@@ -2469,7 +2472,8 @@
    "weapon": {
     "class": "sword",
     "rarity": "legendary",
-    "pack": "Pride Weapons"
+    "pack": "Pride Weapons",
+    "pride": true
    }
   },
   {
@@ -2484,7 +2488,8 @@
    "weapon": {
     "class": "sword",
     "rarity": "legendary",
-    "pack": "Pride Weapons"
+    "pack": "Pride Weapons",
+    "pride": true
    }
   },
   {
@@ -2642,9 +2647,10 @@
    ],
    "weapon": {
     "class": "bow",
-    "rarity": "rare",
+    "rarity": "legendary",
     "pack": "Pride Weapons",
-    "hand": "l"
+    "hand": "l",
+    "pride": true
    }
   },
   {
@@ -3089,9 +3095,10 @@
    ],
    "weapon": {
     "class": "bow",
-    "rarity": "common",
+    "rarity": "legendary",
     "pack": "Pride Weapons",
-    "hand": "l"
+    "hand": "l",
+    "pride": true
    }
   },
   {
@@ -3105,9 +3112,10 @@
    ],
    "weapon": {
     "class": "bow",
-    "rarity": "uncommon",
+    "rarity": "legendary",
     "pack": "Pride Weapons",
-    "hand": "l"
+    "hand": "l",
+    "pride": true
    }
   },
   {
@@ -3121,9 +3129,10 @@
    ],
    "weapon": {
     "class": "bow",
-    "rarity": "rare",
+    "rarity": "legendary",
     "pack": "Pride Weapons",
-    "hand": "l"
+    "hand": "l",
+    "pride": true
    }
   },
   {
@@ -3137,9 +3146,10 @@
    ],
    "weapon": {
     "class": "bow",
-    "rarity": "epic",
+    "rarity": "legendary",
     "pack": "Pride Weapons",
-    "hand": "l"
+    "hand": "l",
+    "pride": true
    }
   },
   {

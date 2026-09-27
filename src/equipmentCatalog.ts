@@ -14,6 +14,8 @@ export type WeaponInfo = {
   pack: string
   /** Held in the left hand (bows); the GLB's joint is `hand_l`. Default right. */
   hand?: 'l' | 'r'
+  /** A Pride weapon: the tier above legendary (src/weapons.ts PRIDE), never in the common loot pool. */
+  pride?: boolean
 }
 
 /** Where a set's pieces are found: a realm's dungeons, the Pit, or nowhere because it is the class's starter. */

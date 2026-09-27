@@ -466,6 +466,8 @@ def write_catalog(manifest):
         info = {'class': w['class'], 'rarity': w['rarity'], 'pack': manifest['packs'][w['pack']]['label']}
         if w.get('hand', 'r') != 'r':
             info['hand'] = w['hand']
+        if w.get('pride'):
+            info['pride'] = True
         items.append({
             'id': w['id'], 'name': w['name'], 'slot': 'weapon', 'description': w['description'],
             'icon': f"images/weapons/{w['id']}.png", 'models': [f"models/roaming/weapons/{w['id']}.glb"],

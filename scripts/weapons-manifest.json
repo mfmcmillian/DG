@@ -1784,8 +1784,9 @@
       "mesh": "SM_Wep_Sword_01",
       "palette": "alt01",
       "class": "sword",
-      "rarity": "rare",
-      "description": "A bright one-handed blade. Quick slashes, a heavy thrust and a steady guard."
+      "rarity": "legendary",
+      "description": "A bright one-handed blade. Quick slashes, a heavy thrust and a steady guard.",
+      "pride": true
     },
     {
       "id": "pride-sword-dusk",
@@ -1794,8 +1795,9 @@
       "mesh": "SM_Wep_Sword_01",
       "palette": "alt02",
       "class": "sword",
-      "rarity": "epic",
-      "description": "An alternate palette for the same balanced sword. A different look, equal power."
+      "rarity": "legendary",
+      "description": "An alternate palette for the same balanced sword. A different look, equal power.",
+      "pride": true
     },
     {
       "id": "pride-sword-dawn",
@@ -1805,7 +1807,8 @@
       "palette": "alt03",
       "class": "sword",
       "rarity": "legendary",
-      "description": "The prism saber in the colors of first light."
+      "description": "The prism saber in the colors of first light.",
+      "pride": true
     },
     {
       "id": "pride-sword-tide",
@@ -1815,7 +1818,8 @@
       "palette": "alt05",
       "class": "sword",
       "rarity": "legendary",
-      "description": "The prism saber in deep sea blues."
+      "description": "The prism saber in deep sea blues.",
+      "pride": true
     },
     {
       "id": "pride-sword-verdant",
@@ -1825,7 +1829,8 @@
       "palette": "alt08",
       "class": "sword",
       "rarity": "legendary",
-      "description": "The prism saber in forest greens."
+      "description": "The prism saber in forest greens.",
+      "pride": true
     },
     {
       "id": "bw-longbow-01",
@@ -1961,9 +1966,10 @@
       "mesh": "SM_Wep_Bow_01",
       "palette": "alt01",
       "class": "bow",
-      "rarity": "rare",
+      "rarity": "legendary",
       "description": "Bright limbs and a proud draw. Carried with the head up.",
-      "hand": "l"
+      "hand": "l",
+      "pride": true
     },
     {
       "id": "fk-bow-01",
@@ -2303,9 +2309,10 @@
       "mesh": "SM_Wep_Bow_01",
       "palette": "alt02",
       "class": "bow",
-      "rarity": "common",
+      "rarity": "legendary",
       "description": "Pink and violet along the limbs. A proud draw in the colors of dawn.",
-      "hand": "l"
+      "hand": "l",
+      "pride": true
     },
     {
       "id": "pr-bow-03",
@@ -2314,9 +2321,10 @@
       "mesh": "SM_Wep_Bow_01",
       "palette": "alt03",
       "class": "bow",
-      "rarity": "uncommon",
+      "rarity": "legendary",
       "description": "Blue into purple, tip to tip. Every arrow leaves at dusk.",
-      "hand": "l"
+      "hand": "l",
+      "pride": true
     },
     {
       "id": "pr-bow-04",
@@ -2325,9 +2333,10 @@
       "mesh": "SM_Wep_Bow_01",
       "palette": "alt05",
       "class": "bow",
-      "rarity": "rare",
+      "rarity": "legendary",
       "description": "Deep purple with a glow at the tips. Carried with the head up.",
-      "hand": "l"
+      "hand": "l",
+      "pride": true
     },
     {
       "id": "pr-bow-05",
@@ -2336,9 +2345,10 @@
       "mesh": "SM_Wep_Bow_01",
       "palette": "alt08",
       "class": "bow",
-      "rarity": "epic",
+      "rarity": "legendary",
       "description": "Cyan and sea-blue, bright as a flag. Hard to miss and harder to dodge.",
-      "hand": "l"
+      "hand": "l",
+      "pride": true
     },
     {
       "id": "fk-staff-07",
