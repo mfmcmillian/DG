@@ -286,7 +286,7 @@ function tickBalloon(h: BogTrapHost, ctx: TrapHostContext) {
 
 // --- the clients ---------------------------------------------------------------
 
-type Pit = { spikes: Entity; cover: Entity; t: number; warn: number }
+type Pit = { spikes: Entity; t: number; warn: number }
 type Ballista = { entity: Entity; ring: Decal; aimLeft: number; aimAt: Vector3 }
 type Log = { pivot: Entity }
 type Bomb = { entity: Entity; shadow: Entity; left: number; total: number; x: number; z: number }
@@ -323,7 +323,6 @@ function box(parent: Entity, position: Vector3, scale: Vector3, color: Color4, r
 
 const WOOD = Color4.create(0.24, 0.16, 0.09, 1)
 const ROPE = Color4.create(0.45, 0.38, 0.24, 1)
-const MUD = Color4.create(0.09, 0.07, 0.045, 1)
 
 /** Client: put the traps' models in the camp. Call when Bogmaw is built; clearBogTraps when it goes. */
 export function buildBogTraps() {
@@ -332,13 +331,10 @@ export function buildBogTraps() {
   Transform.create(root, { position: Vector3.Zero() })
   const v: Visuals = { root, pits: [], ballistas: [], logs: [], logClock: 0, balloon: root, tether: root, clock: 0, bombs: [] }
 
+  // No marker on the mud: a pit gives itself away only by its tips rattling before the blow.
   for (const pit of BOG_TRAPS.pits) {
-    const cover = engine.addEntity()
-    Transform.create(cover, { parent: root, position: Vector3.create(pit.x, FLOOR_Y + 0.03, pit.z), rotation: Quaternion.fromEulerDegrees(90, 0, 0), scale: Vector3.create(2.9, 2.9, 1) })
-    MeshRenderer.setPlane(cover)
-    Material.setPbrMaterial(cover, { albedoColor: MUD, roughness: 1, metallic: 0 })
     const spikes = kitPiece(root, 'bog_spikes', Vector3.create(pit.x, FLOOR_Y - 2.1, pit.z), Quaternion.fromEulerDegrees(0, Math.random() * 360, 0))
-    v.pits.push({ spikes, cover, t: -1, warn: PIT_WARN })
+    v.pits.push({ spikes, t: -1, warn: PIT_WARN })
   }
 
   for (const b of BOG_TRAPS.ballistas) {
