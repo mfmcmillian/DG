@@ -11,6 +11,7 @@ import { armorSourceLabel, EquipmentItem, EquipmentSlot, EQUIPMENT_SLOTS, getEqu
 import { getMenuLayout } from './menuLayout'
 import { menuColors, MenuAction as Action } from './menuUi'
 import { RARITIES, rarityOf, weaponStatLine, weaponSubtitle } from './weapons'
+import { armorSetLine, armorStatLine, armorSummaryLine } from './armor'
 import { t } from './i18n'
 
 const { white, muted, gold, line, panel, card, selectedGold, goldLine, coral } = menuColors
@@ -140,6 +141,10 @@ export function InventoryUi() {
   const actionText = error ? t('Retry preview') : equipped ? t('Unequip') : isEmptyItem(selected) ? t('Remove item') : t('Equip item')
   const action = error ? retryInventoryPreview : equipped ? unequipSelectedSlot : equipSelectedItem
   const category = state.filter === 'all' ? t('All equipment') : state.filter === 'other' ? t('More armor') : slotLabel(state.filter)
+  const preview = getPreviewLoadout()
+  const statLine = selected.weapon ? weaponStatLine(selected) : armorStatLine(selected)
+  const setLine = selected.weapon ? '' : armorSetLine(selected, preview)
+  const outfit = armorSummaryLine(preview)
 
   // The shared frame reserves the native chat column. Only controls capture pointers;
   // the hero bay stays clear so the scene's animated equipment preview remains visible.
@@ -160,6 +165,8 @@ export function InventoryUi() {
 
       <Label value={character.name} font="serif" color={white} fontSize={24 * s} textAlign="middle-center" textWrap="nowrap"
         uiTransform={rect(120, 86, 390, 36, s)} />
+      {outfit && <Label value={outfit} color={gold} fontSize={10.5 * s} textAlign="middle-center" textWrap="nowrap"
+        uiTransform={rect(60, 122, 510, 18, s)} />}
       {sockets.map((socket) => <EquipmentSocket key={socket.slot} {...socket} scale={s} />)}
       <UiEntity uiTransform={{ ...rect(230, 690, 170, 34, s), flexDirection: 'row', justifyContent: 'space-between' }}>
         <Action id="inventory-rotate-left" text="↶" onClick={() => rotateInventoryPreview(-45)} width={36} height={34} scale={s} fontSize={23} accent="gold" />
@@ -202,10 +209,13 @@ export function InventoryUi() {
         color={selected.weapon || selected.realm ? RARITIES[rarityOf(selected.id)].color : gold} fontSize={10 * s}
         textAlign="middle-left" textWrap="nowrap" uiTransform={rect(744, 579, 488, 22, s)} />
       <Label value={selected.name} font="serif" color={white} fontSize={25 * s} textAlign="middle-left" textWrap="nowrap"
-        uiTransform={rect(744, 601, 490, 34, s)} />
-      <Label value={selected.weapon ? `${t(selected.description)}  ${weaponStatLine(selected)}` : t(selected.description)}
-        color={muted} fontSize={12 * s} textAlign="middle-left"
-        uiTransform={rect(744, 637, 490, 35, s)} />
+        uiTransform={rect(744, 601, 490, 30, s)} />
+      <Label value={t(selected.description)} color={muted} fontSize={11.5 * s} textAlign="middle-left"
+        uiTransform={rect(744, 631, 490, 22, s)} />
+      {statLine && <Label value={statLine} color={white} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
+        uiTransform={rect(744, 653, 490, 16, s)} />}
+      {setLine && <Label value={setLine} color={muted} fontSize={10 * s} textAlign="middle-left" textWrap="nowrap"
+        uiTransform={rect(744, 668, 490, 15, s)} />}
       <Label value={status} color={error || locked ? coral : dirty ? gold : muted} fontSize={11 * s} textAlign="middle-left"
         uiTransform={rect(666, 683, showAction ? 364 : 568, 26, s)} />
       {dirty && <UiEntity uiTransform={rect(666, 706, 128, 28, s)}>

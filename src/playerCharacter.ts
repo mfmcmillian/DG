@@ -8,7 +8,7 @@ import { COURTYARD, isInCourtyard } from './courtyard'
 import { EquipmentLoadout } from './equipmentCatalog'
 import {
   AttackContext, createRoamingCombat, healRoamingCharacter, hitRoamingCharacter, isRoamingBlocking, isRoamingInvulnerable, isRoamingSwinging,
-  isRoamingRooted, maxStamina, resetRoamingCombat, restoreRoamingHealth, RoamingCombatHooks, setRoamingClass, setRoamingHealth, updateRoamingCombat
+  isRoamingRooted, maxStamina, resetRoamingCombat, restoreRoamingHealth, RoamingCombatHooks, setGearStamina, setRoamingClass, setRoamingHealth, updateRoamingCombat
 } from './roamingCombat'
 import { CombatPose, HeroAttackMotion, isHeavyMotion, isRangedAttack, isSlashMotion, MAX_COMBAT_HEALTH, WeaponMotion } from './combatActions'
 import { getCommittedAppearance } from './appearance'
@@ -19,6 +19,7 @@ import {
 } from './equipmentAvatar'
 import { fxNumber, fxSlash, fxSound } from './combatFx'
 import { rearmAvatarHiding } from './avatarHiding'
+import { armorBonuses } from './armor'
 import { localAddress, playerAddressAsReported, publishHero, withdrawHero } from './multiplayer'
 import { flushNativeMotion, mirrorLocalMotion, nativeHeroOn, nativeNote, setLocalNativeShown, stopNativeMotion, syncNativeWeapon } from './nativeHero'
 import { CRAWLER_CAMERA, isCrawlerCameraOn, kickCrawlerCamera } from './dungeon/crawlerCamera'
@@ -518,6 +519,7 @@ export function setPlayerCharacter(
   characterId = nextCharacterId
   requestedLoadout = { ...loadout }
   requestedOptions = { ...options }
+  setGearStamina(armorBonuses(requestedLoadout).stamina)
   active = true
   setEquipmentAvatar(root, nextCharacterId, requestedLoadout, false, requestedOptions)
   // The equipment adapter retains the previous ready assembly during replacement.
@@ -539,6 +541,7 @@ export function adoptPlayerCharacter(
   characterId = nextCharacterId
   requestedLoadout = { ...loadout }
   requestedOptions = { ...options }
+  setGearStamina(armorBonuses(requestedLoadout).stamina)
   active = true
   hasReadyCharacter = true
   samplePosition = undefined
@@ -585,6 +588,7 @@ export function disposePlayerCharacter() {
   characterId = undefined
   requestedLoadout = undefined
   requestedOptions = {}
+  setGearStamina(0)
   samplePosition = undefined
   sampleElapsed = 0
   locomotion = 'idle'

@@ -54,9 +54,10 @@ import { Dungeon, generateDungeon, RoomKind, Side } from './dungeon/generator'
 import { authoredLayout, stagesFor } from './dungeon/layouts'
 import { Stage, stageAtCell, WAVE_GAP_SECONDS, wavePlaces, WaveUnit } from './dungeon/stages'
 import {
-  DifficultyDefinition, difficultyById, HUB_LEVEL, LevelDefinition, levelById, RAID_PARTY
+  ARMOR_DROP_REALM, DifficultyDefinition, difficultyById, HUB_LEVEL, LevelDefinition, levelById, RAID_PARTY
 } from './shared/levels'
 import { HUB, partyOf } from './partyLookup'
+import { armorBonuses } from './armor'
 import { heroBonusesFor, heroLevel } from './heroXp'
 import {
   createDecal, Decal, destroyDecal, fxDeathPuff, fxExplosion, fxGlitter, fxImpact, fxMagicBurst, fxNumber, fxSlam, fxSlash, fxSound, FxSound, fxWoodHit, updateDecal
@@ -66,7 +67,7 @@ import { clearLoot, grantLootDirect, lootKindOf, spawnLoot } from './loot'
 import { rollArmorDrop, rollWeaponDrop, weaponStats } from './weapons'
 import { AttackContext } from './roamingCombat'
 import {
-  allFighters, EnemyFxNet, EnemySnap, heroCharacters, HeroHit, heroPosition, heroWeapon, heroWeaponRank, ImpactNet, isHeadless, isHost, localAddress, NetFighter, publishEnemies,
+  allFighters, EnemyFxNet, EnemySnap, heroCharacters, HeroHit, heroLoadout, heroPosition, heroWeapon, heroWeaponRank, ImpactNet, isHeadless, isHost, localAddress, NetFighter, publishEnemies,
   publishEnemyFx, publishHitEnemy, publishHitSkill, publishImpact, publishLoot, publishRespawn, publishShot, publishSkillCast, setMultiplayerHandlers
 } from './multiplayer'
 
@@ -1933,9 +1934,9 @@ function applyRemoteHit(id: string, index: number, motion: string, finisher: boo
   }
 }
 
-/** A hero's multiplier on damage dealt as the host applies it: their level, and any buff on them. */
+/** A hero's multiplier on damage dealt as the host applies it: their level, any buff on them, and the armor their body wears. */
 function hostMight(id: string, cid: string | undefined): number {
-  return heroBonusesFor(id, cid ?? '').might * buffMight(id)
+  return heroBonusesFor(id, cid ?? '').might * buffMight(id) * armorBonuses(heroLoadout(id)).might
 }
 
 /** The local hero's weapon, for the numbers it shows and the hits it hosts. */
@@ -1943,9 +1944,10 @@ function localWeapon(): WeaponModifiers {
   return weaponStats(getPlayerWeapon())
 }
 
-/** The local hero's level bonus on damage dealt (src/heroXp.ts). */
+/** The local hero's bonus on damage dealt: their level (src/heroXp.ts), buffs, and their armor (src/armor.ts). */
 function localMight(): number {
-  return heroBonusesFor(localAddress(), getPlayerCharacterState().characterId ?? '').might * buffMight(localAddress())
+  const me = localAddress()
+  return heroBonusesFor(me, getPlayerCharacterState().characterId ?? '').might * buffMight(me) * armorBonuses(heroLoadout(me)).might
 }
 
 /** A blow's damage after the hero's level; a blow that landed never rounds to nothing. */
@@ -2611,9 +2613,7 @@ function kill(e: Enemy) {
   // boss always leaves one; the rest only when they left no weapon.
   if (e.boss || !item) {
     const source = e.boss ? 'boss' : e.archetype.role === 'elite' ? 'elite' : 'grunt'
-    // Bogmaw has no armor set of its own: the goblins wear what they stole from the Forge, so its drops are the Forge's.
-    const armorRealm: ArmorRealm = sim.level.realm === 'bog' ? 'forge' : (sim.level.realm as ArmorRealm)
-    const armor = rollArmorDrop(source, armorRealm, partyCharacters(sim.party))
+    const armor = rollArmorDrop(source, ARMOR_DROP_REALM[sim.level.realm] as ArmorRealm, partyCharacters(sim.party))
     if (armor) publishLoot(sim.party, e.position.x + 0.4, e.position.z - 0.4, 0, 0, armor, e.boss)
   }
 }

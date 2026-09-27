@@ -1,7 +1,7 @@
 import weaponCatalog from './weaponCatalog.json'
 import outfitCatalog from './outfitCatalog.json'
 import { classAllowsArmor, classAllowsWeapon } from './heroClasses'
-import { REALMS } from './shared/levels'
+import { armorDropLevels, RealmId, REALMS } from './shared/levels'
 
 export type EquipmentSlot = 'head' | 'chest' | 'shoulders' | 'hands' | 'legs' | 'boots' | 'weapon'
 export type EquipmentLoadout = Record<EquipmentSlot, string>
@@ -490,9 +490,12 @@ function annotateBuiltIn(item: EquipmentItem): EquipmentItem {
   return owner ? { ...item, hero: owner.hero, set, setLabel: owner.label, realm: owner.realm } : item
 }
 
-/** Where a piece of armor is found, for the wardrobe: the realm's name, or the Pit. */
+/** Where a piece of armor is found, for the wardrobe: the map(s) that drop it, the Pit, or the realm's name when no map does yet. */
 export function armorSourceLabel(realm: ArmorRealm | undefined): string {
   if (realm === 'raid') return 'The Pit of Chains'
+  if (!realm) return ''
+  const maps = armorDropLevels(realm as RealmId)
+  if (maps.length) return maps.map((l) => l.name).join(', ')
   return REALMS.find((r) => r.id === realm)?.name ?? ''
 }
 

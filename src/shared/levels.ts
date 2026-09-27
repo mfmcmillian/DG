@@ -149,6 +149,20 @@ export function realmOfLevel(level: number): RealmDefinition {
   return realmById(LEVELS[level]?.realm ?? REALMS[0].id)
 }
 
+/**
+ * Whose armor sets a realm's dungeons drop. Sets were cut per realm (src/outfitCatalog.json),
+ * but not every realm has a map on this branch: the Forge's sets fall in Bogmaw, whose goblins
+ * wear what they stole from the dwarves. A realm without sets (the castle) drops none.
+ */
+export const ARMOR_DROP_REALM: Record<RealmId, RealmId> = {
+  fortress: 'fortress', pass: 'pass', castle: 'castle', forge: 'forge', bog: 'forge'
+}
+
+/** The maps whose enemies drop a realm's armor sets, by name. */
+export function armorDropLevels(realm: RealmId): LevelDefinition[] {
+  return LEVELS.filter((l) => ARMOR_DROP_REALM[l.realm] === realm)
+}
+
 /** The level that follows a cleared one on the linear ladder, or undefined after the last. */
 export function nextLevel(level: number): LevelDefinition | undefined {
   return level >= 0 && level < LEVELS.length - 1 ? LEVELS[level + 1] : undefined

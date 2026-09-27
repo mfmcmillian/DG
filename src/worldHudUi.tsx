@@ -9,6 +9,7 @@ import { gauntletProgress, getWorldRivalState, retryWorldRival } from './dungeon
 import { getLootState, getLootToasts, TOAST_SECONDS } from './loot'
 import { getEquipmentItemOrNull } from './equipmentCatalog'
 import { RARITIES, rarityOf, WEAPON_CLASSES } from './weapons'
+import { armorStatLine } from './armor'
 import { isClientSynced, isSoloMode, localAddress, netStatus } from './multiplayer'
 import { netDebugSummary, recentLogs } from './netDebug'
 import { MenuAction } from './menuUi'
@@ -283,7 +284,7 @@ function LootToasts({ right, bottom, scale: s }: { right: number; bottom: number
       const subtitle = toast.salvaged > 0
         ? `${toast.wrongClass ? t('Cut for another class') : t('Already owned')}  ·  ${t('salvaged for {n} coins', { n: toast.salvaged })}`
         : toast.item.weapon ? `${t(rarity.label)}  ·  ${t(WEAPON_CLASSES[toast.item.weapon.class].label)}  ·  ${t('now in your inventory')}`
-        : `${t(rarity.label)}  ·  ${t('{set} set', { set: toast.item.setLabel ?? '' })}  ·  ${t('now in your wardrobe')}`
+        : `${t(rarity.label)}  ·  ${t('{set} set', { set: toast.item.setLabel ?? '' })}  ·  ${armorStatLine(toast.item) || t('now in your wardrobe')}`
       return <UiEntity key={`${toast.item.id}-${i}`} uiTransform={{ width: cardWidth, height: cardHeight, margin: { top: 6 * s },
         padding: 7 * s, borderRadius: 8 * s, borderWidth: s, borderColor: withAlpha(toast.salvaged > 0 ? line : rarityColor, fade * 0.9),
         flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: withAlpha(panel, fade) }}>

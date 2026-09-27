@@ -275,6 +275,14 @@ export function heroWeapon(id: string): string {
   return 'none-weapon'
 }
 
+/** Everything a hero's body says it wears, for the armor bonuses the host applies (src/armor.ts). */
+export function heroLoadout(id: string): EquipmentLoadout | undefined {
+  for (const [entity, hero] of heroes()) {
+    if (heroOwner(entity, hero) === id) return fullLoadout(hero)
+  }
+  return undefined
+}
+
 /** How many rarity steps the pit has given that weapon, as the hero's synced look declares. */
 export function heroWeaponRank(id: string): number {
   for (const [entity, hero] of heroes()) {

@@ -12,13 +12,19 @@ import { skillById, SkillDef } from './shared/skills'
 
 /** Stamina the hero's level adds to the bar (src/heroXp.ts keeps it current). */
 let staminaBonus = 0
+/** Stamina the hero's boots add (src/playerCharacter.ts keeps it current with what is worn). */
+let gearStamina = 0
 
 export function setStaminaBonus(amount: number) {
   staminaBonus = Math.max(0, Math.round(amount))
 }
 
+export function setGearStamina(amount: number) {
+  gearStamina = Math.max(0, Math.round(amount))
+}
+
 export function maxStamina(): number {
-  return STAMINA.max + staminaBonus
+  return STAMINA.max + staminaBonus + gearStamina
 }
 
 type NativeJump = {
