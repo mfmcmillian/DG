@@ -8,7 +8,7 @@
 // written. The hero's own body stays in the shot, so this does not go through
 // src/sceneCamera.ts, which hides it for the menus.
 
-import { engine, Entity, GltfContainer, InputModifier, LightSource, MainCamera, Transform, VirtualCamera } from '@dcl/sdk/ecs'
+import { Billboard, engine, Entity, GltfContainer, InputModifier, LightSource, MainCamera, Material, MeshRenderer, Transform, VirtualCamera } from '@dcl/sdk/ecs'
 import { Color3, Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
 import { movePlayerTo } from '~system/RestrictedActions'
 import { fxDeathPuff, fxGlitter, fxLootBeam, fxMagicBurst, fxNumber, fxSound } from './combatFx'
@@ -259,7 +259,19 @@ function showItem(id: string, at: Vector3): Entity {
   const root = engine.addEntity()
   Transform.create(root, { position: Vector3.clone(at) })
   const weapon = getEquipmentItemOrNull(id)
-  if (weapon?.models[0]) {
+  if (weapon && !weapon.weapon) {
+    // Armor is a skinned body part, nothing to stand on its own: it flies as its wardrobe icon, the way it lies on the floor as loot.
+    const card = engine.addEntity()
+    Transform.create(card, { parent: root, position: Vector3.create(0, 0.31, 0), scale: Vector3.create(0.62, 0.62, 1) })
+    MeshRenderer.setPlane(card)
+    Material.setPbrMaterial(card, {
+      texture: Material.Texture.Common({ src: weapon.icon }),
+      emissiveTexture: Material.Texture.Common({ src: weapon.icon }),
+      emissiveColor: Color4.create(0.6, 0.6, 0.6, 1), emissiveIntensity: 1,
+      transparencyMode: 2, alphaTest: 0.5, castShadows: false
+    })
+    Billboard.create(card)
+  } else if (weapon?.models[0]) {
     // The weapon GLB is authored in the hero's hand; a child carries the offset that stands it up (as loot does).
     const model = engine.addEntity()
     const offset = weapon.weapon?.hand === 'l' ? WEAPON_DROP_OFFSET_LEFT : WEAPON_DROP_OFFSET

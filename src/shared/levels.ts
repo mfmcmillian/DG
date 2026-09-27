@@ -13,7 +13,7 @@
 
 import { StyleId } from '../dungeon/config'
 
-export type RealmId = 'fortress' | 'pass' | 'castle' | 'forge' | 'bog'
+export type RealmId = 'fortress' | 'pass' | 'castle' | 'forge' | 'bog' | 'thornwood' | 'crypt' | 'jade'
 
 export type RealmDefinition = {
   id: RealmId
@@ -21,30 +21,53 @@ export type RealmDefinition = {
   blurb: string
   /** The kit the realm's dungeons are built from. */
   style: StyleId
+  /**
+   * Which Sidekick packs dress the realm: every armor set from these packs is
+   * tagged with the realm and drops nowhere else (scripts/outfits/outfits.json).
+   */
+  packs: string
+  /** No map yet: the war table shows the page as coming soon and its sets cannot drop. */
+  comingSoon?: boolean
 }
 
 export const REALMS: RealmDefinition[] = [
   {
-    id: 'fortress', name: 'The Dark Fortress', style: 'open',
+    id: 'fortress', name: 'The Dark Fortress', style: 'open', packs: 'Fantasy Villagers, Starter',
     blurb: 'The Warlord\'s keep. Black stone, cages and braziers.'
   },
   {
-    id: 'pass', name: 'The Frozen Pass', style: 'pass',
+    id: 'pass', name: 'The Frozen Pass', style: 'pass', packs: 'Viking Warriors, Pirate Captains',
     blurb: 'A gorge through the high peaks, held by the Jarl\'s Vikings. Snow, ice and axes.'
   },
   {
-    id: 'castle', name: 'The Fallen Crown', style: 'castle',
+    id: 'bog', name: 'Bogmaw', style: 'bog', packs: 'Goblin Fighters',
+    blurb: 'A goblin war camp in the swamp. Palisades, ballistas, bombs and the gong of the Goblin King.'
+  },
+  {
+    id: 'castle', name: 'The Fallen Crown', style: 'castle', packs: 'Fantasy Knights', comingSoon: true,
     blurb: 'A king\'s castle, its garrison turned. Banners still hang in the halls.'
   },
   {
-    id: 'forge', name: 'The Dwarven Forge', style: 'forge',
-    blurb: 'Lava ducts and saw traps. The Forge Lord still works the anvil.'
+    id: 'thornwood', name: 'The Thornwood', style: 'open', packs: 'Elven Warriors', comingSoon: true,
+    blurb: 'An elven wood gone wild. Living briar, old stone and archers who never miss.'
   },
   {
-    id: 'bog', name: 'Bogmaw', style: 'bog',
-    blurb: 'A goblin war camp in the swamp. Palisades, ballistas, bombs and the gong of the Goblin King.'
+    id: 'crypt', name: 'The Crypt', style: 'open', packs: 'Fantasy Sorcerers, Fantasy Skeletons', comingSoon: true,
+    blurb: 'Barrows under the hill. The sorcerers went down to study the dead, and stayed.'
+  },
+  {
+    id: 'jade', name: 'The Jade Gate', style: 'open', packs: 'Samurai Warriors', comingSoon: true,
+    blurb: 'A shrine fortress beyond the eastern sea. Lacquered plate and very sharp steel.'
+  },
+  {
+    // The raid's ground only (RAID_LEVEL): no pack dresses it and no ladder level is set in it.
+    id: 'forge', name: 'The Dwarven Forge', style: 'forge', packs: '',
+    blurb: 'Lava ducts and saw traps. The Forge Lord still works the anvil.'
   }
 ]
+
+/** The realms with no map yet, in the order the war table pages them after the last dungeon. */
+export const COMING_SOON: RealmDefinition[] = REALMS.filter((r) => r.comingSoon)
 
 export type LevelDefinition = {
   id: number
@@ -150,14 +173,13 @@ export function realmOfLevel(level: number): RealmDefinition {
 }
 
 /**
- * Whose armor sets a realm's dungeons drop. Sets were cut per realm (src/outfitCatalog.json),
- * but not every realm has a map on this branch, so a map may drop a mapless realm's sets
- * too: Bogmaw's goblins wear what they stole from the Dwarven Forge, and the Fallen Crown's
- * guard fled into the Frozen Pass. Rarity follows the set's own realm (ARMOR_RARITY), so a
- * realm only lends to a map of the same rank. Move a realm to its own map when that map ships.
+ * Whose armor sets a realm's dungeons drop: its own, since every Sidekick pack
+ * dresses one realm (src/outfitCatalog.json). A realm with no map yet lends to
+ * nobody; its sets wait, marked coming soon, until the map ships. Rarity is not
+ * the realm's: a piece is as rare as the difficulty it fell on (src/weapons.ts rollArmorRank).
  */
 export const ARMOR_DROP_REALMS: Record<RealmId, readonly RealmId[]> = {
-  fortress: ['fortress'], pass: ['pass', 'castle'], castle: ['castle'], forge: ['forge'], bog: ['bog', 'forge']
+  fortress: ['fortress'], pass: ['pass'], bog: ['bog'], castle: ['castle'], forge: ['forge'], thornwood: ['thornwood'], crypt: ['crypt'], jade: ['jade']
 }
 
 /** The maps whose enemies drop a realm's armor sets, by name. */

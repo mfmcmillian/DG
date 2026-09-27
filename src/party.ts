@@ -17,7 +17,7 @@ import { isRealmPreloaded } from './preloadPlan'
 import { t } from './i18n'
 import { getPickerState } from './characterPicker'
 import { getPlayerCharacterState } from './playerCharacter'
-import { DIFFICULTIES, difficultyById, HUB_LEVEL, levelById, LEVELS, RAID_PARTY } from './shared/levels'
+import { COMING_SOON, DIFFICULTIES, difficultyById, HUB_LEVEL, levelById, LEVELS, RAID_PARTY, RealmDefinition } from './shared/levels'
 
 /** What the player has picked in the lobby before they have a party of their own. */
 let pickLevel = 0
@@ -28,15 +28,23 @@ export function getLobbyPick(): { level: number; diff: number } {
   return { level: party ? party.level : pickLevel, diff: party ? party.diff : pickDiff }
 }
 
+/** Pages on the war table: every dungeon, then the realms with no map yet (COMING_SOON), which cannot be picked for a party. */
+export const LOBBY_PAGES = LEVELS.length + COMING_SOON.length
+
+/** The realm a page past the last dungeon shows as coming soon, or undefined for a real level. */
+export function comingSoonPick(level: number): RealmDefinition | undefined {
+  return level >= LEVELS.length ? COMING_SOON[level - LEVELS.length] : undefined
+}
+
 export function setLobbyPickLevel(level: number) {
-  pickLevel = Math.max(0, Math.min(LEVELS.length - 1, Math.floor(level)))
+  pickLevel = Math.max(0, Math.min(LOBBY_PAGES - 1, Math.floor(level)))
   const party = myParty()
-  if (party && isLeader()) setPartyLevel(pickLevel)
+  if (party && isLeader() && pickLevel < LEVELS.length) setPartyLevel(pickLevel)
 }
 
 export function cycleLobbyPickLevel(dir: number) {
   const current = getLobbyPick().level
-  setLobbyPickLevel((current + dir + LEVELS.length) % LEVELS.length)
+  setLobbyPickLevel((current + dir + LOBBY_PAGES) % LOBBY_PAGES)
 }
 
 export function setLobbyPickDiff(diff: number) {

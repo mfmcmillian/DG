@@ -64,10 +64,10 @@ import {
 } from './combatFx'
 import { kickCrawlerCamera } from './dungeon/crawlerCamera'
 import { clearLoot, grantLootDirect, lootKindOf, spawnLoot } from './loot'
-import { rollArmorDrop, rollWeaponDrop, weaponStats } from './weapons'
+import { rollArmorDrop, rollArmorRank, rollWeaponDrop, weaponStats } from './weapons'
 import { AttackContext, maxHealth } from './roamingCombat'
 import {
-  allFighters, EnemyFxNet, EnemySnap, heroCharacters, HeroHit, heroLoadout, heroPosition, heroWeapon, heroWeaponRank, ImpactNet, isHeadless, isHost, localAddress, NetFighter, publishEnemies,
+  allFighters, EnemyFxNet, EnemySnap, heroArmorRankOf, heroCharacters, HeroHit, heroLoadout, heroPosition, heroWeapon, heroWeaponRank, ImpactNet, isHeadless, isHost, localAddress, NetFighter, publishEnemies,
   publishEnemyFx, publishHitEnemy, publishHitSkill, publishImpact, publishLoot, publishRespawn, publishShot, publishSkillCast, setMultiplayerHandlers
 } from './multiplayer'
 
@@ -1936,7 +1936,7 @@ function applyRemoteHit(id: string, index: number, motion: string, finisher: boo
 
 /** A hero's multiplier on damage dealt as the host applies it: their level, any buff on them, and the armor their body wears. */
 function hostMight(id: string, cid: string | undefined): number {
-  return heroBonusesFor(id, cid ?? '').might * buffMight(id) * armorBonuses(heroLoadout(id)).might
+  return heroBonusesFor(id, cid ?? '').might * buffMight(id) * armorBonuses(heroLoadout(id), heroArmorRankOf(id)).might
 }
 
 /** The local hero's weapon, for the numbers it shows and the hits it hosts. */
@@ -1947,7 +1947,7 @@ function localWeapon(): WeaponModifiers {
 /** The local hero's bonus on damage dealt: their level (src/heroXp.ts), buffs, and their armor (src/armor.ts). */
 function localMight(): number {
   const me = localAddress()
-  return heroBonusesFor(me, getPlayerCharacterState().characterId ?? '').might * buffMight(me) * armorBonuses(heroLoadout(me)).might
+  return heroBonusesFor(me, getPlayerCharacterState().characterId ?? '').might * buffMight(me) * armorBonuses(heroLoadout(me), heroArmorRankOf(me)).might
 }
 
 /** A blow's damage after the hero's level; a blow that landed never rounds to nothing. */
@@ -2613,33 +2613,24 @@ function kill(e: Enemy) {
   // boss always leaves one; the rest only when they left no weapon.
   if (e.boss || !item) {
     const source = e.boss ? 'boss' : e.archetype.role === 'elite' ? 'elite' : 'grunt'
-    const armor = rollArmorDrop(source, ARMOR_DROP_REALMS[sim.level.realm] as ArmorRealm[], partyCharacters(sim.party))
-    if (armor) publishLoot(sim.party, e.position.x + 0.4, e.position.z - 0.4, 0, 0, armor, e.boss)
+    const armor = rollArmorDrop(source, ARMOR_DROP_REALMS[sim.level.realm] as ArmorRealm[])
+    // How rare the piece is follows the difficulty it fell on, not the map.
+    if (armor) publishLoot(sim.party, e.position.x + 0.4, e.position.z - 0.4, 0, 0, armor, e.boss, rollArmorRank(source, sim.diff.id))
   }
 }
 
-/** The champions in a party, the host's own included (heroCharacters knows only the synced bodies). */
-function partyCharacters(party: string): string[] {
-  const characters = heroCharacters((id) => partyOf(id) === party)
-  if (!isHeadless() && partyOf(localAddress()) === party) {
-    const mine = getPlayerCharacterState().characterId
-    if (mine) characters.push(mine)
-  }
-  return characters
-}
-
-function grantLoot(party: string, x: number, z: number, coin: number, heart: number, item: string, boss: boolean) {
+function grantLoot(party: string, x: number, z: number, coin: number, heart: number, item: string, boss: boolean, up: number) {
   if (!clientSim || party !== clientSim.party) return
   const origin = Vector3.create(x, COURTYARD.characterFloorY, z)
   if (heart > 0) spawnLoot(origin, 'heart', heart)
   const gear = item ? getEquipmentItemOrNull(item) : undefined
   if (boss) {
     // The boss's reward is the run's prize: it goes straight to every hero in the party.
-    grantLootDirect(coin, gear?.id)
+    grantLootDirect(coin, gear?.id, up)
     return
   }
   if (coin > 0) spawnLoot(origin, 'coin', coin)
-  if (gear) spawnLoot(origin, lootKindOf(gear), 1, item, boss)
+  if (gear) spawnLoot(origin, lootKindOf(gear), 1, item, boss, up)
 }
 
 function presentDeath(e: Enemy) {

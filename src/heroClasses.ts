@@ -168,10 +168,14 @@ export function classAllowsWeapon(characterId: string | undefined, weaponClass: 
   return heroClassOf(characterId).weaponClasses.includes(weaponClass)
 }
 
-/** Whether this hero may wear a piece made for `ownerCharacterId`'s class (armor without an owner fits anyone). */
-export function classAllowsArmor(characterId: string | undefined, ownerCharacterId: string | undefined): boolean {
-  if (!ownerCharacterId) return true
-  return classOfCharacter(characterId) === classOfCharacter(ownerCharacterId)
+/**
+ * Whether this hero may wear a piece. Since 2.8.0 armor is not cut for a class:
+ * every set is built on the one rig all four heroes share, so anyone wears
+ * anything (`hero` on a piece only records which build made it). Kept as the
+ * single gate so the rule has one home if it ever narrows again.
+ */
+export function classAllowsArmor(_characterId: string | undefined, _ownerCharacterId: string | undefined): boolean {
+  return true
 }
 
 /** Weapon classes any of these characters can use; the loot pool for a party. */

@@ -12,7 +12,7 @@
       "hero": "scout",
       "set": "elf",
       "setLabel": "Elven Warden",
-      "realm": ""
+      "realm": "thornwood"
     },
     {
       "id": "elf-shoulders",
@@ -26,7 +26,7 @@
       "hero": "scout",
       "set": "elf",
       "setLabel": "Elven Warden",
-      "realm": ""
+      "realm": "thornwood"
     },
     {
       "id": "elf-hands",
@@ -40,7 +40,7 @@
       "hero": "scout",
       "set": "elf",
       "setLabel": "Elven Warden",
-      "realm": ""
+      "realm": "thornwood"
     },
     {
       "id": "elf-legs",
@@ -54,7 +54,7 @@
       "hero": "scout",
       "set": "elf",
       "setLabel": "Elven Warden",
-      "realm": ""
+      "realm": "thornwood"
     },
     {
       "id": "elf-boots",
@@ -68,7 +68,7 @@
       "hero": "scout",
       "set": "elf",
       "setLabel": "Elven Warden",
-      "realm": ""
+      "realm": "thornwood"
     },
     {
       "id": "sentinel-head",
@@ -82,7 +82,7 @@
       "hero": "scout",
       "set": "sentinel",
       "setLabel": "Sentinel",
-      "realm": "pass"
+      "realm": "thornwood"
     },
     {
       "id": "sentinel-chest",
@@ -96,7 +96,7 @@
       "hero": "scout",
       "set": "sentinel",
       "setLabel": "Sentinel",
-      "realm": "pass"
+      "realm": "thornwood"
     },
     {
       "id": "sentinel-shoulders",
@@ -110,7 +110,7 @@
       "hero": "scout",
       "set": "sentinel",
       "setLabel": "Sentinel",
-      "realm": "pass"
+      "realm": "thornwood"
     },
     {
       "id": "sentinel-hands",
@@ -124,7 +124,7 @@
       "hero": "scout",
       "set": "sentinel",
       "setLabel": "Sentinel",
-      "realm": "pass"
+      "realm": "thornwood"
     },
     {
       "id": "sentinel-legs",
@@ -138,7 +138,7 @@
       "hero": "scout",
       "set": "sentinel",
       "setLabel": "Sentinel",
-      "realm": "pass"
+      "realm": "thornwood"
     },
     {
       "id": "sentinel-boots",
@@ -152,7 +152,7 @@
       "hero": "scout",
       "set": "sentinel",
       "setLabel": "Sentinel",
-      "realm": "pass"
+      "realm": "thornwood"
     },
     {
       "id": "dusk-chest",
@@ -166,7 +166,7 @@
       "hero": "scout",
       "set": "dusk",
       "setLabel": "Dusk Warden",
-      "realm": "fortress"
+      "realm": "thornwood"
     },
     {
       "id": "dusk-shoulders",
@@ -180,7 +180,7 @@
       "hero": "scout",
       "set": "dusk",
       "setLabel": "Dusk Warden",
-      "realm": "fortress"
+      "realm": "thornwood"
     },
     {
       "id": "dusk-hands",
@@ -194,7 +194,7 @@
       "hero": "scout",
       "set": "dusk",
       "setLabel": "Dusk Warden",
-      "realm": "fortress"
+      "realm": "thornwood"
     },
     {
       "id": "dusk-legs",
@@ -208,7 +208,7 @@
       "hero": "scout",
       "set": "dusk",
       "setLabel": "Dusk Warden",
-      "realm": "fortress"
+      "realm": "thornwood"
     },
     {
       "id": "dusk-boots",
@@ -222,7 +222,7 @@
       "hero": "scout",
       "set": "dusk",
       "setLabel": "Dusk Warden",
-      "realm": "fortress"
+      "realm": "thornwood"
     },
     {
       "id": "sunleaf-chest",
@@ -236,7 +236,7 @@
       "hero": "scout",
       "set": "sunleaf",
       "setLabel": "Sunleaf",
-      "realm": "raid"
+      "realm": "thornwood"
     },
     {
       "id": "sunleaf-shoulders",
@@ -250,7 +250,7 @@
       "hero": "scout",
       "set": "sunleaf",
       "setLabel": "Sunleaf",
-      "realm": "raid"
+      "realm": "thornwood"
     },
     {
       "id": "sunleaf-hands",
@@ -264,7 +264,7 @@
       "hero": "scout",
       "set": "sunleaf",
       "setLabel": "Sunleaf",
-      "realm": "raid"
+      "realm": "thornwood"
     },
     {
       "id": "sunleaf-legs",
@@ -278,7 +278,7 @@
       "hero": "scout",
       "set": "sunleaf",
       "setLabel": "Sunleaf",
-      "realm": "raid"
+      "realm": "thornwood"
     },
     {
       "id": "sunleaf-boots",
@@ -292,7 +292,7 @@
       "hero": "scout",
       "set": "sunleaf",
       "setLabel": "Sunleaf",
-      "realm": "raid"
+      "realm": "thornwood"
     },
     {
       "id": "thorn-head",
@@ -306,7 +306,7 @@
       "hero": "scout",
       "set": "thorn",
       "setLabel": "Thornwalker",
-      "realm": "fortress"
+      "realm": "thornwood"
     },
     {
       "id": "thorn-chest",
@@ -320,7 +320,7 @@
       "hero": "scout",
       "set": "thorn",
       "setLabel": "Thornwalker",
-      "realm": "fortress"
+      "realm": "thornwood"
     },
     {
       "id": "thorn-shoulders",
@@ -334,7 +334,7 @@
       "hero": "scout",
       "set": "thorn",
       "setLabel": "Thornwalker",
-      "realm": "fortress"
+      "realm": "thornwood"
     },
     {
       "id": "thorn-hands",
@@ -348,7 +348,7 @@
       "hero": "scout",
       "set": "thorn",
       "setLabel": "Thornwalker",
-      "realm": "fortress"
+      "realm": "thornwood"
     },
     {
       "id": "thorn-legs",
@@ -362,7 +362,7 @@
       "hero": "scout",
       "set": "thorn",
       "setLabel": "Thornwalker",
-      "realm": "fortress"
+      "realm": "thornwood"
     },
     {
       "id": "thorn-boots",
@@ -376,7 +376,7 @@
       "hero": "scout",
       "set": "thorn",
       "setLabel": "Thornwalker",
-      "realm": "fortress"
+      "realm": "thornwood"
     },
     {
       "id": "stag-head",
@@ -390,7 +390,7 @@
       "hero": "scout",
       "set": "stag",
       "setLabel": "Stagheart",
-      "realm": "forge"
+      "realm": "thornwood"
     },
     {
       "id": "stag-chest",
@@ -404,7 +404,7 @@
       "hero": "scout",
       "set": "stag",
       "setLabel": "Stagheart",
-      "realm": "forge"
+      "realm": "thornwood"
     },
     {
       "id": "stag-shoulders",
@@ -418,7 +418,7 @@
       "hero": "scout",
       "set": "stag",
       "setLabel": "Stagheart",
-      "realm": "forge"
+      "realm": "thornwood"
     },
     {
       "id": "stag-hands",
@@ -432,7 +432,7 @@
       "hero": "scout",
       "set": "stag",
       "setLabel": "Stagheart",
-      "realm": "forge"
+      "realm": "thornwood"
     },
     {
       "id": "stag-legs",
@@ -446,7 +446,7 @@
       "hero": "scout",
       "set": "stag",
       "setLabel": "Stagheart",
-      "realm": "forge"
+      "realm": "thornwood"
     },
     {
       "id": "stag-boots",
@@ -460,7 +460,7 @@
       "hero": "scout",
       "set": "stag",
       "setLabel": "Stagheart",
-      "realm": "forge"
+      "realm": "thornwood"
     },
     {
       "id": "sorc-head",
@@ -474,7 +474,7 @@
       "hero": "striker",
       "set": "sorc",
       "setLabel": "Sorcerer",
-      "realm": ""
+      "realm": "crypt"
     },
     {
       "id": "sorc-chest",
@@ -488,7 +488,7 @@
       "hero": "striker",
       "set": "sorc",
       "setLabel": "Sorcerer",
-      "realm": ""
+      "realm": "crypt"
     },
     {
       "id": "sorc-hands",
@@ -502,7 +502,7 @@
       "hero": "striker",
       "set": "sorc",
       "setLabel": "Sorcerer",
-      "realm": ""
+      "realm": "crypt"
     },
     {
       "id": "sorc-legs",
@@ -516,7 +516,7 @@
       "hero": "striker",
       "set": "sorc",
       "setLabel": "Sorcerer",
-      "realm": ""
+      "realm": "crypt"
     },
     {
       "id": "sorc-boots",
@@ -530,7 +530,7 @@
       "hero": "striker",
       "set": "sorc",
       "setLabel": "Sorcerer",
-      "realm": ""
+      "realm": "crypt"
     },
     {
       "id": "hexer-head",
@@ -544,7 +544,7 @@
       "hero": "striker",
       "set": "hexer",
       "setLabel": "Hexer",
-      "realm": "pass"
+      "realm": "crypt"
     },
     {
       "id": "hexer-chest",
@@ -558,7 +558,7 @@
       "hero": "striker",
       "set": "hexer",
       "setLabel": "Hexer",
-      "realm": "pass"
+      "realm": "crypt"
     },
     {
       "id": "hexer-shoulders",
@@ -572,7 +572,7 @@
       "hero": "striker",
       "set": "hexer",
       "setLabel": "Hexer",
-      "realm": "pass"
+      "realm": "crypt"
     },
     {
       "id": "hexer-hands",
@@ -586,7 +586,7 @@
       "hero": "striker",
       "set": "hexer",
       "setLabel": "Hexer",
-      "realm": "pass"
+      "realm": "crypt"
     },
     {
       "id": "hexer-legs",
@@ -600,7 +600,7 @@
       "hero": "striker",
       "set": "hexer",
       "setLabel": "Hexer",
-      "realm": "pass"
+      "realm": "crypt"
     },
     {
       "id": "hexer-boots",
@@ -614,7 +614,7 @@
       "hero": "striker",
       "set": "hexer",
       "setLabel": "Hexer",
-      "realm": "pass"
+      "realm": "crypt"
     },
     {
       "id": "druid-head",
@@ -628,7 +628,7 @@
       "hero": "striker",
       "set": "druid",
       "setLabel": "Grove Keeper",
-      "realm": "fortress"
+      "realm": "crypt"
     },
     {
       "id": "druid-chest",
@@ -642,7 +642,7 @@
       "hero": "striker",
       "set": "druid",
       "setLabel": "Grove Keeper",
-      "realm": "fortress"
+      "realm": "crypt"
     },
     {
       "id": "druid-hands",
@@ -656,7 +656,7 @@
       "hero": "striker",
       "set": "druid",
       "setLabel": "Grove Keeper",
-      "realm": "fortress"
+      "realm": "crypt"
     },
     {
       "id": "druid-legs",
@@ -670,7 +670,7 @@
       "hero": "striker",
       "set": "druid",
       "setLabel": "Grove Keeper",
-      "realm": "fortress"
+      "realm": "crypt"
     },
     {
       "id": "druid-boots",
@@ -684,7 +684,7 @@
       "hero": "striker",
       "set": "druid",
       "setLabel": "Grove Keeper",
-      "realm": "fortress"
+      "realm": "crypt"
     },
     {
       "id": "witch-head",
@@ -698,7 +698,7 @@
       "hero": "striker",
       "set": "witch",
       "setLabel": "Hedge Witch",
-      "realm": "fortress"
+      "realm": "crypt"
     },
     {
       "id": "witch-chest",
@@ -712,7 +712,7 @@
       "hero": "striker",
       "set": "witch",
       "setLabel": "Hedge Witch",
-      "realm": "fortress"
+      "realm": "crypt"
     },
     {
       "id": "witch-shoulders",
@@ -726,7 +726,7 @@
       "hero": "striker",
       "set": "witch",
       "setLabel": "Hedge Witch",
-      "realm": "fortress"
+      "realm": "crypt"
     },
     {
       "id": "witch-hands",
@@ -740,7 +740,7 @@
       "hero": "striker",
       "set": "witch",
       "setLabel": "Hedge Witch",
-      "realm": "fortress"
+      "realm": "crypt"
     },
     {
       "id": "witch-legs",
@@ -754,7 +754,7 @@
       "hero": "striker",
       "set": "witch",
       "setLabel": "Hedge Witch",
-      "realm": "fortress"
+      "realm": "crypt"
     },
     {
       "id": "witch-boots",
@@ -768,7 +768,7 @@
       "hero": "striker",
       "set": "witch",
       "setLabel": "Hedge Witch",
-      "realm": "fortress"
+      "realm": "crypt"
     },
     {
       "id": "spectral-head",
@@ -782,7 +782,7 @@
       "hero": "striker",
       "set": "spectral",
       "setLabel": "Wraithcaller",
-      "realm": "forge"
+      "realm": "crypt"
     },
     {
       "id": "spectral-chest",
@@ -796,7 +796,7 @@
       "hero": "striker",
       "set": "spectral",
       "setLabel": "Wraithcaller",
-      "realm": "forge"
+      "realm": "crypt"
     },
     {
       "id": "spectral-shoulders",
@@ -810,7 +810,7 @@
       "hero": "striker",
       "set": "spectral",
       "setLabel": "Wraithcaller",
-      "realm": "forge"
+      "realm": "crypt"
     },
     {
       "id": "spectral-hands",
@@ -824,7 +824,7 @@
       "hero": "striker",
       "set": "spectral",
       "setLabel": "Wraithcaller",
-      "realm": "forge"
+      "realm": "crypt"
     },
     {
       "id": "spectral-legs",
@@ -838,7 +838,7 @@
       "hero": "striker",
       "set": "spectral",
       "setLabel": "Wraithcaller",
-      "realm": "forge"
+      "realm": "crypt"
     },
     {
       "id": "spectral-boots",
@@ -852,7 +852,7 @@
       "hero": "striker",
       "set": "spectral",
       "setLabel": "Wraithcaller",
-      "realm": "forge"
+      "realm": "crypt"
     },
     {
       "id": "sage-head",
@@ -866,7 +866,7 @@
       "hero": "striker",
       "set": "sage",
       "setLabel": "Owl Sage",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "sage-chest",
@@ -880,7 +880,7 @@
       "hero": "striker",
       "set": "sage",
       "setLabel": "Owl Sage",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "sage-shoulders",
@@ -894,7 +894,7 @@
       "hero": "striker",
       "set": "sage",
       "setLabel": "Owl Sage",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "sage-hands",
@@ -908,7 +908,7 @@
       "hero": "striker",
       "set": "sage",
       "setLabel": "Owl Sage",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "sage-legs",
@@ -922,7 +922,7 @@
       "hero": "striker",
       "set": "sage",
       "setLabel": "Owl Sage",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "sage-boots",
@@ -936,7 +936,7 @@
       "hero": "striker",
       "set": "sage",
       "setLabel": "Owl Sage",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "sorc-shoulders",
@@ -950,7 +950,7 @@
       "hero": "striker",
       "set": "sorc",
       "setLabel": "Sorcerer",
-      "realm": ""
+      "realm": "crypt"
     },
     {
       "id": "paladin-head",
@@ -964,7 +964,7 @@
       "hero": "vanguard",
       "set": "paladin",
       "setLabel": "Paladin",
-      "realm": ""
+      "realm": "castle"
     },
     {
       "id": "paladin-chest",
@@ -978,7 +978,7 @@
       "hero": "vanguard",
       "set": "paladin",
       "setLabel": "Paladin",
-      "realm": ""
+      "realm": "castle"
     },
     {
       "id": "paladin-shoulders",
@@ -992,7 +992,7 @@
       "hero": "vanguard",
       "set": "paladin",
       "setLabel": "Paladin",
-      "realm": ""
+      "realm": "castle"
     },
     {
       "id": "paladin-hands",
@@ -1006,7 +1006,7 @@
       "hero": "vanguard",
       "set": "paladin",
       "setLabel": "Paladin",
-      "realm": ""
+      "realm": "castle"
     },
     {
       "id": "paladin-legs",
@@ -1020,7 +1020,7 @@
       "hero": "vanguard",
       "set": "paladin",
       "setLabel": "Paladin",
-      "realm": ""
+      "realm": "castle"
     },
     {
       "id": "paladin-boots",
@@ -1034,7 +1034,7 @@
       "hero": "vanguard",
       "set": "paladin",
       "setLabel": "Paladin",
-      "realm": ""
+      "realm": "castle"
     },
     {
       "id": "blackguard-head",
@@ -1048,7 +1048,7 @@
       "hero": "vanguard",
       "set": "blackguard",
       "setLabel": "Blackguard",
-      "realm": "pass"
+      "realm": "castle"
     },
     {
       "id": "blackguard-chest",
@@ -1062,7 +1062,7 @@
       "hero": "vanguard",
       "set": "blackguard",
       "setLabel": "Blackguard",
-      "realm": "pass"
+      "realm": "castle"
     },
     {
       "id": "blackguard-shoulders",
@@ -1076,7 +1076,7 @@
       "hero": "vanguard",
       "set": "blackguard",
       "setLabel": "Blackguard",
-      "realm": "pass"
+      "realm": "castle"
     },
     {
       "id": "blackguard-hands",
@@ -1090,7 +1090,7 @@
       "hero": "vanguard",
       "set": "blackguard",
       "setLabel": "Blackguard",
-      "realm": "pass"
+      "realm": "castle"
     },
     {
       "id": "blackguard-legs",
@@ -1104,7 +1104,7 @@
       "hero": "vanguard",
       "set": "blackguard",
       "setLabel": "Blackguard",
-      "realm": "pass"
+      "realm": "castle"
     },
     {
       "id": "blackguard-boots",
@@ -1118,7 +1118,7 @@
       "hero": "vanguard",
       "set": "blackguard",
       "setLabel": "Blackguard",
-      "realm": "pass"
+      "realm": "castle"
     },
     {
       "id": "crusader-head",
@@ -1132,7 +1132,7 @@
       "hero": "vanguard",
       "set": "crusader",
       "setLabel": "Crusader",
-      "realm": "forge"
+      "realm": "castle"
     },
     {
       "id": "crusader-chest",
@@ -1146,7 +1146,7 @@
       "hero": "vanguard",
       "set": "crusader",
       "setLabel": "Crusader",
-      "realm": "forge"
+      "realm": "castle"
     },
     {
       "id": "crusader-shoulders",
@@ -1160,7 +1160,7 @@
       "hero": "vanguard",
       "set": "crusader",
       "setLabel": "Crusader",
-      "realm": "forge"
+      "realm": "castle"
     },
     {
       "id": "crusader-hands",
@@ -1174,7 +1174,7 @@
       "hero": "vanguard",
       "set": "crusader",
       "setLabel": "Crusader",
-      "realm": "forge"
+      "realm": "castle"
     },
     {
       "id": "crusader-legs",
@@ -1188,7 +1188,7 @@
       "hero": "vanguard",
       "set": "crusader",
       "setLabel": "Crusader",
-      "realm": "forge"
+      "realm": "castle"
     },
     {
       "id": "crusader-boots",
@@ -1202,7 +1202,7 @@
       "hero": "vanguard",
       "set": "crusader",
       "setLabel": "Crusader",
-      "realm": "forge"
+      "realm": "castle"
     },
     {
       "id": "sovereign-head",
@@ -1216,7 +1216,7 @@
       "hero": "vanguard",
       "set": "sovereign",
       "setLabel": "Sovereign",
-      "realm": "raid"
+      "realm": "castle"
     },
     {
       "id": "sovereign-chest",
@@ -1230,7 +1230,7 @@
       "hero": "vanguard",
       "set": "sovereign",
       "setLabel": "Sovereign",
-      "realm": "raid"
+      "realm": "castle"
     },
     {
       "id": "sovereign-shoulders",
@@ -1244,7 +1244,7 @@
       "hero": "vanguard",
       "set": "sovereign",
       "setLabel": "Sovereign",
-      "realm": "raid"
+      "realm": "castle"
     },
     {
       "id": "sovereign-hands",
@@ -1258,7 +1258,7 @@
       "hero": "vanguard",
       "set": "sovereign",
       "setLabel": "Sovereign",
-      "realm": "raid"
+      "realm": "castle"
     },
     {
       "id": "sovereign-legs",
@@ -1272,7 +1272,7 @@
       "hero": "vanguard",
       "set": "sovereign",
       "setLabel": "Sovereign",
-      "realm": "raid"
+      "realm": "castle"
     },
     {
       "id": "sovereign-boots",
@@ -1286,7 +1286,7 @@
       "hero": "vanguard",
       "set": "sovereign",
       "setLabel": "Sovereign",
-      "realm": "raid"
+      "realm": "castle"
     },
     {
       "id": "ironclad-head",
@@ -1300,7 +1300,7 @@
       "hero": "vanguard",
       "set": "ironclad",
       "setLabel": "Ironclad",
-      "realm": "fortress"
+      "realm": "castle"
     },
     {
       "id": "ironclad-chest",
@@ -1314,7 +1314,7 @@
       "hero": "vanguard",
       "set": "ironclad",
       "setLabel": "Ironclad",
-      "realm": "fortress"
+      "realm": "castle"
     },
     {
       "id": "ironclad-shoulders",
@@ -1328,7 +1328,7 @@
       "hero": "vanguard",
       "set": "ironclad",
       "setLabel": "Ironclad",
-      "realm": "fortress"
+      "realm": "castle"
     },
     {
       "id": "ironclad-hands",
@@ -1342,7 +1342,7 @@
       "hero": "vanguard",
       "set": "ironclad",
       "setLabel": "Ironclad",
-      "realm": "fortress"
+      "realm": "castle"
     },
     {
       "id": "ironclad-legs",
@@ -1356,7 +1356,7 @@
       "hero": "vanguard",
       "set": "ironclad",
       "setLabel": "Ironclad",
-      "realm": "fortress"
+      "realm": "castle"
     },
     {
       "id": "ironclad-boots",
@@ -1370,7 +1370,7 @@
       "hero": "vanguard",
       "set": "ironclad",
       "setLabel": "Ironclad",
-      "realm": "fortress"
+      "realm": "castle"
     },
     {
       "id": "chevalier-head",
@@ -1384,7 +1384,7 @@
       "hero": "vanguard",
       "set": "chevalier",
       "setLabel": "Chevalier",
-      "realm": "fortress"
+      "realm": "castle"
     },
     {
       "id": "chevalier-chest",
@@ -1398,7 +1398,7 @@
       "hero": "vanguard",
       "set": "chevalier",
       "setLabel": "Chevalier",
-      "realm": "fortress"
+      "realm": "castle"
     },
     {
       "id": "chevalier-shoulders",
@@ -1412,7 +1412,7 @@
       "hero": "vanguard",
       "set": "chevalier",
       "setLabel": "Chevalier",
-      "realm": "fortress"
+      "realm": "castle"
     },
     {
       "id": "chevalier-hands",
@@ -1426,7 +1426,7 @@
       "hero": "vanguard",
       "set": "chevalier",
       "setLabel": "Chevalier",
-      "realm": "fortress"
+      "realm": "castle"
     },
     {
       "id": "chevalier-legs",
@@ -1440,7 +1440,7 @@
       "hero": "vanguard",
       "set": "chevalier",
       "setLabel": "Chevalier",
-      "realm": "fortress"
+      "realm": "castle"
     },
     {
       "id": "chevalier-boots",
@@ -1454,7 +1454,7 @@
       "hero": "vanguard",
       "set": "chevalier",
       "setLabel": "Chevalier",
-      "realm": "fortress"
+      "realm": "castle"
     },
     {
       "id": "viking-head",
@@ -1468,7 +1468,7 @@
       "hero": "brute",
       "set": "viking",
       "setLabel": "Northman",
-      "realm": ""
+      "realm": "pass"
     },
     {
       "id": "viking-chest",
@@ -1482,7 +1482,7 @@
       "hero": "brute",
       "set": "viking",
       "setLabel": "Northman",
-      "realm": ""
+      "realm": "pass"
     },
     {
       "id": "viking-shoulders",
@@ -1496,7 +1496,7 @@
       "hero": "brute",
       "set": "viking",
       "setLabel": "Northman",
-      "realm": ""
+      "realm": "pass"
     },
     {
       "id": "viking-hands",
@@ -1510,7 +1510,7 @@
       "hero": "brute",
       "set": "viking",
       "setLabel": "Northman",
-      "realm": ""
+      "realm": "pass"
     },
     {
       "id": "viking-legs",
@@ -1524,7 +1524,7 @@
       "hero": "brute",
       "set": "viking",
       "setLabel": "Northman",
-      "realm": ""
+      "realm": "pass"
     },
     {
       "id": "viking-boots",
@@ -1538,7 +1538,7 @@
       "hero": "brute",
       "set": "viking",
       "setLabel": "Northman",
-      "realm": ""
+      "realm": "pass"
     },
     {
       "id": "jarl-head",
@@ -1636,7 +1636,7 @@
       "hero": "brute",
       "set": "raider",
       "setLabel": "Raider",
-      "realm": "fortress"
+      "realm": "pass"
     },
     {
       "id": "raider-chest",
@@ -1650,7 +1650,7 @@
       "hero": "brute",
       "set": "raider",
       "setLabel": "Raider",
-      "realm": "fortress"
+      "realm": "pass"
     },
     {
       "id": "raider-shoulders",
@@ -1664,7 +1664,7 @@
       "hero": "brute",
       "set": "raider",
       "setLabel": "Raider",
-      "realm": "fortress"
+      "realm": "pass"
     },
     {
       "id": "raider-hands",
@@ -1678,7 +1678,7 @@
       "hero": "brute",
       "set": "raider",
       "setLabel": "Raider",
-      "realm": "fortress"
+      "realm": "pass"
     },
     {
       "id": "raider-legs",
@@ -1692,7 +1692,7 @@
       "hero": "brute",
       "set": "raider",
       "setLabel": "Raider",
-      "realm": "fortress"
+      "realm": "pass"
     },
     {
       "id": "raider-boots",
@@ -1706,7 +1706,7 @@
       "hero": "brute",
       "set": "raider",
       "setLabel": "Raider",
-      "realm": "fortress"
+      "realm": "pass"
     },
     {
       "id": "karl-head",
@@ -1720,7 +1720,7 @@
       "hero": "brute",
       "set": "karl",
       "setLabel": "Karl",
-      "realm": "fortress"
+      "realm": "pass"
     },
     {
       "id": "karl-chest",
@@ -1734,7 +1734,7 @@
       "hero": "brute",
       "set": "karl",
       "setLabel": "Karl",
-      "realm": "fortress"
+      "realm": "pass"
     },
     {
       "id": "karl-hands",
@@ -1748,7 +1748,7 @@
       "hero": "brute",
       "set": "karl",
       "setLabel": "Karl",
-      "realm": "fortress"
+      "realm": "pass"
     },
     {
       "id": "karl-legs",
@@ -1762,7 +1762,7 @@
       "hero": "brute",
       "set": "karl",
       "setLabel": "Karl",
-      "realm": "fortress"
+      "realm": "pass"
     },
     {
       "id": "karl-boots",
@@ -1776,7 +1776,7 @@
       "hero": "brute",
       "set": "karl",
       "setLabel": "Karl",
-      "realm": "fortress"
+      "realm": "pass"
     },
     {
       "id": "huskarl-head",
@@ -1790,7 +1790,7 @@
       "hero": "brute",
       "set": "huskarl",
       "setLabel": "Huskarl",
-      "realm": "forge"
+      "realm": "pass"
     },
     {
       "id": "huskarl-chest",
@@ -1804,7 +1804,7 @@
       "hero": "brute",
       "set": "huskarl",
       "setLabel": "Huskarl",
-      "realm": "forge"
+      "realm": "pass"
     },
     {
       "id": "huskarl-shoulders",
@@ -1818,7 +1818,7 @@
       "hero": "brute",
       "set": "huskarl",
       "setLabel": "Huskarl",
-      "realm": "forge"
+      "realm": "pass"
     },
     {
       "id": "huskarl-hands",
@@ -1832,7 +1832,7 @@
       "hero": "brute",
       "set": "huskarl",
       "setLabel": "Huskarl",
-      "realm": "forge"
+      "realm": "pass"
     },
     {
       "id": "huskarl-legs",
@@ -1846,7 +1846,7 @@
       "hero": "brute",
       "set": "huskarl",
       "setLabel": "Huskarl",
-      "realm": "forge"
+      "realm": "pass"
     },
     {
       "id": "huskarl-boots",
@@ -1860,7 +1860,7 @@
       "hero": "brute",
       "set": "huskarl",
       "setLabel": "Huskarl",
-      "realm": "forge"
+      "realm": "pass"
     },
     {
       "id": "ulfhednar-head",
@@ -1874,7 +1874,7 @@
       "hero": "brute",
       "set": "ulfhednar",
       "setLabel": "Ulfhednar",
-      "realm": "raid"
+      "realm": "pass"
     },
     {
       "id": "ulfhednar-chest",
@@ -1888,7 +1888,7 @@
       "hero": "brute",
       "set": "ulfhednar",
       "setLabel": "Ulfhednar",
-      "realm": "raid"
+      "realm": "pass"
     },
     {
       "id": "ulfhednar-shoulders",
@@ -1902,7 +1902,7 @@
       "hero": "brute",
       "set": "ulfhednar",
       "setLabel": "Ulfhednar",
-      "realm": "raid"
+      "realm": "pass"
     },
     {
       "id": "ulfhednar-hands",
@@ -1916,7 +1916,7 @@
       "hero": "brute",
       "set": "ulfhednar",
       "setLabel": "Ulfhednar",
-      "realm": "raid"
+      "realm": "pass"
     },
     {
       "id": "ulfhednar-legs",
@@ -1930,7 +1930,7 @@
       "hero": "brute",
       "set": "ulfhednar",
       "setLabel": "Ulfhednar",
-      "realm": "raid"
+      "realm": "pass"
     },
     {
       "id": "ulfhednar-boots",
@@ -1944,7 +1944,7 @@
       "hero": "brute",
       "set": "ulfhednar",
       "setLabel": "Ulfhednar",
-      "realm": "raid"
+      "realm": "pass"
     },
     {
       "id": "barrow-head",
@@ -1958,7 +1958,7 @@
       "hero": "scout",
       "set": "barrow",
       "setLabel": "Barrow Hunter",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "barrow-chest",
@@ -1972,7 +1972,7 @@
       "hero": "scout",
       "set": "barrow",
       "setLabel": "Barrow Hunter",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "barrow-shoulders",
@@ -1986,7 +1986,7 @@
       "hero": "scout",
       "set": "barrow",
       "setLabel": "Barrow Hunter",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "barrow-hands",
@@ -2000,7 +2000,7 @@
       "hero": "scout",
       "set": "barrow",
       "setLabel": "Barrow Hunter",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "barrow-legs",
@@ -2014,7 +2014,7 @@
       "hero": "scout",
       "set": "barrow",
       "setLabel": "Barrow Hunter",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "barrow-boots",
@@ -2028,7 +2028,7 @@
       "hero": "scout",
       "set": "barrow",
       "setLabel": "Barrow Hunter",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "ronin-head",
@@ -2042,7 +2042,7 @@
       "hero": "scout",
       "set": "ronin",
       "setLabel": "Ronin",
-      "realm": "castle"
+      "realm": "jade"
     },
     {
       "id": "ronin-chest",
@@ -2056,7 +2056,7 @@
       "hero": "scout",
       "set": "ronin",
       "setLabel": "Ronin",
-      "realm": "castle"
+      "realm": "jade"
     },
     {
       "id": "ronin-shoulders",
@@ -2070,7 +2070,7 @@
       "hero": "scout",
       "set": "ronin",
       "setLabel": "Ronin",
-      "realm": "castle"
+      "realm": "jade"
     },
     {
       "id": "ronin-hands",
@@ -2084,7 +2084,7 @@
       "hero": "scout",
       "set": "ronin",
       "setLabel": "Ronin",
-      "realm": "castle"
+      "realm": "jade"
     },
     {
       "id": "ronin-legs",
@@ -2098,7 +2098,7 @@
       "hero": "scout",
       "set": "ronin",
       "setLabel": "Ronin",
-      "realm": "castle"
+      "realm": "jade"
     },
     {
       "id": "ronin-boots",
@@ -2112,7 +2112,7 @@
       "hero": "scout",
       "set": "ronin",
       "setLabel": "Ronin",
-      "realm": "castle"
+      "realm": "jade"
     },
     {
       "id": "freebooter-head",
@@ -2448,7 +2448,7 @@
       "hero": "striker",
       "set": "lich",
       "setLabel": "Lich",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "lich-chest",
@@ -2462,7 +2462,7 @@
       "hero": "striker",
       "set": "lich",
       "setLabel": "Lich",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "lich-shoulders",
@@ -2476,7 +2476,7 @@
       "hero": "striker",
       "set": "lich",
       "setLabel": "Lich",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "lich-hands",
@@ -2490,7 +2490,7 @@
       "hero": "striker",
       "set": "lich",
       "setLabel": "Lich",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "lich-legs",
@@ -2504,7 +2504,7 @@
       "hero": "striker",
       "set": "lich",
       "setLabel": "Lich",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "lich-boots",
@@ -2518,7 +2518,7 @@
       "hero": "striker",
       "set": "lich",
       "setLabel": "Lich",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "gravebound-head",
@@ -2532,7 +2532,7 @@
       "hero": "striker",
       "set": "gravebound",
       "setLabel": "Gravebound",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "gravebound-chest",
@@ -2546,7 +2546,7 @@
       "hero": "striker",
       "set": "gravebound",
       "setLabel": "Gravebound",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "gravebound-shoulders",
@@ -2560,7 +2560,7 @@
       "hero": "striker",
       "set": "gravebound",
       "setLabel": "Gravebound",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "gravebound-hands",
@@ -2574,7 +2574,7 @@
       "hero": "striker",
       "set": "gravebound",
       "setLabel": "Gravebound",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "gravebound-legs",
@@ -2588,7 +2588,7 @@
       "hero": "striker",
       "set": "gravebound",
       "setLabel": "Gravebound",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "gravebound-boots",
@@ -2602,7 +2602,7 @@
       "hero": "striker",
       "set": "gravebound",
       "setLabel": "Gravebound",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "shrine-head",
@@ -2616,7 +2616,7 @@
       "hero": "striker",
       "set": "shrine",
       "setLabel": "Shrine Warden",
-      "realm": "castle"
+      "realm": "jade"
     },
     {
       "id": "shrine-chest",
@@ -2630,7 +2630,7 @@
       "hero": "striker",
       "set": "shrine",
       "setLabel": "Shrine Warden",
-      "realm": "castle"
+      "realm": "jade"
     },
     {
       "id": "shrine-shoulders",
@@ -2644,7 +2644,7 @@
       "hero": "striker",
       "set": "shrine",
       "setLabel": "Shrine Warden",
-      "realm": "castle"
+      "realm": "jade"
     },
     {
       "id": "shrine-hands",
@@ -2658,7 +2658,7 @@
       "hero": "striker",
       "set": "shrine",
       "setLabel": "Shrine Warden",
-      "realm": "castle"
+      "realm": "jade"
     },
     {
       "id": "shrine-legs",
@@ -2672,7 +2672,7 @@
       "hero": "striker",
       "set": "shrine",
       "setLabel": "Shrine Warden",
-      "realm": "castle"
+      "realm": "jade"
     },
     {
       "id": "shrine-boots",
@@ -2686,7 +2686,7 @@
       "hero": "striker",
       "set": "shrine",
       "setLabel": "Shrine Warden",
-      "realm": "castle"
+      "realm": "jade"
     },
     {
       "id": "corsair-head",
@@ -2938,7 +2938,7 @@
       "hero": "vanguard",
       "set": "deathless",
       "setLabel": "Deathless",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "deathless-chest",
@@ -2952,7 +2952,7 @@
       "hero": "vanguard",
       "set": "deathless",
       "setLabel": "Deathless",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "deathless-shoulders",
@@ -2966,7 +2966,7 @@
       "hero": "vanguard",
       "set": "deathless",
       "setLabel": "Deathless",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "deathless-hands",
@@ -2980,7 +2980,7 @@
       "hero": "vanguard",
       "set": "deathless",
       "setLabel": "Deathless",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "deathless-legs",
@@ -2994,7 +2994,7 @@
       "hero": "vanguard",
       "set": "deathless",
       "setLabel": "Deathless",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "deathless-boots",
@@ -3008,7 +3008,7 @@
       "hero": "vanguard",
       "set": "deathless",
       "setLabel": "Deathless",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "crimson-head",
@@ -3022,7 +3022,7 @@
       "hero": "vanguard",
       "set": "crimson",
       "setLabel": "Crimson Guard",
-      "realm": "castle"
+      "realm": "jade"
     },
     {
       "id": "crimson-chest",
@@ -3036,7 +3036,7 @@
       "hero": "vanguard",
       "set": "crimson",
       "setLabel": "Crimson Guard",
-      "realm": "castle"
+      "realm": "jade"
     },
     {
       "id": "crimson-shoulders",
@@ -3050,7 +3050,7 @@
       "hero": "vanguard",
       "set": "crimson",
       "setLabel": "Crimson Guard",
-      "realm": "castle"
+      "realm": "jade"
     },
     {
       "id": "crimson-hands",
@@ -3064,7 +3064,7 @@
       "hero": "vanguard",
       "set": "crimson",
       "setLabel": "Crimson Guard",
-      "realm": "castle"
+      "realm": "jade"
     },
     {
       "id": "crimson-legs",
@@ -3078,7 +3078,7 @@
       "hero": "vanguard",
       "set": "crimson",
       "setLabel": "Crimson Guard",
-      "realm": "castle"
+      "realm": "jade"
     },
     {
       "id": "crimson-boots",
@@ -3092,7 +3092,7 @@
       "hero": "vanguard",
       "set": "crimson",
       "setLabel": "Crimson Guard",
-      "realm": "castle"
+      "realm": "jade"
     },
     {
       "id": "shogun-head",
@@ -3106,7 +3106,7 @@
       "hero": "vanguard",
       "set": "shogun",
       "setLabel": "Shogun",
-      "realm": "castle"
+      "realm": "jade"
     },
     {
       "id": "shogun-chest",
@@ -3120,7 +3120,7 @@
       "hero": "vanguard",
       "set": "shogun",
       "setLabel": "Shogun",
-      "realm": "castle"
+      "realm": "jade"
     },
     {
       "id": "shogun-hands",
@@ -3134,7 +3134,7 @@
       "hero": "vanguard",
       "set": "shogun",
       "setLabel": "Shogun",
-      "realm": "castle"
+      "realm": "jade"
     },
     {
       "id": "shogun-legs",
@@ -3148,7 +3148,7 @@
       "hero": "vanguard",
       "set": "shogun",
       "setLabel": "Shogun",
-      "realm": "castle"
+      "realm": "jade"
     },
     {
       "id": "shogun-boots",
@@ -3162,7 +3162,7 @@
       "hero": "vanguard",
       "set": "shogun",
       "setLabel": "Shogun",
-      "realm": "castle"
+      "realm": "jade"
     },
     {
       "id": "bonegnaw-head",
@@ -3344,7 +3344,7 @@
       "hero": "brute",
       "set": "gravelord",
       "setLabel": "Gravelord",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "gravelord-chest",
@@ -3358,7 +3358,7 @@
       "hero": "brute",
       "set": "gravelord",
       "setLabel": "Gravelord",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "gravelord-shoulders",
@@ -3372,7 +3372,7 @@
       "hero": "brute",
       "set": "gravelord",
       "setLabel": "Gravelord",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "gravelord-hands",
@@ -3386,7 +3386,7 @@
       "hero": "brute",
       "set": "gravelord",
       "setLabel": "Gravelord",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "gravelord-legs",
@@ -3400,7 +3400,7 @@
       "hero": "brute",
       "set": "gravelord",
       "setLabel": "Gravelord",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "gravelord-boots",
@@ -3414,7 +3414,7 @@
       "hero": "brute",
       "set": "gravelord",
       "setLabel": "Gravelord",
-      "realm": "raid"
+      "realm": "crypt"
     },
     {
       "id": "oni-head",
@@ -3428,7 +3428,7 @@
       "hero": "brute",
       "set": "oni",
       "setLabel": "Oni",
-      "realm": "castle"
+      "realm": "jade"
     },
     {
       "id": "oni-chest",
@@ -3442,7 +3442,7 @@
       "hero": "brute",
       "set": "oni",
       "setLabel": "Oni",
-      "realm": "castle"
+      "realm": "jade"
     },
     {
       "id": "oni-shoulders",
@@ -3456,7 +3456,7 @@
       "hero": "brute",
       "set": "oni",
       "setLabel": "Oni",
-      "realm": "castle"
+      "realm": "jade"
     },
     {
       "id": "oni-hands",
@@ -3470,7 +3470,7 @@
       "hero": "brute",
       "set": "oni",
       "setLabel": "Oni",
-      "realm": "castle"
+      "realm": "jade"
     },
     {
       "id": "oni-legs",
@@ -3484,7 +3484,7 @@
       "hero": "brute",
       "set": "oni",
       "setLabel": "Oni",
-      "realm": "castle"
+      "realm": "jade"
     },
     {
       "id": "oni-boots",
@@ -3498,7 +3498,7 @@
       "hero": "brute",
       "set": "oni",
       "setLabel": "Oni",
-      "realm": "castle"
+      "realm": "jade"
     },
     {
       "id": "seadog-head",
@@ -4044,36 +4044,36 @@
   ],
   "defaults": {
     "scout": {
-      "head": "none-head",
-      "chest": "elf-chest",
-      "shoulders": "elf-shoulders",
-      "hands": "elf-hands",
-      "legs": "elf-legs",
-      "boots": "elf-boots"
+      "head": "herder-head",
+      "chest": "herder-chest",
+      "shoulders": "none-shoulders",
+      "hands": "herder-hands",
+      "legs": "herder-legs",
+      "boots": "herder-boots"
     },
     "striker": {
-      "head": "sorc-head",
-      "chest": "sorc-chest",
-      "shoulders": "sorc-shoulders",
-      "hands": "sorc-hands",
-      "legs": "sorc-legs",
-      "boots": "sorc-boots"
+      "head": "herder-head",
+      "chest": "herder-chest",
+      "shoulders": "none-shoulders",
+      "hands": "herder-hands",
+      "legs": "herder-legs",
+      "boots": "herder-boots"
     },
     "vanguard": {
-      "head": "paladin-head",
-      "chest": "paladin-chest",
-      "shoulders": "paladin-shoulders",
-      "hands": "paladin-hands",
-      "legs": "paladin-legs",
-      "boots": "paladin-boots"
+      "head": "herder-head",
+      "chest": "herder-chest",
+      "shoulders": "none-shoulders",
+      "hands": "herder-hands",
+      "legs": "herder-legs",
+      "boots": "herder-boots"
     },
     "brute": {
-      "head": "viking-head",
-      "chest": "viking-chest",
-      "shoulders": "viking-shoulders",
-      "hands": "viking-hands",
-      "legs": "viking-legs",
-      "boots": "viking-boots"
+      "head": "herder-head",
+      "chest": "herder-chest",
+      "shoulders": "none-shoulders",
+      "hands": "herder-hands",
+      "legs": "herder-legs",
+      "boots": "herder-boots"
     }
   },
   "note": "Generated by scripts/build-hero-outfits.py from scripts/outfits/outfits.json; do not edit."

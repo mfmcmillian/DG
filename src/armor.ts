@@ -1,6 +1,6 @@
 // What armor does. Every piece is worth a few percent, by its slot and its
-// rarity (a set's rarity follows the realm it drops in, src/weapons.ts
-// ARMOR_RARITY): the chest, shoulders and legs take the sting out of blows
+// rarity (the difficulty it fell on, kept as the hero's rank for that piece,
+// src/weapons.ts rollArmorRank): the chest, shoulders and legs take the sting out of blows
 // (toughness), the head and hands put weight behind the hero's own (might),
 // the boots add to the stamina bar. Wearing four pieces of one set adds a set
 // bonus; all six doubles it. The host reads a hero's armor off the synced body
@@ -9,7 +9,11 @@
 
 import { EQUIPMENT_ITEMS, EQUIPMENT_SLOTS, EquipmentItem, EquipmentLoadout, EquipmentSlot, getEquipmentItemOrNull } from './equipmentCatalog'
 import { t } from './i18n'
-import { baseRarityOf, Rarity } from './weapons'
+import { upgradeRankOf } from './shared/upgradeRanks'
+import { Rarity, RARITIES, rarityOf } from './weapons'
+
+/** How rare a hero's copy of an item is, by id: this hero's own ranks by default, a synced body's on the host. */
+export type RankOf = (itemId: string) => number
 
 /** Percent points one piece is worth at each rarity. */
 const TIER: Record<Rarity, number> = { common: 1, uncommon: 1.5, rare: 2, epic: 3, legendary: 4 }
@@ -45,9 +49,9 @@ function isArmor(item: EquipmentItem | undefined): item is EquipmentItem {
 }
 
 /** What one piece is worth on its own. Empty slots and weapons are worth nothing here. */
-export function armorPieceStats(item: EquipmentItem | undefined): ArmorStats {
+export function armorPieceStats(item: EquipmentItem | undefined, rankOf: RankOf = upgradeRankOf): ArmorStats {
   if (!isArmor(item)) return NOTHING
-  const rarity = baseRarityOf(item.id)
+  const rarity = rarityOf(item.id, rankOf(item.id))
   const tier = TIER[rarity]
   const health = HEALTH_TIER[rarity]
   switch (item.slot as EquipmentSlot) {
@@ -82,28 +86,30 @@ export type ArmorBonuses = {
   set?: { id: string; label: string; worn: number; rarity: Rarity }
 }
 
-/** How many pieces of each set a loadout wears, most worn first. */
-function setsWorn(loadout: EquipmentLoadout): Array<{ id: string; label: string; worn: number; rarity: Rarity }> {
+/** How many pieces of each set a loadout wears, most worn first. A set is as rare as its least rare worn piece. */
+function setsWorn(loadout: EquipmentLoadout, rankOf: RankOf): Array<{ id: string; label: string; worn: number; rarity: Rarity }> {
   const counts = new Map<string, { id: string; label: string; worn: number; rarity: Rarity }>()
   for (const slot of EQUIPMENT_SLOTS) {
     if (slot.id === 'weapon') continue
     const item = getEquipmentItemOrNull(loadout[slot.id])
     if (!isArmor(item) || !item.set) continue
-    const entry = counts.get(item.set) ?? { id: item.set, label: item.setLabel ?? item.set, worn: 0, rarity: baseRarityOf(item.id) }
+    const rarity = rarityOf(item.id, rankOf(item.id))
+    const entry = counts.get(item.set) ?? { id: item.set, label: item.setLabel ?? item.set, worn: 0, rarity }
     entry.worn++
+    if (RARITIES[rarity].rank < RARITIES[entry.rarity].rank) entry.rarity = rarity
     counts.set(item.set, entry)
   }
   return [...counts.values()].sort((a, b) => b.worn - a.worn)
 }
 
 /** Everything a loadout's armor is worth, pieces and set bonus together. */
-export function armorBonuses(loadout: EquipmentLoadout | undefined): ArmorBonuses {
+export function armorBonuses(loadout: EquipmentLoadout | undefined, rankOf: RankOf = upgradeRankOf): ArmorBonuses {
   if (!loadout) return { might: 1, toughness: 1, stamina: 0, health: 0 }
   let total = NOTHING
   for (const slot of EQUIPMENT_SLOTS) {
-    if (slot.id !== 'weapon') total = add(total, armorPieceStats(getEquipmentItemOrNull(loadout[slot.id])))
+    if (slot.id !== 'weapon') total = add(total, armorPieceStats(getEquipmentItemOrNull(loadout[slot.id]), rankOf))
   }
-  const set = setsWorn(loadout)[0]
+  const set = setsWorn(loadout, rankOf)[0]
   if (set) total = add(total, armorSetStats(set.rarity, set.worn, setSize(set.id)))
   return {
     might: 1 + total.might / 100,
@@ -135,8 +141,8 @@ export function armorStatLine(item: EquipmentItem | undefined): string {
  */
 export function armorSetLine(item: EquipmentItem | undefined, loadout: EquipmentLoadout): string {
   if (!isArmor(item) || !item.set) return ''
-  const worn = setsWorn(loadout).find((s) => s.id === item.set)?.worn ?? 0
-  const rarity = baseRarityOf(item.id)
+  const worn = setsWorn(loadout, upgradeRankOf).find((s) => s.id === item.set)?.worn ?? 0
+  const rarity = rarityOf(item.id)
   const size = setSize(item.set)
   const some = armorSetStats(rarity, SET_PIECES, size)
   const all = armorSetStats(rarity, size, size)

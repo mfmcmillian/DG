@@ -283,6 +283,7 @@ function LootToasts({ right, bottom, scale: s }: { right: number; bottom: number
       const rarityColor = rarity.color
       const subtitle = toast.salvaged > 0
         ? `${toast.wrongClass ? t('Cut for another class') : t('Already owned')}  ·  ${t('salvaged for {n} coins', { n: toast.salvaged })}`
+        : toast.raised ? `${t(RARITIES[toast.raised].label)}  ·  ${t('{set} set', { set: toast.item.setLabel ?? '' })}  ·  ${t('your copy is now this rare')}`
         : toast.item.weapon ? `${t(rarity.label)}  ·  ${t(WEAPON_CLASSES[toast.item.weapon.class].label)}  ·  ${t('now in your inventory')}`
         : `${t(rarity.label)}  ·  ${t('{set} set', { set: toast.item.setLabel ?? '' })}  ·  ${armorStatLine(toast.item) || t('now in your wardrobe')}`
       return <UiEntity key={`${toast.item.id}-${i}`} uiTransform={{ width: cardWidth, height: cardHeight, margin: { top: 6 * s },

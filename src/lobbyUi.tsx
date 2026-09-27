@@ -12,8 +12,8 @@ import { playerDisplayName } from './heroNameTag'
 import { isClientSynced, localAddress } from './multiplayer'
 import { menuColors, MenuAction as Action } from './menuUi'
 import {
-  cycleLobbyPickLevel, doorsWait, getLobbyPick, getLobbyState, goRun, holdDoors, isLeader, joinParty, leaveParty, myParty, openParties, PartyInfo,
-  setLobbyPickDiff, startRun
+  comingSoonPick, cycleLobbyPickLevel, doorsWait, getLobbyPick, getLobbyState, goRun, holdDoors, isLeader, joinParty, leaveParty, LOBBY_PAGES, myParty,
+  openParties, PartyInfo, setLobbyPickDiff, startRun
 } from './party'
 import { devToolsOn } from './devAccess'
 import { openSettings } from './settings'
@@ -34,6 +34,7 @@ let requestedRealm = ''
  * queue; the button holds (with counts) until it is in.
  */
 function realmGate(level: number): { ready: boolean; caption: string } {
+  if (comingSoonPick(level)) return { ready: false, caption: t('Coming soon') }
   const style = levelById(level).style
   if (requestedRealm !== style) {
     requestedRealm = style
@@ -110,22 +111,57 @@ function LevelArrow({ id, glyph, scale: s, enabled, onClick }: { id: string; gly
   </UiEntity>
 }
 
-/** The picked dungeon, as a card: its picture, its name, what waits inside, and the best clear so far; arrows step along the ladder. */
-function MapCard({ scale: s, canPick }: { scale: number; canPick: boolean }) {
-  const level = levelById(getLobbyPick().level)
-  const best = getLobbyState().progress[level.id] ?? 0
-  const open = lobbyLevelOpen(level.id)
-  const before = level.id > 0 ? LEVELS[level.id - 1] : undefined
+/** A realm with no map yet, as a card: its name and blurb, dimmed, with the packs that dress it and "Coming soon". */
+function ComingSoonCard({ scale: s, canPick, page }: { scale: number; canPick: boolean; page: number }) {
+  const realm = comingSoonPick(page)!
   const picture = { w: LEFT, h: Math.round(LEFT * 400 / 570) }
-  const limit = level.seconds > 0 ? formatTime(level.seconds) : ''
-  const many = LEVELS.length > 1 && canPick
+  const many = LOBBY_PAGES > 1 && canPick
   return <UiEntity uiTransform={{ width: LEFT * s, flexDirection: 'column', flexShrink: 0, pointerFilter: 'none' }}>
     <UiEntity uiTransform={{ width: '100%', height: 30 * s, margin: { bottom: 6 * s }, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
       <Label value={t('DUNGEON')} color={gold} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={{ width: 200 * s, height: 20 * s, flexShrink: 0, pointerFilter: 'none' }} />
       <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
         <LevelArrow id="level-prev" glyph="‹" scale={s} enabled={many} onClick={() => cycleLobbyPickLevel(-1)} />
-        <Label value={`${level.id + 1} / ${LEVELS.length}`} color={muted} fontSize={12 * s} textAlign="middle-center" textWrap="nowrap"
+        <Label value={`${page + 1} / ${LOBBY_PAGES}`} color={muted} fontSize={12 * s} textAlign="middle-center" textWrap="nowrap"
+          uiTransform={{ width: 56 * s, height: 20 * s, flexShrink: 0, pointerFilter: 'none' }} />
+        <LevelArrow id="level-next" glyph="›" scale={s} enabled={many} onClick={() => cycleLobbyPickLevel(1)} />
+      </UiEntity>
+    </UiEntity>
+    <UiEntity uiTransform={{ width: picture.w * s, height: picture.h * s, borderRadius: 6 * s, borderWidth: s, borderColor: line, flexShrink: 0,
+      alignItems: 'center', justifyContent: 'center', pointerFilter: 'none' }}
+      uiBackground={{ color: panel }}>
+      <Label value={t('Coming soon')} font="serif" color={gold} fontSize={28 * s} textAlign="middle-center" textWrap="nowrap"
+        uiTransform={{ width: '100%', height: 40 * s, pointerFilter: 'none' }} />
+    </UiEntity>
+    <Label value={t(realm.name)} font="serif" color={white} fontSize={26 * s} textAlign="middle-left" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 36 * s, margin: { top: 12 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+    <Label value={t(realm.blurb)} color={muted} fontSize={12.5 * s} textAlign="middle-left" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 20 * s, flexShrink: 0, pointerFilter: 'none' }} />
+    <Label value={t('Its armor is not found anywhere yet: {packs}.', { packs: realm.packs })} color={muted} fontSize={11.5 * s} textAlign="middle-left" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 18 * s, margin: { top: 2 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+    <Label value={t('The map is still being built.')} color={coral} fontSize={12 * s} textAlign="middle-left" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 20 * s, margin: { top: 8 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+  </UiEntity>
+}
+
+/** The picked dungeon, as a card: its picture, its name, what waits inside, and the best clear so far; arrows step along the ladder. */
+function MapCard({ scale: s, canPick }: { scale: number; canPick: boolean }) {
+  const page = getLobbyPick().level
+  if (comingSoonPick(page)) return <ComingSoonCard scale={s} canPick={canPick} page={page} />
+  const level = levelById(page)
+  const best = getLobbyState().progress[level.id] ?? 0
+  const open = lobbyLevelOpen(level.id)
+  const before = level.id > 0 ? LEVELS[level.id - 1] : undefined
+  const picture = { w: LEFT, h: Math.round(LEFT * 400 / 570) }
+  const limit = level.seconds > 0 ? formatTime(level.seconds) : ''
+  const many = LOBBY_PAGES > 1 && canPick
+  return <UiEntity uiTransform={{ width: LEFT * s, flexDirection: 'column', flexShrink: 0, pointerFilter: 'none' }}>
+    <UiEntity uiTransform={{ width: '100%', height: 30 * s, margin: { bottom: 6 * s }, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
+      <Label value={t('DUNGEON')} color={gold} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
+        uiTransform={{ width: 200 * s, height: 20 * s, flexShrink: 0, pointerFilter: 'none' }} />
+      <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+        <LevelArrow id="level-prev" glyph="‹" scale={s} enabled={many} onClick={() => cycleLobbyPickLevel(-1)} />
+        <Label value={`${level.id + 1} / ${LOBBY_PAGES}`} color={muted} fontSize={12 * s} textAlign="middle-center" textWrap="nowrap"
           uiTransform={{ width: 56 * s, height: 20 * s, flexShrink: 0, pointerFilter: 'none' }} />
         <LevelArrow id="level-next" glyph="›" scale={s} enabled={many} onClick={() => cycleLobbyPickLevel(1)} />
       </UiEntity>
@@ -255,10 +291,11 @@ function PartyCard({ scale: s, party }: { scale: number; party: PartyInfo }) {
 /** No party yet: the one button, and whoever else is about to go. */
 function NoParty({ scale: s }: { scale: number }) {
   const synced = isClientSynced()
+  const soon = !!comingSoonPick(getLobbyPick().level)
   const gate = realmGate(getLobbyPick().level)
-  const open = lobbyLevelOpen(getLobbyPick().level)
+  const open = !soon && lobbyLevelOpen(getLobbyPick().level)
   return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', flexShrink: 0, margin: { top: 18 * s }, pointerFilter: 'none' }}>
-    <Action id="lobby-go" text={!synced ? t('Connecting…') : !open ? t('Locked') : gate.ready ? t('Go') : gate.caption} onClick={() => goRun(getLobbyPick().level, getLobbyPick().diff)}
+    <Action id="lobby-go" text={!synced ? t('Connecting…') : soon ? t('Coming soon') : !open ? t('Locked') : gate.ready ? t('Go') : gate.caption} onClick={() => goRun(getLobbyPick().level, getLobbyPick().diff)}
       width={RIGHT} height={56} scale={s} fontSize={20} primary disabled={!synced || !open || !gate.ready} />
     <Label value={!synced ? t('Connecting to the hall…') : t('Friends in the hall can step in before the doors close.')}
       color={synced ? muted : coral} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"

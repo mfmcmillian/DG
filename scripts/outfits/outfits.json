@@ -1,5 +1,5 @@
 {
-  "note": "Input for scripts/build-hero-outfits.py. One Sidekick preset per hero becomes a six-slot armor set; `set` prefixes the item ids and file names. Change `preset` to any of the pack's six (see .tmp-outfits/previews after --previews) and rebuild. `extras` add more items from the same pack (explicit part names, usually from other presets, rendered with that preset's palette); an extra whose id is `<set>-<slot>` fills an empty slot and becomes the default. Each collectible names the `realm` whose dungeons drop its pieces ('fortress', 'pass', 'bog', 'castle', 'forge' or 'raid' for the Pit; ARMOR_DROP_REALMS in src/shared/levels.ts says which map drops which). A collectible may name its own `pack`; the hero's own preset is the starter set and is always owned. Items carry `hero`, `set` and `realm` into the catalog.",
+  "note": "Input for scripts/build-hero-outfits.py. One Sidekick preset per hero becomes a six-slot armor set; `set` prefixes the item ids and file names. Change `preset` to any of the pack's six (see .tmp-outfits/previews after --previews) and rebuild. `extras` add more items from the same pack (explicit part names, usually from other presets, rendered with that preset's palette); an extra whose id is `<set>-<slot>` fills an empty slot and becomes the default. Each collectible names the `realm` whose dungeons drop its pieces ('fortress', 'pass', 'bog', 'castle', 'forge' or 'raid' for the Pit; ARMOR_DROP_REALMS in src/shared/levels.ts says which map drops which). A collectible may name its own `pack`; the hero's own preset is the starter set and is always owned. Items carry `hero`, `set` and `realm` into the catalog. Each pack dresses one realm (`realm` on the hero and on every collectible); `starter` is the outfit every new hero wears, whatever the class.",
   "reference": "scripts/clips/hero-clips.glb",
   "clips": [
     "A_MOD_BL_Idle_Standing_Masc",
@@ -61,7 +61,7 @@
           "preset": "ElvenWarriors_03",
           "set": "sentinel",
           "label": "Sentinel",
-          "realm": "pass",
+          "realm": "thornwood",
           "names": {
             "head": "Antlered War Helm",
             "chest": "Sentinel Plate",
@@ -83,7 +83,7 @@
           "preset": "ElvenWarriors_02",
           "set": "dusk",
           "label": "Dusk Warden",
-          "realm": "fortress",
+          "realm": "thornwood",
           "names": {
             "head": "Dusk Hood",
             "chest": "Dusk Jerkin",
@@ -105,7 +105,7 @@
           "preset": "ElvenWarriors_01",
           "set": "sunleaf",
           "label": "Sunleaf",
-          "realm": "raid",
+          "realm": "thornwood",
           "names": {
             "head": "Sunleaf Circlet",
             "chest": "Sunleaf Cuirass",
@@ -127,7 +127,7 @@
           "preset": "ElvenWarriors_05",
           "set": "thorn",
           "label": "Thornwalker",
-          "realm": "fortress",
+          "realm": "thornwood",
           "names": {
             "head": "Bramble Circlet",
             "chest": "Thornwalker Jerkin",
@@ -149,7 +149,7 @@
           "preset": "ElvenWarriors_06",
           "set": "stag",
           "label": "Stagheart",
-          "realm": "forge",
+          "realm": "thornwood",
           "names": {
             "head": "Stag Mask",
             "chest": "Stagheart Coat",
@@ -195,7 +195,7 @@
           "preset": "FantasySkeletons_03",
           "set": "barrow",
           "label": "Barrow Hunter",
-          "realm": "raid",
+          "realm": "crypt",
           "names": {
             "head": "Barrow Hood",
             "chest": "Barrow Coat",
@@ -218,7 +218,7 @@
           "preset": "SamuraiWarriors_02",
           "set": "ronin",
           "label": "Ronin",
-          "realm": "castle",
+          "realm": "jade",
           "names": {
             "head": "Ronin's Jingasa",
             "chest": "Ronin's Dou",
@@ -318,7 +318,8 @@
           "name": "Stalker's Cap",
           "description": "A scrap-iron cap with arrows and feathers stuck through it, the way the camp's scouts wear them."
         }
-      ]
+      ],
+      "realm": "thornwood"
     },
     "striker": {
       "pack": "SIDEKICK_Fantasy_Sorcerers_Unity_2021_3_v1_0_0.unitypackage",
@@ -369,7 +370,7 @@
           "preset": "FantasySorcerers_02",
           "set": "hexer",
           "label": "Hexer",
-          "realm": "pass",
+          "realm": "crypt",
           "names": {
             "head": "Horned Skull",
             "chest": "Hexer's Robe",
@@ -391,7 +392,7 @@
           "preset": "FantasySorcerers_03",
           "set": "druid",
           "label": "Grove Keeper",
-          "realm": "fortress",
+          "realm": "crypt",
           "names": {
             "head": "Keeper's Hood",
             "chest": "Keeper's Robe",
@@ -413,7 +414,7 @@
           "preset": "FantasySorcerers_04",
           "set": "witch",
           "label": "Hedge Witch",
-          "realm": "fortress",
+          "realm": "crypt",
           "names": {
             "head": "Hedge Witch's Hat",
             "chest": "Hedge Witch's Robe",
@@ -435,7 +436,7 @@
           "preset": "FantasySorcerers_05",
           "set": "spectral",
           "label": "Wraithcaller",
-          "realm": "forge",
+          "realm": "crypt",
           "names": {
             "head": "Wraithcaller's Hat",
             "chest": "Wraithcaller's Robe",
@@ -457,7 +458,7 @@
           "preset": "FantasySorcerers_06",
           "set": "sage",
           "label": "Owl Sage",
-          "realm": "raid",
+          "realm": "crypt",
           "names": {
             "head": "Owl Sage's Hat",
             "chest": "Owl Sage's Robes",
@@ -503,7 +504,7 @@
           "preset": "FantasySkeletons_02",
           "set": "lich",
           "label": "Lich",
-          "realm": "raid",
+          "realm": "crypt",
           "names": {
             "head": "Lich Crown",
             "chest": "Lich Vestments",
@@ -526,7 +527,7 @@
           "preset": "FantasySkeletons_05",
           "set": "gravebound",
           "label": "Gravebound",
-          "realm": "raid",
+          "realm": "crypt",
           "names": {
             "head": "Gravebound Helm",
             "chest": "Gravebound Ribs",
@@ -549,7 +550,7 @@
           "preset": "SamuraiWarriors_04",
           "set": "shrine",
           "label": "Shrine Warden",
-          "realm": "castle",
+          "realm": "jade",
           "names": {
             "head": "Warden's Kabuto",
             "chest": "Warden's Dou",
@@ -636,7 +637,8 @@
             "boots": "Wooden clogs that echo in the hall."
           }
         }
-      ]
+      ],
+      "realm": "crypt"
     },
     "vanguard": {
       "pack": "SIDEKICK_Fantasy_Knights_Unity_2021_3_v1_0_7.unitypackage",
@@ -664,7 +666,7 @@
           "preset": "FantasyKnights_02",
           "set": "blackguard",
           "label": "Blackguard",
-          "realm": "pass",
+          "realm": "castle",
           "names": {
             "head": "Blackguard Helm",
             "chest": "Blackguard Plate",
@@ -686,7 +688,7 @@
           "preset": "FantasyKnights_04",
           "set": "crusader",
           "label": "Crusader",
-          "realm": "forge",
+          "realm": "castle",
           "names": {
             "head": "Spired Helm",
             "chest": "Crusader Plate",
@@ -708,7 +710,7 @@
           "preset": "FantasyKnights_03",
           "set": "sovereign",
           "label": "Sovereign",
-          "realm": "raid",
+          "realm": "castle",
           "names": {
             "head": "Sovereign Crown",
             "chest": "Sovereign Cuirass",
@@ -730,7 +732,7 @@
           "preset": "FantasyKnights_05",
           "set": "ironclad",
           "label": "Ironclad",
-          "realm": "fortress",
+          "realm": "castle",
           "names": {
             "head": "Mail Hood",
             "chest": "Ironclad Breastplate",
@@ -752,7 +754,7 @@
           "preset": "FantasyKnights_06",
           "set": "chevalier",
           "label": "Chevalier",
-          "realm": "fortress",
+          "realm": "castle",
           "names": {
             "head": "Plumed Bascinet",
             "chest": "Tourney Plate",
@@ -798,7 +800,7 @@
           "preset": "FantasySkeletons_01",
           "set": "deathless",
           "label": "Deathless",
-          "realm": "raid",
+          "realm": "crypt",
           "names": {
             "head": "Deathless Hood",
             "chest": "Deathless Plate",
@@ -821,7 +823,7 @@
           "preset": "SamuraiWarriors_01",
           "set": "crimson",
           "label": "Crimson Guard",
-          "realm": "castle",
+          "realm": "jade",
           "names": {
             "head": "Crimson Kabuto",
             "chest": "Crimson Dou",
@@ -844,7 +846,7 @@
           "preset": "SamuraiWarriors_05",
           "set": "shogun",
           "label": "Shogun",
-          "realm": "castle",
+          "realm": "jade",
           "names": {
             "head": "Shogun's Kabuto",
             "chest": "Shogun's Dou",
@@ -922,7 +924,8 @@
           "name": "Admiral's Boots",
           "description": "Tall black boots for a frozen deck."
         }
-      ]
+      ],
+      "realm": "castle"
     },
     "brute": {
       "pack": "SIDEKICK_Viking_Warriors_Unity_2021_3_v1_0_7.unitypackage",
@@ -972,7 +975,7 @@
           "preset": "VikingWarrior_06",
           "set": "raider",
           "label": "Raider",
-          "realm": "fortress",
+          "realm": "pass",
           "names": {
             "head": "Raven Helm",
             "chest": "Raider's Coat",
@@ -994,7 +997,7 @@
           "preset": "VikingWarrior_02",
           "set": "karl",
           "label": "Karl",
-          "realm": "fortress",
+          "realm": "pass",
           "names": {
             "head": "Karl's Band",
             "chest": "Karl's Tunic",
@@ -1016,7 +1019,7 @@
           "preset": "VikingWarrior_03",
           "set": "huskarl",
           "label": "Huskarl",
-          "realm": "forge",
+          "realm": "pass",
           "names": {
             "head": "Masked Helm",
             "chest": "Huskarl's Mail",
@@ -1038,7 +1041,7 @@
           "preset": "VikingWarrior_05",
           "set": "ulfhednar",
           "label": "Ulfhednar",
-          "realm": "raid",
+          "realm": "pass",
           "names": {
             "head": "Crested Helm",
             "chest": "Wolfskin Harness",
@@ -1107,7 +1110,7 @@
           "preset": "FantasySkeletons_04",
           "set": "gravelord",
           "label": "Gravelord",
-          "realm": "raid",
+          "realm": "crypt",
           "names": {
             "head": "Gravelord Horns",
             "chest": "Gravelord Plate",
@@ -1130,7 +1133,7 @@
           "preset": "SamuraiWarriors_03",
           "set": "oni",
           "label": "Oni",
-          "realm": "castle",
+          "realm": "jade",
           "names": {
             "head": "Oni Kabuto",
             "chest": "Oni Dou",
@@ -1194,7 +1197,16 @@
             "boots": "Boots for rocks and mud."
           }
         }
-      ]
+      ],
+      "realm": "pass"
     }
+  },
+  "starter": {
+    "head": "herder-head",
+    "chest": "herder-chest",
+    "shoulders": "none-shoulders",
+    "hands": "herder-hands",
+    "legs": "herder-legs",
+    "boots": "herder-boots"
   }
 }

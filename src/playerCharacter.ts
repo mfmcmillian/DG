@@ -20,7 +20,7 @@ import {
 import { fxNumber, fxSlash, fxSound } from './combatFx'
 import { rearmAvatarHiding } from './avatarHiding'
 import { armorBonuses } from './armor'
-import { localAddress, playerAddressAsReported, publishHero, withdrawHero } from './multiplayer'
+import { localAddress, packArmorRanks, playerAddressAsReported, publishHero, withdrawHero } from './multiplayer'
 import { flushNativeMotion, mirrorLocalMotion, nativeHeroOn, nativeNote, setLocalNativeShown, stopNativeMotion, syncNativeWeapon } from './nativeHero'
 import { CRAWLER_CAMERA, isCrawlerCameraOn, kickCrawlerCamera } from './dungeon/crawlerCamera'
 import { SkillDef } from './shared/skills'
@@ -731,6 +731,7 @@ function publishLocalPlayer(player: { position: Vector3; rotation: Quaternion },
     skin: appearance.skinTone,
     loadout: { ...requestedLoadout },
     weaponUp: upgradeRankOf(requestedLoadout.weapon),
+    armorUp: packArmorRanks(requestedLoadout, upgradeRankOf),
     native: nativeHeroOn(),
     block: roamingCombat.blocking,
     // The host reads `dodge` as "blows pass through right now": the roll's

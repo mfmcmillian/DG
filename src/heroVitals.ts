@@ -8,7 +8,7 @@ import { engine } from '@dcl/sdk/ecs'
 import { MAX_COMBAT_HEALTH } from './combatActions'
 import { armorBonuses } from './armor'
 import { heroBonusesFor } from './heroXp'
-import { heroCharacters, heroLoadout, heroPosition } from './multiplayer'
+import { heroArmorRankOf, heroCharacters, heroLoadout, heroPosition } from './multiplayer'
 import { onNet, sendNet } from './net'
 
 /** Seconds a downed hero lies before the host stands them back up at the entrance. */
@@ -122,7 +122,7 @@ function record(id: string): Vitals {
  */
 export function heroMaxHealth(id: string): number {
   const cid = heroCharacters((owner) => owner === id)[0] ?? ''
-  return MAX_COMBAT_HEALTH + heroBonusesFor(id, cid).health + armorBonuses(heroLoadout(id)).health
+  return MAX_COMBAT_HEALTH + heroBonusesFor(id, cid).health + armorBonuses(heroLoadout(id), heroArmorRankOf(id)).health
 }
 
 /** Authoritative health; a hero the host has not met yet is at full. */
@@ -153,7 +153,7 @@ export function strikeHero(
   const dodged = !blocked && !!opts.dodged
   // The hero's level takes some of the sting out of the blow, more so for a vanguard; so does the armor their body wears.
   const cid = heroCharacters((owner) => owner === id)[0] ?? ''
-  const toughness = heroBonusesFor(id, cid).toughness * buffToughness(id) * armorBonuses(heroLoadout(id)).toughness
+  const toughness = heroBonusesFor(id, cid).toughness * buffToughness(id) * armorBonuses(heroLoadout(id), heroArmorRankOf(id)).toughness
   const dealt = blocked || dodged ? 0 : Math.max(0, Math.round(damage * toughness))
   v.health = Math.max(0, v.health - dealt)
   if (v.health === 0) v.deadFor = 0

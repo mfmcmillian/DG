@@ -76,13 +76,13 @@ export type ShotNet = {
 
 /** What the owner writes into its HeroBody and HeroLook each time something changed. */
 export type HeroPublish = Omit<HeroView, 'id' | 'beat'>
-const LOOK_KEYS = ['cid', 'body', 'hair', 'hc', 'skin', 'loadout', 'weaponUp', 'native'] as const
+const LOOK_KEYS = ['cid', 'body', 'hair', 'hc', 'skin', 'loadout', 'weaponUp', 'armorUp', 'native'] as const
 type LookKey = (typeof LOOK_KEYS)[number]
 type BodyKey = Exclude<keyof HeroPublish, LookKey>
 
 function splitPublish(hero: HeroPublish): { body: Pick<HeroPublish, BodyKey>; look: Pick<HeroPublish, LookKey> } {
-  const { cid, body, hair, hc, skin, loadout, weaponUp, native, ...pose } = hero
-  return { body: pose, look: { cid, body, hair, hc, skin, loadout, weaponUp, native } }
+  const { cid, body, hair, hc, skin, loadout, weaponUp, armorUp, native, ...pose } = hero
+  return { body: pose, look: { cid, body, hair, hc, skin, loadout, weaponUp, armorUp, native } }
 }
 
 let initialized = false
@@ -289,6 +289,39 @@ export function heroWeaponRank(id: string): number {
     if (heroOwner(entity, hero) === id) return Math.max(0, hero.weaponUp || 0)
   }
   return 0
+}
+
+/**
+ * The rarity steps of each armor piece a hero wears, as the synced look
+ * declares them: a lookup by item id for src/armor.ts armorBonuses, so the
+ * host sizes toughness and health by the copy the hero really owns.
+ */
+export function heroArmorRankOf(id: string): (itemId: string) => number {
+  for (const [entity, hero] of heroes()) {
+    if (heroOwner(entity, hero) !== id) continue
+    return armorRankLookup(fullLoadout(hero), hero.armorUp)
+  }
+  return () => 0
+}
+
+/** Pack a loadout's armor ranks the way `HeroBody.armorUp` carries them. */
+export function packArmorRanks(loadout: EquipmentLoadout, rankOf: (itemId: string) => number): string {
+  let out = ''
+  for (const slot of EQUIPMENT_SLOTS) {
+    if (slot.id !== 'weapon') out += String(Math.max(0, Math.min(9, rankOf(loadout[slot.id]))))
+  }
+  return out
+}
+
+function armorRankLookup(loadout: EquipmentLoadout, packed: string | undefined): (itemId: string) => number {
+  const ranks = new Map<string, number>()
+  let i = 0
+  for (const slot of EQUIPMENT_SLOTS) {
+    if (slot.id === 'weapon') continue
+    const n = Number(packed?.[i++] ?? 0)
+    if (Number.isFinite(n) && n > 0) ranks.set(loadout[slot.id], n)
+  }
+  return (itemId) => ranks.get(itemId) ?? 0
 }
 
 /** The character (`cid`) of every hero body whose owner passes `member`, ours included. */
@@ -521,10 +554,10 @@ export function publishEnemyFx(fx: EnemyFxNet) {
 }
 
 /** `item` is a weapon id from the catalog, or '' when the kill dropped no weapon. */
-export function publishLoot(party: string, x: number, z: number, coin: number, heart: number, item: string, boss: boolean) {
+export function publishLoot(party: string, x: number, z: number, coin: number, heart: number, item: string, boss: boolean, up = 0) {
   if (!isHost()) return
   rememberHeartDrop(x, z, heart)
-  sendNet('loot', { party, x, z, coin, heart, item, boss })
+  sendNet('loot', { party, x, z, coin, heart, item, boss, up })
 }
 
 export type HeroHit = {
@@ -540,7 +573,7 @@ let onImpact: ((p: ImpactNet, from: string) => void) | undefined
 let onShot: ((p: ShotNet) => void) | undefined
 let onEnemies: ((party: string, list: EnemySnap[]) => void) | undefined
 let onEnemyFx: ((fx: EnemyFxNet) => void) | undefined
-let onLoot: ((party: string, x: number, z: number, coin: number, heart: number, item: string, boss: boolean) => void) | undefined
+let onLoot: ((party: string, x: number, z: number, coin: number, heart: number, item: string, boss: boolean, up: number) => void) | undefined
 let onJoin: ((id: string) => void) | undefined
 let onLeave: ((id: string) => void) | undefined
 let onHitSkill: ((id: string, i: number, skill: string) => void) | undefined
@@ -616,7 +649,7 @@ function bindClient() {
     sinceSnapshot = 0
     onEnemies?.(msg.party, msg.list.map((e) => ({ ...e, m: e.m as EquipmentMotion })))
   })
-  onNet('loot', (msg) => onLoot?.(msg.party, msg.x, msg.z, msg.coin, msg.heart, msg.item, msg.boss))
+  onNet('loot', (msg) => onLoot?.(msg.party, msg.x, msg.z, msg.coin, msg.heart, msg.item, msg.boss, msg.up || 0))
   onNet('enemyFx', (msg) => onEnemyFx?.(msg))
   engine.addSystem(tickNetDiag)
   engine.addSystem(watchForServer)

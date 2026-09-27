@@ -111,10 +111,12 @@ export function getInventoryIsDirty(): boolean {
 
 // Loot-gated gear: locked until the dungeon hands it over. Every loot weapon
 // but the class starters (sword, axe, bow, staff) is earned, and so is every
-// armor set but the class's own: a set's pieces drop in its realm.
+// armor piece but the starter outfit every new hero wears (DEFAULT_LOADOUTS):
+// a set's pieces drop in its realm.
 export const STARTER_WEAPON = HERO_CLASSES.blade.starterWeapon
 const STARTER_WEAPONS = new Set<string>(Object.values(HERO_CLASSES).map((c) => c.starterWeapon))
-const GATED_ITEMS = EQUIPMENT_ITEMS.filter((item) => item.weapon ? !STARTER_WEAPONS.has(item.id) : !!item.realm).map((item) => item.id)
+const STARTER_ARMOR = new Set<string>(Object.values(DEFAULT_LOADOUTS).flatMap((l) => EQUIPMENT_SLOTS.filter((s) => s.id !== 'weapon').map((s) => l[s.id])))
+const GATED_ITEMS = EQUIPMENT_ITEMS.filter((item) => item.weapon ? !STARTER_WEAPONS.has(item.id) : !!item.realm && !STARTER_ARMOR.has(item.id)).map((item) => item.id)
 const lockedItems = new Set<string>(GATED_ITEMS)
 
 /** Gear the hero's class can use: a weapon of its classes, armor cut for it (empty slots always pass). */
@@ -175,6 +177,11 @@ export function getUnlockedItems(): string[] {
 /** Weapons this hero can equip right now: the class starter plus everything looted for the class. */
 export function ownedWeaponIds(characterId: string = getEquippedCharacter().id): string[] {
   return EQUIPMENT_ITEMS.filter((item) => item.slot === 'weapon' && !lockedItems.has(item.id) && usableByHero(item, characterId)).map((item) => item.id)
+}
+
+/** Armor this hero owns: the starter outfit and every piece the dungeons handed over (empty slots excluded). */
+export function ownedArmorIds(): string[] {
+  return EQUIPMENT_ITEMS.filter((item) => !item.weapon && item.slot !== 'weapon' && !!item.set && !lockedItems.has(item.id)).map((item) => item.id)
 }
 
 /**

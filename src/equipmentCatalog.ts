@@ -19,7 +19,7 @@ export type WeaponInfo = {
 }
 
 /** Where a set's pieces are found: a realm's dungeons, the Pit, or nowhere because it is the class's starter. */
-export type ArmorRealm = '' | 'fortress' | 'pass' | 'castle' | 'forge' | 'bog' | 'raid'
+export type ArmorRealm = '' | RealmId | 'raid'
 
 export interface EquipmentItem {
   id: string
@@ -499,6 +499,11 @@ export function armorSourceLabel(realm: ArmorRealm | undefined): string {
   const maps = armorDropLevels(realm as RealmId)
   if (maps.length) return maps.map((l) => l.name).join(', ')
   return REALMS.find((r) => r.id === realm)?.name ?? ''
+}
+
+/** Whether the realm a piece is found in has no map yet (the wardrobe says so). */
+export function armorSourceComingSoon(realm: ArmorRealm | undefined): boolean {
+  return !!realm && realm !== 'raid' && !!REALMS.find((r) => r.id === realm)?.comingSoon
 }
 
 export const EQUIPMENT_ITEMS: EquipmentItem[] = [

@@ -1,4 +1,4 @@
-// The pit's sheet: which weapon to offer. Each of the hero's weapons is a card
+// The pit's sheet: which weapon or armor piece to offer. Each of the hero's items is a card
 // with its icon, its rarity now and the one the fire could give it, the coins
 // it asks and the odds. Pick one, confirm, and the coins are spent and the shot
 // begins (src/pitCinematic.ts). Same dark sheet and gold rule as the settings;
@@ -154,7 +154,7 @@ export function UpgradeUi() {
       </UiEntity>
       <UiEntity uiTransform={{ width: 200 * s, height: 2 * s, margin: { bottom: 10 * s }, flexShrink: 0, pointerFilter: 'none' }}
         uiBackground={{ color: gold }} />
-      <Label value={t('Offer a weapon to the fire and it may come back one rarity higher. The coins are spent either way.')}
+      <Label value={t('Offer a weapon or a piece of armor to the fire and it may come back one rarity higher. The coins are spent either way.')}
         color={muted} fontSize={11.5 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={{ width: '100%', height: 18 * s, margin: { bottom: 12 * s }, flexShrink: 0, pointerFilter: 'none' }} />
 

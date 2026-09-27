@@ -1,5 +1,5 @@
-// The upgrade pit's rules: a weapon goes into the smithy's fire with a purse of
-// coins and comes out one rarity step higher (same weapon, better bonus), or
+// The upgrade pit's rules: a weapon or a piece of armor goes into the smithy's
+// fire with a purse of coins and comes out one rarity step higher (same item, better bonus), or
 // unchanged when the fire does not take. Cheaper tiers are safer; every roll
 // keeps the coins. The offering is a two-step affair so the cinematic
 // (src/pitCinematic.ts) can play between them: `attemptUpgrade` spends and
@@ -8,7 +8,7 @@
 // is ever lost.
 
 import { getEquipmentItemOrNull } from './equipmentCatalog'
-import { ownedWeaponIds } from './inventory'
+import { ownedArmorIds, ownedWeaponIds } from './inventory'
 import { getLootState, spendCoins } from './loot'
 import { setUpgradeRank, upgradeRankOf } from './shared/upgradeRanks'
 import { nextRarity, Rarity, rarityOf, RARITIES } from './weapons'
@@ -54,11 +54,12 @@ export function upgradeOffer(id: string): UpgradeOffer {
   return { id, from, to, coins, chance: step?.chance ?? 0, affordable: !!to && getLootState().coins >= coins }
 }
 
-/** Every weapon this hero could offer, the ones that can still rise first. */
+/** Everything this hero could offer, weapons then armor, the ones that can still rise first. */
 export function upgradeOffers(): UpgradeOffer[] {
-  const offers = ownedWeaponIds()
-    .filter((id) => id !== 'none-weapon' && !!getEquipmentItemOrNull(id)?.weapon)
-    .map(upgradeOffer)
+  const offers = [
+    ...ownedWeaponIds().filter((id) => id !== 'none-weapon' && !!getEquipmentItemOrNull(id)?.weapon),
+    ...ownedArmorIds()
+  ].map(upgradeOffer)
   return offers.sort((a, b) => Number(!!b.to) - Number(!!a.to) || RARITIES[b.from].rank - RARITIES[a.from].rank || a.id.localeCompare(b.id))
 }
 

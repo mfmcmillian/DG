@@ -63,6 +63,12 @@ export const HeroLook = engine.defineComponent('dg::HeroLook', {
   /** Rarity steps the upgrade pit has given `loadout.weapon`; the host prices blows by it. */
   weaponUp: Schemas.Int,
   /**
+   * Rarity steps of each worn armor piece, one digit per slot in
+   * EQUIPMENT_SLOTS order without the weapon (head, chest, shoulders, hands,
+   * legs, boots), e.g. "020310"; the host sizes toughness and health by it.
+   */
+  armorUp: Schemas.String,
+  /**
    * The owner fights as their own Decentraland avatar (src/nativeHero.ts): the
    * renderer shows it and plays their clips as scene emotes, so watchers leave
    * their avatar visible and show no custom body for them.

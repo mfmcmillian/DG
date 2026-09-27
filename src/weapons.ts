@@ -7,7 +7,6 @@
 
 import { Color4 } from '@dcl/sdk/math'
 import { ArmorRealm, EQUIPMENT_ITEMS, EquipmentItem, getEquipmentItemOrNull } from './equipmentCatalog'
-import { classAllowsArmor } from './heroClasses'
 import { t } from './i18n'
 import { upgradeRankOf } from './shared/upgradeRanks'
 
@@ -92,24 +91,24 @@ export function nextRarity(rarity: Rarity): Rarity | undefined {
   return RARITY_ORDER[RARITIES[rarity].rank + 1]
 }
 
-/** An armor set's rank follows where it is found: the deeper the realm, the rarer the piece. */
-export const ARMOR_RARITY: Record<Exclude<ArmorRealm, ''>, Rarity> = { fortress: 'uncommon', pass: 'rare', castle: 'rare', forge: 'epic', bog: 'epic', raid: 'legendary' }
-
-/** How rare an item is as printed: a weapon's own rarity, or an armor piece's by its realm. Starter gear is common. */
+/**
+ * How rare an item is as printed: a weapon's own rarity. Armor has no printed
+ * rarity: every piece is common on the page, and the copy a hero owns is as
+ * rare as the difficulty it fell on (rollArmorRank), kept as upgrade steps.
+ */
 export function baseRarityOf(id: string): Rarity {
   const item = getEquipmentItemOrNull(id)
-  if (item?.weapon) return item.weapon.rarity
-  return item?.realm ? ARMOR_RARITY[item.realm] : 'common'
+  return item?.weapon ? item.weapon.rarity : 'common'
 }
 
-/** How rare this hero's copy of an item is: its printed rarity raised by the pit's upgrades. */
-export function rarityOf(id: string): Rarity {
-  return raiseRarity(baseRarityOf(id), upgradeRankOf(id))
+/** How rare this hero's copy of an item is: its printed rarity raised by the drop's rank and the pit's upgrades. */
+export function rarityOf(id: string, rank: number = upgradeRankOf(id)): Rarity {
+  return raiseRarity(baseRarityOf(id), rank)
 }
 
-/** Armor pieces of every set found in `realms`, for a class (by its character id). */
-export function armorDropsFor(characterId: string, realms: readonly ArmorRealm[]): EquipmentItem[] {
-  return EQUIPMENT_ITEMS.filter((item) => !item.weapon && !!item.realm && realms.includes(item.realm) && classAllowsArmor(characterId, item.hero))
+/** Armor pieces of every set found in `realms`. Any class wears any set. */
+export function armorDropsFor(realms: readonly ArmorRealm[]): EquipmentItem[] {
+  return EQUIPMENT_ITEMS.filter((item) => !item.weapon && !!item.realm && realms.includes(item.realm))
 }
 
 /** How often a slain enemy leaves a piece of armor when it left no weapon. The boss always does. */
@@ -117,14 +116,41 @@ const ARMOR_CHANCE: Record<DropSource, number> = { grunt: 0.04, elite: 0.14, bos
 
 /**
  * Roll an armor drop for a slain enemy: a piece of one of the sets the map
- * drops (ARMOR_DROP_REALMS) for a random character present, or '' for nothing.
+ * drops (ARMOR_DROP_REALMS), or '' for nothing.
  */
-export function rollArmorDrop(source: DropSource, realms: readonly ArmorRealm[], characterIds: string[], rng: () => number = Math.random): string {
-  if (!realms.length || !characterIds.length || rng() >= ARMOR_CHANCE[source]) return ''
-  const cid = characterIds[Math.min(characterIds.length - 1, Math.floor(rng() * characterIds.length))]
-  const pieces = armorDropsFor(cid, realms)
+export function rollArmorDrop(source: DropSource, realms: readonly ArmorRealm[], rng: () => number = Math.random): string {
+  if (!realms.length || rng() >= ARMOR_CHANCE[source]) return ''
+  const pieces = armorDropsFor(realms)
   if (!pieces.length) return ''
   return pieces[Math.min(pieces.length - 1, Math.floor(rng() * pieces.length))].id
+}
+
+/**
+ * How rare a piece of armor falls, by the run's difficulty and who dropped it,
+ * as percent weights common..legendary. Two steps per difficulty; an elite is
+ * half a difficulty ahead of the grunts, the boss a whole one. Easy grunts
+ * never leave better than rare; only Hard leaves legendary.
+ */
+const ARMOR_RANK_WEIGHTS: number[][] = [
+  [60, 30, 10, 0, 0],
+  [40, 35, 20, 5, 0],
+  [15, 40, 35, 10, 0],
+  [8, 28, 38, 20, 6],
+  [0, 15, 40, 30, 15],
+  [0, 8, 32, 38, 22],
+  [0, 0, 25, 45, 30]
+]
+
+/** The rarity steps (0 common .. 4 legendary) a fresh armor drop carries. `diff` is the run's difficulty index. */
+export function rollArmorRank(source: DropSource, diff: number, rng: () => number = Math.random): number {
+  const step = Math.max(0, Math.min(ARMOR_RANK_WEIGHTS.length - 1, diff * 2 + (source === 'boss' ? 2 : source === 'elite' ? 1 : 0)))
+  const weights = ARMOR_RANK_WEIGHTS[step]
+  let pick = rng() * weights.reduce((a, b) => a + b, 0)
+  for (let i = 0; i < weights.length; i++) {
+    pick -= weights[i]
+    if (pick < 0) return i
+  }
+  return weights.length - 1
 }
 
 export function rarityColor(id: string): Color4 {

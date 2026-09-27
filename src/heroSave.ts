@@ -6,7 +6,7 @@
 import { engine } from '@dcl/sdk/ecs'
 import { getCommittedAppearance, normalizeAppearance, setCommittedAppearance } from './appearance'
 import { adoptSavedCharacter, CHARACTERS, getEquippedCharacter, getPickerState } from './characterPicker'
-import { EQUIPMENT_SLOTS, EquipmentLoadout } from './equipmentCatalog'
+import { EQUIPMENT_SLOTS, EquipmentLoadout, getEquipmentItemOrNull } from './equipmentCatalog'
 import { getCommittedLoadout, setCommittedLoadout } from './equipmentState'
 import { enforceOwnedLoadout, getUnlockedItems, unlockInventoryItem } from './inventory'
 import { getLootState, setCoins } from './loot'
@@ -33,6 +33,9 @@ const COIN_SAVE_SECONDS = 10
 const SAVE_SECONDS = 1
 
 let requested = false
+/** The set each class started in before 2.8.0, by character id. */
+const LEGACY_STARTERS: Record<string, string> = { scout: 'elf', striker: 'sorc', vanguard: 'paladin', brute: 'viking' }
+
 let lastSaved = ''
 let lastSavedCoins = -1
 let sinceSave = 0
@@ -61,6 +64,13 @@ export function initializeHeroSave() {
     const loadout = parseLoadout(msg.loadout)
     if (loadout) setCommittedLoadout(msg.cid, loadout)
     for (const id of msg.unlocks) unlockInventoryItem(id)
+    // Before 2.8.0 a hero started in a set of its class (Elven Warden, Sorcerer,
+    // Paladin, Northman) that was never gated; now those drop in their realms.
+    // A hero still wearing any of it owns the whole set, so nothing is taken away.
+    const legacy = LEGACY_STARTERS[msg.cid] ?? ''
+    if (legacy && loadout && EQUIPMENT_SLOTS.some((slot) => loadout[slot.id]?.startsWith(`${legacy}-`))) {
+      for (const slot of EQUIPMENT_SLOTS) if (slot.id !== 'weapon' && getEquipmentItemOrNull(`${legacy}-${slot.id}`)) unlockInventoryItem(`${legacy}-${slot.id}`)
+    }
     loadUpgradeRanks(msg.ups)
     // Armor from before it had to be earned comes off; the class default goes back on.
     enforceOwnedLoadout(msg.cid)

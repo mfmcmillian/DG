@@ -39,7 +39,7 @@ export const CHARACTERS: CharacterDefinition[] = [
     id: 'vanguard',
     name: 'Vanguard',
     role: 'Blade',
-    description: 'White plate, a lion helm and a sword. The steady one at the front of the line.',
+    description: 'Sword and guard. Light strings, heavy blows, and a shield wall of one at the front of the line. Starts in the same village clothes as everyone; the plate is out there.',
     model: 'models/knight.glb',
     portrait: 'images/characters/vanguard-idle.png',
     clips: SIDEKICK_CLIPS
@@ -48,7 +48,7 @@ export const CHARACTERS: CharacterDefinition[] = [
     id: 'scout',
     name: 'Scout',
     role: 'Bow',
-    description: 'A fox mask, a longbow and an adventurous spirit. Arrows from range; a leaping volley when it counts.',
+    description: 'A longbow and quick feet. Arrows from range, a leaping volley when it counts, the bow itself when they close in. Starts in village clothes; every set in the dungeons fits.',
     model: 'models/characters/scout-animated.glb',
     portrait: 'images/characters/scout-idle.png',
     clips: SIDEKICK_CLIPS
@@ -57,7 +57,7 @@ export const CHARACTERS: CharacterDefinition[] = [
     id: 'striker',
     name: 'Striker',
     role: 'Magic',
-    description: 'A bold mix of armor and utility pieces, and a staff that throws bolts. A slow orb bursts for the heavy.',
+    description: 'A staff that throws bolts, and a slow orb that bursts for the heavy. Starts in village clothes; robes and plate alike are found, not given.',
     model: 'models/characters/striker-animated.glb',
     portrait: 'images/characters/striker-idle.png',
     clips: SIDEKICK_CLIPS
@@ -66,7 +66,7 @@ export const CHARACTERS: CharacterDefinition[] = [
     id: 'brute',
     name: 'Berserker',
     role: 'Heavy',
-    description: 'Horned helm, hide and iron, and an axe. Hits harder than anyone and does not much care about the reply.',
+    description: 'An axe and a leap that lands on them. Hits harder than anyone and does not much care about the reply. Starts in village clothes like the rest; the iron is earned.',
     model: 'models/characters/brute-animated.glb',
     portrait: 'images/characters/brute-idle.png',
     clips: SIDEKICK_CLIPS

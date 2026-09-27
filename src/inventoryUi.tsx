@@ -7,7 +7,7 @@ import {
   equipSelectedItem, unequipSelectedSlot, revertInventoryPreview,
   retryInventoryPreview, rotateInventoryPreview, closeInventory
 } from './inventory'
-import { armorSourceLabel, EquipmentItem, EquipmentSlot, EQUIPMENT_SLOTS, getEquipmentItem, getUnequippedItem } from './equipmentCatalog'
+import { armorSourceComingSoon, armorSourceLabel, EquipmentItem, EquipmentSlot, EQUIPMENT_SLOTS, getEquipmentItem, getUnequippedItem } from './equipmentCatalog'
 import { getMenuLayout } from './menuLayout'
 import { menuColors, MenuAction as Action } from './menuUi'
 import { RARITIES, rarityOf, weaponStatLine, weaponSubtitle } from './weapons'
@@ -37,7 +37,8 @@ function itemSubtitle(item: EquipmentItem): string {
   if (item.weapon) return weaponSubtitle(item)
   if (item.setLabel) {
     const where = armorSourceLabel(item.realm)
-    return `${slotLabel(item.slot)} · ${t('{set} set', { set: item.setLabel })}${where ? ` · ${t(RARITIES[rarityOf(item.id)].label)} · ${t('found in {realm}', { realm: where })}` : ''}`
+    const found = armorSourceComingSoon(item.realm) ? t('found in {realm} (coming soon)', { realm: t(where) }) : t('found in {realm}', { realm: t(where) })
+    return `${slotLabel(item.slot)} · ${t('{set} set', { set: item.setLabel })}${where ? ` · ${t(RARITIES[rarityOf(item.id)].label)} · ${found}` : ''}`
   }
   return slotLabel(item.slot)
 }
@@ -135,7 +136,7 @@ export function InventoryUi() {
   const otherActive = state.filter !== 'all' && state.filter !== 'head' && state.filter !== 'chest' && state.filter !== 'weapon'
   const source = armorSourceLabel(selected.realm)
   const status = error ? t('Preview unavailable. Please try again.') : loading ? t('Preparing equipment…') :
-    locked ? (selected.weapon ? t("Not yet found · weapons drop from the dungeons' enemies") : t('Not yet found · a piece of this set drops in {realm}', { realm: source })) :
+    locked ? (selected.weapon ? t("Not yet found · weapons drop from the dungeons' enemies") : (armorSourceComingSoon(selected.realm) ? t('Not yet found · this set drops in {realm}, a map still being built', { realm: t(source) }) : t('Not yet found · a piece of this set drops in {realm}', { realm: t(source) }))) :
     dirty ? t('Previewing · equip to keep this change') : isEmptyItem(selected) ? t('Nothing equipped in this slot') : t('Currently equipped')
   const showAction = error || (!locked && (!equipped || canUnequip))
   const actionText = error ? t('Retry preview') : equipped ? t('Unequip') : isEmptyItem(selected) ? t('Remove item') : t('Equip item')

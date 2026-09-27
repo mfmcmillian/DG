@@ -12,7 +12,8 @@ import { EquipmentItem, getEquipmentItemOrNull, WEAPON_DROP_OFFSET, WEAPON_DROP_
 import { isUsableByHero, unlockInventoryItem } from './inventory'
 import { publishPickup } from './multiplayer'
 import { getPlayerCombatPose, getPlayerVitals } from './playerCharacter'
-import { RARITIES, rarityOf, baseRarityOf } from './weapons'
+import { Rarity, RARITIES, rarityOf } from './weapons'
+import { setUpgradeRank, upgradeRankOf } from './shared/upgradeRanks'
 
 export type LootKind = 'coin' | 'heart' | 'weapon' | 'armor'
 
@@ -28,6 +29,8 @@ type Drop = {
   item?: string
   /** The Warlord's drop: a taller pop and a beam of light while it lies there. */
   boss: boolean
+  /** Rarity steps an armor piece fell with. */
+  up: number
   from: Vector3
   to: Vector3
   /** Seconds since the drop; the pop-out arc lasts POP seconds. */
@@ -44,6 +47,8 @@ export type LootToast = {
   salvaged: number
   /** Salvaged because the piece is cut for another class. */
   wrongClass?: boolean
+  /** An owned piece that fell rarer than the hero's copy: the copy is now this rare. */
+  raised?: Rarity
   age: number
 }
 
@@ -114,7 +119,7 @@ export function clearLoot() {
  * Scatter `count` drops of a kind around a point on the floor (`item`: the
  * weapon id for weapon drops; `boss`: the Warlord's, which lands with a beam).
  */
-export function spawnLoot(origin: Vector3, kind: LootKind, count: number, item?: string, boss = false) {
+export function spawnLoot(origin: Vector3, kind: LootKind, count: number, item?: string, boss = false, up = 0) {
   const gear = kind === 'weapon' || kind === 'armor' ? (item ? getEquipmentItemOrNull(item) : undefined) : undefined
   if ((kind === 'weapon' || kind === 'armor') && !gear) return
   const weapon = kind === 'weapon' ? gear : undefined
@@ -159,7 +164,7 @@ export function spawnLoot(origin: Vector3, kind: LootKind, count: number, item?:
       GltfContainer.create(entity, { src: `models/loot/${kind}.glb`, visibleMeshesCollisionMask: 0, invisibleMeshesCollisionMask: 0 })
     }
     drops.push({
-      entity, kind, item: gear?.id, boss: boss && !!gear, from: Vector3.add(origin, Vector3.create(0, 0.9, 0)), to,
+      entity, kind, item: gear?.id, boss: boss && !!gear, up, from: Vector3.add(origin, Vector3.create(0, 0.9, 0)), to,
       age: 0, phase: Math.random() * Math.PI * 2, beamIn: 0
     })
   }
@@ -203,7 +208,7 @@ function update(dt: number) {
       d.beamIn -= dt
       if (d.beamIn <= 0) {
         d.beamIn = BEAM_EVERY
-        fxLootBeam(Vector3.add(d.to, Vector3.create(0, 0.1, 0)), RARITIES[rarityOf(d.item)].color)
+        fxLootBeam(Vector3.add(d.to, Vector3.create(0, 0.1, 0)), RARITIES[rarityOf(d.item, d.up)].color)
       }
     }
 
@@ -217,16 +222,21 @@ function update(dt: number) {
   }
 }
 
-function toast(item: EquipmentItem, salvaged: number, wrongClass = false) {
+function toast(item: EquipmentItem, salvaged: number, wrongClass = false, raised?: Rarity) {
   if (toasts.length >= MAX_TOASTS) toasts.shift()
-  toasts.push({ item, salvaged, wrongClass, age: 0 })
+  toasts.push({ item, salvaged, wrongClass, raised, age: 0 })
 }
 
-/** Gear changes hands: unlocked if new to this hero, sold on the spot if owned or another class's. */
-function award(id: string, at: Vector3) {
+/**
+ * Gear changes hands: unlocked if new to this hero, sold on the spot if owned
+ * or another class's. Armor falls with a rank (`up`, the difficulty's rarity):
+ * a new piece is owned at that rank, and an owned piece that falls rarer than
+ * the hero's copy is raised to it instead of being sold.
+ */
+function award(id: string, at: Vector3, up = 0) {
   const item = getEquipmentItemOrNull(id)
-  // A find is worth what is printed on it; the pit's upgrades to this hero's own copy do not raise the price of a duplicate.
-  const rarity = RARITIES[baseRarityOf(id)]
+  // A find is worth what fell: the printed rarity plus the drop's own rank; the pit's upgrades to this hero's copy do not raise the price of a duplicate.
+  const rarity = RARITIES[rarityOf(id, up)]
   fxGlitter(at, rarity.color)
   fxGlitter(Vector3.add(at, Vector3.create(0, 0.6, 0)), rarity.color)
   if (!item) {
@@ -239,10 +249,18 @@ function award(id: string, at: Vector3) {
     fxNumber(Vector3.add(at, Vector3.create(0, 0.9, 0)), `+${rarity.coins}`, 'coin')
     toast(item, rarity.coins, true)
   } else if (unlockInventoryItem(item.id)) {
+    if (up > upgradeRankOf(item.id)) setUpgradeRank(item.id, up)
     fxSound('heal', 0.9)
     fxNumber(Vector3.add(at, Vector3.create(0, 0.9, 0)), item.name, 'note')
     run.found.push(item.id)
     toast(item, 0)
+  } else if (!item.weapon && up > upgradeRankOf(item.id)) {
+    // Owned, but this one fell rarer: the hero's copy becomes it.
+    setUpgradeRank(item.id, up)
+    fxSound('heal', 0.9)
+    fxNumber(Vector3.add(at, Vector3.create(0, 0.9, 0)), item.name, 'note')
+    run.found.push(item.id)
+    toast(item, 0, false, rarityOf(item.id))
   } else {
     // Already owned: salvaged for coin on the spot.
     state.coins += rarity.coins
@@ -258,7 +276,7 @@ function award(id: string, at: Vector3) {
  * counted and the gear handed over where they stand, nothing to walk back
  * for. (Hearts still land on the floor; a heal is only worth taking when hurt.)
  */
-export function grantLootDirect(coin: number, item: string | undefined) {
+export function grantLootDirect(coin: number, item: string | undefined, up = 0) {
   const player = Transform.getOrNull(engine.PlayerEntity)
   const at = player ? Vector3.add(player.position, Vector3.create(0, 1.3, 0)) : Vector3.create(0, 1.3, 0)
   if (coin > 0) {
@@ -267,7 +285,7 @@ export function grantLootDirect(coin: number, item: string | undefined) {
     fxGlitter(at, Color4.create(1, 0.85, 0.3, 1))
     fxNumber(at, `+${coin}`, 'coin')
   }
-  if (item) award(item, Vector3.add(at, Vector3.create(0, 0.4, 0)))
+  if (item) award(item, Vector3.add(at, Vector3.create(0, 0.4, 0)), up)
 }
 
 function collect(d: Drop) {
@@ -278,7 +296,7 @@ function collect(d: Drop) {
     fxGlitter(at, Color4.create(1, 0.85, 0.3, 1))
     fxNumber(at, '+1', 'coin')
   } else if ((d.kind === 'weapon' || d.kind === 'armor') && d.item) {
-    award(d.item, at)
+    award(d.item, at, d.up)
   } else {
     // The host owns hero health: it checks the heart against its own drop
     // record and answers with `heal`, which plays the +N. The sparkle is local.

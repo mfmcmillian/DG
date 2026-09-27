@@ -67,6 +67,7 @@ literals('src/shared/levels.ts', field('blurb'))
 literals('src/shared/levels.ts', /\{ id: \d, name: '([^']+)', health/g) // difficulty names
 literals('src/shared/skills.ts', field('blurb'))
 literals('src/characterPicker.ts', field('role'))
+literals('src/characterPicker.ts', field('description'))
 literals('src/heroClasses.ts', field('label'))
 literals('src/weapons.ts', field('label'))
 literals('src/equipmentCatalog.ts', /\{ id: '[a-z]+', label: '([^']+)' \}/g) // slot labels
