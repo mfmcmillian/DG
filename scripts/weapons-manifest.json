@@ -169,6 +169,39 @@
         "base": "Assets/Synty/PolygonFantasyCharacters/Textures/PolygonFantasyCharacters_01_Emmision.png"
       },
       "label": "Fantasy Characters"
+    },
+    "pi": {
+      "zip": "POLYGON_Pirate_Realm_SourceFiles_v2.zip",
+      "fbx": "FBX/{name}.fbx",
+      "palettes": {
+        "base": "Textures/Alts/PolygonPirateRealm_01_A.png",
+        "brine": "Textures/Alts/PolygonPirateRealm_02_A.png",
+        "ghost": "Textures/Alts/PolygonPirateRealm_03_A.png",
+        "gilt": "Textures/Alts/PolygonPirateRealm_04_A.png"
+      },
+      "emission": {
+        "base": "Textures/Emissive/PolygonPirateRealm_01_A_Emissive.png",
+        "brine": "Textures/Emissive/PolygonPirateRealm_02_A_Emissive.png",
+        "ghost": "Textures/Emissive/PolygonPirateRealm_03_A_Emissive.png",
+        "gilt": "Textures/Emissive/PolygonPirateRealm_04_A_Emissive.png"
+      },
+      "label": "Pirate Realm"
+    },
+    "se": {
+      "zip": "POLYGON_Samurai_Empire_SourceFiles_v1.zip",
+      "fbx": "SourceFiles/FBX/SamuraiEmpire/{name}.fbx",
+      "palettes": {
+        "base": "SourceFiles/Textures/SamuraiEmpire/Alts/PolygonSamuraiEmpire_Texture_01_A.png",
+        "crimson": "SourceFiles/Textures/SamuraiEmpire/Alts/PolygonSamuraiEmpire_Texture_02_A.png",
+        "jade": "SourceFiles/Textures/SamuraiEmpire/Alts/PolygonSamuraiEmpire_Texture_03_A.png",
+        "night": "SourceFiles/Textures/SamuraiEmpire/Alts/PolygonSamuraiEmpire_Texture_04_A.png"
+      },
+      "emission": {
+        "base": "SourceFiles/Textures/SamuraiEmpire/Emissive/PolygonSamuraiEmpire_Emissive_01_A.png",
+        "crimson": "SourceFiles/Textures/SamuraiEmpire/Emissive/PolygonSamuraiEmpire_Emissive_02_A.png",
+        "jade": "SourceFiles/Textures/SamuraiEmpire/Emissive/PolygonSamuraiEmpireEmissive_03_A.png"
+      },
+      "label": "Samurai Empire"
     }
   },
   "weapons": [
@@ -2766,6 +2799,198 @@
       "rarity": "uncommon",
       "description": "A hazel wand with a dark grip. Quick to point, quick to fire.",
       "grip": 0.05
+    },
+    {
+      "id": "pi-dagger-01",
+      "name": "Boarding Knife",
+      "pack": "pi",
+      "mesh": "SM_Wep_Dagger_01",
+      "palette": "base",
+      "class": "dagger",
+      "rarity": "common",
+      "description": "A short heavy blade for close work on a crowded deck."
+    },
+    {
+      "id": "pi-sword-01",
+      "name": "Freebooter's Cutlass",
+      "pack": "pi",
+      "mesh": "SM_Wep_Sword_01",
+      "palette": "base",
+      "class": "sword",
+      "rarity": "uncommon",
+      "description": "A broad curved blade with a brass knuckle guard. Made for cutting rope and whoever is holding it."
+    },
+    {
+      "id": "pi-sword-02",
+      "name": "Corsair's Cutlass",
+      "pack": "pi",
+      "mesh": "SM_Wep_Sword_02",
+      "palette": "base",
+      "class": "sword",
+      "rarity": "rare",
+      "description": "Slimmer and quicker than a deck cutlass, with a basket hilt that has caught more than one blade."
+    },
+    {
+      "id": "pi-sword-04",
+      "name": "Admiral's Sabre",
+      "pack": "pi",
+      "mesh": "SM_Wep_Sword_04",
+      "palette": "gilt",
+      "class": "sword",
+      "rarity": "epic",
+      "description": "A gilded officer's sabre, more often pointed than swung. Still very sharp."
+    },
+    {
+      "id": "pi-trident-01",
+      "name": "Drowned Trident",
+      "pack": "pi",
+      "mesh": "SM_Wep_Trident_01",
+      "palette": "ghost",
+      "class": "great",
+      "rarity": "epic",
+      "description": "Three tines green with the sea. Pulled from a wreck nobody remembers sinking.",
+      "grip": -0.4
+    },
+    {
+      "id": "se-kunai-01",
+      "name": "Kunai",
+      "pack": "se",
+      "mesh": "SM_Wep_Kunai_01",
+      "palette": "base",
+      "class": "dagger",
+      "rarity": "common",
+      "description": "A leaf-shaped iron blade with a ring at the pommel. A digging tool, officially."
+    },
+    {
+      "id": "se-tanto-01",
+      "name": "Tanto",
+      "pack": "se",
+      "mesh": "SM_Wep_Knife_01",
+      "palette": "base",
+      "class": "dagger",
+      "rarity": "uncommon",
+      "description": "A short straight blade in the old style, worn at the belt beside the long sword."
+    },
+    {
+      "id": "se-sai-01",
+      "name": "Sai",
+      "pack": "se",
+      "mesh": "SM_Wep_Prong_01",
+      "palette": "base",
+      "class": "dagger",
+      "rarity": "rare",
+      "description": "A pronged iron truncheon that catches a blade and turns it aside."
+    },
+    {
+      "id": "se-kama-01",
+      "name": "Kama",
+      "pack": "se",
+      "mesh": "SM_Wep_Sickle_01",
+      "palette": "base",
+      "class": "axe",
+      "rarity": "uncommon",
+      "description": "A rice sickle on a short haft. Farmers reap with it; so do others."
+    },
+    {
+      "id": "se-bokken-01",
+      "name": "Bokken",
+      "pack": "se",
+      "mesh": "SM_Wep_Sword_Training_01",
+      "palette": "base",
+      "class": "sword",
+      "rarity": "common",
+      "description": "A practice sword of hard oak. It does not cut, which is not the same as not hurting."
+    },
+    {
+      "id": "se-katana-01",
+      "name": "Jade Gate Katana",
+      "pack": "se",
+      "mesh": "SM_Wep_Sword_01",
+      "palette": "jade",
+      "class": "sword",
+      "rarity": "rare",
+      "description": "A long curved blade folded a thousand times, worn edge-up. Drawn and cutting in one motion."
+    },
+    {
+      "id": "se-katana-02",
+      "name": "Shogun's Katana",
+      "pack": "se",
+      "mesh": "SM_Wep_Sword_02",
+      "palette": "crimson",
+      "class": "sword",
+      "rarity": "epic",
+      "description": "The general's own blade, its tsuba worked in gold. It has ended more arguments than it has begun."
+    },
+    {
+      "id": "se-kanabo-01",
+      "name": "Kanabo",
+      "pack": "se",
+      "mesh": "SM_Wep_Club_01",
+      "palette": "base",
+      "class": "club",
+      "rarity": "uncommon",
+      "description": "A studded iron-bound club as tall as a man's chest. Subtle it is not."
+    },
+    {
+      "id": "se-kanabo-02",
+      "name": "Oni's Kanabo",
+      "pack": "se",
+      "mesh": "SM_Wep_Club_02",
+      "palette": "crimson",
+      "class": "club",
+      "rarity": "rare",
+      "description": "A great iron club with a demon's face at the head. Doors do not stop it."
+    },
+    {
+      "id": "se-yari-01",
+      "name": "Ashigaru Yari",
+      "pack": "se",
+      "mesh": "SM_Wep_Spear_02",
+      "palette": "base",
+      "class": "great",
+      "rarity": "common",
+      "description": "A plain straight-bladed spear, the footsoldier's arm. Long reach and no manners."
+    },
+    {
+      "id": "se-yari-02",
+      "name": "Jumonji Yari",
+      "pack": "se",
+      "mesh": "SM_Wep_Spear_01",
+      "palette": "base",
+      "class": "great",
+      "rarity": "uncommon",
+      "description": "A cross-bladed spear with a lacquered shaft; the side blades hook a guard away as it thrusts."
+    },
+    {
+      "id": "se-naginata-01",
+      "name": "Naginata",
+      "pack": "se",
+      "mesh": "SM_Wep_Spear_03",
+      "palette": "base",
+      "class": "great",
+      "rarity": "rare",
+      "description": "A curved sword blade on a long pole. It sweeps, cuts and keeps everyone at a distance."
+    },
+    {
+      "id": "se-naginata-02",
+      "name": "Crimson Naginata",
+      "pack": "se",
+      "mesh": "SM_Wep_Spear_04",
+      "palette": "crimson",
+      "class": "great",
+      "rarity": "epic",
+      "description": "A temple guard's naginata with a red-lacquered shaft and a blade that has never been allowed to dull."
+    },
+    {
+      "id": "se-bo-01",
+      "name": "Bo",
+      "pack": "se",
+      "mesh": "SM_Wep_Staff_01",
+      "palette": "base",
+      "class": "staff",
+      "rarity": "uncommon",
+      "description": "A plain staff of red oak, six feet of it. The monks say a weapon that cannot cut teaches restraint.",
+      "grip": -0.4
     }
   ],
   "props": [

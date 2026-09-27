@@ -3742,6 +3742,291 @@
     "rarity": "uncommon",
     "pack": "Fantasy Characters"
    }
+  },
+  {
+   "id": "pi-dagger-01",
+   "name": "Boarding Knife",
+   "slot": "weapon",
+   "description": "A short heavy blade for close work on a crowded deck.",
+   "icon": "images/weapons/pi-dagger-01.png",
+   "models": [
+    "models/roaming/weapons/pi-dagger-01.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "common",
+    "pack": "Pirate Realm"
+   }
+  },
+  {
+   "id": "pi-sword-01",
+   "name": "Freebooter's Cutlass",
+   "slot": "weapon",
+   "description": "A broad curved blade with a brass knuckle guard. Made for cutting rope and whoever is holding it.",
+   "icon": "images/weapons/pi-sword-01.png",
+   "models": [
+    "models/roaming/weapons/pi-sword-01.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "uncommon",
+    "pack": "Pirate Realm"
+   }
+  },
+  {
+   "id": "pi-sword-02",
+   "name": "Corsair's Cutlass",
+   "slot": "weapon",
+   "description": "Slimmer and quicker than a deck cutlass, with a basket hilt that has caught more than one blade.",
+   "icon": "images/weapons/pi-sword-02.png",
+   "models": [
+    "models/roaming/weapons/pi-sword-02.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "rare",
+    "pack": "Pirate Realm"
+   }
+  },
+  {
+   "id": "pi-sword-04",
+   "name": "Admiral's Sabre",
+   "slot": "weapon",
+   "description": "A gilded officer's sabre, more often pointed than swung. Still very sharp.",
+   "icon": "images/weapons/pi-sword-04.png",
+   "models": [
+    "models/roaming/weapons/pi-sword-04.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "epic",
+    "pack": "Pirate Realm"
+   }
+  },
+  {
+   "id": "pi-trident-01",
+   "name": "Drowned Trident",
+   "slot": "weapon",
+   "description": "Three tines green with the sea. Pulled from a wreck nobody remembers sinking.",
+   "icon": "images/weapons/pi-trident-01.png",
+   "models": [
+    "models/roaming/weapons/pi-trident-01.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "epic",
+    "pack": "Pirate Realm"
+   }
+  },
+  {
+   "id": "se-kunai-01",
+   "name": "Kunai",
+   "slot": "weapon",
+   "description": "A leaf-shaped iron blade with a ring at the pommel. A digging tool, officially.",
+   "icon": "images/weapons/se-kunai-01.png",
+   "models": [
+    "models/roaming/weapons/se-kunai-01.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "common",
+    "pack": "Samurai Empire"
+   }
+  },
+  {
+   "id": "se-tanto-01",
+   "name": "Tanto",
+   "slot": "weapon",
+   "description": "A short straight blade in the old style, worn at the belt beside the long sword.",
+   "icon": "images/weapons/se-tanto-01.png",
+   "models": [
+    "models/roaming/weapons/se-tanto-01.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "uncommon",
+    "pack": "Samurai Empire"
+   }
+  },
+  {
+   "id": "se-sai-01",
+   "name": "Sai",
+   "slot": "weapon",
+   "description": "A pronged iron truncheon that catches a blade and turns it aside.",
+   "icon": "images/weapons/se-sai-01.png",
+   "models": [
+    "models/roaming/weapons/se-sai-01.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "rare",
+    "pack": "Samurai Empire"
+   }
+  },
+  {
+   "id": "se-kama-01",
+   "name": "Kama",
+   "slot": "weapon",
+   "description": "A rice sickle on a short haft. Farmers reap with it; so do others.",
+   "icon": "images/weapons/se-kama-01.png",
+   "models": [
+    "models/roaming/weapons/se-kama-01.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "uncommon",
+    "pack": "Samurai Empire"
+   }
+  },
+  {
+   "id": "se-bokken-01",
+   "name": "Bokken",
+   "slot": "weapon",
+   "description": "A practice sword of hard oak. It does not cut, which is not the same as not hurting.",
+   "icon": "images/weapons/se-bokken-01.png",
+   "models": [
+    "models/roaming/weapons/se-bokken-01.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "common",
+    "pack": "Samurai Empire"
+   }
+  },
+  {
+   "id": "se-katana-01",
+   "name": "Jade Gate Katana",
+   "slot": "weapon",
+   "description": "A long curved blade folded a thousand times, worn edge-up. Drawn and cutting in one motion.",
+   "icon": "images/weapons/se-katana-01.png",
+   "models": [
+    "models/roaming/weapons/se-katana-01.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "rare",
+    "pack": "Samurai Empire"
+   }
+  },
+  {
+   "id": "se-katana-02",
+   "name": "Shogun's Katana",
+   "slot": "weapon",
+   "description": "The general's own blade, its tsuba worked in gold. It has ended more arguments than it has begun.",
+   "icon": "images/weapons/se-katana-02.png",
+   "models": [
+    "models/roaming/weapons/se-katana-02.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "epic",
+    "pack": "Samurai Empire"
+   }
+  },
+  {
+   "id": "se-kanabo-01",
+   "name": "Kanabo",
+   "slot": "weapon",
+   "description": "A studded iron-bound club as tall as a man's chest. Subtle it is not.",
+   "icon": "images/weapons/se-kanabo-01.png",
+   "models": [
+    "models/roaming/weapons/se-kanabo-01.glb"
+   ],
+   "weapon": {
+    "class": "club",
+    "rarity": "uncommon",
+    "pack": "Samurai Empire"
+   }
+  },
+  {
+   "id": "se-kanabo-02",
+   "name": "Oni's Kanabo",
+   "slot": "weapon",
+   "description": "A great iron club with a demon's face at the head. Doors do not stop it.",
+   "icon": "images/weapons/se-kanabo-02.png",
+   "models": [
+    "models/roaming/weapons/se-kanabo-02.glb"
+   ],
+   "weapon": {
+    "class": "club",
+    "rarity": "rare",
+    "pack": "Samurai Empire"
+   }
+  },
+  {
+   "id": "se-yari-01",
+   "name": "Ashigaru Yari",
+   "slot": "weapon",
+   "description": "A plain straight-bladed spear, the footsoldier's arm. Long reach and no manners.",
+   "icon": "images/weapons/se-yari-01.png",
+   "models": [
+    "models/roaming/weapons/se-yari-01.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "common",
+    "pack": "Samurai Empire"
+   }
+  },
+  {
+   "id": "se-yari-02",
+   "name": "Jumonji Yari",
+   "slot": "weapon",
+   "description": "A cross-bladed spear with a lacquered shaft; the side blades hook a guard away as it thrusts.",
+   "icon": "images/weapons/se-yari-02.png",
+   "models": [
+    "models/roaming/weapons/se-yari-02.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "uncommon",
+    "pack": "Samurai Empire"
+   }
+  },
+  {
+   "id": "se-naginata-01",
+   "name": "Naginata",
+   "slot": "weapon",
+   "description": "A curved sword blade on a long pole. It sweeps, cuts and keeps everyone at a distance.",
+   "icon": "images/weapons/se-naginata-01.png",
+   "models": [
+    "models/roaming/weapons/se-naginata-01.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "rare",
+    "pack": "Samurai Empire"
+   }
+  },
+  {
+   "id": "se-naginata-02",
+   "name": "Crimson Naginata",
+   "slot": "weapon",
+   "description": "A temple guard's naginata with a red-lacquered shaft and a blade that has never been allowed to dull.",
+   "icon": "images/weapons/se-naginata-02.png",
+   "models": [
+    "models/roaming/weapons/se-naginata-02.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "epic",
+    "pack": "Samurai Empire"
+   }
+  },
+  {
+   "id": "se-bo-01",
+   "name": "Bo",
+   "slot": "weapon",
+   "description": "A plain staff of red oak, six feet of it. The monks say a weapon that cannot cut teaches restraint.",
+   "icon": "images/weapons/se-bo-01.png",
+   "models": [
+    "models/roaming/weapons/se-bo-01.glb"
+   ],
+   "weapon": {
+    "class": "staff",
+    "rarity": "uncommon",
+    "pack": "Samurai Empire"
+   }
   }
  ]
 }

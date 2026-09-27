@@ -903,6 +903,26 @@
     "src": "models/native/weapons/kn-zweihander-01.glb",
     "hand": "r"
   },
+  "pi-dagger-01": {
+    "src": "models/native/weapons/pi-dagger-01.glb",
+    "hand": "r"
+  },
+  "pi-sword-01": {
+    "src": "models/native/weapons/pi-sword-01.glb",
+    "hand": "r"
+  },
+  "pi-sword-02": {
+    "src": "models/native/weapons/pi-sword-02.glb",
+    "hand": "r"
+  },
+  "pi-sword-04": {
+    "src": "models/native/weapons/pi-sword-04.glb",
+    "hand": "r"
+  },
+  "pi-trident-01": {
+    "src": "models/native/weapons/pi-trident-01.glb",
+    "hand": "r"
+  },
   "pr-bow-01": {
     "src": "models/native/weapons/pr-bow-01.glb",
     "hand": "l"
@@ -941,6 +961,62 @@
   },
   "pride-sword-verdant": {
     "src": "models/native/weapons/pride-sword-verdant.glb",
+    "hand": "r"
+  },
+  "se-bo-01": {
+    "src": "models/native/weapons/se-bo-01.glb",
+    "hand": "r"
+  },
+  "se-bokken-01": {
+    "src": "models/native/weapons/se-bokken-01.glb",
+    "hand": "r"
+  },
+  "se-kama-01": {
+    "src": "models/native/weapons/se-kama-01.glb",
+    "hand": "r"
+  },
+  "se-kanabo-01": {
+    "src": "models/native/weapons/se-kanabo-01.glb",
+    "hand": "r"
+  },
+  "se-kanabo-02": {
+    "src": "models/native/weapons/se-kanabo-02.glb",
+    "hand": "r"
+  },
+  "se-katana-01": {
+    "src": "models/native/weapons/se-katana-01.glb",
+    "hand": "r"
+  },
+  "se-katana-02": {
+    "src": "models/native/weapons/se-katana-02.glb",
+    "hand": "r"
+  },
+  "se-kunai-01": {
+    "src": "models/native/weapons/se-kunai-01.glb",
+    "hand": "r"
+  },
+  "se-naginata-01": {
+    "src": "models/native/weapons/se-naginata-01.glb",
+    "hand": "r"
+  },
+  "se-naginata-02": {
+    "src": "models/native/weapons/se-naginata-02.glb",
+    "hand": "r"
+  },
+  "se-sai-01": {
+    "src": "models/native/weapons/se-sai-01.glb",
+    "hand": "r"
+  },
+  "se-tanto-01": {
+    "src": "models/native/weapons/se-tanto-01.glb",
+    "hand": "r"
+  },
+  "se-yari-01": {
+    "src": "models/native/weapons/se-yari-01.glb",
+    "hand": "r"
+  },
+  "se-yari-02": {
+    "src": "models/native/weapons/se-yari-02.glb",
     "hand": "r"
   },
   "vk-axe-01": {
