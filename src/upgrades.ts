@@ -11,13 +11,14 @@
 import { getEquipmentItemOrNull } from './equipmentCatalog'
 import { ownedArmorIds, ownedWeaponIds } from './inventory'
 import { getLootState, spendCoins } from './loot'
-import { LEVEL_STEP, MAX_LEVEL, setUpgradeLevel, upgradeLevelOf } from './shared/upgradeRanks'
+import { LEVEL_FLAT, LEVEL_STEP, MAX_LEVEL, setUpgradeLevel, upgradeLevelOf } from './shared/upgradeRanks'
 import { Rarity, rarityOf, RARITIES } from './weapons'
 
 /** What the step from level `i + 1` to `i + 2` costs. */
 export const LEVEL_COSTS = [60, 120, 200, 300, 420, 560, 720, 900, 1100]
-/** For the sheet's blurb: what one level adds, in percent. */
+/** For the sheet's blurb: what one level adds, in percent, and the flat damage a weapon gains besides. */
 export const LEVEL_PERCENT = Math.round(LEVEL_STEP * 100)
+export const LEVEL_FLAT_DAMAGE = LEVEL_FLAT
 
 export type UpgradeOffer = {
   id: string

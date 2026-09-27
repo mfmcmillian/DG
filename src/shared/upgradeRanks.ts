@@ -11,7 +11,9 @@ const levels = new Map<string, number>()
 /** The pit forges an item this far. */
 export const MAX_LEVEL = 10
 /** What every level above the first adds to what the item does (damage for a weapon, every stat for armor). */
-export const LEVEL_STEP = 0.03
+export const LEVEL_STEP = 0.05
+/** Flat damage a weapon gains per level above the first, on top of the multiplier (rarity's flat bonus is 0..9). */
+export const LEVEL_FLAT = 1
 
 /** How many rarity steps `id` has been raised (0 when never). */
 export function upgradeRankOf(id: string | undefined): number {
@@ -42,6 +44,11 @@ export function clampLevel(level: number): number {
 /** The multiplier a level is worth: 1 at level 1, 1 + LEVEL_STEP per level above it. */
 export function levelMultiplier(level: number): number {
   return 1 + LEVEL_STEP * (clampLevel(level) - 1)
+}
+
+/** The flat damage a weapon's level is worth: 0 at level 1, LEVEL_FLAT per level above it. */
+export function levelFlatBonus(level: number): number {
+  return LEVEL_FLAT * (clampLevel(level) - 1)
 }
 
 /** "id:rank" or "id:rank/level" per raised or forged item, sorted, for the save and its fingerprint. */

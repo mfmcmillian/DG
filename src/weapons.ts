@@ -8,7 +8,7 @@
 import { Color4 } from '@dcl/sdk/math'
 import { ArmorRealm, EQUIPMENT_ITEMS, EquipmentItem, getEquipmentItemOrNull } from './equipmentCatalog'
 import { t } from './i18n'
-import { levelMultiplier, upgradeLevelOf, upgradeRankOf } from './shared/upgradeRanks'
+import { levelFlatBonus, levelMultiplier, upgradeLevelOf, upgradeRankOf } from './shared/upgradeRanks'
 
 export type WeaponClass = 'sword' | 'dagger' | 'axe' | 'mace' | 'hammer' | 'club' | 'great' | 'bow' | 'staff' | 'sceptre'
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
@@ -75,10 +75,11 @@ export function weaponStats(id: string | undefined, withBonus = true, rank?: num
   const cls = WEAPON_CLASSES[info.class]
   const rarity = raiseRarity(info.rarity, rank ?? upgradeRankOf(id))
   const pride = info.pride ? PRIDE.damage : 1
-  const forged = levelMultiplier(level ?? upgradeLevelOf(id))
+  const at = level ?? upgradeLevelOf(id)
+  const forged = levelMultiplier(at)
   return {
     damage: cls.damage * pride * forged, stagger: cls.stagger, knockback: cls.knockback,
-    bonus: withBonus ? RARITIES[rarity].bonus + (info.pride ? PRIDE.bonus : 0) : 0
+    bonus: withBonus ? RARITIES[rarity].bonus + (info.pride ? PRIDE.bonus : 0) + levelFlatBonus(at) : 0
   }
 }
 
@@ -170,7 +171,7 @@ export function weaponSubtitle(item: EquipmentItem): string {
   return `${pride}${rarity}${forged} · ${t(WEAPON_CLASSES[item.weapon.class].label)} · ${item.weapon.pack}`
 }
 
-/** "+20% damage · +40% stagger · +4 damage" for the inventory. */
+/** "+20% damage · +40% stagger · +4 flat damage · Level 6: +25% damage, +5 flat" for the inventory. */
 export function weaponStatLine(item: EquipmentItem): string {
   if (!item.weapon) return ''
   const s = weaponStats(item.id)
@@ -180,6 +181,8 @@ export function weaponStatLine(item: EquipmentItem): string {
   if (s.stagger !== 1) parts.push(t('{pct} stagger', { pct: pct(s.stagger - 1) }))
   if (s.knockback !== 1) parts.push(t('{pct} knockback', { pct: pct(s.knockback - 1) }))
   if (s.bonus) parts.push(t('+{n} flat damage', { n: s.bonus }))
+  const level = upgradeLevelOf(item.id)
+  if (level > 1) parts.push(t('Level {n}: {pct} damage, +{flat} flat', { n: level, pct: pct(levelMultiplier(level) - 1), flat: levelFlatBonus(level) }))
   return parts.length ? parts.join(' · ') : t('Balanced')
 }
 

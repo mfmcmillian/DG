@@ -136,6 +136,8 @@ export function armorStatLine(item: EquipmentItem | undefined): string {
   if (s.might) parts.push(t('+{pct}% damage dealt', { pct: pct(s.might) }))
   if (s.stamina) parts.push(t('+{n} stamina', { n: s.stamina }))
   if (s.health) parts.push(t('+{n} health', { n: s.health }))
+  const level = item ? upgradeLevelOf(item.id) : 1
+  if (level > 1) parts.push(t('Level {n}: +{pct}% to all of it', { n: level, pct: pct((levelMultiplier(level) - 1) * 100) }))
   return parts.join(' · ')
 }
 

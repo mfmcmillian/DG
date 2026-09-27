@@ -14,7 +14,7 @@ import { t } from './i18n'
 import { getLootState } from './loot'
 import { menuColors, MenuAction as Action } from './menuUi'
 import { startPitCinematic } from './pitCinematic'
-import { attemptUpgrade, LEVEL_PERCENT, UpgradeOffer, upgradeOffers } from './upgrades'
+import { attemptUpgrade, LEVEL_FLAT_DAMAGE, LEVEL_PERCENT, UpgradeOffer, upgradeOffers } from './upgrades'
 import { MAX_LEVEL } from './shared/upgradeRanks'
 import { RARITIES } from './weapons'
 
@@ -155,7 +155,7 @@ export function UpgradeUi() {
       </UiEntity>
       <UiEntity uiTransform={{ width: 200 * s, height: 2 * s, margin: { bottom: 10 * s }, flexShrink: 0, pointerFilter: 'none' }}
         uiBackground={{ color: gold }} />
-      <Label value={t('Offer a weapon or a piece of armor to the fire and it comes back a level stronger, to level {max} at most. Every level adds {pct}% to what it does.', { max: MAX_LEVEL, pct: LEVEL_PERCENT })}
+      <Label value={t('Offer a weapon or a piece of armor to the fire and it comes back a level stronger, to level {max} at most. Every level adds {pct}% to what it does, and a weapon +{flat} flat damage besides.', { max: MAX_LEVEL, pct: LEVEL_PERCENT, flat: LEVEL_FLAT_DAMAGE })}
         color={muted} fontSize={11.5 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={{ width: '100%', height: 18 * s, margin: { bottom: 12 * s }, flexShrink: 0, pointerFilter: 'none' }} />
 
