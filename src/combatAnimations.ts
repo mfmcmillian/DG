@@ -4,7 +4,9 @@ export type JumpMotion = 'jump_male' | 'jump_female'
 export type NativeJumpMotion = 'jump_male_air' | 'jump_male_land' | 'jump_female_air' | 'jump_female_land'
 /** Archer and spellblade actions (src/heroClasses.ts); spliced into the wardrobe next to the sword set. */
 export type ClassMotion = 'bow_shoot' | 'bow_volley' | 'bow_bash' | 'bow_block' | 'cast_bolt' | 'cast_nova'
-export type EquipmentMotion = 'idle' | 'walk' | 'run' | 'combat_idle' | 'attack_light' | 'attack_light2' | 'attack_heavy' | 'attack_light3' | 'flourish_heavy' | 'stab' | 'heavy_combo_a' | 'heavy_combo_b' | 'heavy_combo_c' | 'leap' | 'fencing' | 'flourish' | 'menace' | 'menace_enter' | 'roll' | 'dodge_roll' | 'stun' | 'block' | 'hit' | 'death' | ClassMotion | JumpMotion | NativeJumpMotion
+/** Bogmaw's goblins (scripts/export-enemy-bodies.py CLIPS): the archer's drawn bow and release, the shaman's cast, the King's roar. */
+export type GoblinMotion = 'aim' | 'shoot' | 'cast' | 'roar'
+export type EquipmentMotion = 'idle' | 'walk' | 'run' | 'combat_idle' | 'attack_light' | 'attack_light2' | 'attack_heavy' | 'attack_light3' | 'flourish_heavy' | 'stab' | 'heavy_combo_a' | 'heavy_combo_b' | 'heavy_combo_c' | 'leap' | 'fencing' | 'flourish' | 'menace' | 'menace_enter' | 'roll' | 'dodge_roll' | 'stun' | 'block' | 'hit' | 'death' | ClassMotion | GoblinMotion | JumpMotion | NativeJumpMotion
 
 // Native Space skips the arena clip's anticipation. These matching phases keep
 // every outfit part together while Explorer supplies the actual vertical motion.
@@ -57,6 +59,11 @@ export const COMBAT_CLIPS: Record<EquipmentMotion, CombatClip> = {
   bow_block: { duration: 1.766667, loop: true },
   cast_bolt: { duration: 1.5, loop: false, contact: 0.55, rate: 1.2 },
   cast_nova: { duration: 2.4, loop: false, contact: 1.1, rate: 1.2 },
+  // Goblin clips: Polygon-rig bow / idle / emote packs spliced whole (frame counts from the export log).
+  aim: { duration: 1.766667, loop: true },
+  shoot: { duration: 1.033333, loop: false, contact: 0.13, rate: 1.3 },
+  cast: { duration: 2.466667, loop: false, contact: 0.95, rate: 1.5 },
+  roar: { duration: 3.8, loop: false, contact: 1.3, rate: 1.6 },
   jump_male: { duration: JUMP_PROFILES.jump_male.duration, loop: false },
   jump_female: { duration: JUMP_PROFILES.jump_female.duration, loop: false },
   jump_male_air: { duration: 20 / 30, loop: false },
@@ -98,6 +105,10 @@ export const EQUIPMENT_CLIPS: Record<EquipmentMotion, string> = {
   bow_block: 'bow_block',
   cast_bolt: 'cast_bolt',
   cast_nova: 'cast_nova',
+  aim: 'aim',
+  shoot: 'shoot',
+  cast: 'cast',
+  roar: 'roar',
   jump_male: 'jump_male',
   jump_female: 'jump_female',
   jump_male_air: 'jump_male_air',

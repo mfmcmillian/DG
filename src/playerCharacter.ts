@@ -304,15 +304,22 @@ function syncInputModifier(rooted: boolean, noJump: boolean) {
   const current = InputModifier.getOrNull(engine.PlayerEntity)
   const standard = current?.mode?.$case === 'standard' ? current.mode.standard : undefined
   if (standard?.disableAll) return
-  if (!rooted && !noJump) {
+  const slowed = mudSlow && !rooted
+  if (!rooted && !noJump && !slowed) {
     if (current) InputModifier.deleteFrom(engine.PlayerEntity)
     return
   }
-  const jump = rooted || noJump
-  if (standard && !!standard.disableWalk === rooted && !!standard.disableJump === jump) return
+  const jump = rooted || noJump || slowed
+  if (standard && !!standard.disableWalk === rooted && !!standard.disableJog === (rooted || slowed) && !!standard.disableJump === jump) return
   InputModifier.createOrReplace(engine.PlayerEntity, {
-    mode: InputModifier.Mode.Standard({ disableWalk: rooted, disableJog: rooted, disableRun: rooted, disableJump: jump })
+    mode: InputModifier.Mode.Standard({ disableWalk: rooted, disableJog: rooted || slowed, disableRun: rooted || slowed, disableJump: jump })
   })
+}
+
+/** Deep mud (Bogmaw's algae patches): the hero can only wade, and cannot jump clear. */
+let mudSlow = false
+export function setMudSlow(inMud: boolean) {
+  mudSlow = inMud
 }
 
 /** Briefly freeze the player's animation (impact weight). */

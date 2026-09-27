@@ -5,6 +5,7 @@
 // The Dark Fortress set below was exported by scripts/export-kit.py. Every
 // other realm is exported by scripts/export-realm-kit.py from a manifest in
 // scripts/realms/, which writes the kit JSON merged here from src/dungeon/kits/.
+import bogKit from './kits/bog.json'
 import castleKit from './kits/castle.json'
 import forgeKit from './kits/forge.json'
 import passKit from './kits/pass.json'
@@ -66,6 +67,7 @@ function realmPieces<T extends Record<string, unknown>>(kit: { pieces: T }): { [
 
 export const KIT = {
   ...DARK_FORTRESS,
+  ...realmPieces(bogKit),
   ...realmPieces(castleKit),
   ...realmPieces(forgeKit),
   ...realmPieces(pitKit),
@@ -85,7 +87,8 @@ export const DOOR_OPENINGS: Partial<Record<KitId, { width: number; height: numbe
   wall_l_arch: { width: 3.8, height: 4.5 },
   castle_wall_arch: { width: 3.4, height: 3.5 },
   forge_wall_arch: { width: 3.7, height: 3.55 },
-  pass_arch: { width: 3.4, height: 3.2 }
+  pass_arch: { width: 3.4, height: 3.2 },
+  bog_gate: { width: 7.4, height: 4.9 }
 }
 
 /** Dark Fortress floor and brick; other realms carry their own in their kit JSON (see DungeonStyle). */
@@ -96,6 +99,7 @@ export const CASTLE_TEXTURES = castleKit.textures
 export const FORGE_TEXTURES = forgeKit.textures
 export const PIT_TEXTURES = pitKit.textures
 export const PASS_TEXTURES = passKit.textures
+export const BOG_TEXTURES = bogKit.textures
 
 /** Triangle cost of the primitive pieces the builder makes itself. */
 export const PRIMITIVE_TRIS = { plane: 4, box: 12 }

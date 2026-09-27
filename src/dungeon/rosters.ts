@@ -31,6 +31,8 @@ export type Archetype = {
   posted?: boolean
   /** Armor to wear instead of the character's current default outfit (fortress looks are pinned to the Starter sets). */
   armor?: Omit<EquipmentLoadout, 'weapon'>
+  /** Bogmaw's specialists (src/dungeonEnemies.ts, goblin section); melee when absent. */
+  kind?: 'archer' | 'bomber' | 'shaman' | 'totem'
 }
 
 // The Starter-pack outfits the fortress rosters were built with. Hero defaults
@@ -55,6 +57,11 @@ export type Roster = {
   guard: Archetype
   boss: Archetype
   posted?: Archetype
+  /** Bogmaw's specialists; a wave naming one falls back to the scout / striker where a roster has none. */
+  archer?: Archetype
+  bomber?: Archetype
+  shaman?: Archetype
+  totem?: Archetype
 }
 
 const FORTRESS: Roster = {
@@ -161,10 +168,54 @@ const PASS: Roster = {
   }
 }
 
+// Bogmaw's goblins: the Goblin War Camp characters on the Polygon rig with their
+// weapons baked in (scripts/enemy-bodies.json). Human-sized in the pack, so the
+// scales make them goblins; the King alone stands tall. The specialists are read
+// by src/dungeonEnemies.ts through `kind`: archers keep their distance and shoot,
+// bombers run in and go off (goblins near them too), shamans mend their kin and
+// spit venom, faster while a totem of theirs stands.
+const BOG: Roster = {
+  striker: {
+    name: 'Goblin Cutter', characterId: 'gb-cutter', weapon: 'gb-cleaver-01', health: 110, scale: 0.88, damageScale: 1.15,
+    aggro: 7, leash: 12, speed: 1.25, profile: { blockChance: 0.1, pace: 0.75 }, role: 'grunt'
+  },
+  scout: {
+    name: 'Goblin Sneak', characterId: 'gb-sneak', weapon: 'gb-dagger-01', health: 85, scale: 0.8, damageScale: 0.95,
+    aggro: 8, leash: 12, speed: 1.35, profile: { blockChance: 0.12, pace: 0.8 }, role: 'grunt'
+  },
+  guard: {
+    name: 'Goblin Brute', characterId: 'gb-brute', weapon: 'gb-club-02', health: 190, scale: 1.08, damageScale: 1.3,
+    aggro: 5.5, leash: 11, speed: 0.92, profile: { blockChance: 0.45, pace: 1.1 }, role: 'elite'
+  },
+  boss: {
+    name: 'Goblin King', characterId: 'gb-king', weapon: 'gb-club-04', health: 640, scale: 1.32,
+    damageScale: 1.9, aggro: 12, leash: 22, speed: 1.08,
+    profile: { blockChance: 0.1, pace: 0.8, pattern: ['attack_light', 'attack_heavy', 'slam', 'attack_light2'], slamRange: 4 },
+    role: 'boss'
+  },
+  archer: {
+    name: 'Goblin Archer', characterId: 'gb-archer', weapon: 'gb-dagger-01', health: 70, scale: 0.84, damageScale: 1.0,
+    aggro: 14, leash: 16, speed: 1.15, profile: { blockChance: 0, pace: 1 }, role: 'grunt', kind: 'archer'
+  },
+  bomber: {
+    name: 'Goblin Bomber', characterId: 'gb-bomber', weapon: 'gb-club-01', health: 60, scale: 0.82, damageScale: 1.0,
+    aggro: 11, leash: 16, speed: 1.6, profile: { blockChance: 0, pace: 1 }, role: 'grunt', kind: 'bomber'
+  },
+  shaman: {
+    name: 'Goblin Shaman', characterId: 'gb-shaman', weapon: 'gb-club-01', health: 120, scale: 0.9, damageScale: 1.0,
+    aggro: 13, leash: 16, speed: 1.05, profile: { blockChance: 0, pace: 1 }, role: 'elite', kind: 'shaman'
+  },
+  totem: {
+    name: 'War Totem', characterId: 'bog-totem', weapon: 'gb-club-01', health: 160, scale: 1, damageScale: 0,
+    aggro: 0, leash: 0, speed: 0, profile: { blockChance: 0, pace: 1 }, role: 'grunt', kind: 'totem'
+  }
+}
+
 const BY_STYLE: Partial<Record<StyleId, Roster>> = {
   castle: CASTLE,
   forge: FORGE,
-  pass: PASS
+  pass: PASS,
+  bog: BOG
 }
 
 export function rosterFor(style: StyleId): Roster {
@@ -173,12 +224,16 @@ export function rosterFor(style: StyleId): Roster {
 
 export function allRosterArchetypes(): Archetype[] {
   const seen = new Set<Archetype>()
-  for (const roster of [FORTRESS, CASTLE, FORGE, PASS]) {
+  for (const roster of [FORTRESS, CASTLE, FORGE, PASS, BOG]) {
     seen.add(roster.striker)
     seen.add(roster.scout)
     seen.add(roster.guard)
     seen.add(roster.boss)
     if (roster.posted) seen.add(roster.posted)
+    if (roster.archer) seen.add(roster.archer)
+    if (roster.bomber) seen.add(roster.bomber)
+    if (roster.shaman) seen.add(roster.shaman)
+    if (roster.totem) seen.add(roster.totem)
   }
   return [...seen]
 }

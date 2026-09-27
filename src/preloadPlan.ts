@@ -8,6 +8,7 @@ import { fxSoundAssets, fxTextureAssets } from './combatFx'
 import { AMBIENCE_ASSETS } from './dungeon/builder'
 import { kitSrcsForStyle, StyleId, styleTexturesFor, STYLES } from './dungeon/config'
 import { KIT } from './dungeon/kit'
+import { bogFurnitureIds } from './dungeon/bogmaw'
 import { hubFurnitureIds } from './dungeon/hub'
 import { passFurnitureIds } from './dungeon/pass'
 import { pitFurnitureIds } from './dungeon/pit'
@@ -53,7 +54,7 @@ export function requestRealmPreload(style: StyleId, urgent = false) {
     return
   }
   // The pass is drawn by hand: its lake, camp and bone field are furniture on top of the style's props.
-  const furniture = style === 'pass' ? passFurnitureIds().map((id) => KIT[id].src) : []
+  const furniture = style === 'pass' ? passFurnitureIds().map((id) => KIT[id].src) : style === 'bog' ? bogFurnitureIds().map((id) => KIT[id].src) : []
   preloadGroup(realmGroupId(style), realmLabel(style), [
     ...kitSrcsForStyle(STYLES[style]),
     ...furniture,

@@ -1,0 +1,888 @@
+{
+  "realm": "bog",
+  "textures": {
+    "floor": "models/kits/bog/floor.png",
+    "grass": "models/kits/bog/grass.png",
+    "water": "models/kits/bog/water.png"
+  },
+  "pieces": {
+    "bog_wall_a": {
+      "src": "models/kits/bog/bog_wall_a.gltf",
+      "size": [
+        9.988,
+        6.666,
+        1.525
+      ],
+      "tris": 924
+    },
+    "bog_wall_b": {
+      "src": "models/kits/bog/bog_wall_b.gltf",
+      "size": [
+        9.91,
+        6.656,
+        1.132
+      ],
+      "tris": 1144
+    },
+    "bog_wall_c": {
+      "src": "models/kits/bog/bog_wall_c.gltf",
+      "size": [
+        9.983,
+        7.07,
+        1.418
+      ],
+      "tris": 1984
+    },
+    "bog_wall_d": {
+      "src": "models/kits/bog/bog_wall_d.gltf",
+      "size": [
+        9.518,
+        7.165,
+        2.351
+      ],
+      "tris": 2258
+    },
+    "bog_wall_e": {
+      "src": "models/kits/bog/bog_wall_e.gltf",
+      "size": [
+        9.973,
+        6.61,
+        1.681
+      ],
+      "tris": 2340
+    },
+    "bog_fence": {
+      "src": "models/kits/bog/bog_fence.gltf",
+      "size": [
+        10.012,
+        1.584,
+        1.432
+      ],
+      "tris": 1434
+    },
+    "bog_gate": {
+      "src": "models/kits/bog/bog_gate.gltf",
+      "size": [
+        9.973,
+        6.897,
+        2.686
+      ],
+      "tris": 2778
+    },
+    "bog_post": {
+      "src": "models/kits/bog/bog_post.gltf",
+      "size": [
+        1.039,
+        6.656,
+        0.971
+      ],
+      "tris": 38
+    },
+    "bog_torch": {
+      "src": "models/kits/bog/bog_torch.gltf",
+      "size": [
+        0.446,
+        4.522,
+        0.443
+      ],
+      "tris": 482
+    },
+    "bog_hq": {
+      "src": "models/kits/bog/bog_hq.gltf",
+      "size": [
+        22.199,
+        13.35,
+        12.734
+      ],
+      "tris": 33557
+    },
+    "bog_shaman_hut": {
+      "src": "models/kits/bog/bog_shaman_hut.gltf",
+      "size": [
+        13.057,
+        6.756,
+        10.319
+      ],
+      "tris": 8765
+    },
+    "bog_tower": {
+      "src": "models/kits/bog/bog_tower.gltf",
+      "size": [
+        3.764,
+        9.319,
+        3.667
+      ],
+      "tris": 7999
+    },
+    "bog_tower_b": {
+      "src": "models/kits/bog/bog_tower_b.gltf",
+      "size": [
+        2.673,
+        8.958,
+        3.155
+      ],
+      "tris": 4133
+    },
+    "bog_tent_leader": {
+      "src": "models/kits/bog/bog_tent_leader.gltf",
+      "size": [
+        7.634,
+        7.996,
+        8.416
+      ],
+      "tris": 5291
+    },
+    "bog_tent_a": {
+      "src": "models/kits/bog/bog_tent_a.gltf",
+      "size": [
+        6.084,
+        3.046,
+        5.682
+      ],
+      "tris": 2944
+    },
+    "bog_tent_b": {
+      "src": "models/kits/bog/bog_tent_b.gltf",
+      "size": [
+        7.842,
+        3.833,
+        4.777
+      ],
+      "tris": 2977
+    },
+    "bog_tent_c": {
+      "src": "models/kits/bog/bog_tent_c.gltf",
+      "size": [
+        3.125,
+        4.578,
+        3.321
+      ],
+      "tris": 468
+    },
+    "bog_platform": {
+      "src": "models/kits/bog/bog_platform.gltf",
+      "size": [
+        3.439,
+        7.954,
+        3.03
+      ],
+      "tris": 618
+    },
+    "bog_platform_b": {
+      "src": "models/kits/bog/bog_platform_b.gltf",
+      "size": [
+        7.796,
+        4.331,
+        7.704
+      ],
+      "tris": 1512
+    },
+    "bog_treehouse": {
+      "src": "models/kits/bog/bog_treehouse.gltf",
+      "size": [
+        6.576,
+        8.839,
+        6.2
+      ],
+      "tris": 3406
+    },
+    "bog_warhorn": {
+      "src": "models/kits/bog/bog_warhorn.gltf",
+      "size": [
+        2.337,
+        6.025,
+        6.906
+      ],
+      "tris": 3250
+    },
+    "bog_bone_skull": {
+      "src": "models/kits/bog/bog_bone_skull.gltf",
+      "size": [
+        4.004,
+        3.492,
+        1.927
+      ],
+      "tris": 652
+    },
+    "bog_bone_rib": {
+      "src": "models/kits/bog/bog_bone_rib.gltf",
+      "size": [
+        4.596,
+        4.973,
+        1.579
+      ],
+      "tris": 136,
+      "collide": false
+    },
+    "bog_cliff_a": {
+      "src": "models/kits/bog/bog_cliff_a.gltf",
+      "size": [
+        6.787,
+        9.164,
+        7.599
+      ],
+      "tris": 814
+    },
+    "bog_cliff_b": {
+      "src": "models/kits/bog/bog_cliff_b.gltf",
+      "size": [
+        5.607,
+        8.766,
+        10.975
+      ],
+      "tris": 744
+    },
+    "bog_cliff_c": {
+      "src": "models/kits/bog/bog_cliff_c.gltf",
+      "size": [
+        5.276,
+        9.514,
+        5.069
+      ],
+      "tris": 436
+    },
+    "bog_tree": {
+      "src": "models/kits/bog/bog_tree.gltf",
+      "size": [
+        8.35,
+        10.211,
+        6.445
+      ],
+      "tris": 1331
+    },
+    "bog_tree_b": {
+      "src": "models/kits/bog/bog_tree_b.gltf",
+      "size": [
+        9.743,
+        7.413,
+        5.929
+      ],
+      "tris": 986
+    },
+    "bog_tree_c": {
+      "src": "models/kits/bog/bog_tree_c.gltf",
+      "size": [
+        3.309,
+        7.673,
+        3.591
+      ],
+      "tris": 490
+    },
+    "bog_tree_d": {
+      "src": "models/kits/bog/bog_tree_d.gltf",
+      "size": [
+        4.967,
+        7.864,
+        4.084
+      ],
+      "tris": 594
+    },
+    "bog_stump": {
+      "src": "models/kits/bog/bog_stump.gltf",
+      "size": [
+        2.039,
+        1.822,
+        2.208
+      ],
+      "tris": 826
+    },
+    "bog_log": {
+      "src": "models/kits/bog/bog_log.gltf",
+      "size": [
+        1.22,
+        1.581,
+        5.737
+      ],
+      "tris": 496
+    },
+    "bog_rock": {
+      "src": "models/kits/bog/bog_rock.gltf",
+      "size": [
+        5.75,
+        1.526,
+        4.322
+      ],
+      "tris": 344
+    },
+    "bog_rock_b": {
+      "src": "models/kits/bog/bog_rock_b.gltf",
+      "size": [
+        1.697,
+        1.192,
+        1.785
+      ],
+      "tris": 210
+    },
+    "bog_boulder": {
+      "src": "models/kits/bog/bog_boulder.gltf",
+      "size": [
+        1.853,
+        1.821,
+        1.796
+      ],
+      "tris": 286
+    },
+    "bog_mound": {
+      "src": "models/kits/bog/bog_mound.gltf",
+      "size": [
+        2.829,
+        0.569,
+        3.145
+      ],
+      "tris": 120,
+      "collide": false
+    },
+    "bog_reeds": {
+      "src": "models/kits/bog/bog_reeds.gltf",
+      "size": [
+        0.401,
+        2.04,
+        0.505
+      ],
+      "tris": 300,
+      "collide": false
+    },
+    "bog_grass": {
+      "src": "models/kits/bog/bog_grass.gltf",
+      "size": [
+        1.273,
+        1.614,
+        1.231
+      ],
+      "tris": 152,
+      "collide": false
+    },
+    "bog_mushrooms": {
+      "src": "models/kits/bog/bog_mushrooms.gltf",
+      "size": [
+        1.022,
+        1.733,
+        1.077
+      ],
+      "tris": 1000,
+      "collide": false
+    },
+    "bog_mushroom_big": {
+      "src": "models/kits/bog/bog_mushroom_big.gltf",
+      "size": [
+        1.952,
+        1.824,
+        1.777
+      ],
+      "tris": 106
+    },
+    "bog_bush": {
+      "src": "models/kits/bog/bog_bush.gltf",
+      "size": [
+        3.178,
+        1.304,
+        2.335
+      ],
+      "tris": 582,
+      "collide": false
+    },
+    "bog_bones": {
+      "src": "models/kits/bog/bog_bones.gltf",
+      "size": [
+        3.484,
+        1.956,
+        2.416
+      ],
+      "tris": 1674,
+      "collide": false
+    },
+    "bog_bones_b": {
+      "src": "models/kits/bog/bog_bones_b.gltf",
+      "size": [
+        2.25,
+        1.826,
+        4.74
+      ],
+      "tris": 2610,
+      "collide": false
+    },
+    "bog_planks": {
+      "src": "models/kits/bog/bog_planks.gltf",
+      "size": [
+        2.52,
+        0.124,
+        4.997
+      ],
+      "tris": 430,
+      "collide": false
+    },
+    "bog_algae": {
+      "src": "models/kits/bog/bog_algae.gltf",
+      "size": [
+        2.408,
+        0.344,
+        5.034
+      ],
+      "tris": 51,
+      "collide": false
+    },
+    "bog_roots": {
+      "src": "models/kits/bog/bog_roots.gltf",
+      "size": [
+        0.642,
+        2.264,
+        0.598
+      ],
+      "tris": 156
+    },
+    "bog_stairs": {
+      "src": "models/kits/bog/bog_stairs.gltf",
+      "size": [
+        2.116,
+        2.553,
+        3.499
+      ],
+      "tris": 268
+    },
+    "bog_brazier": {
+      "src": "models/kits/bog/bog_brazier.gltf",
+      "size": [
+        1.3,
+        0.833,
+        1.38
+      ],
+      "tris": 1583
+    },
+    "bog_campfire": {
+      "src": "models/kits/bog/bog_campfire.gltf",
+      "size": [
+        1.665,
+        0.922,
+        1.936
+      ],
+      "tris": 1278
+    },
+    "bog_firepit": {
+      "src": "models/kits/bog/bog_firepit.gltf",
+      "size": [
+        5.743,
+        2.593,
+        5.602
+      ],
+      "tris": 3512
+    },
+    "bog_effigy": {
+      "src": "models/kits/bog/bog_effigy.gltf",
+      "size": [
+        1.853,
+        2.882,
+        1.206
+      ],
+      "tris": 6003
+    },
+    "bog_effigy_b": {
+      "src": "models/kits/bog/bog_effigy_b.gltf",
+      "size": [
+        1.53,
+        2.853,
+        0.468
+      ],
+      "tris": 4177
+    },
+    "bog_effigy_big": {
+      "src": "models/kits/bog/bog_effigy_big.gltf",
+      "size": [
+        5.776,
+        3.956,
+        1.116
+      ],
+      "tris": 5118
+    },
+    "bog_totem": {
+      "src": "models/kits/bog/bog_totem.gltf",
+      "size": [
+        1.262,
+        2.34,
+        1.42
+      ],
+      "tris": 1344
+    },
+    "bog_shrine": {
+      "src": "models/kits/bog/bog_shrine.gltf",
+      "size": [
+        3.252,
+        1.832,
+        2.688
+      ],
+      "tris": 2975
+    },
+    "bog_gong": {
+      "src": "models/kits/bog/bog_gong.gltf",
+      "size": [
+        3.28,
+        2.799,
+        0.718
+      ],
+      "tris": 1547
+    },
+    "bog_drum": {
+      "src": "models/kits/bog/bog_drum.gltf",
+      "size": [
+        1.028,
+        0.637,
+        1.039
+      ],
+      "tris": 848
+    },
+    "bog_gibbet": {
+      "src": "models/kits/bog/bog_gibbet.gltf",
+      "size": [
+        4.19,
+        6.168,
+        1.471
+      ],
+      "tris": 1040
+    },
+    "bog_cage": {
+      "src": "models/kits/bog/bog_cage.gltf",
+      "size": [
+        1.509,
+        2.514,
+        1.366
+      ],
+      "tris": 3122
+    },
+    "bog_head_spike": {
+      "src": "models/kits/bog/bog_head_spike.gltf",
+      "size": [
+        0.357,
+        1.98,
+        0.331
+      ],
+      "tris": 1594
+    },
+    "bog_skull_pile": {
+      "src": "models/kits/bog/bog_skull_pile.gltf",
+      "size": [
+        0.936,
+        0.496,
+        0.652
+      ],
+      "tris": 624,
+      "collide": false
+    },
+    "bog_skull_pile_b": {
+      "src": "models/kits/bog/bog_skull_pile_b.gltf",
+      "size": [
+        0.57,
+        0.344,
+        0.678
+      ],
+      "tris": 922,
+      "collide": false
+    },
+    "bog_skeleton_cage": {
+      "src": "models/kits/bog/bog_skeleton_cage.gltf",
+      "size": [
+        0.474,
+        2.098,
+        0.403
+      ],
+      "tris": 3476
+    },
+    "bog_meat_rack": {
+      "src": "models/kits/bog/bog_meat_rack.gltf",
+      "size": [
+        3.813,
+        3.303,
+        2.252
+      ],
+      "tris": 3905
+    },
+    "bog_hide_rack": {
+      "src": "models/kits/bog/bog_hide_rack.gltf",
+      "size": [
+        2.658,
+        1.803,
+        1.039
+      ],
+      "tris": 1442
+    },
+    "bog_weapon_rack": {
+      "src": "models/kits/bog/bog_weapon_rack.gltf",
+      "size": [
+        2.373,
+        1.973,
+        0.997
+      ],
+      "tris": 4241
+    },
+    "bog_barrel": {
+      "src": "models/kits/bog/bog_barrel.gltf",
+      "size": [
+        0.934,
+        1.117,
+        0.955
+      ],
+      "tris": 1844
+    },
+    "bog_crate": {
+      "src": "models/kits/bog/bog_crate.gltf",
+      "size": [
+        0.776,
+        0.766,
+        0.82
+      ],
+      "tris": 916
+    },
+    "bog_sacks": {
+      "src": "models/kits/bog/bog_sacks.gltf",
+      "size": [
+        0.914,
+        0.34,
+        0.97
+      ],
+      "tris": 310,
+      "collide": false
+    },
+    "bog_spikes": {
+      "src": "models/kits/bog/bog_spikes.gltf",
+      "size": [
+        2.771,
+        1.882,
+        2.297
+      ],
+      "tris": 634
+    },
+    "bog_spikes_b": {
+      "src": "models/kits/bog/bog_spikes_b.gltf",
+      "size": [
+        1.593,
+        1.782,
+        1.684
+      ],
+      "tris": 376
+    },
+    "bog_barrier": {
+      "src": "models/kits/bog/bog_barrier.gltf",
+      "size": [
+        2.639,
+        1.507,
+        1.368
+      ],
+      "tris": 802
+    },
+    "bog_target": {
+      "src": "models/kits/bog/bog_target.gltf",
+      "size": [
+        0.876,
+        1.216,
+        1.095
+      ],
+      "tris": 934
+    },
+    "bog_table": {
+      "src": "models/kits/bog/bog_table.gltf",
+      "size": [
+        1.479,
+        1.325,
+        3.391
+      ],
+      "tris": 890
+    },
+    "bog_bench": {
+      "src": "models/kits/bog/bog_bench.gltf",
+      "size": [
+        2.752,
+        1.065,
+        0.593
+      ],
+      "tris": 786
+    },
+    "bog_seat": {
+      "src": "models/kits/bog/bog_seat.gltf",
+      "size": [
+        0.675,
+        0.641,
+        0.598
+      ],
+      "tris": 370
+    },
+    "bog_bedroll": {
+      "src": "models/kits/bog/bog_bedroll.gltf",
+      "size": [
+        1.101,
+        0.345,
+        0.399
+      ],
+      "tris": 538,
+      "collide": false
+    },
+    "bog_spit": {
+      "src": "models/kits/bog/bog_spit.gltf",
+      "size": [
+        4.164,
+        2.775,
+        1.535
+      ],
+      "tris": 4052
+    },
+    "bog_flag": {
+      "src": "models/kits/bog/bog_flag.gltf",
+      "size": [
+        0.763,
+        2.181,
+        0.178
+      ],
+      "tris": 1912
+    },
+    "bog_walkway": {
+      "src": "models/kits/bog/bog_walkway.gltf",
+      "size": [
+        2.914,
+        2.672,
+        2.716
+      ],
+      "tris": 934
+    },
+    "bog_ladder": {
+      "src": "models/kits/bog/bog_ladder.gltf",
+      "size": [
+        1.391,
+        3.398,
+        0.287
+      ],
+      "tris": 240
+    },
+    "bog_anchor": {
+      "src": "models/kits/bog/bog_anchor.gltf",
+      "size": [
+        1.021,
+        7.988,
+        1.024
+      ],
+      "tris": 664
+    },
+    "bog_ruins_arch": {
+      "src": "models/kits/bog/bog_ruins_arch.gltf",
+      "size": [
+        7.76,
+        4.022,
+        1.018
+      ],
+      "tris": 3914
+    },
+    "bog_ruins_pillar": {
+      "src": "models/kits/bog/bog_ruins_pillar.gltf",
+      "size": [
+        0.664,
+        2.758,
+        0.664
+      ],
+      "tris": 460
+    },
+    "bog_ruins_wall": {
+      "src": "models/kits/bog/bog_ruins_wall.gltf",
+      "size": [
+        2.43,
+        3.301,
+        0.663
+      ],
+      "tris": 1292
+    },
+    "bog_forge": {
+      "src": "models/kits/bog/bog_forge.gltf",
+      "size": [
+        2.035,
+        3.624,
+        1.562
+      ],
+      "tris": 2078
+    },
+    "bog_anvil": {
+      "src": "models/kits/bog/bog_anvil.gltf",
+      "size": [
+        0.556,
+        0.572,
+        1.25
+      ],
+      "tris": 4344
+    },
+    "bog_ballista": {
+      "src": "models/kits/bog/bog_ballista.gltf",
+      "size": [
+        3.097,
+        1.676,
+        3.799
+      ],
+      "tris": 5475
+    },
+    "bog_trebuchet": {
+      "src": "models/kits/bog/bog_trebuchet.gltf",
+      "size": [
+        5.087,
+        5.681,
+        9.574
+      ],
+      "tris": 6923
+    },
+    "bog_ram": {
+      "src": "models/kits/bog/bog_ram.gltf",
+      "size": [
+        3.953,
+        2.999,
+        4.929
+      ],
+      "tris": 9620
+    },
+    "bog_balloon": {
+      "src": "models/kits/bog/bog_balloon.gltf",
+      "size": [
+        9.755,
+        10.369,
+        6.822
+      ],
+      "tris": 21600
+    },
+    "bog_cage_wagon": {
+      "src": "models/kits/bog/bog_cage_wagon.gltf",
+      "size": [
+        2.716,
+        3.955,
+        5.48
+      ],
+      "tris": 10421
+    },
+    "bog_cart": {
+      "src": "models/kits/bog/bog_cart.gltf",
+      "size": [
+        2.128,
+        1.691,
+        3.149
+      ],
+      "tris": 3974
+    },
+    "bog_bomb": {
+      "src": "models/kits/bog/bog_bomb.gltf",
+      "size": [
+        0.72,
+        0.908,
+        0.684
+      ],
+      "tris": 360
+    },
+    "bog_hill": {
+      "src": "models/kits/bog/bog_hill.gltf",
+      "size": [
+        20.474,
+        5.426,
+        27.164
+      ],
+      "tris": 1855
+    },
+    "bog_mountain": {
+      "src": "models/kits/bog/bog_mountain.gltf",
+      "size": [
+        35.44,
+        4.68,
+        37.802
+      ],
+      "tris": 1153
+    }
+  }
+}

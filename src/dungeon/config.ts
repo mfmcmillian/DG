@@ -1,4 +1,4 @@
-import { BRICK_TEXTURE, CASTLE_TEXTURES, FLOOR_TEXTURE, FORGE_TEXTURES, KIT, KitId, PASS_TEXTURES, PIT_TEXTURES } from './kit'
+import { BOG_TEXTURES, BRICK_TEXTURE, CASTLE_TEXTURES, FLOOR_TEXTURE, FORGE_TEXTURES, KIT, KitId, PASS_TEXTURES, PIT_TEXTURES } from './kit'
 import { RoomKind } from './generator'
 
 /** The plot is 10 x 10 parcels = 160 m, base at the south-west corner. */
@@ -16,7 +16,7 @@ export const LEGACY_SPAN = 96
  * are the Dark Fortress; every later realm (Synty pack exported through
  * scripts/realms/) is one more entry here.
  */
-export type StyleId = 'tight' | 'open' | 'gauntlet' | 'hall' | 'castle' | 'forge' | 'pit' | 'pass'
+export type StyleId = 'tight' | 'open' | 'gauntlet' | 'hall' | 'castle' | 'forge' | 'pit' | 'pass' | 'bog'
 
 export interface DungeonStyle {
   id: StyleId
@@ -406,6 +406,49 @@ export const STYLES: Record<StyleId, DungeonStyle> = {
     torchLightRange: 20,
     torchLightColor: [1, 0.7, 0.42],
     floorTexture: PASS_TEXTURES.floor,
+    floorMetres: 5
+  },
+  /**
+   * Bogmaw, drawn by hand in ./bogmaw.ts: a goblin war camp in the swamp,
+   * Synty's Goblin War Camp pack (scripts/realms/bog.json). Two log-wall
+   * modules are welded into each 10 m palisade piece and stretched to 6.6 m;
+   * the camp gate is the doorway (its doors left out), a stake post stands on
+   * the corners, a standing torch burns at every second wall, and a long
+   * barrier is the cutaway fence the overhead camera sees over. Mud underfoot.
+   */
+  bog: {
+    id: 'bog',
+    label: 'Bogmaw',
+    tile: 10,
+    size: 16,
+    span: SCENE_SIZE,
+    wallHeight: 6.6,
+    entranceSize: 2,
+    minLeaf: 3,
+    maxLeaf: 5,
+    minRoom: 2,
+    ceiling: false,
+    firstPerson: false,
+    walls: ['bog_wall_a', 'bog_wall_b', 'bog_wall_c', 'bog_wall_d', 'bog_wall_e', 'bog_wall_a', 'bog_wall_c'],
+    door: 'bog_gate',
+    pillar: 'bog_post',
+    torch: 'bog_torch',
+    torchHeight: 0,
+    torchInset: 1.2,
+    torchEvery: 2,
+    props: {
+      entrance: ['bog_flag', 'bog_head_spike', 'bog_skull_pile', 'bog_reeds'],
+      boss: ['bog_flag', 'bog_drum', 'bog_effigy', 'bog_weapon_rack', 'bog_head_spike', 'bog_barrel', 'bog_meat_rack', 'bog_gibbet'],
+      treasure: ['bog_crate', 'bog_barrel', 'bog_cage', 'bog_weapon_rack', 'bog_sacks', 'bog_hide_rack'],
+      combat: ['bog_head_spike', 'bog_bones', 'bog_reeds', 'bog_skull_pile_b', 'bog_barrier', 'bog_mushrooms'],
+      quiet: ['bog_reeds', 'bog_grass', 'bog_mushrooms', 'bog_rock_b', 'bog_roots', 'bog_bush']
+    },
+    cutawayWall: 'bog_fence',
+    torchLightCount: 8,
+    torchLightIntensity: 750,
+    torchLightRange: 20,
+    torchLightColor: [1, 0.62, 0.3],
+    floorTexture: BOG_TEXTURES.floor,
     floorMetres: 5
   }
 }

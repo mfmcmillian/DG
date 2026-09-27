@@ -34,6 +34,21 @@ export type EnemySnap = {
   a: boolean
 }
 
+/** A goblin's or the camp's deed for the clients to show (see Messages.enemyFx). */
+export type EnemyFxNet = {
+  party: string
+  kind: string
+  i: number
+  j: number
+  x: number
+  y: number
+  z: number
+  tx: number
+  ty: number
+  tz: number
+  r: number
+}
+
 export type ImpactNet = {
   x: number
   y: number
@@ -491,6 +506,12 @@ export function publishEnemies(party: string, list: EnemySnap[]) {
   sendNet('enemies', { party, list })
 }
 
+/** Server -> all: a goblin's shot, blast, mending or gong for the clients to present. */
+export function publishEnemyFx(fx: EnemyFxNet) {
+  if (!hostMode) return
+  sendNet('enemyFx', fx)
+}
+
 /** `item` is a weapon id from the catalog, or '' when the kill dropped no weapon. */
 export function publishLoot(party: string, x: number, z: number, coin: number, heart: number, item: string, boss: boolean) {
   if (!isHost()) return
@@ -510,6 +531,7 @@ let onVitals: ((id: string, health: number) => void) | undefined
 let onImpact: ((p: ImpactNet, from: string) => void) | undefined
 let onShot: ((p: ShotNet) => void) | undefined
 let onEnemies: ((party: string, list: EnemySnap[]) => void) | undefined
+let onEnemyFx: ((fx: EnemyFxNet) => void) | undefined
 let onLoot: ((party: string, x: number, z: number, coin: number, heart: number, item: string, boss: boolean) => void) | undefined
 let onJoin: ((id: string) => void) | undefined
 let onLeave: ((id: string) => void) | undefined
@@ -528,6 +550,8 @@ export function setMultiplayerHandlers(handlers: {
   /** Another hero's shot, for its flight only. */
   shot?: typeof onShot
   enemies?: typeof onEnemies
+  /** Client: a goblin's deed to present (a shot in flight, a blast, a mending, the gong). */
+  enemyFx?: typeof onEnemyFx
   loot?: typeof onLoot
   /** Server only: a hero body has appeared in the room. */
   join?: typeof onJoin
@@ -552,6 +576,7 @@ export function setMultiplayerHandlers(handlers: {
   if (handlers.impact) onImpact = handlers.impact
   if (handlers.shot) onShot = handlers.shot
   if (handlers.enemies) onEnemies = handlers.enemies
+  if (handlers.enemyFx) onEnemyFx = handlers.enemyFx
   if (handlers.loot) onLoot = handlers.loot
   if (handlers.join) onJoin = handlers.join
 }
@@ -584,6 +609,7 @@ function bindClient() {
     onEnemies?.(msg.party, msg.list.map((e) => ({ ...e, m: e.m as EquipmentMotion })))
   })
   onNet('loot', (msg) => onLoot?.(msg.party, msg.x, msg.z, msg.coin, msg.heart, msg.item, msg.boss))
+  onNet('enemyFx', (msg) => onEnemyFx?.(msg))
   engine.addSystem(tickNetDiag)
   engine.addSystem(watchForServer)
 }

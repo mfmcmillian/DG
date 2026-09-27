@@ -12,6 +12,7 @@ import { Quaternion, Vector3 } from '@dcl/sdk/math'
 import alpine from './backdrop/alpine.json'
 import { onDungeonLoaded } from './dungeon'
 import { SCENE_SIZE } from './dungeon/config'
+import { BOG_TEXTURES, KIT, KitId } from './dungeon/kit'
 
 /**
  * The world outside the hall: Synty's Alpine Mountain biome (scripts/export-alpine.py)
@@ -23,13 +24,21 @@ import { SCENE_SIZE } from './dungeon/config'
  *
  * It only exists while the hall is loaded; dungeons stay in their black void,
  * except the Frozen Pass (src/dungeon/pass.ts), which is cut through these same
- * mountains: PASS_LAYOUT fills the plot's room-free pockets around its gorge.
+ * mountains: PASS_LAYOUT fills the plot's room-free pockets around its gorge, and
+ * Bogmaw (src/dungeon/bogmaw.ts), whose swamp is drawn from its own kit
+ * (BOG_LAYOUT: mud cliffs, marsh trees and low hills from the Goblin War Camp).
  */
 
 type PieceId = keyof typeof alpine.pieces
 
-interface Put {
-  id: PieceId
+interface Piece {
+  src: string
+  size: number[]
+  tris: number
+}
+
+interface Put<Id extends string = PieceId> {
+  id: Id
   x: number
   z: number
   /** Degrees about Y. */
@@ -42,6 +51,7 @@ interface Put {
 
 const SNOW_TEXTURE = 'models/backdrop/alpine/alpine_snow.png'
 const SNOW_METRES_PER_TILE = 6
+const MARSH_METRES_PER_TILE = 5
 
 /** Pieces must stay this far inside the plot or the Explorer culls them. */
 const INNER = 1
@@ -186,6 +196,87 @@ const PASS_LAYOUT: Put[] = [
   { id: 'mound_03', x: 146, z: 90, s: 3 }
 ]
 
+/**
+ * Around Bogmaw. The camp uses cells 2..14 of the 16 x 16 grid (see the plan in
+ * src/dungeon/bogmaw.ts); what is free is the 20 m west strip, the 10 m north
+ * and south strips, the 60 x 90 m north-west block, the 40 x 70 m block east
+ * of the King's Camp, the 10 m band across the plot at z 110..120 and the
+ * pockets the path bends around (x 80..100 at z 100..120, x 0..30 at z 90..120,
+ * x 140..160 at z 100..130). Mud cliffs close the horizon, marsh trees stand in
+ * the pockets, hills and a low mountain sit behind them.
+ */
+const BOG_LAYOUT: Put<KitId>[] = [
+  // --- the horizon: hills and the low mountain, stretched up -----------------------
+  { id: 'bog_mountain', x: 30, z: 30, s: [1.6, 3.2, 1.5], sink: 1 },
+  { id: 'bog_mountain', x: 140, z: 22, yaw: 120, s: [1.1, 2.8, 1.2], sink: 1 },
+  { id: 'bog_hill', x: 20, z: 70, yaw: 20, s: [1.6, 1.6, 1.2], sink: 0.5 },
+  { id: 'bog_hill', x: 145, z: 50, yaw: 100, s: [1.0, 1.4, 1.2], sink: 0.5 },
+  { id: 'bog_hill', x: 150, z: 115, yaw: 60, s: [0.9, 1.3, 0.9], sink: 0.5 },
+  { id: 'bog_hill', x: 12, z: 105, yaw: 200, s: [1.0, 1.4, 1.1], sink: 0.5 },
+  // --- mud cliffs pressed against the outer walls -----------------------------------
+  { id: 'bog_cliff_a', x: 52, z: 8, yaw: 180, s: [1.4, 1.1, 0.9] },
+  { id: 'bog_cliff_b', x: 76, z: 5.5, yaw: 180, s: [1.2, 1.0, 0.6] },
+  { id: 'bog_cliff_a', x: 104, z: 7.5, yaw: 180, s: [1.3, 1.0, 0.8] },
+  { id: 'bog_cliff_c', x: 124, z: 12, yaw: 200, s: [1.2, 1.1, 1.0] },
+  { id: 'bog_cliff_b', x: 55, z: 30, yaw: 90, s: [1.0, 1.0, 0.6] },
+  { id: 'bog_cliff_a', x: 55, z: 50, yaw: 90, s: [1.0, 0.9, 0.7] },
+  { id: 'bog_cliff_c', x: 125, z: 36, yaw: 270, s: [1.1, 1.0, 1.0] },
+  { id: 'bog_cliff_b', x: 126, z: 56, yaw: 270, s: [1.0, 0.9, 0.7] },
+  { id: 'bog_cliff_a', x: 145, z: 84, yaw: 270, s: [1.0, 0.9, 0.8] },
+  { id: 'bog_cliff_c', x: 10, z: 130, yaw: 90, s: [1.2, 1.0, 1.0] },
+  { id: 'bog_cliff_b', x: 10, z: 145, yaw: 90, s: [1.0, 0.9, 0.7] },
+  { id: 'bog_cliff_a', x: 40, z: 155, yaw: 0, s: [1.2, 0.8, 0.6] },
+  { id: 'bog_cliff_c', x: 105, z: 155, yaw: 0, s: [1.2, 0.8, 0.9] },
+  { id: 'bog_cliff_b', x: 155, z: 140, yaw: 270, s: [1.0, 0.9, 0.6] },
+  // --- the marsh in the pockets: trees, stumps, reeds ----------------------------------
+  { id: 'bog_tree', x: 20, z: 96, yaw: 30, s: 1.3 },
+  { id: 'bog_tree_b', x: 8, z: 118, yaw: 200, s: 1.2 },
+  { id: 'bog_tree', x: 90, z: 110, yaw: 120, s: 1.2 },
+  { id: 'bog_tree_b', x: 84, z: 116, yaw: 300, s: 1.1 },
+  { id: 'bog_tree_d', x: 96, z: 104, yaw: 60, s: 1.4 },
+  { id: 'bog_tree', x: 150, z: 104, yaw: 250, s: 1.2 },
+  { id: 'bog_tree_c', x: 154, z: 126, yaw: 80, s: 1.5 },
+  { id: 'bog_tree_b', x: 130, z: 114, yaw: 160, s: 1.2 },
+  { id: 'bog_tree', x: 20, z: 115, yaw: 90, s: 1.1 },
+  { id: 'bog_tree_d', x: 66, z: 115, yaw: 20, s: 1.3 },
+  { id: 'bog_tree_b', x: 30, z: 80, yaw: 140, s: 1.3 },
+  { id: 'bog_tree', x: 44, z: 76, yaw: 10, s: 1.4 },
+  { id: 'bog_tree_c', x: 12, z: 84, yaw: 270, s: 1.4 },
+  { id: 'bog_tree', x: 136, z: 64, yaw: 330, s: 1.3 },
+  { id: 'bog_tree_b', x: 150, z: 70, yaw: 40, s: 1.2 },
+  { id: 'bog_tree_d', x: 132, z: 8, yaw: 180, s: 1.2 },
+  { id: 'bog_tree', x: 148, z: 8, yaw: 220, s: 1.1 },
+  { id: 'bog_tree_c', x: 40, z: 60, yaw: 50, s: 1.6 },
+  { id: 'bog_tree_b', x: 12, z: 40, yaw: 310, s: 1.3 },
+  { id: 'bog_tree', x: 16, z: 14, yaw: 70, s: 1.2 },
+  { id: 'bog_tree_d', x: 30, z: 6, yaw: 0, s: 1.3 },
+  { id: 'bog_tree_c', x: 6, z: 152, yaw: 120, s: 1.4 },
+  { id: 'bog_tree_b', x: 70, z: 155, yaw: 200, s: 1.1 },
+  { id: 'bog_tree_d', x: 125, z: 155, yaw: 40, s: 1.2 },
+  { id: 'bog_stump', x: 88, z: 105, yaw: 0, s: 1.4 },
+  { id: 'bog_stump', x: 26, z: 108, yaw: 90, s: 1.2 },
+  { id: 'bog_stump', x: 140, z: 108, yaw: 45, s: 1.5 },
+  { id: 'bog_mushroom_big', x: 94, z: 114, yaw: 0, s: 1.4 },
+  { id: 'bog_mushroom_big', x: 16, z: 92, yaw: 90, s: 1.8 },
+  { id: 'bog_mushroom_big', x: 136, z: 72, yaw: 30, s: 1.5 },
+  { id: 'bog_rock', x: 36, z: 68, yaw: 20, s: 1.4 },
+  { id: 'bog_rock', x: 130, z: 106, yaw: 100, s: 1.2 },
+  { id: 'bog_rock', x: 60, z: 114, yaw: 60, s: 1.0 },
+  { id: 'bog_reeds', x: 84, z: 108, s: 2.2 },
+  { id: 'bog_reeds', x: 98, z: 118, s: 2.0 },
+  { id: 'bog_reeds', x: 22, z: 100, s: 2.4 },
+  { id: 'bog_reeds', x: 146, z: 112, s: 2.2 },
+  { id: 'bog_reeds', x: 8, z: 124, s: 2.0 },
+  { id: 'bog_reeds', x: 132, z: 120, s: 2.0 },
+  { id: 'bog_grass', x: 92, z: 118, s: 2.0 },
+  { id: 'bog_grass', x: 26, z: 118, s: 2.2 },
+  { id: 'bog_grass', x: 150, z: 96, s: 2.0 },
+  { id: 'bog_grass', x: 64, z: 118, s: 1.8 },
+  { id: 'bog_bush', x: 28, z: 92, s: 1.6 },
+  { id: 'bog_bush', x: 86, z: 102, s: 1.4 },
+  { id: 'bog_bush', x: 142, z: 76, s: 1.6 }
+]
+
 let root: Entity | undefined
 
 export function initializeBackdrop() {
@@ -193,20 +284,27 @@ export function initializeBackdrop() {
     clear()
     if (state.style.id === 'hall') build(HALL_LAYOUT, 'hall')
     else if (state.style.id === 'pass') build(PASS_LAYOUT, 'pass')
+    else if (state.style.id === 'bog') build(BOG_LAYOUT, 'bog', KIT, BOG_TEXTURES.grass, MARSH_METRES_PER_TILE)
   })
 }
 
-function build(layout: Put[], label: string) {
+function build<Id extends string>(
+  layout: Put<Id>[],
+  label: string,
+  pieces: Record<Id, Piece> = alpine.pieces as Record<Id, Piece>,
+  texture = SNOW_TEXTURE,
+  metresPerTile = SNOW_METRES_PER_TILE
+) {
   if (root !== undefined) return
   root = engine.addEntity()
   Transform.create(root, { position: Vector3.Zero() })
-  // Snow over the whole plot, a hair above the dungeon's black slab and just
-  // under the room floors (0.005): everything that is not a floored room, the
-  // gaps between the hall's buildings included, reads as snowfield.
-  ground(SCENE_SIZE / 2, SCENE_SIZE / 2, SCENE_SIZE, SCENE_SIZE)
+  // Snow (or marsh grass) over the whole plot, a hair above the dungeon's black
+  // slab and just under the room floors (0.005): everything that is not a floored
+  // room, the gaps between the hall's buildings included, reads as open ground.
+  ground(SCENE_SIZE / 2, SCENE_SIZE / 2, SCENE_SIZE, SCENE_SIZE, texture, metresPerTile)
   let tris = 0
-  for (const put of layout) tris += place(put)
-  console.log(`[backdrop] alpine (${label}): ${layout.length + 1} entities, ${tris} tris`)
+  for (const put of layout) tris += place(put, pieces[put.id])
+  console.log(`[backdrop] ${label}: ${layout.length + 1} entities, ${tris} tris`)
 }
 
 function clear() {
@@ -218,7 +316,7 @@ function clear() {
   root = undefined
 }
 
-function ground(x: number, z: number, w: number, d: number) {
+function ground(x: number, z: number, w: number, d: number, texture: string, metresPerTile: number) {
   const e = engine.addEntity()
   Transform.create(e, {
     position: Vector3.create(x, 0.001, z),
@@ -226,20 +324,19 @@ function ground(x: number, z: number, w: number, d: number) {
     scale: Vector3.create(w, d, 1),
     parent: root
   })
-  const u = w / SNOW_METRES_PER_TILE
-  const v = d / SNOW_METRES_PER_TILE
-  // Both faces of the plane, so the tile repeats per SNOW_METRES_PER_TILE instead of stretching.
+  const u = w / metresPerTile
+  const v = d / metresPerTile
+  // Both faces of the plane, so the tile repeats per metresPerTile instead of stretching.
   MeshRenderer.setPlane(e, [0, 0, u, 0, u, v, 0, v, 0, 0, u, 0, u, v, 0, v])
   Material.setPbrMaterial(e, {
-    texture: Material.Texture.Common({ src: SNOW_TEXTURE, wrapMode: TextureWrapMode.TWM_REPEAT }),
+    texture: Material.Texture.Common({ src: texture, wrapMode: TextureWrapMode.TWM_REPEAT }),
     roughness: 1,
     metallic: 0,
     specularIntensity: 0
   })
 }
 
-function place(put: Put): number {
-  const piece = alpine.pieces[put.id]
+function place(put: Put<string>, piece: Piece): number {
   const [sx, sy, sz] = typeof put.s === 'number' ? [put.s, put.s, put.s] : put.s
   const yaw = put.yaw ?? 0
   const y = -(put.sink ?? 0)

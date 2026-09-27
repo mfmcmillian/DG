@@ -4,7 +4,14 @@ Export solid enemy bodies from the Synty POLYGON packs (runs inside Blender):
   "C:/Program Files/Blender Foundation/Blender 5.1/blender.exe" -b --python scripts/export-enemy-bodies.py -- [--only id1,id2] [--no-render] [--reclip]
 
 Driven by scripts/enemy-bodies.json; packs, zips and palettes come from
-scripts/weapons-manifest.json so a body and its blade are looked up the same way.
+scripts/weapons-manifest.json so a body and its blade are looked up the same way
+(enemy-only weapons, bows and bombs the heroes never loot, live in the body
+manifest's own `weapons` list in the same shape, plus `hand: Hand_L`).
+
+Per body the manifest may also give `attach` (unskinned extras, a crown or a
+helmet, authored at a bone's pivot: [{fbx, bone}]) and `clips` (clip name ->
+[zip, member], a Polygon-rig FBX that replaces the shared one for this body:
+the goblins walk and run on the Goblin Locomotion pack).
 
   1. Clips: every POLYGON-rig FBX in CLIPS (Synty Sword Combat + Base
      Locomotion packs) is imported once and exported as a bare skeleton GLB
@@ -57,6 +64,9 @@ RECLIP = '--reclip' in args
 
 SWORD = 'ANIMATION_Sword_Combat_SourceFiles_v5.zip'
 LOCO = 'ANIMATION_Base_Locomotion_SourceFiles_v3.zip'
+BOW = 'ANIMATION_Bow_Combat_SourceFiles_v1.zip'
+IDLES = 'ANIMATION_Idles_SourceFiles_v3.zip'
+EMOTES = 'ANIMATION_Emotes_And_Taunts_SourceFiles_v1.zip'
 SWD = 'SourceFiles/Animations/Polygon/'
 BL = 'SourceFiles/Animations/Polygon/Masculine/'
 
@@ -84,6 +94,12 @@ CLIPS = {
     'block': (SWORD, SWD + 'Block/A_Block_Loop_Sword.fbx'),
     'hit': (SWORD, SWD + 'Hit/HitReact/A_Hit_F_React_Sword.fbx'),
     'death': (SWORD, SWD + 'Death/A_Death_F_01_Sword.fbx'),
+    # Bogmaw's specialists (src/dungeonEnemies.ts goblin section): the archer's drawn
+    # bow and release, the shaman's pointed cast, the King's roar at the gong.
+    'aim': (BOW, 'SourceFiles/Animations/Polygon/Neutral/Standing/Aim/A_POLY_BOW_Stand_Aiming_Drawn_Neut.fbx'),
+    'shoot': (BOW, 'SourceFiles/Animations/Polygon/Neutral/Standing/Shoot/A_POLY_BOW_Stand_Shoot_ToAiming_Neut.fbx'),
+    'cast': (IDLES, 'SourceFiles/Animations/Polygon/Masculine/PointHand/Actions/A_POLY_IDL_PointHand_Index_F_Masc.fbx'),
+    'roar': (EMOTES, 'SourceFiles/Animations/Polygon/Masculine/Aggressive/A_POLY_EMOT_Aggressive_Roar_High_Masc.fbx'),
 }
 TPOSE = (LOCO, 'SourceFiles/Animations/Polygon/Neutral/Additive/TPose/A_TPose_Neut.fbx')
 # Authored lengths the game assumes (src/combatAnimations.ts), in frames at 30 fps; reported, not enforced.
@@ -181,12 +197,16 @@ def bone_world_head(arm, name):
     return arm.matrix_world @ arm.data.bones[name].head_local
 
 
-def export_clips():
-    """Bare skeleton + sampled tracks per clip, once. `tpose` is the retarget reference, not a game clip."""
+def export_clips(clips=None, label='clips'):
+    """Bare skeleton + sampled tracks per clip, once. `tpose` is the retarget reference, not a game clip.
+    Returns clip name -> glb path. A body's own `clips` are exported under the FBX's name so bodies share them."""
     os.makedirs(CLIP_DIR, exist_ok=True)
-    print('clips:')
-    for clip, (zip_name, member) in {**CLIPS, 'tpose': TPOSE}.items():
-        out = os.path.join(CLIP_DIR, f'{clip}.glb')
+    print(f'{label}:')
+    files = {}
+    for clip, (zip_name, member) in (clips if clips is not None else {**CLIPS, 'tpose': TPOSE}).items():
+        stem = clip if clips is None else os.path.splitext(os.path.basename(member))[0]
+        out = os.path.join(CLIP_DIR, f'{stem}.glb')
+        files[clip] = out
         if os.path.exists(out) and not RECLIP:
             continue
         reset_scene()
@@ -210,6 +230,7 @@ def export_clips():
             export_apply=False
         )
         print(f'  {clip:28s} {frames:3d} frames{flag}')
+    return files
 
 
 def make_material(pack_key, atlas_png, size=TEXTURE_SIZE):
@@ -259,29 +280,40 @@ def import_weapon_mesh(fbx):
     return obj
 
 
-def attach_weapon(arm, weapon, like, grip, mirror):
-    """Move the weapon mesh into Hand_R (world), set up exactly like the imported body mesh `like`
-    (same parent and parent-inverse), and skin it 100% to Hand_R so the exporter treats both alike."""
-    wrist = bone_world_head(arm, 'Hand_R')
+def attach_weapon(arm, weapon, like, grip, mirror, hand='Hand_R'):
+    """Move the weapon mesh into the hand (world), set up exactly like the imported body mesh `like`
+    (same parent and parent-inverse), and skin it 100% to that bone so the exporter treats both alike.
+    `hand` Hand_L mirrors the solved right-hand grip across the body (a bow)."""
+    wrist = bone_world_head(arm, hand)
     offset = Vector(GRIP_FROM_WRIST)
     rotation = BLADE_ROTATION
-    if mirror:
+    if mirror != (hand == 'Hand_L'):
         flip = Matrix.Rotation(math.pi, 4, 'Z')
         offset = flip.to_3x3() @ offset
         rotation = flip @ rotation
     shift = Matrix.Translation(Vector((0, 0, -grip))) if grip else Matrix.Identity(4)
     placement = Matrix.Translation(wrist + offset) @ rotation @ shift
-    weapon.parent = arm
-    weapon.matrix_parent_inverse = like.matrix_parent_inverse.copy()
-    weapon.matrix_basis = like.matrix_basis.copy()
+    skin_to_bone(arm, weapon, like, placement, hand)
+
+
+def skin_to_bone(arm, obj, like, placement, bone):
+    """Put `obj` (world-space vertices) at `placement` and skin it 100% to `bone`, set up like the body mesh."""
+    obj.parent = arm
+    obj.matrix_parent_inverse = like.matrix_parent_inverse.copy()
+    obj.matrix_basis = like.matrix_basis.copy()
     bpy.context.view_layer.update()
     # Vertices were world-space (transform applied on import); re-express them so this object's world equals the placement.
-    weapon.data.transform(weapon.matrix_world.inverted() @ placement)
-    weapon.data.update()
-    vg = weapon.vertex_groups.new(name='Hand_R')
-    vg.add(list(range(len(weapon.data.vertices))), 1.0, 'REPLACE')
-    mod = weapon.modifiers.new('Armature', 'ARMATURE')
+    obj.data.transform(obj.matrix_world.inverted() @ placement)
+    obj.data.update()
+    vg = obj.vertex_groups.new(name=bone)
+    vg.add(list(range(len(obj.data.vertices))), 1.0, 'REPLACE')
+    mod = obj.modifiers.new('Armature', 'ARMATURE')
     mod.object = arm
+
+
+def attach_extra(arm, mesh, like, bone):
+    """An unskinned attachment authored at the bone's pivot (Synty crowns, helmets, masks): ride the bone."""
+    skin_to_bone(arm, mesh, like, Matrix.Translation(bone_world_head(arm, bone)), bone)
 
 
 def rename_duplicate_bones(arm):
@@ -461,7 +493,7 @@ def load_rig(path, anim_index=None):
     return Rig(gltf, bin_, anim_index)
 
 
-def splice_all(body_glb, out_glb):
+def splice_all(body_glb, out_glb, clip_files):
     target, target_bin = sb.load_glb(body_glb)
     target.pop('animations', None)
     body = Rig(target, target_bin)
@@ -491,7 +523,7 @@ def splice_all(body_glb, out_glb):
 
     report = []
     for clip in CLIPS:
-        rig = load_rig(os.path.join(CLIP_DIR, f'{clip}.glb'), 0)
+        rig = load_rig(clip_files[clip], 0)
         duration = retarget_clip(clip, rig, tpose_world, body, body_rest, offsets, mapping, hips_ratio, target, target_bin)
         report.append((clip, duration))
     unmatched = sorted(n for n in joint_names(target) if body.names.get(n) not in mapping)
@@ -607,7 +639,7 @@ def render_preview(glb, path):
 
 # ------------------------------------------------------------------- main ---
 
-def build(body, packs, characters, weapons):
+def build(body, packs, characters, weapons, clip_files):
     pack = packs[body['pack']]
     weapon_spec = weapons[body['weapon']]
     weapon_pack = packs[weapon_spec['pack']]
@@ -664,16 +696,27 @@ def build(body, packs, characters, weapons):
         else make_material(weapon_spec['pack'], extract(weapon_pack['zip'], palette), TEXTURE_SIZE // 2)
     weapon.data.materials.clear()
     weapon.data.materials.append(weapon_mat)
-    attach_weapon(arm, weapon, meshes[0], weapon_spec.get('grip', 0), mirror)
+    attach_weapon(arm, weapon, meshes[0], weapon_spec.get('grip', 0), mirror, weapon_spec.get('hand', 'Hand_R'))
+    extras = []
+    for extra in body.get('attach', []):
+        mesh = import_weapon_mesh(extract(pack['zip'], extra['fbx']))
+        mesh.name = f"{body['id']}-{os.path.splitext(os.path.basename(extra['fbx']))[0]}"
+        mesh.data.materials.clear()
+        mesh.data.materials.append(body_mat)
+        attach_extra(arm, mesh, meshes[0], extra['bone'])
+        extras.append(mesh)
 
     lo, hi = scene_bounds(meshes)
-    tris = sum(len(p.vertices) - 2 for o in meshes + [weapon] for p in o.data.polygons)
+    tris = sum(len(p.vertices) - 2 for o in meshes + [weapon] + extras for p in o.data.polygons)
     os.makedirs(BODY_DIR, exist_ok=True)
     body_glb = os.path.join(BODY_DIR, f"{body['id']}.glb")
     export_body_glb(body_glb)
 
     spliced = os.path.join(BODY_DIR, f"{body['id']}-spliced.glb")
-    report, joints, unmatched, hips_ratio, check = splice_all(body_glb, spliced)
+    files = dict(clip_files)
+    if body.get('clips'):
+        files.update(export_clips({k: tuple(v) for k, v in body['clips'].items()}, f"  {body['id']} clips"))
+    report, joints, unmatched, hips_ratio, check = splice_all(body_glb, spliced, files)
     if RENDER:
         os.makedirs(PREVIEW, exist_ok=True)
         render_preview(spliced, os.path.join(PREVIEW, f"{body['id']}.png"))
@@ -691,18 +734,18 @@ def main():
     with open(WEAPONS) as f:
         weapons_manifest = json.load(f)
     packs = weapons_manifest['packs']
-    weapons = {w['id']: w for w in weapons_manifest['weapons']}
+    weapons = {w['id']: w for w in weapons_manifest['weapons'] + manifest.get('weapons', [])}
     catalog = {}
     if os.path.exists(CATALOG):
         with open(CATALOG) as f:
             catalog = json.load(f)
 
-    export_clips()
+    clip_files = export_clips()
     for body in manifest['bodies']:
         if ONLY and body['id'] not in ONLY:
             continue
         print(f"body {body['id']} ({body.get('fbx') or body.get('mesh')} + {body['weapon']})")
-        catalog[body['id']] = build(body, packs, manifest['characters'], weapons)
+        catalog[body['id']] = build(body, packs, manifest['characters'], weapons, clip_files)
 
     ordered = {b['id']: catalog[b['id']] for b in manifest['bodies'] if b['id'] in catalog}
     with open(CATALOG, 'w') as f:

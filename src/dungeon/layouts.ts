@@ -7,6 +7,7 @@ import { gauntletDungeon, STAGES } from './gauntlet'
 import { hubDungeon } from './hub'
 import { passDungeon, PASS_STAGES } from './pass'
 import { pitDungeon } from './pit'
+import { bogDungeon, BOG_STAGES } from './bogmaw'
 import { Stage } from './stages'
 
 /** The authored layout for a style, or undefined when the style is generated from a seed. */
@@ -15,6 +16,7 @@ export function authoredLayout(style: DungeonStyle): Dungeon | undefined {
   if (style.id === 'pit') return pitDungeon(style.torchEvery)
   if (style.id === 'gauntlet') return gauntletDungeon(style.torchEvery)
   if (style.id === 'pass') return passDungeon(style.torchEvery)
+  if (style.id === 'bog') return bogDungeon(style.torchEvery)
   return undefined
 }
 
@@ -22,5 +24,6 @@ export function authoredLayout(style: DungeonStyle): Dungeon | undefined {
 export function stagesFor(style: StyleId): readonly Stage[] | undefined {
   if (style === 'gauntlet') return STAGES
   if (style === 'pass') return PASS_STAGES
+  if (style === 'bog') return BOG_STAGES
   return undefined
 }

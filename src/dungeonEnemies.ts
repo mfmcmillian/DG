@@ -24,6 +24,9 @@ import {
 import { classOfCharacter, heroClassOf, shotProfile, skillShotProfile, weaponPoolFor } from './heroClasses'
 import { SkillDef, skillById } from './shared/skills'
 import { clearProjectiles, launchShot, ProjectileTarget, setProjectileTargets, SHOT_HEIGHT } from './projectiles'
+import { BOG_GONG } from './dungeon/bogmaw'
+import { BogTrapHost, buildBogTraps, clearBogTraps, createBogTrapHost, presentBogTrapFx, tickBogTraps, tickBogTrapsHost } from './bogTraps'
+import { buildBogFx, clearBogFx, syncTotemAura, tickBogFx } from './bogFx'
 import { createRivalBrain, resetRivalBrain, RivalBrain, updateRivalBrain } from './rivalBrain'
 import {
   BossAttack, BossBrain, bossPhaseLabel, createBossBrain, resetBossBrain, updateBossBrain
@@ -56,15 +59,15 @@ import {
 import { HUB, partyOf } from './partyLookup'
 import { heroBonusesFor, heroLevel } from './heroXp'
 import {
-  createDecal, Decal, destroyDecal, fxDeathPuff, fxGlitter, fxImpact, fxMagicBurst, fxNumber, fxSlam, fxSlash, fxSound, FxSound, fxWoodHit, updateDecal
+  createDecal, Decal, destroyDecal, fxDeathPuff, fxExplosion, fxGlitter, fxImpact, fxMagicBurst, fxNumber, fxSlam, fxSlash, fxSound, FxSound, fxWoodHit, updateDecal
 } from './combatFx'
 import { kickCrawlerCamera } from './dungeon/crawlerCamera'
 import { clearLoot, grantLootDirect, lootKindOf, spawnLoot } from './loot'
 import { rollArmorDrop, rollWeaponDrop, weaponStats } from './weapons'
 import { AttackContext } from './roamingCombat'
 import {
-  allFighters, EnemySnap, heroCharacters, HeroHit, heroPosition, heroWeapon, heroWeaponRank, ImpactNet, isHeadless, isHost, localAddress, NetFighter, publishEnemies,
-  publishHitEnemy, publishHitSkill, publishImpact, publishLoot, publishRespawn, publishShot, publishSkillCast, setMultiplayerHandlers
+  allFighters, EnemyFxNet, EnemySnap, heroCharacters, HeroHit, heroPosition, heroWeapon, heroWeaponRank, ImpactNet, isHeadless, isHost, localAddress, NetFighter, publishEnemies,
+  publishEnemyFx, publishHitEnemy, publishHitSkill, publishImpact, publishLoot, publishRespawn, publishShot, publishSkillCast, setMultiplayerHandlers
 } from './multiplayer'
 
 type WorldPhase = 'loading' | 'idle' | 'fighting' | 'victory' | 'defeat' | 'error'
@@ -120,7 +123,15 @@ type Enemy = CombatPose & {
   /** Gauntlet: which stage and wave the enemy belongs to (-1 elsewhere). */
   stage: number
   wave: number
+  /** Goblin specialists (Bogmaw): shots in the air the host still has to land, the cast clock, the bomber's fuse (-1 unlit) and whether it has gone off. */
+  shots: PendingShot[]
+  castTimer: number
+  fuse: number
+  exploded: boolean
 }
+
+/** A goblin's arrow or venom bolt in flight: where it was aimed and when it arrives. The hero dodges it by not being there. */
+type PendingShot = { at: number; target: string; from: Vector3; aim: Vector3; damage: number; stagger: number }
 
 /** A sealed doorway in the gauntlet (client only): the way on out of a stage, lifted once the stage is cleared. */
 type Gate = { stage: number; entity: Entity; open: boolean }
@@ -138,7 +149,7 @@ function archetypeLoadout(archetype: Archetype): EquipmentLoadout {
 export function enemyPreloadAssets(styleId: StyleId = 'open'): string[] {
   const roster = rosterFor(styleId)
   const archetypes = [roster.striker, roster.scout, roster.guard, roster.boss]
-  if (roster.posted) archetypes.push(roster.posted)
+  for (const extra of [roster.posted, roster.archer, roster.bomber, roster.shaman, roster.totem]) if (extra) archetypes.push(extra)
   const paths: string[] = []
   for (const archetype of archetypes) {
     paths.push(...equipmentModelPaths(archetype.characterId, archetypeLoadout(archetype), archetype.role === 'boss' ? BOSS_APPEARANCE : undefined))
@@ -196,6 +207,8 @@ type Sim = {
   lost: boolean
   /** Host-owned floor traps (forge). Visuals come from the layout. */
   traps: Array<{ x: number; z: number; radius: number; damage: number; cool: number }>
+  /** Host-owned Bogmaw traps (src/bogTraps.ts); the clients draw them from its messages. */
+  bogTraps?: BogTrapHost
   /** Host-owned skill zones (a slam's ring, burning ground, falling arrows) still delivering blows. */
   zones: Zone[]
   /** The staged fights' bookkeeping when the level is hand-drawn (src/dungeon/stages.ts): its stages, the wave clock, the sealed doors. */
@@ -282,6 +295,9 @@ export function initializeDungeonEnemies() {
       if (!isHeadless() && seconds > 0 && samePhase(id)) presentBuff(id, skill)
     },
     enemies: applyEnemySnapshots,
+    enemyFx: (fx) => {
+      if (clientSim && fx.party === clientSim.party) presentEnemyFx(fx)
+    },
     loot: grantLoot,
     join: () => {
       for (const s of sims.values()) {
@@ -400,6 +416,8 @@ function populate(dungeon: Readonly<DungeonState>) {
   clearLoot()
   clearProjectiles()
   clearZoneFx()
+  clearBogTraps()
+  clearBogFx()
   defeated = false
   respawnAsked = false
   state.respawnSeconds = 0
@@ -412,6 +430,10 @@ function populate(dungeon: Readonly<DungeonState>) {
   state.total = sim.enemies.length
   state.phase = sim.enemies.length ? 'loading' : 'idle'
   state.message = ''
+  if (run && dungeon.style.id === 'bog') {
+    buildBogTraps()
+    buildBogFx()
+  }
 }
 
 function createSim(
@@ -426,6 +448,7 @@ function createSim(
   }
   indexEdges(s)
   if (!withEnemies) return s
+  if (style.id === 'bog') s.bogTraps = createBogTrapHost()
   const previous = sim
   sim = s
   const healthScale = level.health * diff.health
@@ -487,6 +510,10 @@ function unitArchetype(unit: WaveUnit, roster: Roster, stage: Stage): Archetype 
     case 'warden': return wardenOf(roster, stage.name.replace(/^The /, ''))
     case 'guard': return roster.guard
     case 'scout': return roster.scout
+    case 'archer': return roster.archer ?? roster.scout
+    case 'bomber': return roster.bomber ?? roster.scout
+    case 'shaman': return roster.shaman ?? roster.striker
+    case 'totem': return roster.totem ?? roster.scout
     default: return roster.striker
   }
 }
@@ -502,7 +529,7 @@ function spawnGauntlet(s: Sim, stages: readonly Stage[], roster: Roster, healthS
   s.gauntlet = { stages, waveTimer: 0, gates: [] }
   stages.forEach((stage, si) => {
     stage.waves.forEach((wave, wi) => {
-      const units: WaveUnit[] = [...wave]
+      const units: WaveUnit[] = wave.filter((unit) => unit !== 'totem' || roster.totem)
       // Harder settings add to every wave of grunts, never to a warden or the Warlord alone.
       if (stage.kind === 'combat') for (let i = 0; i < extra; i++) units.push(i % 2 === 0 ? 'striker' : 'scout')
       const places = wavePlaces(stage, units.length)
@@ -539,10 +566,12 @@ function buildGate(s: Sim, stage: number, gate: [[number, number], [number, numb
   })
   MeshRenderer.setBox(entity)
   MeshCollider.setBox(entity, ColliderLayer.CL_PHYSICS | ColliderLayer.CL_POINTER)
-  // The fortress bars its doors with dark iron; the pass seals its arches with ice.
+  // The fortress bars its doors with dark iron; the pass seals its arches with ice; the goblins drop a spiked log gate.
   Material.setPbrMaterial(entity, s.style.id === 'pass'
     ? { albedoColor: Color4.create(0.62, 0.8, 0.95, 0.82), emissiveColor: Color3.create(0.25, 0.45, 0.7), emissiveIntensity: 0.9, metallic: 0.1, roughness: 0.15, transparencyMode: MaterialTransparencyMode.MTM_ALPHA_BLEND }
-    : { albedoColor: Color4.create(0.16, 0.14, 0.15, 1), emissiveColor: Color3.create(0.6, 0.08, 0.03), emissiveIntensity: 1.4, metallic: 0.7, roughness: 0.55 })
+    : s.style.id === 'bog'
+      ? { albedoColor: Color4.create(0.3, 0.22, 0.12, 1), emissiveColor: Color3.create(0.25, 0.6, 0.12), emissiveIntensity: 0.8, metallic: 0.05, roughness: 0.9 }
+      : { albedoColor: Color4.create(0.16, 0.14, 0.15, 1), emissiveColor: Color3.create(0.6, 0.08, 0.03), emissiveIntensity: 1.4, metallic: 0.7, roughness: 0.55 })
   return { stage, entity, open: false }
 }
 
@@ -593,6 +622,11 @@ function tickGauntlet(s: Sim, dt: number, fighters: NetFighter[]) {
     }
     return
   }
+  // Bogmaw's King calls his later waves himself, by the gong, as he is worn down.
+  if (s.style.id === 'bog' && g.stages[si].kind === 'boss') {
+    tickGong(s, si, mine, awake)
+    return
+  }
   if (awake.some((e) => !e.dead)) {
     g.waveTimer = 0
     return
@@ -635,7 +669,7 @@ function tickGates(s: Sim) {
   for (const gate of g.gates) {
     if (gate.open || !stageCleared(s, gate.stage)) continue
     openGate(gate)
-    showNotice(`${g.stages[gate.stage].name} cleared. ${s.style.id === 'pass' ? 'The ice breaks.' : 'The door opens.'}`, 2.5)
+    showNotice(`${g.stages[gate.stage].name} cleared. ${s.style.id === 'pass' ? 'The ice breaks.' : s.style.id === 'bog' ? 'The gate is hauled up.' : 'The door opens.'}`, 2.5)
   }
 }
 
@@ -706,7 +740,8 @@ function spawnEnemy(home: CombatPose, archetype: Archetype, boss: boolean): Enem
     engaged: false, returningHome: false, dead: false, deadSeconds: 0, loading: isHeadless() ? 'ready' : 'loading', loadSeconds: 0,
     ring: createDecal('ring'), ritual: boss ? createDecal('ritual') : undefined, hitStop: 0, announced: false, stillSeconds: 0,
     bossBrain: boss ? createBossBrain() : undefined, hyperArmor: false, rollSeconds: 0, rollDir: 1,
-    provoked: 0, strayed: false, asleep: false, stage: -1, wave: -1
+    provoked: 0, strayed: false, asleep: false, stage: -1, wave: -1,
+    shots: [], castTimer: 0, fuse: -1, exploded: false
   }
 }
 
@@ -748,8 +783,15 @@ function updateEnemies(deltaTime: number) {
 /** Advance the current sim by one tick against the heroes in its party. */
 function stepSim(dt: number, fighters: NetFighter[], local: ReturnType<typeof getPlayerCombatPose>) {
   if (!sim) return
+  lastDt = dt
   const enemies = sim.enemies
   sim.graceSeconds = Math.max(0, sim.graceSeconds - dt)
+  // The camp's machines and weather keep moving whether or not anyone is in the fight.
+  if (!isHeadless() && sim.bogTraps) {
+    tickBogTraps(dt)
+    tickBogFx(dt)
+    for (const e of enemies) if (e.archetype.kind === 'totem') syncTotemAura(e.root, e.loading === 'ready' && !e.dead && !e.asleep && e.visible)
+  }
 
   if (defeated) {
     // The host stands us back up (`revive`); the countdown is for the HUD, and
@@ -817,6 +859,17 @@ function stepSim(dt: number, fighters: NetFighter[], local: ReturnType<typeof ge
     }
   }
 
+  if (isHost() && sim.bogTraps && sim.graceSeconds === 0) {
+    const si = currentStage(sim)
+    tickBogTrapsHost(sim.bogTraps, {
+      dt, elapsed, fighters, stage: si, damageScale: sim.damageScale,
+      kingLive: si === (sim.gauntlet?.stages.length ?? 0) - 1 && enemies.some((e) => e.boss && !e.dead && !e.asleep),
+      strike: strikeFighter, block: blockFighter,
+      faces: (f, from) => facesCombatant(f, { position: from, facing: 0 }, 0.1),
+      emit: emitEnemyFx
+    })
+  }
+
   let anyLoading = false
   let anyError = false
   let engagedEnemy: Enemy | undefined
@@ -848,6 +901,12 @@ function stepSim(dt: number, fighters: NetFighter[], local: ReturnType<typeof ge
       continue
     }
     if (isHost()) {
+      landShots(e, fighters)
+      if (e.archetype.kind === 'totem') {
+        updateTotem(e, fighters)
+        updateBar(e)
+        continue
+      }
       const target = pickTarget(e, fighters)
       if (target) {
         if (e.boss) updateBoss(e, dt, target, fighters)
@@ -1145,6 +1204,16 @@ function updateEnemy(e: Enemy, dt: number, target: NetFighter, fighters: NetFigh
   }
   if (combatDistance(e, e.home) > STRAY_DISTANCE) e.strayed = true
 
+  const kind = e.archetype.kind
+  if (kind === 'archer' || kind === 'shaman') {
+    updateRangedGoblin(e, dt, target, fighters, stride)
+    return
+  }
+  if (kind === 'bomber') {
+    updateBomber(e, dt, target, fighters, stride)
+    return
+  }
+
   if (!e.swing && e.stagger <= 0) faceTarget(e, target)
   const decision = updateRivalBrain(e.brain, dt, combatDistance(e, target), canStartAttack(e), e.archetype.profile)
   e.blocking = decision.block
@@ -1196,6 +1265,329 @@ function updateEnemy(e: Enemy, dt: number, target: NetFighter, fighters: NetFigh
     playMotion(e, e.blocking ? 'block' : walking ? 'walk' : 'combat_idle')
   }
   syncTransform(e, dt)
+}
+
+// --- Bogmaw's goblins ----------------------------------------------------------------
+//
+// The specialists share the melee enemy's engagement, leash and walk-home rules
+// (updateEnemy hands off to them once engaged) and differ in what they do with
+// the target. All of it runs on the host; what the clients need to see that the
+// snapshot cannot carry (a shot in the air, a blast, a mending, the gong) goes
+// out as `enemyFx` and is presented by presentEnemyFx.
+
+/** How the archer and the shaman keep their distance and how often they act. */
+const ARCHER_BAND = { near: 5, far: 12, every: 2.6, action: 'shoot' as const, idle: 'aim' as const }
+const SHAMAN_BAND = { near: 4.5, far: 9, every: 3.4, action: 'cast' as const, idle: 'combat_idle' as const }
+const ARROW_SPEED = 24
+const VENOM_SPEED = 13
+const ARROW_DAMAGE = 13
+const VENOM_DAMAGE = 16
+/** A shot lands if the hero is still within this of where it was aimed when it arrives. */
+const SHOT_TOLERANCE = 1.05
+/** The bomber's fuse, its blast, and what the blast does to whoever stands in it. */
+const FUSE_SECONDS = 1.0
+const BOMB_RADIUS = 3.0
+const BOMB_DAMAGE = 30
+/** Goblins within reach of a standing totem take this fraction of a hero's blow; its shaman casts faster. */
+const TOTEM_WARD = 0.7
+const TOTEM_REACH = 10
+const TOTEM_HASTE = 1.7
+const SHAMAN_HEAL = 0.2
+const SHAMAN_HEAL_REACH = 9
+
+function currentFighters(): NetFighter[] {
+  if (!sim) return []
+  if (isHeadless()) return allFighters().filter((f) => partyOf(f.address) === sim!.party)
+  const local = getPlayerCombatPose()
+  return allFighters(local).filter((f) => f.local || partyOf(f.address) === sim!.party)
+}
+
+/** Host: tell the room what a goblin did. Solo hosts are their own room and present it at once. */
+function emitEnemyFx(fx: Omit<EnemyFxNet, 'party'>) {
+  if (!sim) return
+  const full = { ...fx, party: sim.party }
+  if (isHeadless()) publishEnemyFx(full)
+  else presentEnemyFx(full)
+}
+
+function enemyIndex(e: Enemy): number {
+  return sim ? sim.enemies.indexOf(e) : -1
+}
+
+/** A living, awake totem of this enemy's stage within reach, if any. */
+function nearestTotem(e: Enemy): Enemy | undefined {
+  if (!sim || sim.style.id !== 'bog') return undefined
+  let best: Enemy | undefined
+  let bestD = TOTEM_REACH
+  for (const t of sim.enemies) {
+    if (t.archetype.kind !== 'totem' || t.dead || t.asleep || t === e || (t.stage >= 0 && t.stage !== e.stage)) continue
+    const d = combatDistance(t, e)
+    if (d <= bestD) {
+      bestD = d
+      best = t
+    }
+  }
+  return best
+}
+
+/** The totem stands where it was put; it is "engaged" (bar shown, HUD named) while a hero is near. */
+function updateTotem(e: Enemy, fighters: NetFighter[]) {
+  e.stagger = Math.max(0, e.stagger - dtOf())
+  e.engaged = fighters.some((f) => f.health > 0 && combatDistance(e, f) <= 12)
+}
+
+let lastDt = 0
+function dtOf(): number {
+  return lastDt
+}
+
+/** Archer and shaman: hold the band, act on the clock, walk when out of it. */
+function updateRangedGoblin(e: Enemy, dt: number, target: NetFighter, fighters: NetFighter[], stride: number) {
+  const shaman = e.archetype.kind === 'shaman'
+  const band = shaman ? SHAMAN_BAND : ARCHER_BAND
+  const d = combatDistance(e, target)
+  const free = !e.swing && e.stagger <= 0
+  if (free) faceTarget(e, target)
+  let moving = false
+  if (free) {
+    if (d < band.near) {
+      retreatFrom(e, dt, target, stride)
+      moving = true
+    } else if (d > band.far) {
+      walkToward(e, dt, target, stride, band.far - 1)
+      moving = true
+    }
+  }
+  const hasted = shaman && nearestTotem(e) !== undefined
+  e.castTimer += dt * (hasted ? TOTEM_HASTE : 1)
+  if (!moving && e.castTimer >= band.every && canStartAttack(e) && d <= band.far + 2.5 && facesCombatant(e, target, 0.5)) {
+    e.castTimer = 0
+    e.swing = createSwing(band.action, elapsed)
+    e.blocking = false
+    playMotion(e, band.action, true)
+  }
+  // The archer's warning: a ring at the target's feet while the bow is drawn and the string not yet loosed.
+  if (e.swing && !e.swing.contacted && e.archetype.kind === 'archer') {
+    updateDecal(e.ring, true, target.position, 0.7, Math.min(1, e.swing.elapsed / e.swing.contact), Color3.create(1, 0.75, 0.2))
+  } else hideDecals(e)
+  separate(e, target)
+  advanceSwing(e, dt, target, fighters)
+  if (e.health > 0 && !e.swing && e.stagger <= 0) playMotion(e, moving ? 'walk' : band.idle)
+  syncTransform(e, dt)
+}
+
+/** Back away from the target along the line between them (the pathing slides along walls). */
+function retreatFrom(e: Enemy, dt: number, target: CombatPose, stride: number) {
+  const dx = e.position.x - target.position.x
+  const dz = e.position.z - target.position.z
+  const len = Math.max(0.001, Math.sqrt(dx * dx + dz * dz))
+  const away: CombatPose = { position: Vector3.create(e.position.x + (dx / len) * 3, e.position.y, e.position.z + (dz / len) * 3), facing: e.facing }
+  const before = { ...e.position }
+  walkToward(e, dt, away, stride * 0.9, 0.2)
+  // Backed into a wall: hold ground and shoot from here instead of jittering.
+  if (Vector3.distance(before, e.position) < stride * 0.2) e.castTimer += dt
+  faceTarget(e, target)
+}
+
+/** The bomber: run at the target, light the fuse at arm's length, go off a breath later. */
+function updateBomber(e: Enemy, dt: number, target: NetFighter, fighters: NetFighter[], stride: number) {
+  const d = combatDistance(e, target)
+  if (e.stagger > 0) {
+    if (e.fuse >= 0) tickFuse(e, dt, fighters)
+    syncTransform(e, dt)
+    return
+  }
+  faceTarget(e, target)
+  if (e.fuse < 0) {
+    walkToward(e, dt, target, stride, 1.1)
+    if (d <= 2.6) {
+      e.fuse = 0
+      playMotion(e, 'menace_enter', true)
+      emitEnemyFx({ kind: 'fuse', i: enemyIndex(e), j: -1, x: e.position.x, y: e.position.y + 1.2, z: e.position.z, tx: 0, ty: 0, tz: 0, r: 0 })
+    } else if (e.health > 0) playMotion(e, 'run')
+  } else {
+    if (d > 1.5) walkToward(e, dt, target, stride * 0.6, 1.1)
+    tickFuse(e, dt, fighters)
+  }
+  separate(e, target)
+  syncTransform(e, dt)
+}
+
+function tickFuse(e: Enemy, dt: number, fighters: NetFighter[]) {
+  e.fuse += dt
+  updateDecal(e.ring, true, e.position, BOMB_RADIUS, Math.min(1, e.fuse / FUSE_SECONDS), Color3.create(1, 0.5, 0.1))
+  if (e.fuse >= FUSE_SECONDS) detonate(e, BOMB_RADIUS, fighters)
+}
+
+/** The bomb goes off: heroes and goblins alike within the radius are hurt; the bomber is spent. */
+function detonate(e: Enemy, radius: number, fighters: NetFighter[]) {
+  if (e.exploded || !sim) return
+  e.exploded = true
+  hideDecals(e)
+  const damage = Math.round(BOMB_DAMAGE * e.archetype.damageScale * sim.damageScale)
+  for (const fighter of fighters) {
+    if (fighter.health <= 0) continue
+    const d = combatDistance(e, fighter)
+    if (d > radius || Math.abs(fighter.position.y - e.position.y) > COMBAT_RULES.maximumVerticalReach) continue
+    const towards = Math.atan2(fighter.position.x - e.position.x, fighter.position.z - e.position.z)
+    strikeFighter(fighter, Math.round(damage * (1 - 0.4 * (d / radius))), 0.9, towards)
+  }
+  for (const other of sim.enemies) {
+    if (other === e || other.dead || other.asleep || other.boss) continue
+    if (combatDistance(e, other) > radius) continue
+    hurtEnemy(other, Math.round(damage * 1.2))
+  }
+  emitEnemyFx({ kind: 'blast', i: enemyIndex(e), j: -1, x: e.position.x, y: e.position.y, z: e.position.z, tx: 0, ty: 0, tz: 0, r: radius })
+  if (!e.dead) {
+    e.health = 0
+    kill(e)
+  }
+}
+
+/** Host: a blow on an enemy from something other than a hero (a goblin's bomb). */
+function hurtEnemy(e: Enemy, damage: number) {
+  e.health = Math.max(0, e.health - damage)
+  if (e.health === 0) {
+    e.swing = undefined
+    e.slamming = false
+    hideDecals(e)
+    kill(e)
+    return
+  }
+  if (e.archetype.kind === 'totem' || e.boss) return
+  e.swing = undefined
+  e.slamming = false
+  e.blocking = false
+  hideDecals(e)
+  resetRivalBrain(e.brain, 0.1, false)
+  e.stagger = 0.6
+  playMotion(e, 'hit', true)
+}
+
+/** The string is loosed (or the venom spat): the shot is in the air; it lands where the hero was aimed at. */
+function looseShot(e: Enemy, target: NetFighter, venom: boolean) {
+  if (!sim) return
+  const from = Vector3.create(e.position.x, e.position.y + SHOT_HEIGHT * e.archetype.scale, e.position.z)
+  const aim = Vector3.create(target.position.x, target.position.y + 1.1, target.position.z)
+  const flight = Vector3.distance(from, aim) / (venom ? VENOM_SPEED : ARROW_SPEED)
+  const damage = Math.round((venom ? VENOM_DAMAGE : ARROW_DAMAGE) * e.archetype.damageScale * sim.damageScale)
+  e.shots.push({ at: elapsed + flight, target: target.address, from, aim, damage, stagger: venom ? 0.45 : 0.3 })
+  emitEnemyFx({ kind: venom ? 'venom' : 'arrow', i: enemyIndex(e), j: -1, x: from.x, y: from.y, z: from.z, tx: aim.x, ty: aim.y, tz: aim.z, r: 0 })
+}
+
+/** Host: shots that have arrived land on the hero if they are still where they were aimed, or are turned by a raised guard. */
+function landShots(e: Enemy, fighters: NetFighter[]) {
+  if (e.shots.length === 0) return
+  const due = e.shots.filter((shot) => shot.at <= elapsed)
+  if (due.length === 0) return
+  e.shots = e.shots.filter((shot) => shot.at > elapsed)
+  for (const shot of due) {
+    const fighter = fighters.find((f) => f.address === shot.target)
+    if (!fighter || fighter.health <= 0) continue
+    const dx = fighter.position.x - shot.aim.x
+    const dz = fighter.position.z - shot.aim.z
+    if (Math.sqrt(dx * dx + dz * dz) > SHOT_TOLERANCE || Math.abs(fighter.position.y + 1.1 - shot.aim.y) > 1.5) continue
+    const yaw = Math.atan2(fighter.position.x - shot.from.x, fighter.position.z - shot.from.z)
+    if (fighter.blocking && facesCombatant(fighter, { position: shot.from, facing: 0 }, 0.1)) {
+      blockFighter(fighter, yaw)
+      continue
+    }
+    strikeFighter(fighter, shot.damage, shot.stagger, yaw)
+  }
+}
+
+/** The shaman's cast: mend the wounded goblins around it, or, with none to mend, spit venom at the target. */
+function castSpell(e: Enemy, target: NetFighter) {
+  if (!sim) return
+  const hasted = nearestTotem(e) !== undefined
+  const wounded = sim.enemies.filter((other) => other !== e && !other.dead && !other.asleep && other.archetype.kind !== 'totem' &&
+    other.health < other.maxHealth * 0.9 && combatDistance(e, other) <= SHAMAN_HEAL_REACH)
+  if (wounded.length === 0) {
+    looseShot(e, target, true)
+    return
+  }
+  const i = enemyIndex(e)
+  for (const other of wounded) {
+    other.health = Math.min(other.maxHealth, other.health + Math.round(other.maxHealth * SHAMAN_HEAL * (hasted ? 1.25 : 1)))
+    emitEnemyFx({ kind: 'heal', i, j: enemyIndex(other), x: e.position.x, y: e.position.y + 1.3, z: e.position.z,
+      tx: other.position.x, ty: other.position.y + 1, tz: other.position.z, r: 0 })
+  }
+}
+
+/** Host: the Goblin King's later waves answer his gong, struck as his health falls past each wave's share. */
+function tickGong(s: Sim, si: number, mine: Enemy[], awake: Enemy[]) {
+  const g = s.gauntlet
+  if (!g) return
+  const king = mine.find((e) => e.boss)
+  if (!king || king.dead || king.asleep) return
+  const waves = g.stages[si].waves.length
+  const nextWave = Math.max(...awake.map((e) => e.wave)) + 1
+  if (nextWave >= waves) return
+  if (king.health / king.maxHealth > 1 - nextWave / waves) return
+  wakeWave(s, si, nextWave)
+  if (king.health > 0 && !king.swing) {
+    king.swing = createSwing('roar', elapsed)
+    king.slamming = false
+    king.blocking = false
+    king.rollSeconds = 0
+    playMotion(king, 'roar', true)
+  }
+  showNotice('The Goblin King sounds the gong!', 2.5)
+  emitEnemyFx({ kind: 'gong', i: enemyIndex(king), j: -1, x: BOG_GONG.x, y: COURTYARD.characterFloorY + 1.6, z: BOG_GONG.z, tx: 0, ty: 0, tz: 0, r: 0 })
+}
+
+/** Client (and solo host): show what a goblin did. */
+function presentEnemyFx(fx: EnemyFxNet) {
+  if (isHeadless()) return
+  const at = Vector3.create(fx.x, fx.y, fx.z)
+  switch (fx.kind) {
+    case 'arrow':
+    case 'venom': {
+      const to = Vector3.create(fx.tx, fx.ty, fx.tz)
+      const dx = to.x - at.x
+      const dy = to.y - at.y
+      const dz = to.z - at.z
+      const flat = Math.sqrt(dx * dx + dz * dz)
+      const venom = fx.kind === 'venom'
+      launchShot({
+        origin: at, yaw: Math.atan2(dx, dz), pitch: Math.atan2(dy, flat), motion: 'bow_shoot', finisher: false, hostile: true,
+        profile: { kind: venom ? 'venom' : 'arrow', speed: venom ? VENOM_SPEED : ARROW_SPEED, range: Math.sqrt(flat * flat + dy * dy), radius: 0.3, count: 1, spread: 0 }
+      })
+      return
+    }
+    case 'blast': {
+      const floor = Vector3.create(fx.x, COURTYARD.characterFloorY, fx.z)
+      fxSlam(floor, fx.r)
+      fxExplosion(floor, fx.r)
+      fxSound('explosion', 0.9)
+      const local = getPlayerCombatPose()
+      if (local) {
+        const d = Vector3.distance(local.position, floor)
+        if (d < 10) kickCrawlerCamera(Vector3.create(0, -Math.max(0.15, 0.5 - d * 0.04), 0.2))
+      }
+      return
+    }
+    case 'fuse':
+      fxMagicBurst(at, Color4.create(1, 0.6, 0.2, 1), 0.35)
+      fxSound('fire_flare', 0.45)
+      return
+    case 'heal': {
+      const to = Vector3.create(fx.tx, fx.ty, fx.tz)
+      fxMagicBurst(at, Color4.create(0.45, 1, 0.3, 1), 0.4)
+      fxMagicBurst(to, Color4.create(0.45, 1, 0.3, 1), 0.6)
+      fxGlitter(to, Color4.create(0.6, 1, 0.4, 1))
+      fxSound('heal', 0.45)
+      return
+    }
+    case 'gong':
+      fxMagicBurst(at, Color4.create(1, 0.85, 0.3, 1), 1.4)
+      fxSound('gong', 1)
+      if (noticeSeconds === 0) showNotice('The Goblin King sounds the gong!', 2.5)
+      return
+    default:
+      presentBogTrapFx(fx)
+      return
+  }
 }
 
 // --- training targets ----------------------------------------------------------
@@ -1590,7 +1982,8 @@ function applyPlayerHit(
   const hit = resolveCombatHit(motion, guarded, context.finisher, context.weapon)
   const armored = e.hyperArmor && !context.finisher && !heavy
   const dealt = withMight(hit.damage, context.might)
-  const damage = armored ? Math.max(1, Math.round(dealt * 0.55)) : dealt
+  const warded = e.archetype.kind !== 'totem' && nearestTotem(e) !== undefined
+  const damage = armored ? Math.max(1, Math.round(dealt * 0.55)) : warded ? Math.max(1, Math.round(dealt * TOTEM_WARD)) : dealt
   e.health = Math.max(0, e.health - damage)
   const freeze = heavy || context.finisher ? 0.09 : 0.06
   e.hitStop = freeze
@@ -1612,6 +2005,8 @@ function applyPlayerHit(
     kill(e)
     return
   }
+  // A totem neither reels nor gives ground; it only splinters a little.
+  if (e.archetype.kind === 'totem') return
   e.stagger = hit.stagger
   playMotion(e, 'hit', true)
   move(e, Math.sin(attacker.facing) * hit.knockback, Math.cos(attacker.facing) * hit.knockback)
@@ -2190,6 +2585,8 @@ function asHeroAttack(motion: string): HeroAttackMotion | undefined {
 }
 
 function kill(e: Enemy) {
+  // A bomber that dies with its bomb still in hand drops it: a smaller blast, everyone near included.
+  if (e.archetype.kind === 'bomber' && !e.exploded && isHost()) detonate(e, BOMB_RADIUS * 0.75, currentFighters())
   presentDeath(e)
   if (!isHost() || !sim) return
   sim.slain++
@@ -2214,7 +2611,9 @@ function kill(e: Enemy) {
   // boss always leaves one; the rest only when they left no weapon.
   if (e.boss || !item) {
     const source = e.boss ? 'boss' : e.archetype.role === 'elite' ? 'elite' : 'grunt'
-    const armor = rollArmorDrop(source, sim.level.realm as ArmorRealm, partyCharacters(sim.party))
+    // Bogmaw has no armor set of its own: the goblins wear what they stole from the Forge, so its drops are the Forge's.
+    const armorRealm: ArmorRealm = sim.level.realm === 'bog' ? 'forge' : (sim.level.realm as ArmorRealm)
+    const armor = rollArmorDrop(source, armorRealm, partyCharacters(sim.party))
     if (armor) publishLoot(sim.party, e.position.x + 0.4, e.position.z - 0.4, 0, 0, armor, e.boss)
   }
 }
@@ -2250,6 +2649,15 @@ function presentDeath(e: Enemy) {
   e.engaged = false
   e.targetId = undefined
   stopGlide(e)
+  if (e.archetype.kind === 'totem') {
+    // No death clip to play: the idol sinks into the mud and the goblins lose its ward.
+    fxSound('thunk_wood', 0.9)
+    fxDeathPuff(e.position)
+    fxMagicBurst(Vector3.create(e.position.x, e.position.y + 1.2, e.position.z), Color4.create(0.4, 1, 0.3, 1), 1.1)
+    Tween.setMove(e.root, { ...e.position }, Vector3.create(e.position.x, e.position.y - 2.6, e.position.z), CORPSE_SECONDS * 900, EasingFunction.EF_EASEINQUAD)
+    showNotice(`${e.archetype.name} smashed`)
+    return
+  }
   playMotion(e, 'death', true)
   fxSound('death', 0.8)
   fxDeathPuff(e.position)
@@ -2266,6 +2674,15 @@ function advanceSwing(e: Enemy, dt: number, target: NetFighter, fighters: NetFig
       slam(e, fighters)
       return
     }
+    if (swing.motion === 'shoot') {
+      looseShot(e, target, false)
+      return
+    }
+    if (swing.motion === 'cast') {
+      castSpell(e, target)
+      return
+    }
+    if (swing.motion === 'roar') return
     if (!attackCanReach(e, target, swing.motion)) return
     const guarded = target.blocking && facesCombatant(target, e, 0.1)
     // Enemies get their weapon's class, not its rarity bonus: the archetype's damageScale is their tuning.
@@ -2406,7 +2823,8 @@ function applyEnemySnapshots(party: string, list: EnemySnap[]) {
         snap.m === 'attack_heavy' || snap.m === 'flourish_heavy' || snap.m === 'stab' ||
         snap.m === 'heavy_combo_a' || snap.m === 'heavy_combo_b' || snap.m === 'heavy_combo_c' ||
         snap.m === 'leap' || snap.m === 'fencing' || snap.m === 'flourish' || snap.m === 'menace_enter' ||
-        snap.m === 'roll' || snap.m === 'stun' || snap.m === 'hit'
+        snap.m === 'roll' || snap.m === 'stun' || snap.m === 'hit' ||
+        snap.m === 'shoot' || snap.m === 'cast' || snap.m === 'roar'
       )
       playMotion(e, snap.m, reset)
       const attack = asAttack(snap.m)

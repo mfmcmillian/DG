@@ -25,10 +25,13 @@ export type FxSound =
   | 'thunk_wood' | 'thud_straw'
   /** The upgrade pit: the fire leaping, and the reveal (scripts/build-pit-sounds.py). */
   | 'fire_flare' | 'reveal'
+  /** Bogmaw: the King's gong, a bomb, the storm, a goblin bow (scripts/build-bog-sounds.py). */
+  | 'gong' | 'explosion' | 'thunder' | 'bow'
 
 const FX_SOUNDS: FxSound[] = [
   'swing_light', 'swing_heavy', 'hit_light', 'hit_heavy', 'block', 'hurt',
-  'dodge', 'coin', 'heal', 'slam', 'roar', 'death', 'thunk_wood', 'thud_straw', 'fire_flare', 'reveal'
+  'dodge', 'coin', 'heal', 'slam', 'roar', 'death', 'thunk_wood', 'thud_straw', 'fire_flare', 'reveal',
+  'gong', 'explosion', 'thunder', 'bow'
 ]
 
 /** Every clip `fxSound` can play, for the title-screen preloader. */
@@ -41,7 +44,7 @@ export function fxTextureAssets(): string[] {
   return Object.values(TEX)
 }
 
-type BurstKind = 'sparks' | 'flash' | 'puff' | 'dust' | 'glitter'
+type BurstKind = 'sparks' | 'flash' | 'puff' | 'dust' | 'glitter' | 'smoke'
 type Emitter = { entity: Entity; until: number }
 type Slash = {
   entity: Entity
@@ -58,7 +61,7 @@ type Slash = {
 type Number3d = { entity: Entity; life: number; duration: number; rise: number; color: Color4; base: Vector3 }
 
 const HIDDEN = Vector3.create(0, -40, 0)
-const emitters: Record<BurstKind, Emitter[]> = { sparks: [], flash: [], puff: [], dust: [], glitter: [] }
+const emitters: Record<BurstKind, Emitter[]> = { sparks: [], flash: [], puff: [], dust: [], glitter: [], smoke: [] }
 const numbers: Number3d[] = []
 const slashes: Slash[] = []
 const speakers: Entity[] = []
@@ -105,6 +108,7 @@ function warmFx() {
   fxGlitter(HIDDEN, Color4.create(1, 0.9, 0.5, 1))
   fxDeathPuff(HIDDEN)
   fxSlam(HIDDEN, 1)
+  fxExplosion(HIDDEN, 3)
   const anchor = engine.addEntity()
   Transform.create(anchor, { position: Vector3.clone(HIDDEN) })
   fxSlash(anchor, 'attack_light')
@@ -390,6 +394,60 @@ export function fxSlam(position: Vector3, radius: number) {
     shape: ParticleSystem.Shape.Cone({ angle: 45, radius: 0.5 }),
     bursts: { values: [{ time: 0, count: 30 }] }
   }, 0.8)
+}
+
+/**
+ * A bomb going off: the fireball, a column of black smoke that hangs, and
+ * burning scraps thrown out to `radius`. fxSlam adds the dust ring at the floor.
+ */
+export function fxExplosion(position: Vector3, radius: number) {
+  const up = Vector3.add(position, Vector3.create(0, 0.6, 0))
+  burst('flash', up, {
+    texture: { src: TEX.soft },
+    blendMode: BLEND_ADD,
+    lifetime: 0.32,
+    maxParticles: 3,
+    gravity: 0,
+    initialSize: { start: radius * 1.4, end: radius * 1.4 },
+    sizeOverTime: { start: 0.5, end: 1.6 },
+    initialColor: { start: Color4.create(1, 0.75, 0.3, 1), end: Color4.create(1, 0.5, 0.15, 1) },
+    colorOverTime: { start: Color4.create(1, 1, 1, 1), end: Color4.create(1, 0.3, 0.05, 0) },
+    initialVelocitySpeed: { start: 0, end: 0 },
+    shape: ParticleSystem.Shape.Point(),
+    bursts: { values: [{ time: 0, count: 2 }] }
+  }, 0.4)
+  burst('smoke', up, {
+    texture: { src: TEX.smoke },
+    blendMode: BLEND_ALPHA,
+    lifetime: 2.6,
+    maxParticles: 30,
+    gravity: 0,
+    additionalForce: Vector3.create(0, 1.1, 0),
+    initialSize: { start: radius * 0.5, end: radius * 0.9 },
+    sizeOverTime: { start: 0.6, end: 2.2 },
+    initialColor: { start: Color4.create(0.12, 0.1, 0.09, 0.9), end: Color4.create(0.3, 0.26, 0.22, 0.9) },
+    colorOverTime: { start: Color4.create(1, 1, 1, 0.9), end: Color4.create(1, 1, 1, 0) },
+    initialVelocitySpeed: { start: 1.5, end: 3.5 },
+    limitVelocity: { speed: 1.5, dampen: 0.3 },
+    rotationOverTime: Quaternion.fromEulerDegrees(0, 0, 40),
+    shape: ParticleSystem.Shape.Cone({ angle: 30, radius: 0.4 }),
+    bursts: { values: [{ time: 0, count: 22 }] }
+  }, 2.8)
+  burst('sparks', up, {
+    texture: { src: TEX.sparkle },
+    blendMode: BLEND_ADD,
+    lifetime: 0.9,
+    maxParticles: 40,
+    gravity: 0,
+    additionalForce: Vector3.create(0, -9, 0),
+    initialSize: { start: 0.18, end: 0.4 },
+    sizeOverTime: { start: 1, end: 0 },
+    initialColor: { start: Color4.create(1, 0.7, 0.25, 1), end: Color4.create(1, 0.9, 0.5, 1) },
+    colorOverTime: { start: Color4.create(1, 1, 1, 1), end: Color4.create(1, 0.2, 0, 0) },
+    initialVelocitySpeed: { start: radius * 2, end: radius * 4 },
+    shape: ParticleSystem.Shape.Cone({ angle: 60, radius: 0.3 }),
+    bursts: { values: [{ time: 0, count: 36 }] }
+  }, 1)
 }
 
 /**

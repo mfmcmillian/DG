@@ -15,7 +15,8 @@ import type { SkillDef } from './shared/skills'
 
 export type HeroClass = 'blade' | 'heavy' | 'bow' | 'magic'
 
-export type ProjectileKind = 'arrow' | 'bolt' | 'orb'
+/** `venom` is the goblin shaman's green bolt: an enemy's shot, never a hero's. */
+export type ProjectileKind = 'arrow' | 'bolt' | 'orb' | 'venom'
 
 /** How a ranged motion's projectile flies. Damage comes from `resolveCombatHit`, like a swing. */
 export type ShotProfile = {

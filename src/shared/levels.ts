@@ -13,7 +13,7 @@
 
 import { StyleId } from '../dungeon/config'
 
-export type RealmId = 'fortress' | 'pass' | 'castle' | 'forge'
+export type RealmId = 'fortress' | 'pass' | 'castle' | 'forge' | 'bog'
 
 export type RealmDefinition = {
   id: RealmId
@@ -39,6 +39,10 @@ export const REALMS: RealmDefinition[] = [
   {
     id: 'forge', name: 'The Dwarven Forge', style: 'forge',
     blurb: 'Lava ducts and saw traps. The Forge Lord still works the anvil.'
+  },
+  {
+    id: 'bog', name: 'Bogmaw', style: 'bog',
+    blurb: 'A goblin war camp in the swamp. Palisades, ballistas, bombs and the gong of the Goblin King.'
   }
 ]
 
@@ -68,6 +72,11 @@ export const LEVELS: LevelDefinition[] = [
     id: 1, realm: 'pass', name: 'The Frozen Pass', seed: 2026, style: 'pass',
     blurb: 'Up the gorge: a frozen lake, two huskarls, the Jarl in his camp. Twelve minutes.',
     health: 1.35, damage: 1.25, coins: 2, seconds: 720
+  },
+  {
+    id: 2, realm: 'bog', name: 'Bogmaw', seed: 4041, style: 'bog',
+    blurb: 'Through the marsh: the palisade and its ballistas, the bone yard, the shaman totems, the Goblin King. Fourteen minutes.',
+    health: 1.7, damage: 1.5, coins: 2.6, seconds: 840
   }
 ]
 

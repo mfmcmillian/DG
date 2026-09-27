@@ -34,6 +34,8 @@ export type Shot = {
   finisher: boolean
   /** The enemy the shot reached, with the impact point. Absent for visual-only shots. */
   onHit?: (target: ProjectileTarget, at: Vector3) => void
+  /** A goblin's shot: flies past the enemies (its own side) and ends at `range`; the host lands the hurt itself. */
+  hostile?: boolean
 }
 
 type Projectile = {
@@ -52,6 +54,7 @@ type Projectile = {
   motion: HeroAttackMotion
   finisher: boolean
   onHit?: Shot['onHit']
+  hostile: boolean
   live: boolean
 }
 
@@ -62,6 +65,11 @@ let systemAdded = false
 
 const BOLT_COLOR = Color4.create(0.45, 0.7, 1, 1)
 const ORB_COLOR = Color4.create(0.75, 0.4, 1, 1)
+const VENOM_COLOR = Color4.create(0.45, 1, 0.3, 1)
+
+function colorOf(kind: ProjectileKind): Color4 {
+  return kind === 'orb' ? ORB_COLOR : kind === 'venom' ? VENOM_COLOR : BOLT_COLOR
+}
 const GLOW_TEXTURE = 'images/fx/soft_spot.png'
 
 /** dungeonEnemies hands over the enemies shots can reach. */
@@ -105,12 +113,14 @@ export function launchShot(shot: Shot) {
     p.motion = shot.motion
     p.finisher = shot.finisher
     p.onHit = shot.onHit
+    p.hostile = !!shot.hostile
     p.live = true
     place(p)
     VisibilityComponent.createOrReplace(p.entity, { visible: true })
     if (p.glow !== undefined) VisibilityComponent.createOrReplace(p.glow, { visible: true })
   }
-  fxSound(profile.kind === 'arrow' ? 'swing_light' : 'swing_heavy', profile.kind === 'orb' ? 0.6 : 0.45)
+  if (shot.hostile) fxSound(profile.kind === 'arrow' ? 'bow' : 'swing_heavy', 0.5)
+  else fxSound(profile.kind === 'arrow' ? 'swing_light' : 'swing_heavy', profile.kind === 'orb' ? 0.6 : 0.45)
 }
 
 /** Everything in flight disappears (dungeon reset, hero withdrawn). */
@@ -150,10 +160,10 @@ function create(kind: ProjectileKind): Projectile {
     GltfContainer.create(entity, { src: ARROW_MODEL, visibleMeshesCollisionMask: 0, invisibleMeshesCollisionMask: 0 })
   } else {
     const orb = kind === 'orb'
-    const size = orb ? 0.55 : 0.28
+    const size = orb ? 0.55 : kind === 'venom' ? 0.34 : 0.28
     Transform.getMutable(entity).scale = Vector3.create(size, size, size)
     MeshRenderer.setSphere(entity)
-    const color = orb ? ORB_COLOR : BOLT_COLOR
+    const color = colorOf(kind)
     Material.setPbrMaterial(entity, {
       albedoColor: Color4.create(color.r, color.g, color.b, 0.85),
       emissiveColor: Color3.create(color.r, color.g, color.b),
@@ -181,7 +191,7 @@ function create(kind: ProjectileKind): Projectile {
   if (glow !== undefined) VisibilityComponent.create(glow, { visible: false })
   return {
     entity, glow, kind, position: Vector3.Zero(), velocity: Vector3.Zero(), travelled: 0, range: 0, radius: 0,
-    pierce: false, pierced: new Set<number>(), motion: 'attack_light', finisher: false, live: false
+    pierce: false, pierced: new Set<number>(), motion: 'attack_light', finisher: false, hostile: false, live: false
   }
 }
 
@@ -217,7 +227,7 @@ function updateProjectiles(dt: number) {
     for (let s = 1; s <= samples && !stopped; s++) {
       const at = Vector3.add(p.position, Vector3.scale(stride, s / samples))
       if (!targets) targets = targetsFn()
-      const hit = firstHit(at, p.radius, targets, p.pierce ? p.pierced : undefined)
+      const hit = p.hostile ? undefined : firstHit(at, p.radius, targets, p.pierce ? p.pierced : undefined)
       if (hit) {
         land(p, at, hit, targets)
         // A piercing shot notes the body and flies on; the rest stop here.
@@ -245,7 +255,8 @@ function updateProjectiles(dt: number) {
     if (p.kind === 'orb') p.velocity = Vector3.add(p.velocity, Vector3.create(0, -1.2 * step, 0))
     place(p)
     if (p.travelled >= p.range) {
-      if (p.kind !== 'arrow') strike(p, p.position)
+      // A goblin's shot ends where it was aimed: the host has already said whether it hurt.
+      if (p.kind !== 'arrow' || p.hostile) strike(p, p.position)
       retire(p)
     }
   }
@@ -281,7 +292,7 @@ function land(p: Projectile, at: Vector3, hit: ProjectileTarget, targets: Projec
       fxSound('slam', 0.6)
     }
   } else {
-    fxMagicBurst(at, p.kind === 'orb' ? ORB_COLOR : BOLT_COLOR, p.burst ?? 0.4)
+    fxMagicBurst(at, colorOf(p.kind), p.burst ?? 0.4)
     if (p.kind === 'orb') fxSound('slam', 0.5)
   }
   if (!p.onHit) return
@@ -302,7 +313,7 @@ function strike(p: Projectile, at: Vector3) {
     fxImpact(at, false, true)
     return
   }
-  fxMagicBurst(at, p.kind === 'orb' ? ORB_COLOR : BOLT_COLOR, p.kind === 'orb' ? (p.burst ?? 1) : 0.35)
+  fxMagicBurst(at, colorOf(p.kind), p.kind === 'orb' ? (p.burst ?? 1) : 0.35)
   if (p.kind === 'orb') fxSound('slam', 0.4)
   // A nova that reaches its range still goes off on whoever stands there.
   if (p.kind === 'orb' && p.onHit && p.burst) {

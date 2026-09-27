@@ -32,6 +32,8 @@ Manifest module fields:
   shift     [x, y, z] metres the recentred piece is moved before export, so a
             deep piece can keep its face on the wall line and its bulk behind
   lod       keep only the FBX objects whose name contains this (e.g. "LOD1")
+  exclude   drop the FBX objects whose name matches this regex (gate doors,
+            blob shadows, banners on a texture the kit does not carry)
   bake      { size, tile }: the slot is one of Synty's triplanar shaders (snow
             on top, rock on the sides; no usable UVs). Rebuilt box-mapped in
             object space from `textures.bakeTop` / `textures.bakeSide`, one
@@ -45,7 +47,8 @@ Manifest texture fields: atlas, emissive, tiling (all pack members), and
 either `floor` (a pack member copied as the tiling floor texture) or
 `floorBake`: { fbx, size } to render a floor slab module top-down into
 floor.png (packs like Dungeon Realms have no tiling floor texture, only
-atlas-mapped floor meshes). `ceiling` is optional.
+atlas-mapped floor meshes). `ceiling` is optional; `extra` { name: member } carries
+more textures along (a backdrop ground, water) under models/kits/<realm>/<name>.png.
 """
 import bpy, os, sys, json, re, shutil, zipfile, mathutils
 
@@ -260,8 +263,9 @@ def import_parts(module):
         bpy.ops.import_scene.fbx(filepath=fbx_path(part['fbx']))
         objs = [o for o in bpy.data.objects if o not in before]
         part_meshes = [o for o in objs if o.type == 'MESH']
-        if module.get('lod'):
-            keep = [o for o in part_meshes if module['lod'] in o.name]
+        if module.get('lod') or module.get('exclude'):
+            lod, exclude = module.get('lod'), module.get('exclude')
+            keep = [o for o in part_meshes if (not lod or lod in o.name) and not (exclude and re.search(exclude, o.name))]
             others = [o for o in objs if o.type != 'MESH']
             for o in part_meshes:
                 if o not in keep:
@@ -497,14 +501,14 @@ if tex.get('floorBake'):
     bake_floor(tex['floorBake'])
     textures_out['floor'] = f'models/kits/{REALM}/floor.png'
 
-for key in ('floor', 'ceiling'):
-    if tex.get(key):
-        img = load_scaled(tex[key], 1024, f'{REALM}_{key}')
-        dest = os.path.join(OUT, f'{key}.png')
-        img.filepath_raw = dest
-        img.file_format = 'PNG'
-        img.save()
-        textures_out[key] = f'models/kits/{REALM}/{key}.png'
+# `extra` names more pack textures to carry along (a realm's backdrop ground, water).
+for key, member in [(k, tex[k]) for k in ('floor', 'ceiling') if tex.get(k)] + list(tex.get('extra', {}).items()):
+    img = load_scaled(member, 1024, f'{REALM}_{key}')
+    dest = os.path.join(OUT, f'{key}.png')
+    img.filepath_raw = dest
+    img.file_format = 'PNG'
+    img.save()
+    textures_out[key] = f'models/kits/{REALM}/{key}.png'
 
 # Merge with an existing kit JSON when exporting a subset.
 kit = {'realm': REALM, 'textures': textures_out, 'pieces': {}}

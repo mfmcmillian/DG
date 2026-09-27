@@ -1,20 +1,277 @@
 {
-  "note": "Solid enemy bodies: one Synty POLYGON-rig character per roster slot with its weapon skinned into Hand_R and the sword-combat clips spliced in. Built by scripts/export-enemy-bodies.py into models/enemies/<realm>/; src/enemyBodies.json is regenerated from the result. Pack keys and weapon ids are those of scripts/weapons-manifest.json. `mesh` picks one character out of a pack-wide Characters.fbx.",
+  "note": "Solid enemy bodies: one Synty POLYGON-rig character per roster slot with its weapon skinned into Hand_R and the sword-combat clips spliced in. Built by scripts/export-enemy-bodies.py into models/enemies/<realm>/; src/enemyBodies.json is regenerated from the result. Pack keys and weapon ids are those of scripts/weapons-manifest.json. `mesh` picks one character out of a pack-wide Characters.fbx. `weapons` are enemy-only pieces (a bow in Hand_L, a bomb, a staff) in the weapons-manifest shape; `attach` rides a bone; `clips` swaps in a body's own Polygon-rig FBX per clip.",
   "characters": {
-    "kn": { "fbx": "Source_Files/Character_Files/FBX_Characters/{name}.fbx" },
-    "gb": { "fbx": "FBX/Characters/Characters.fbx" },
-    "df": { "fbx": "FBX/Characters.fbx" },
-    "dr": { "fbx": "FBX/Characters/{name}.fbx" }
+    "kn": {
+      "fbx": "Source_Files/Character_Files/FBX_Characters/{name}.fbx"
+    },
+    "gb": {
+      "fbx": "FBX/Characters/Characters.fbx"
+    },
+    "df": {
+      "fbx": "FBX/Characters.fbx"
+    },
+    "dr": {
+      "fbx": "FBX/Characters/{name}.fbx"
+    }
   },
   "bodies": [
-    { "id": "kn-knight", "realm": "castle", "pack": "kn", "fbx": "Character_Knight_01", "weapon": "fk-axe-06" },
-    { "id": "kn-soldier", "realm": "castle", "pack": "kn", "fbx": "Character_Soldier_01", "weapon": "fk-dagger-03" },
-    { "id": "kn-soldier-b", "realm": "castle", "pack": "kn", "fbx": "Character_Soldier_02", "weapon": "fk-hammer-04" },
-    { "id": "kn-knight-b", "realm": "castle", "pack": "kn", "fbx": "Character_Knight_02", "weapon": "fk-sword-08" },
-    { "id": "kn-knight-c", "realm": "castle", "pack": "kn", "fbx": "Character_Knight_03", "weapon": "fk-sword-18" },
-    { "id": "dr-dwarf-worker", "realm": "forge", "pack": "dr", "fbx": "Chr_Dwarf_Worker_01", "weapon": "dr-axe-small-01" },
-    { "id": "dr-dwarf-miner", "realm": "forge", "pack": "dr", "fbx": "Chr_Dwarf_Miner_01", "weapon": "dr-sword-medium-01" },
-    { "id": "dr-dwarf-soldier", "realm": "forge", "pack": "dr", "fbx": "Chr_Dwarf_Soldier_Male_01", "weapon": "dr-warhammer-large-01" },
-    { "id": "dr-dwarf-king", "realm": "forge", "pack": "dr", "fbx": "Chr_Dwarf_King_01", "weapon": "dr-warhammer-large-04" }
+    {
+      "id": "kn-knight",
+      "realm": "castle",
+      "pack": "kn",
+      "fbx": "Character_Knight_01",
+      "weapon": "fk-axe-06"
+    },
+    {
+      "id": "kn-soldier",
+      "realm": "castle",
+      "pack": "kn",
+      "fbx": "Character_Soldier_01",
+      "weapon": "fk-dagger-03"
+    },
+    {
+      "id": "kn-soldier-b",
+      "realm": "castle",
+      "pack": "kn",
+      "fbx": "Character_Soldier_02",
+      "weapon": "fk-hammer-04"
+    },
+    {
+      "id": "kn-knight-b",
+      "realm": "castle",
+      "pack": "kn",
+      "fbx": "Character_Knight_02",
+      "weapon": "fk-sword-08"
+    },
+    {
+      "id": "kn-knight-c",
+      "realm": "castle",
+      "pack": "kn",
+      "fbx": "Character_Knight_03",
+      "weapon": "fk-sword-18"
+    },
+    {
+      "id": "dr-dwarf-worker",
+      "realm": "forge",
+      "pack": "dr",
+      "fbx": "Chr_Dwarf_Worker_01",
+      "weapon": "dr-axe-small-01"
+    },
+    {
+      "id": "dr-dwarf-miner",
+      "realm": "forge",
+      "pack": "dr",
+      "fbx": "Chr_Dwarf_Miner_01",
+      "weapon": "dr-sword-medium-01"
+    },
+    {
+      "id": "dr-dwarf-soldier",
+      "realm": "forge",
+      "pack": "dr",
+      "fbx": "Chr_Dwarf_Soldier_Male_01",
+      "weapon": "dr-warhammer-large-01"
+    },
+    {
+      "id": "dr-dwarf-king",
+      "realm": "forge",
+      "pack": "dr",
+      "fbx": "Chr_Dwarf_King_01",
+      "weapon": "dr-warhammer-large-04"
+    },
+    {
+      "id": "gb-cutter",
+      "realm": "bog",
+      "pack": "gb",
+      "mesh": "SM_Chr_Warrior_Male_01",
+      "weapon": "gb-cleaver-01",
+      "clips": {
+        "A_MOD_BL_Idle_Standing_Masc": [
+          "ANIMATION_Goblin_Locomotion_SourceFiles_v2.zip",
+          "SourceFiles/Animations/Polygon/Neutral/Idles/A_POLY_GBL_Idle_Standing_Neut.fbx"
+        ],
+        "A_MOD_BL_Walk_F_Masc": [
+          "ANIMATION_Goblin_Locomotion_SourceFiles_v2.zip",
+          "SourceFiles/Animations/Polygon/Neutral/Locomotion/Walk/A_POLY_GBL_Walk_F_Neut.fbx"
+        ],
+        "A_MOD_BL_Run_F_Masc": [
+          "ANIMATION_Goblin_Locomotion_SourceFiles_v2.zip",
+          "SourceFiles/Animations/Polygon/Neutral/Locomotion/Run/A_POLY_GBL_Run_F_Neut.fbx"
+        ]
+      }
+    },
+    {
+      "id": "gb-sneak",
+      "realm": "bog",
+      "pack": "gb",
+      "mesh": "SM_Chr_Archer_Female_01",
+      "weapon": "gb-dagger-01",
+      "clips": {
+        "A_MOD_BL_Idle_Standing_Masc": [
+          "ANIMATION_Goblin_Locomotion_SourceFiles_v2.zip",
+          "SourceFiles/Animations/Polygon/Neutral/Idles/A_POLY_GBL_Idle_Standing_Neut.fbx"
+        ],
+        "A_MOD_BL_Walk_F_Masc": [
+          "ANIMATION_Goblin_Locomotion_SourceFiles_v2.zip",
+          "SourceFiles/Animations/Polygon/Neutral/Locomotion/Walk/A_POLY_GBL_Walk_F_Neut.fbx"
+        ],
+        "A_MOD_BL_Run_F_Masc": [
+          "ANIMATION_Goblin_Locomotion_SourceFiles_v2.zip",
+          "SourceFiles/Animations/Polygon/Neutral/Locomotion/Run/A_POLY_GBL_Run_F_Neut.fbx"
+        ]
+      }
+    },
+    {
+      "id": "gb-brute",
+      "realm": "bog",
+      "pack": "gb",
+      "mesh": "SM_Chr_BeastTamer_01",
+      "weapon": "gb-club-02",
+      "clips": {
+        "A_MOD_BL_Idle_Standing_Masc": [
+          "ANIMATION_Goblin_Locomotion_SourceFiles_v2.zip",
+          "SourceFiles/Animations/Polygon/Neutral/Idles/A_POLY_GBL_Idle_Standing_Neut.fbx"
+        ],
+        "A_MOD_BL_Walk_F_Masc": [
+          "ANIMATION_Goblin_Locomotion_SourceFiles_v2.zip",
+          "SourceFiles/Animations/Polygon/Neutral/Locomotion/Walk/A_POLY_GBL_Walk_F_Neut.fbx"
+        ],
+        "A_MOD_BL_Run_F_Masc": [
+          "ANIMATION_Goblin_Locomotion_SourceFiles_v2.zip",
+          "SourceFiles/Animations/Polygon/Neutral/Locomotion/Run/A_POLY_GBL_Run_F_Neut.fbx"
+        ]
+      },
+      "attach": [
+        {
+          "fbx": "FBX/Characters/Attachments/SM_Chr_Attach_Helmet_01.fbx",
+          "bone": "Head"
+        }
+      ]
+    },
+    {
+      "id": "gb-archer",
+      "realm": "bog",
+      "pack": "gb",
+      "mesh": "SM_Chr_Archer_Male_01",
+      "weapon": "gb-bow-01",
+      "clips": {
+        "A_MOD_BL_Idle_Standing_Masc": [
+          "ANIMATION_Goblin_Locomotion_SourceFiles_v2.zip",
+          "SourceFiles/Animations/Polygon/Neutral/Idles/A_POLY_GBL_Idle_Standing_Neut.fbx"
+        ],
+        "A_MOD_BL_Walk_F_Masc": [
+          "ANIMATION_Goblin_Locomotion_SourceFiles_v2.zip",
+          "SourceFiles/Animations/Polygon/Neutral/Locomotion/Walk/A_POLY_GBL_Walk_F_Neut.fbx"
+        ],
+        "A_MOD_BL_Run_F_Masc": [
+          "ANIMATION_Goblin_Locomotion_SourceFiles_v2.zip",
+          "SourceFiles/Animations/Polygon/Neutral/Locomotion/Run/A_POLY_GBL_Run_F_Neut.fbx"
+        ]
+      }
+    },
+    {
+      "id": "gb-bomber",
+      "realm": "bog",
+      "pack": "gb",
+      "mesh": "SM_Chr_Cook_01",
+      "weapon": "gb-bomb-01",
+      "attach": [
+        {
+          "fbx": "FBX/Characters/Attachments/SM_Chr_Attach_Goggles_01.fbx",
+          "bone": "Head"
+        }
+      ],
+      "clips": {
+        "A_MOD_BL_Idle_Standing_Masc": [
+          "ANIMATION_Goblin_Locomotion_SourceFiles_v2.zip",
+          "SourceFiles/Animations/Polygon/Neutral/Idles/A_POLY_GBL_Idle_Standing_Neut.fbx"
+        ],
+        "A_MOD_BL_Walk_F_Masc": [
+          "ANIMATION_Goblin_Locomotion_SourceFiles_v2.zip",
+          "SourceFiles/Animations/Polygon/Neutral/Locomotion/Walk/A_POLY_GBL_Walk_F_Neut.fbx"
+        ],
+        "A_MOD_BL_Run_F_Masc": [
+          "ANIMATION_Goblin_Locomotion_SourceFiles_v2.zip",
+          "SourceFiles/Animations/Polygon/Neutral/Locomotion/Run/A_POLY_GBL_Run_F_Neut.fbx"
+        ]
+      }
+    },
+    {
+      "id": "gb-shaman",
+      "realm": "bog",
+      "pack": "gb",
+      "mesh": "SM_Chr_Shaman_01",
+      "weapon": "gb-staff-01",
+      "clips": {
+        "A_MOD_BL_Idle_Standing_Masc": [
+          "ANIMATION_Goblin_Locomotion_SourceFiles_v2.zip",
+          "SourceFiles/Animations/Polygon/Neutral/Idles/A_POLY_GBL_Idle_Standing_Neut.fbx"
+        ],
+        "A_MOD_BL_Walk_F_Masc": [
+          "ANIMATION_Goblin_Locomotion_SourceFiles_v2.zip",
+          "SourceFiles/Animations/Polygon/Neutral/Locomotion/Walk/A_POLY_GBL_Walk_F_Neut.fbx"
+        ],
+        "A_MOD_BL_Run_F_Masc": [
+          "ANIMATION_Goblin_Locomotion_SourceFiles_v2.zip",
+          "SourceFiles/Animations/Polygon/Neutral/Locomotion/Run/A_POLY_GBL_Run_F_Neut.fbx"
+        ]
+      },
+      "attach": [
+        {
+          "fbx": "FBX/Characters/Attachments/SM_Chr_Attach_Mask_01.fbx",
+          "bone": "Head"
+        }
+      ]
+    },
+    {
+      "id": "gb-king",
+      "realm": "bog",
+      "pack": "gb",
+      "mesh": "SM_Chr_King_01",
+      "weapon": "gb-club-04",
+      "attach": [
+        {
+          "fbx": "FBX/Characters/Attachments/SM_Chr_Attach_Crown_01.fbx",
+          "bone": "Head"
+        }
+      ],
+      "clips": {
+        "A_MOD_BL_Idle_Standing_Masc": [
+          "ANIMATION_Goblin_Locomotion_SourceFiles_v2.zip",
+          "SourceFiles/Animations/Polygon/Neutral/Idles/A_POLY_GBL_Idle_Standing_Neut.fbx"
+        ],
+        "A_MOD_BL_Walk_F_Masc": [
+          "ANIMATION_Goblin_Locomotion_SourceFiles_v2.zip",
+          "SourceFiles/Animations/Polygon/Neutral/Locomotion/Walk/A_POLY_GBL_Walk_F_Neut.fbx"
+        ],
+        "A_MOD_BL_Run_F_Masc": [
+          "ANIMATION_Goblin_Locomotion_SourceFiles_v2.zip",
+          "SourceFiles/Animations/Polygon/Neutral/Locomotion/Run/A_POLY_GBL_Run_F_Neut.fbx"
+        ]
+      }
+    }
+  ],
+  "weapons": [
+    {
+      "id": "gb-bow-01",
+      "pack": "gb",
+      "mesh": "SM_Wep_Bow_01",
+      "palette": "base",
+      "class": "bow",
+      "hand": "Hand_L"
+    },
+    {
+      "id": "gb-bomb-01",
+      "pack": "gb",
+      "mesh": "SM_Wep_Bomb_01",
+      "palette": "base",
+      "class": "club"
+    },
+    {
+      "id": "gb-staff-01",
+      "pack": "gb",
+      "mesh": "SM_Wep_Staff_01",
+      "palette": "base",
+      "class": "club"
+    }
   ]
 }

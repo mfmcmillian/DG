@@ -9,7 +9,9 @@ export type ClassAttackMotion = 'bow_shoot' | 'bow_volley' | 'bow_bash' | 'cast_
 export type HeavyAttackMotion = 'attack_light3' | 'heavy_combo_c' | 'leap'
 /** What a hero's light/heavy can come out as. */
 export type HeroAttackMotion = AttackMotion | ClassAttackMotion | HeavyAttackMotion
-export type WeaponMotion = HeroAttackMotion | 'flourish_heavy' | 'stab' | 'heavy_combo_a' | 'heavy_combo_b' | 'fencing' | SkillOnlyMotion
+export type WeaponMotion = HeroAttackMotion | 'flourish_heavy' | 'stab' | 'heavy_combo_a' | 'heavy_combo_b' | 'fencing' | SkillOnlyMotion | GoblinAction
+/** The goblin specialists' deeds, timed like swings (src/dungeonEnemies.ts): the archer's release, the shaman's cast, the King's roar at the gong. */
+export type GoblinAction = 'shoot' | 'cast' | 'roar'
 /** Clips only a skill plays: the war cry's stance and the sword flourish (src/shared/skills.ts). */
 export type SkillOnlyMotion = 'menace_enter' | 'flourish'
 

@@ -110,6 +110,26 @@ export const Messages = {
 
   /** Server -> all: one party's enemies. Clients apply only the snapshot for the party they are in. */
   enemies: Schemas.Map({ party: Schemas.String, list: Schemas.Array(EnemySnap) }),
+  /**
+   * Server -> all: something the goblins or the camp did that the snapshot cannot
+   * carry (src/dungeonEnemies.ts goblin section, src/dungeon/bogTraps.ts): an
+   * arrow or venom bolt loosed from (x, y, z) toward (tx, ty, tz), a bomb going
+   * off with radius r, a shaman's mending of enemy j, the King's gong, a trap
+   * firing. `i` is the enemy that did it (-1 for the camp itself).
+   */
+  enemyFx: Schemas.Map({
+    party: Schemas.String,
+    kind: Schemas.String,
+    i: Schemas.Int,
+    j: Schemas.Int,
+    x: Schemas.Number,
+    y: Schemas.Number,
+    z: Schemas.Number,
+    tx: Schemas.Number,
+    ty: Schemas.Number,
+    tz: Schemas.Number,
+    r: Schemas.Number
+  }),
   loot: Schemas.Map({
     party: Schemas.String,
     x: Schemas.Number,

@@ -14,7 +14,12 @@ export { EquipmentMotion, EQUIPMENT_CLIPS } from './combatAnimations'
 /** One-piece characters: realm enemies (body, weapon and every combat clip in a single GLTF,
  *  built by scripts/export-enemy-bodies.py) and the hall's folk (a hero outfit baked to one GLB with
  *  only its own clips, scripts/build-hall-folk.py). No hair, armor or weapon parts are assembled for them. */
-const SOLID_BODIES: Readonly<Record<string, { path: string; height: number; tris: number }>> = { ...enemyBodies, ...folkBodies }
+const SOLID_BODIES: Readonly<Record<string, { path: string; height: number; tris: number }>> = {
+  ...enemyBodies,
+  ...folkBodies,
+  // Bogmaw's war totem: a kit prop standing in as a body so heroes can smash it (no clips; it never moves).
+  'bog-totem': { path: 'models/kits/bog/bog_totem.gltf', height: 2.34, tris: 1344 }
+}
 
 export function isSolidBody(characterId: string): boolean {
   return characterId in SOLID_BODIES

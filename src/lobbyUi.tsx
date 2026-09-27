@@ -136,7 +136,7 @@ function MapCard({ scale: s, canPick }: { scale: number; canPick: boolean }) {
       uiTransform={{ width: '100%', height: 36 * s, margin: { top: 12 * s }, flexShrink: 0, pointerFilter: 'none' }} />
     <Label value={t(level.blurb)} color={muted} fontSize={12.5 * s} textAlign="middle-left" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 20 * s, flexShrink: 0, pointerFilter: 'none' }} />
-    <Label value={`${t('Waves in every room')}  ·  ${t(level.style === 'pass' ? 'The ice breaks when the room is clear' : 'Doors open when the room is clear')}${limit ? `  ·  ${t('{time} on the clock', { time: limit })}` : ''}`}
+    <Label value={`${t('Waves in every room')}  ·  ${t(level.style === 'pass' ? 'The ice breaks when the room is clear' : level.style === 'bog' ? 'The gate lifts when the room is clear' : 'Doors open when the room is clear')}${limit ? `  ·  ${t('{time} on the clock', { time: limit })}` : ''}`}
       color={muted} fontSize={11.5 * s} textAlign="middle-left" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 18 * s, margin: { top: 2 * s }, flexShrink: 0, pointerFilter: 'none' }} />
     <Label value={!open && before ? t('Clear {name} first', { name: before.name }) : best > 0 ? t('Cleared on {difficulty}', { difficulty: t(DIFFICULTIES[best - 1]?.name ?? '') }) : t('Not cleared yet')}

@@ -43,5 +43,40 @@
     "path": "models/enemies/forge/dr-dwarf-king.gltf",
     "height": 1.87,
     "tris": 3178
+  },
+  "gb-cutter": {
+    "path": "models/enemies/bog/gb-cutter.gltf",
+    "height": 1.804,
+    "tris": 4490
+  },
+  "gb-sneak": {
+    "path": "models/enemies/bog/gb-sneak.gltf",
+    "height": 1.792,
+    "tris": 4048
+  },
+  "gb-brute": {
+    "path": "models/enemies/bog/gb-brute.gltf",
+    "height": 1.799,
+    "tris": 5496
+  },
+  "gb-archer": {
+    "path": "models/enemies/bog/gb-archer.gltf",
+    "height": 1.791,
+    "tris": 4872
+  },
+  "gb-bomber": {
+    "path": "models/enemies/bog/gb-bomber.gltf",
+    "height": 1.798,
+    "tris": 4014
+  },
+  "gb-shaman": {
+    "path": "models/enemies/bog/gb-shaman.gltf",
+    "height": 1.803,
+    "tris": 4823
+  },
+  "gb-king": {
+    "path": "models/enemies/bog/gb-king.gltf",
+    "height": 1.791,
+    "tris": 6999
   }
 }
