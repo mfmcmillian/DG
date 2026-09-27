@@ -1,7 +1,7 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { Color4 } from '@dcl/sdk/math'
 import {
-  getInventoryState, getInventoryCharacter, getInventoryItems, getInventoryTotalCount, isInventoryItemLocked,
+  getInventoryState, getInventoryCharacter, getInventoryItems, getInventoryNewItems, getInventoryTotalCount, isInventoryItemLocked,
   getPreviewLoadout, getCommittedLoadout, getInventoryIsDirty,
   selectInventorySlot, selectInventoryItem, setInventoryFilter, setInventoryPage,
   equipSelectedItem, unequipSelectedSlot, revertInventoryPreview,
@@ -13,10 +13,12 @@ import { menuColors, MenuAction as Action } from './menuUi'
 import { RARITIES, rarityOf, weaponStatLine, weaponSubtitle } from './weapons'
 import { armorSetLine, armorStatLine, armorSummaryLine } from './armor'
 import { t } from './i18n'
+import { isGearNew, newGearCount } from './newGear'
 
 const { white, muted, gold, line, panel, card, selectedGold, goldLine, coral } = menuColors
 /** The lobby's sheet, shared by every full-screen panel. */
 const sheet = Color4.create(0.025, 0.045, 0.07, 0.97)
+const ink = Color4.create(0.12, 0.08, 0.02, 1)
 let hovered = ''
 
 function rect(x: number, y: number, width: number, height: number, s: number) {
@@ -90,9 +92,10 @@ function BackpackCard({ item, index, scale: s }: { key?: string, item?: Equipmen
   const id = item ? `item-${item.id}` : `empty-${index}`
   const hover = hovered === id && !!item
   const locked = !!item && isInventoryItemLocked(item.id)
+  const fresh = !!item && !locked && isGearNew(item.id)
   const rarity = item && !isEmptyItem(item) ? RARITIES[rarityOf(item.id)] : undefined
   return <UiEntity uiTransform={{ ...rect(666 + (index % 4) * 145, 205 + Math.floor(index / 4) * 109, 133, 98, s),
-    borderRadius: 4 * s, borderWidth: (selected ? 2 : 1) * s, borderColor: selected ? gold : hover ? goldLine : rarity && rarity.rank > 0 && !locked ? rarity.color : line,
+    borderRadius: 4 * s, borderWidth: (selected || fresh ? 2 : 1) * s, borderColor: selected || fresh ? gold : hover ? goldLine : rarity && rarity.rank > 0 && !locked ? rarity.color : line,
     alignItems: 'center', justifyContent: 'center', opacity: !item ? 0.25 : locked ? 0.55 : 1,
     pointerFilter: item ? 'block' : 'none' }}
     uiBackground={{ color: selected ? selectedGold : hover ? card : panel }}
@@ -109,6 +112,11 @@ function BackpackCard({ item, index, scale: s }: { key?: string, item?: Equipmen
     </UiEntity>}
     {equipped && !isEmptyItem(item) && <Label value="✓" color={gold} fontSize={16 * s}
       uiTransform={rect(108, 3, 21, 23, s)} />}
+    {fresh && <UiEntity uiTransform={{ ...rect(92, -7, 40, 16, s), borderRadius: 8 * s, alignItems: 'center', justifyContent: 'center' }}
+      uiBackground={{ color: gold }}>
+      <Label value={t('NEW')} color={ink} font="sans-serif" fontSize={9 * s} textWrap="nowrap"
+        uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} />
+    </UiEntity>}
     {rarity && rarity.rank > 0 && <UiEntity uiTransform={rect(4, 4, 6, 6, s)} uiBackground={{ color: rarity.color }} />}
     {selected && <UiEntity uiTransform={rect(18, 94, 97, 2, s)} uiBackground={{ color: gold }} />}
   </UiEntity>
@@ -133,6 +141,11 @@ export function InventoryUi() {
   const error = state.loading === 'error'
   const locked = isInventoryItemLocked(selected.id)
   const total = getInventoryTotalCount()
+  const freshCount = newGearCount()
+  // Which tabs hold something new (the "All" tab needs no dot: the header says so).
+  const freshItems = getInventoryNewItems()
+  const freshIn = (filter: 'weapon' | 'head' | 'chest' | 'other') => freshItems.some((item) =>
+    filter === 'other' ? item.slot !== 'head' && item.slot !== 'chest' && item.slot !== 'weapon' : item.slot === filter)
   const otherActive = state.filter !== 'all' && state.filter !== 'head' && state.filter !== 'chest' && state.filter !== 'weapon'
   const source = armorSourceLabel(selected.realm)
   const status = error ? t('Preview unavailable. Please try again.') : loading ? t('Preparing equipment…') :
@@ -181,14 +194,16 @@ export function InventoryUi() {
       <UiEntity uiTransform={{ ...rect(642, 84, 638, 654, s), borderRadius: 6 * s, borderWidth: s, borderColor: goldLine }} uiBackground={{ color: sheet }} />
       <Label value={t('BACKPACK')} color={gold} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={rect(666, 104, 330, 20, s)} />
-      <Label value={t('{n} of {total} found', { n: items.length, total })} color={muted} fontSize={11 * s}
-        textAlign="middle-right" textWrap="nowrap" uiTransform={rect(1100, 104, 134, 20, s)} />
+      <Label value={`${freshCount > 0 ? `${t('{n} new', { n: freshCount })}  ·  ` : ''}${t('{n} of {total} found', { n: items.length, total })}`}
+        color={freshCount > 0 ? gold : muted} fontSize={11 * s} textAlign="middle-right" textWrap="nowrap" uiTransform={rect(960, 104, 274, 20, s)} />
       <UiEntity uiTransform={{ ...rect(666, 132, 568, 36, s), flexDirection: 'row', justifyContent: 'space-between' }}>
         {(['all', 'weapon', 'head', 'chest', 'other'] as const).map((filter) => <Action key={filter} id={`filter-${filter}`}
           text={t(FILTER_NAMES[filter])}
           onClick={() => setInventoryFilter(filter)} width={108} height={36} scale={s} accent="gold"
           active={filter === 'other' ? otherActive : state.filter === filter} fontSize={13} />)}
       </UiEntity>
+      {(['weapon', 'head', 'chest', 'other'] as const).map((filter, i) => freshIn(filter) &&
+        <UiEntity key={`fresh-${filter}`} uiTransform={{ ...rect(666 + (i + 1) * 115 + 98, 128, 8, 8, s), borderRadius: 4 * s }} uiBackground={{ color: gold }} />)}
       <UiEntity uiTransform={rect(666, 184, 568, 1, s)} uiBackground={{ color: line }} />
       {Array.from({ length: 12 }, (_, index) => <BackpackCard key={`cell-${index}`} item={visibleItems[index]} index={index} scale={s} />)}
       <Label value={category} color={muted} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"

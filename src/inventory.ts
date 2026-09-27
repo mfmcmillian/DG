@@ -40,6 +40,7 @@ import {
   setCommittedLoadout
 } from './equipmentState'
 import { classAllowsArmor, classAllowsWeapon, HERO_CLASSES } from './heroClasses'
+import { isGearNew, markGearSeen } from './newGear'
 
 export type InventoryFilter = 'all' | 'other' | EquipmentSlot
 
@@ -194,6 +195,11 @@ export function getInventoryItems(): EquipmentItem[] {
   return filtered(wardrobe().filter((item) => !lockedItems.has(item.id)))
 }
 
+/** Owned gear not yet looked at, whatever the filter (the backpack's NEW tags and tab dots). */
+export function getInventoryNewItems(): EquipmentItem[] {
+  return wardrobe().filter((item) => !lockedItems.has(item.id) && isGearNew(item.id))
+}
+
 /** Everything the class could ever own under the current filter, for the "N of M found" count. */
 export function getInventoryTotalCount(): number {
   return filtered(wardrobe()).length
@@ -238,6 +244,10 @@ export function openInventory(options: { onClose?: () => void } = {}): boolean {
   facing = MENU_PREVIEW_FACING
   generation++
 
+  // Something new in the bag: open on its page so it is not missed.
+  const firstNew = getInventoryItems().findIndex((item) => isGearNew(item.id))
+  if (firstNew >= 0) state.page = Math.floor(firstNew / PAGE_SIZE)
+
   stage = createMenuPreviewStage('inventory')
   committedPreview = createPreview(getCommittedLoadout())
   return true
@@ -281,6 +291,7 @@ export function selectInventoryItem(id: string) {
   if (!state.open) return
   const item = EQUIPMENT_ITEMS.find((entry) => entry.id === id)
   if (!item) return
+  markGearSeen(item.id)
   state.selectedSlot = item.slot
   state.selectedItemId = item.id
   const next = getCommittedLoadout()

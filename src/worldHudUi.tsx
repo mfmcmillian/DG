@@ -26,6 +26,7 @@ import { presence } from './presence'
 import { trainingActive, trainingTally } from './trainingDummies'
 import { closeTalk, getTalkState, nextLine, TalkOpen } from './hallTalk'
 import { getHint, HintChip, newGearWaiting } from './hints'
+import { newGearCount } from './newGear'
 import { localXp } from './heroXp'
 import { bonusLinesText } from './heroXp'
 import { MAX_LEVEL } from './shared/progression'
@@ -710,7 +711,7 @@ export function WorldHudUi() {
       {inHub && <IconButton id="dungeons" label={myParty() ? t('Party') : t('Dungeons')} icon="images/hud/dungeons.png" scale={s} disabled={!ready} onClick={openLobby} />}
       {canLeave && <IconButton id="leave-run" label={t('Leave the fortress')} icon="images/hud/leave.png" scale={s} onClick={() => { leaveAsked = true }} />}
       <IconButton id="inventory" label={t('Inventory')} icon="images/hud/inventory.png" scale={s} disabled={!ready} onClick={openInventory}
-        glow={inHub && newGearWaiting()} badge={t('NEW')} />
+        glow={newGearCount() > 0 || (inHub && newGearWaiting())} badge={t('NEW')} />
       {/* Class and look are chosen in the hall; a champion in the fortress is committed to it. */}
       {inHub && <IconButton id="character" label={t('Edit character')} icon="images/hud/character.png" scale={s} onClick={openPicker} />}
       <IconButton id="settings" label={t('Settings')} icon="images/hud/settings.png" scale={s} onClick={openSettings} />

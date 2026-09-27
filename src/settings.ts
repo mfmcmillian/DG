@@ -8,6 +8,7 @@ import { CameraChoice, getDungeonState, setCameraChoice } from './dungeon'
 import { parsePrefs, prefsOpenAll } from './shared/prefs'
 import { getLanguage, isLanguage, Language, setLanguage } from './i18n'
 import { loadSeenHints, seenHints } from './hints'
+import { loadNewGear, newGearIds } from './newGear'
 
 /** The two cameras a player picks between. */
 export type CameraPreference = 'crawler' | 'native'
@@ -108,7 +109,7 @@ export function applyCameraSetting() {
 
 export function serializeSettings(): string {
   return JSON.stringify({
-    camera: settings.camera, camV: CAMERA_GENERATION, dev: settings.devTools ? 1 : 0, nat: settings.nativeAvatar ? 1 : 0, open: settings.openAll ? 1 : 0, lang: settings.language, hints: seenHints()
+    camera: settings.camera, camV: CAMERA_GENERATION, dev: settings.devTools ? 1 : 0, nat: settings.nativeAvatar ? 1 : 0, open: settings.openAll ? 1 : 0, lang: settings.language, hints: seenHints(), fresh: newGearIds()
   })
 }
 
@@ -128,6 +129,7 @@ export function loadSettings(json: string) {
     if (isLanguage(value.lang) && !languageChosen) setLanguage(settings.language = value.lang)
     else settings.language = getLanguage()
     loadSeenHints(value.hints)
+    loadNewGear(value.fresh)
   }
   applyCameraSetting()
 }

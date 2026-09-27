@@ -10,6 +10,7 @@ import { fxGlitter, fxLootBeam, fxNumber, fxSound } from './combatFx'
 import { isInCourtyard } from './courtyard'
 import { EquipmentItem, getEquipmentItemOrNull, WEAPON_DROP_OFFSET, WEAPON_DROP_OFFSET_LEFT } from './equipmentCatalog'
 import { isUsableByHero, unlockInventoryItem } from './inventory'
+import { markGearNew } from './newGear'
 import { publishPickup } from './multiplayer'
 import { getPlayerCombatPose, getPlayerVitals } from './playerCharacter'
 import { Rarity, RARITIES, rarityOf } from './weapons'
@@ -250,6 +251,7 @@ function award(id: string, at: Vector3, up = 0) {
     toast(item, rarity.coins, true)
   } else if (unlockInventoryItem(item.id)) {
     if (up > upgradeRankOf(item.id)) setUpgradeRank(item.id, up)
+    markGearNew(item.id)
     fxSound('heal', 0.9)
     fxNumber(Vector3.add(at, Vector3.create(0, 0.9, 0)), item.name, 'note')
     run.found.push(item.id)
