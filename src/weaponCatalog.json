@@ -4027,6 +4027,1211 @@
     "rarity": "uncommon",
     "pack": "Samurai Empire"
    }
+  },
+  {
+   "id": "dr-spear-01",
+   "name": "Vault Spear",
+   "slot": "weapon",
+   "description": "A bronze-headed spear from the dwarven racks. Plain, straight and long enough.",
+   "icon": "images/weapons/dr-spear-01.png",
+   "models": [
+    "models/roaming/weapons/dr-spear-01.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "common",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-spear-02",
+   "name": "Gilded Spear",
+   "slot": "weapon",
+   "description": "A vault spear with a gilt collar under the head. The dwarves gild what they are proud of.",
+   "icon": "images/weapons/dr-spear-02.png",
+   "models": [
+    "models/roaming/weapons/dr-spear-02.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "uncommon",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-spear-03",
+   "name": "Silvered Pike",
+   "slot": "weapon",
+   "description": "A slim pike with a silvered leaf head. Made for a wall of them.",
+   "icon": "images/weapons/dr-spear-03.png",
+   "models": [
+    "models/roaming/weapons/dr-spear-03.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "uncommon",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-spear-04",
+   "name": "Forge Lance",
+   "slot": "weapon",
+   "description": "A long lance with a broad steel head. The forge guards carry these on the gantries.",
+   "icon": "images/weapons/dr-spear-04.png",
+   "models": [
+    "models/roaming/weapons/dr-spear-04.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "rare",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-spear-05",
+   "name": "Axe-Spear",
+   "slot": "weapon",
+   "description": "A spear with an axe blade set behind the point. Thrust, then chop.",
+   "icon": "images/weapons/dr-spear-05.png",
+   "models": [
+    "models/roaming/weapons/dr-spear-05.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "rare",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-spear-06",
+   "name": "Deep Partisan",
+   "slot": "weapon",
+   "description": "A short-bladed partisan on a dark shaft. Carried in the low tunnels where a long spear catches.",
+   "icon": "images/weapons/dr-spear-06.png",
+   "models": [
+    "models/roaming/weapons/dr-spear-06.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "uncommon",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-spear-07",
+   "name": "Gold Winged Spear",
+   "slot": "weapon",
+   "description": "A ceremonial spear with gilded wings at the socket. Ceremonial means nobody expected it to be used.",
+   "icon": "images/weapons/dr-spear-07.png",
+   "models": [
+    "models/roaming/weapons/dr-spear-07.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "epic",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "dr-spear-08",
+   "name": "Forge Lord's Spear",
+   "slot": "weapon",
+   "description": "Broad, heavy and rune-cut along the blade. The Forge Lord's honour guard carried a dozen; this is one.",
+   "icon": "images/weapons/dr-spear-08.png",
+   "models": [
+    "models/roaming/weapons/dr-spear-08.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "epic",
+    "pack": "Dungeon Realms"
+   }
+  },
+  {
+   "id": "fk-spear-01",
+   "name": "Boar Fork",
+   "slot": "weapon",
+   "description": "A two-pronged hunting fork on a long pole. Holds a boar off; holds a man off too.",
+   "icon": "images/weapons/fk-spear-01.png",
+   "models": [
+    "models/roaming/weapons/fk-spear-01.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "common",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-spear-02",
+   "name": "Levy Spear",
+   "slot": "weapon",
+   "description": "The kingdom's standard issue: an ash pole and a leaf blade. Thousands were made.",
+   "icon": "images/weapons/fk-spear-02.png",
+   "models": [
+    "models/roaming/weapons/fk-spear-02.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "common",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-spear-03",
+   "name": "Sergeant's Spear",
+   "slot": "weapon",
+   "description": "A levy spear with a broader head and a leather grip. Sergeants got the better ones.",
+   "icon": "images/weapons/fk-spear-03.png",
+   "models": [
+    "models/roaming/weapons/fk-spear-03.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-spear-04",
+   "name": "Winged Spear",
+   "slot": "weapon",
+   "description": "Two lugs below the blade stop it going in too deep. Somebody learned that the hard way.",
+   "icon": "images/weapons/fk-spear-04.png",
+   "models": [
+    "models/roaming/weapons/fk-spear-04.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-spear-05",
+   "name": "Ranseur",
+   "slot": "weapon",
+   "description": "A three-pointed head: one blade to thrust, two to catch and twist a sword away.",
+   "icon": "images/weapons/fk-spear-05.png",
+   "models": [
+    "models/roaming/weapons/fk-spear-05.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "rare",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-spear-06",
+   "name": "Iron Pike",
+   "slot": "weapon",
+   "description": "A long pike with a small iron head. Cheap to make and terrible to walk into.",
+   "icon": "images/weapons/fk-spear-06.png",
+   "models": [
+    "models/roaming/weapons/fk-spear-06.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "common",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-spear-07",
+   "name": "Azure Spear",
+   "slot": "weapon",
+   "description": "A household spear with a blue-bound shaft and a bright blade.",
+   "icon": "images/weapons/fk-spear-07.png",
+   "models": [
+    "models/roaming/weapons/fk-spear-07.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "rare",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-spear-08",
+   "name": "Knight's Lance",
+   "slot": "weapon",
+   "description": "A heavy lance meant for the saddle. On foot it is simply a very long, very sharp argument.",
+   "icon": "images/weapons/fk-spear-08.png",
+   "models": [
+    "models/roaming/weapons/fk-spear-08.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "rare",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-spear-09",
+   "name": "Gilt Partisan",
+   "slot": "weapon",
+   "description": "A broad partisan blade with gilt fittings, the palace guard's pattern.",
+   "icon": "images/weapons/fk-spear-09.png",
+   "models": [
+    "models/roaming/weapons/fk-spear-09.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "epic",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-spear-10",
+   "name": "Barbed Spear",
+   "slot": "weapon",
+   "description": "A spear whose head is barbed like a fish hook. Coming out hurts more than going in.",
+   "icon": "images/weapons/fk-spear-10.png",
+   "models": [
+    "models/roaming/weapons/fk-spear-10.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-spear-11",
+   "name": "Great Pike",
+   "slot": "weapon",
+   "description": "The longest spear in the kingdom's armoury. Reach that nothing on two legs can answer.",
+   "icon": "images/weapons/fk-spear-11.png",
+   "models": [
+    "models/roaming/weapons/fk-spear-11.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "rare",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-spear-12",
+   "name": "Hunting Spear",
+   "slot": "weapon",
+   "description": "A short, stout spear with a crossbar. A woodsman's tool that doubles as a weapon.",
+   "icon": "images/weapons/fk-spear-12.png",
+   "models": [
+    "models/roaming/weapons/fk-spear-12.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "common",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "fk-knuckledagger-01",
+   "name": "Knuckle Dagger",
+   "slot": "weapon",
+   "description": "A short blade on a fist grip. There is no way to hold it that is not a punch.",
+   "icon": "images/weapons/fk-knuckledagger-01.png",
+   "models": [
+    "models/roaming/weapons/fk-knuckledagger-01.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "uncommon",
+    "pack": "Fantasy Kingdom"
+   }
+  },
+  {
+   "id": "vk-spear-01",
+   "name": "Raider's Spear",
+   "slot": "weapon",
+   "description": "A northern spear with a long ash shaft and a narrow head. The raiders' first weapon, before they earned an axe.",
+   "icon": "images/weapons/vk-spear-01.png",
+   "models": [
+    "models/roaming/weapons/vk-spear-01.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "common",
+    "pack": "Vikings"
+   }
+  },
+  {
+   "id": "vk-spear-02",
+   "name": "Jarl's Spear",
+   "slot": "weapon",
+   "description": "A broad-bladed spear with a wrapped grip. Odin carried one; the Jarl carries this.",
+   "icon": "images/weapons/vk-spear-02.png",
+   "models": [
+    "models/roaming/weapons/vk-spear-02.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "rare",
+    "pack": "Vikings"
+   }
+  },
+  {
+   "id": "vk-spear-03",
+   "name": "Hewing Spear",
+   "slot": "weapon",
+   "description": "A spear with a blade long enough to cut. Thrust, then swing.",
+   "icon": "images/weapons/vk-spear-03.png",
+   "models": [
+    "models/roaming/weapons/vk-spear-03.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "uncommon",
+    "pack": "Vikings"
+   }
+  },
+  {
+   "id": "vk-fishingspear-01",
+   "name": "Fishing Spear",
+   "slot": "weapon",
+   "description": "A barbed fork for the shallows. It works on things that are not fish.",
+   "icon": "images/weapons/vk-fishingspear-01.png",
+   "models": [
+    "models/roaming/weapons/vk-fishingspear-01.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "common",
+    "pack": "Vikings"
+   }
+  },
+  {
+   "id": "gb-spear-01",
+   "name": "Goblin Pig-Sticker",
+   "slot": "weapon",
+   "description": "A crooked pole with a rusty blade lashed on. Goblins do not make spears, they assemble them.",
+   "icon": "images/weapons/gb-spear-01.png",
+   "models": [
+    "models/roaming/weapons/gb-spear-01.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "common",
+    "pack": "Goblin War Camp"
+   }
+  },
+  {
+   "id": "gb-spear-02",
+   "name": "Skull-Spear",
+   "slot": "weapon",
+   "description": "A long spear with a spiked skull under the blade. The skull is decorative. The spike is not.",
+   "icon": "images/weapons/gb-spear-02.png",
+   "models": [
+    "models/roaming/weapons/gb-spear-02.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "uncommon",
+    "pack": "Goblin War Camp"
+   }
+  },
+  {
+   "id": "kn-halberd-01",
+   "name": "Halberd",
+   "slot": "weapon",
+   "description": "Axe blade, spike and hook on a long haft. The castle guard's weapon: it does everything, none of it gently.",
+   "icon": "images/weapons/kn-halberd-01.png",
+   "models": [
+    "models/roaming/weapons/kn-halberd-01.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "rare",
+    "pack": "Knights"
+   }
+  },
+  {
+   "id": "df-scythe-01",
+   "name": "Rune Scythe",
+   "slot": "weapon",
+   "description": "A reaper's scythe with a rune-lit blade from the Fortress vaults. It was not made for wheat.",
+   "icon": "images/weapons/df-scythe-01.png",
+   "models": [
+    "models/roaming/weapons/df-scythe-01.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "epic",
+    "pack": "Dark Fortress"
+   }
+  },
+  {
+   "id": "se-sai-02",
+   "name": "Paired Sai",
+   "slot": "weapon",
+   "description": "A sai with its sheath, black iron and red cord. Carried in pairs; one is enough.",
+   "icon": "images/weapons/se-sai-02.png",
+   "models": [
+    "models/roaming/weapons/se-sai-02.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "rare",
+    "pack": "Samurai Empire"
+   }
+  },
+  {
+   "id": "er-sword-01",
+   "name": "Sylvan Blade",
+   "slot": "weapon",
+   "description": "A straight elven sword with a leaf-shaped guard. Light in the hand and long in the reach.",
+   "icon": "images/weapons/er-sword-01.png",
+   "models": [
+    "models/roaming/weapons/er-sword-01.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "uncommon",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "er-sword-02",
+   "name": "Moonsteel Sword",
+   "slot": "weapon",
+   "description": "A slim blade of pale moon-forged steel. It does not rust and it does not forgive.",
+   "icon": "images/weapons/er-sword-02.png",
+   "models": [
+    "models/roaming/weapons/er-sword-02.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "rare",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "er-sword-03",
+   "name": "Warden's Broadsword",
+   "slot": "weapon",
+   "description": "A wide-bladed sword with a channelled edge. The forest wardens' pattern.",
+   "icon": "images/weapons/er-sword-03.png",
+   "models": [
+    "models/roaming/weapons/er-sword-03.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "rare",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "er-sword-04",
+   "name": "Thornwood Greatsword",
+   "slot": "weapon",
+   "description": "A great two-handed elven blade with a fuller running its length. Heavy for elven work, and elven work is never heavy.",
+   "icon": "images/weapons/er-sword-04.png",
+   "models": [
+    "models/roaming/weapons/er-sword-04.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "epic",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "er-sword-05",
+   "name": "Stagheart Cleaver",
+   "slot": "weapon",
+   "description": "A vast leaf-bladed sword, the Stagheart guard's. It falls like a felled tree.",
+   "icon": "images/weapons/er-sword-05.png",
+   "models": [
+    "models/roaming/weapons/er-sword-05.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "epic",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "er-sword-06",
+   "name": "Duskwood Sabre",
+   "slot": "weapon",
+   "description": "A curved elven sabre with a dark wooden grip. Made for the paths at dusk.",
+   "icon": "images/weapons/er-sword-06.png",
+   "models": [
+    "models/roaming/weapons/er-sword-06.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "uncommon",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "er-sword-07",
+   "name": "Autumn Scimitar",
+   "slot": "weapon",
+   "description": "A deeply curved blade with fittings in autumn bronze. It cuts on the draw.",
+   "icon": "images/weapons/er-sword-07.png",
+   "models": [
+    "models/roaming/weapons/er-sword-07.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "rare",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "er-dagger-01",
+   "name": "Leaf Dagger",
+   "slot": "weapon",
+   "description": "A slender elven dagger shaped like a willow leaf. Silent in and silent out.",
+   "icon": "images/weapons/er-dagger-01.png",
+   "models": [
+    "models/roaming/weapons/er-dagger-01.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "common",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "er-dagger-02",
+   "name": "Twin-Leaf Dirk",
+   "slot": "weapon",
+   "description": "A dirk with a forked blade. Both edges are the sharp one.",
+   "icon": "images/weapons/er-dagger-02.png",
+   "models": [
+    "models/roaming/weapons/er-dagger-02.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "uncommon",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "er-dagger-03",
+   "name": "Sylvan Sickle-Knife",
+   "slot": "weapon",
+   "description": "A hooked knife with a wooden grip. A gardener's blade that took up other work.",
+   "icon": "images/weapons/er-dagger-03.png",
+   "models": [
+    "models/roaming/weapons/er-dagger-03.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "uncommon",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "er-dagger-04",
+   "name": "Moonsteel Kris",
+   "slot": "weapon",
+   "description": "A waved blade of pale steel. The wave is not for show; the wound does not close.",
+   "icon": "images/weapons/er-dagger-04.png",
+   "models": [
+    "models/roaming/weapons/er-dagger-04.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "rare",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "er-dagger-05",
+   "name": "Warden's Knife",
+   "slot": "weapon",
+   "description": "A plain elven knife with a bound grip. Every warden carries one.",
+   "icon": "images/weapons/er-dagger-05.png",
+   "models": [
+    "models/roaming/weapons/er-dagger-05.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "common",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "er-dagger-06",
+   "name": "Crescent Dagger",
+   "slot": "weapon",
+   "description": "A blade curved into a half-moon. It catches a sword and takes the hand behind it.",
+   "icon": "images/weapons/er-dagger-06.png",
+   "models": [
+    "models/roaming/weapons/er-dagger-06.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "rare",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "er-dagger-07",
+   "name": "Autumn Twinblade",
+   "slot": "weapon",
+   "description": "Two blades on one grip, bronze and green. Held at the middle, it is two weapons.",
+   "icon": "images/weapons/er-dagger-07.png",
+   "models": [
+    "models/roaming/weapons/er-dagger-07.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "epic",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "er-dagger-08",
+   "name": "Thorn Dagger",
+   "slot": "weapon",
+   "description": "A short curved dagger the colour of thorns. Kept in the sleeve.",
+   "icon": "images/weapons/er-dagger-08.png",
+   "models": [
+    "models/roaming/weapons/er-dagger-08.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "uncommon",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "er-dagger-09",
+   "name": "Duskwood Talon",
+   "slot": "weapon",
+   "description": "A hooked dagger with a dark grip. It pulls as it cuts.",
+   "icon": "images/weapons/er-dagger-09.png",
+   "models": [
+    "models/roaming/weapons/er-dagger-09.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "rare",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "er-axe-01",
+   "name": "Crescent Axe",
+   "slot": "weapon",
+   "description": "An elven axe with a single moon-curved blade. Elegant, for an axe.",
+   "icon": "images/weapons/er-axe-01.png",
+   "models": [
+    "models/roaming/weapons/er-axe-01.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "uncommon",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "er-axe-02",
+   "name": "Twin Crescent Axe",
+   "slot": "weapon",
+   "description": "Two moon blades back to back. Whichever way it swings, an edge arrives.",
+   "icon": "images/weapons/er-axe-02.png",
+   "models": [
+    "models/roaming/weapons/er-axe-02.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "rare",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "er-axe-03",
+   "name": "Sylvan Battleaxe",
+   "slot": "weapon",
+   "description": "A long-hafted axe with a leaf-cut blade. Made for the wardens who prefer weight.",
+   "icon": "images/weapons/er-axe-03.png",
+   "models": [
+    "models/roaming/weapons/er-axe-03.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "uncommon",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "er-axe-04",
+   "name": "Thornwood Poleaxe",
+   "slot": "weapon",
+   "description": "A great axe on a two-metre haft, blade and spike. It clears a path.",
+   "icon": "images/weapons/er-axe-04.png",
+   "models": [
+    "models/roaming/weapons/er-axe-04.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "epic",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "er-axe-05",
+   "name": "Moonsteel Axe",
+   "slot": "weapon",
+   "description": "A pale-bladed axe of moon-forged steel with a green heart in the blade.",
+   "icon": "images/weapons/er-axe-05.png",
+   "models": [
+    "models/roaming/weapons/er-axe-05.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "rare",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "er-axe-06",
+   "name": "Warden's Hatchet",
+   "slot": "weapon",
+   "description": "A short axe with a broad blade. It splits kindling and skulls with equal patience.",
+   "icon": "images/weapons/er-axe-06.png",
+   "models": [
+    "models/roaming/weapons/er-axe-06.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "common",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "er-axe-07",
+   "name": "Autumn Hand-Axe",
+   "slot": "weapon",
+   "description": "A one-hand axe in autumn bronze. Light enough to throw; better not to.",
+   "icon": "images/weapons/er-axe-07.png",
+   "models": [
+    "models/roaming/weapons/er-axe-07.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "common",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "er-glaive-01",
+   "name": "Sylvan Glaive",
+   "slot": "weapon",
+   "description": "A wide curved blade on a short pole. It sweeps low and comes back high.",
+   "icon": "images/weapons/er-glaive-01.png",
+   "models": [
+    "models/roaming/weapons/er-glaive-01.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "rare",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "er-glaive-02",
+   "name": "Moonlit Twin-Glaive",
+   "slot": "weapon",
+   "description": "A blade at either end of a long shaft. Spun, it is a wall; stopped, it is a spear.",
+   "icon": "images/weapons/er-glaive-02.png",
+   "models": [
+    "models/roaming/weapons/er-glaive-02.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "epic",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "er-hammer-01",
+   "name": "Grove Maul",
+   "slot": "weapon",
+   "description": "A heavy elven hammer with a green-stone head. The groves are quiet after it passes.",
+   "icon": "images/weapons/er-hammer-01.png",
+   "models": [
+    "models/roaming/weapons/er-hammer-01.glb"
+   ],
+   "weapon": {
+    "class": "hammer",
+    "rarity": "rare",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "er-spear-01",
+   "name": "Sentinel's Spear",
+   "slot": "weapon",
+   "description": "A long elven spear with a slender leaf head. The Sentinels stand with these at the forest's edge.",
+   "icon": "images/weapons/er-spear-01.png",
+   "models": [
+    "models/roaming/weapons/er-spear-01.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "rare",
+    "pack": "Elven Realm"
+   }
+  },
+  {
+   "id": "dk-sword-01",
+   "name": "Gravewarden Sword",
+   "slot": "weapon",
+   "description": "A long grey sword with a heavy guard. It was buried with its owner, who did not stay buried.",
+   "icon": "images/weapons/dk-sword-01.png",
+   "models": [
+    "models/roaming/weapons/dk-sword-01.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "rare",
+    "pack": "Dark Fantasy"
+   }
+  },
+  {
+   "id": "dk-sword-02",
+   "name": "Bloodletter Blade",
+   "slot": "weapon",
+   "description": "A dark greatsword with a blade the colour of old blood. It has never been washed.",
+   "icon": "images/weapons/dk-sword-02.png",
+   "models": [
+    "models/roaming/weapons/dk-sword-02.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "epic",
+    "pack": "Dark Fantasy"
+   }
+  },
+  {
+   "id": "dk-sword-03",
+   "name": "Crypt Shortsword",
+   "slot": "weapon",
+   "description": "A plain short sword from a crypt niche. The rust comes off; the cold does not.",
+   "icon": "images/weapons/dk-sword-03.png",
+   "models": [
+    "models/roaming/weapons/dk-sword-03.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "uncommon",
+    "pack": "Dark Fantasy"
+   }
+  },
+  {
+   "id": "dk-axe-01",
+   "name": "Sepulchre Axe",
+   "slot": "weapon",
+   "description": "A great axe with a skull-crested head and a shaft as long as a grave is deep.",
+   "icon": "images/weapons/dk-axe-01.png",
+   "models": [
+    "models/roaming/weapons/dk-axe-01.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "epic",
+    "pack": "Dark Fantasy"
+   }
+  },
+  {
+   "id": "dk-axe-02",
+   "name": "Barrow Axe",
+   "slot": "weapon",
+   "description": "A one-hand axe with a broad iron blade, taken from a barrow. It remembers.",
+   "icon": "images/weapons/dk-axe-02.png",
+   "models": [
+    "models/roaming/weapons/dk-axe-02.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "uncommon",
+    "pack": "Dark Fantasy"
+   }
+  },
+  {
+   "id": "dk-cleaver-01",
+   "name": "Headsman's Cleaver",
+   "slot": "weapon",
+   "description": "A square-bladed executioner's cleaver. One stroke was the contract.",
+   "icon": "images/weapons/dk-cleaver-01.png",
+   "models": [
+    "models/roaming/weapons/dk-cleaver-01.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "rare",
+    "pack": "Dark Fantasy"
+   }
+  },
+  {
+   "id": "dk-mace-01",
+   "name": "Crypt Mace",
+   "slot": "weapon",
+   "description": "A flanged iron mace from the crypt guard. Heavy, cold and indifferent.",
+   "icon": "images/weapons/dk-mace-01.png",
+   "models": [
+    "models/roaming/weapons/dk-mace-01.glb"
+   ],
+   "weapon": {
+    "class": "mace",
+    "rarity": "uncommon",
+    "pack": "Dark Fantasy"
+   }
+  },
+  {
+   "id": "dk-mace-02",
+   "name": "Plaguebearer",
+   "slot": "weapon",
+   "description": "A mace with a red-glassed head that seems to breathe. Do not put it near your face.",
+   "icon": "images/weapons/dk-mace-02.png",
+   "models": [
+    "models/roaming/weapons/dk-mace-02.glb"
+   ],
+   "weapon": {
+    "class": "mace",
+    "rarity": "epic",
+    "pack": "Dark Fantasy"
+   }
+  },
+  {
+   "id": "dk-hammer-01",
+   "name": "Gravedigger's Hammer",
+   "slot": "weapon",
+   "description": "A long-hafted hammer with a pick at the back. It digs holes and fills them.",
+   "icon": "images/weapons/dk-hammer-01.png",
+   "models": [
+    "models/roaming/weapons/dk-hammer-01.glb"
+   ],
+   "weapon": {
+    "class": "hammer",
+    "rarity": "rare",
+    "pack": "Dark Fantasy"
+   }
+  },
+  {
+   "id": "dk-halberd-01",
+   "name": "Crypt Halberd",
+   "slot": "weapon",
+   "description": "A halberd with a broad axe head and a long spike, the crypt guard's.",
+   "icon": "images/weapons/dk-halberd-01.png",
+   "models": [
+    "models/roaming/weapons/dk-halberd-01.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "rare",
+    "pack": "Dark Fantasy"
+   }
+  },
+  {
+   "id": "dk-halberd-02",
+   "name": "Gilded Poleaxe",
+   "slot": "weapon",
+   "description": "A poleaxe with a gilt axe head and a hooked back. A lord's guard carried it; the lord is dust.",
+   "icon": "images/weapons/dk-halberd-02.png",
+   "models": [
+    "models/roaming/weapons/dk-halberd-02.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "epic",
+    "pack": "Dark Fantasy"
+   }
+  },
+  {
+   "id": "dk-polearm-01",
+   "name": "Bone Spear",
+   "slot": "weapon",
+   "description": "A polearm with a narrow bone-white blade. It is not bone. Probably.",
+   "icon": "images/weapons/dk-polearm-01.png",
+   "models": [
+    "models/roaming/weapons/dk-polearm-01.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "uncommon",
+    "pack": "Dark Fantasy"
+   }
+  },
+  {
+   "id": "dk-scythe-01",
+   "name": "Reaper's Scythe",
+   "slot": "weapon",
+   "description": "A curved scythe blade on a bent iron shaft. Whose it was is not a question with a good answer.",
+   "icon": "images/weapons/dk-scythe-01.png",
+   "models": [
+    "models/roaming/weapons/dk-scythe-01.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "epic",
+    "pack": "Dark Fantasy"
+   }
+  },
+  {
+   "id": "dk-sickle-01",
+   "name": "Grave Sickle",
+   "slot": "weapon",
+   "description": "A short iron sickle from a crypt offering table. It still cuts.",
+   "icon": "images/weapons/dk-sickle-01.png",
+   "models": [
+    "models/roaming/weapons/dk-sickle-01.glb"
+   ],
+   "weapon": {
+    "class": "axe",
+    "rarity": "common",
+    "pack": "Dark Fantasy"
+   }
+  },
+  {
+   "id": "sa-odachi-01",
+   "name": "Odachi",
+   "slot": "weapon",
+   "description": "A field sword longer than a man is tall, carried across the back and drawn with both hands. One cut is the whole fight.",
+   "icon": "images/weapons/sa-odachi-01.png",
+   "models": [
+    "models/roaming/weapons/sa-odachi-01.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "epic",
+    "pack": "Samurai"
+   }
+  },
+  {
+   "id": "sa-ninjato-01",
+   "name": "Ninjato",
+   "slot": "weapon",
+   "description": "A straight short sword with a square guard. Plain, black and quick.",
+   "icon": "images/weapons/sa-ninjato-01.png",
+   "models": [
+    "models/roaming/weapons/sa-ninjato-01.glb"
+   ],
+   "weapon": {
+    "class": "sword",
+    "rarity": "rare",
+    "pack": "Samurai"
+   }
+  },
+  {
+   "id": "sa-tonfa-01",
+   "name": "Tonfa",
+   "slot": "weapon",
+   "description": "A hardwood baton with a side handle. It guards the forearm and breaks the other one.",
+   "icon": "images/weapons/sa-tonfa-01.png",
+   "models": [
+    "models/roaming/weapons/sa-tonfa-01.glb"
+   ],
+   "weapon": {
+    "class": "club",
+    "rarity": "uncommon",
+    "pack": "Samurai"
+   }
+  },
+  {
+   "id": "sa-dagger-01",
+   "name": "Village Knife",
+   "slot": "weapon",
+   "description": "A broad utility knife from a rice village. It has cut more rope than throats, so far.",
+   "icon": "images/weapons/sa-dagger-01.png",
+   "models": [
+    "models/roaming/weapons/sa-dagger-01.glb"
+   ],
+   "weapon": {
+    "class": "dagger",
+    "rarity": "common",
+    "pack": "Samurai"
+   }
+  },
+  {
+   "id": "pride-spear",
+   "name": "Prism Lance",
+   "slot": "weapon",
+   "description": "A bright two-handed spear. Long reach, a heavy thrust and every colour at once.",
+   "icon": "images/weapons/pride-spear.png",
+   "models": [
+    "models/roaming/weapons/pride-spear.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "legendary",
+    "pack": "Pride Weapons",
+    "pride": true
+   }
+  },
+  {
+   "id": "pride-spear-dusk",
+   "name": "Dusk Lance",
+   "slot": "weapon",
+   "description": "An alternate palette for the same balanced spear. A different look, equal power.",
+   "icon": "images/weapons/pride-spear-dusk.png",
+   "models": [
+    "models/roaming/weapons/pride-spear-dusk.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "legendary",
+    "pack": "Pride Weapons",
+    "pride": true
+   }
+  },
+  {
+   "id": "pride-spear-dawn",
+   "name": "Dawn Lance",
+   "slot": "weapon",
+   "description": "The prism lance in the colors of first light.",
+   "icon": "images/weapons/pride-spear-dawn.png",
+   "models": [
+    "models/roaming/weapons/pride-spear-dawn.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "legendary",
+    "pack": "Pride Weapons",
+    "pride": true
+   }
+  },
+  {
+   "id": "pride-spear-tide",
+   "name": "Tide Lance",
+   "slot": "weapon",
+   "description": "The prism lance in deep sea blues.",
+   "icon": "images/weapons/pride-spear-tide.png",
+   "models": [
+    "models/roaming/weapons/pride-spear-tide.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "legendary",
+    "pack": "Pride Weapons",
+    "pride": true
+   }
+  },
+  {
+   "id": "pride-spear-verdant",
+   "name": "Verdant Lance",
+   "slot": "weapon",
+   "description": "The prism lance in forest greens.",
+   "icon": "images/weapons/pride-spear-verdant.png",
+   "models": [
+    "models/roaming/weapons/pride-spear-verdant.glb"
+   ],
+   "weapon": {
+    "class": "great",
+    "rarity": "legendary",
+    "pack": "Pride Weapons",
+    "pride": true
+   }
   }
  ]
 }

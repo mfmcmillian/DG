@@ -407,6 +407,10 @@ def build(weapon, packs, want_models, want_icons):
 
     reset_scene()
     obj = import_weapon(fbx, weapon.get('objects'))
+    if weapon.get('scale'):
+        # A few older packs export in centimetres without a unit scale; `scale` fixes the metres.
+        obj.scale = (weapon['scale'],) * 3
+        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
     mat = make_material(base, emission)
     obj.data.materials.clear()
     obj.data.materials.append(mat)

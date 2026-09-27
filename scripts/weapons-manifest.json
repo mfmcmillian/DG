@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "note": "Source packs live in the Downloads folder; scripts/build-weapons.py extracts what it needs. grip: metres to raise the weapon along its length before placing it in the hand (for meshes whose origin is at the pommel). hand: \"l\" holds the weapon in the left hand (bows). objects: mesh objects to keep from an FBX that holds several weapons. props: plain GLBs (the arrow projectile). Recolors are one mesh under another pack palette; only palettes that visibly change the weapon are used.",
+  "note": "Source packs live in the Downloads folder; scripts/build-weapons.py extracts what it needs. scale: multiply the mesh before placing it (older packs exported in centimetres). grip: metres to raise the weapon along its length before placing it in the hand (for meshes whose origin is at the pommel). hand: \"l\" holds the weapon in the left hand (bows). objects: mesh objects to keep from an FBX that holds several weapons. props: plain GLBs (the arrow projectile). Recolors are one mesh under another pack palette; only palettes that visibly change the weapon are used.",
   "packs": {
     "df": {
       "zip": "POLYGON_Dark_Fortress_SourceFiles_v4.zip",
@@ -202,6 +202,18 @@
         "jade": "SourceFiles/Textures/SamuraiEmpire/Emissive/PolygonSamuraiEmpireEmissive_03_A.png"
       },
       "label": "Samurai Empire"
+    },
+    "sa": {
+      "zip": "POLYGON_Samurai_SourceFiles_v2.zip",
+      "fbx": "SourceFiles/FBX/{name}.fbx",
+      "palettes": {
+        "base": "SourceFiles/Textures/PolygonSamurai_Tex_01.png",
+        "red": "SourceFiles/Textures/PolygonSamurai_Tex_02.png",
+        "blue": "SourceFiles/Textures/PolygonSamurai_Tex_03.png",
+        "black": "SourceFiles/Textures/PolygonSamurai_Tex_04.png"
+      },
+      "emission": {},
+      "label": "Samurai"
     }
   },
   "weapons": [
@@ -2991,6 +3003,839 @@
       "rarity": "uncommon",
       "description": "A plain staff of red oak, six feet of it. The monks say a weapon that cannot cut teaches restraint.",
       "grip": -0.4
+    },
+    {
+      "id": "dr-spear-01",
+      "name": "Vault Spear",
+      "pack": "dr",
+      "mesh": "SM_Wep_Spear_01",
+      "palette": "base",
+      "class": "great",
+      "rarity": "common",
+      "description": "A bronze-headed spear from the dwarven racks. Plain, straight and long enough."
+    },
+    {
+      "id": "dr-spear-02",
+      "name": "Gilded Spear",
+      "pack": "dr",
+      "mesh": "SM_Wep_Spear_02",
+      "palette": "base",
+      "class": "great",
+      "rarity": "uncommon",
+      "description": "A vault spear with a gilt collar under the head. The dwarves gild what they are proud of."
+    },
+    {
+      "id": "dr-spear-03",
+      "name": "Silvered Pike",
+      "pack": "dr",
+      "mesh": "SM_Wep_Spear_03",
+      "palette": "silver",
+      "class": "great",
+      "rarity": "uncommon",
+      "description": "A slim pike with a silvered leaf head. Made for a wall of them."
+    },
+    {
+      "id": "dr-spear-04",
+      "name": "Forge Lance",
+      "pack": "dr",
+      "mesh": "SM_Wep_Spear_04",
+      "palette": "iron",
+      "class": "great",
+      "rarity": "rare",
+      "description": "A long lance with a broad steel head. The forge guards carry these on the gantries."
+    },
+    {
+      "id": "dr-spear-05",
+      "name": "Axe-Spear",
+      "pack": "dr",
+      "mesh": "SM_Wep_Spear_05",
+      "palette": "base",
+      "class": "great",
+      "rarity": "rare",
+      "description": "A spear with an axe blade set behind the point. Thrust, then chop."
+    },
+    {
+      "id": "dr-spear-06",
+      "name": "Deep Partisan",
+      "pack": "dr",
+      "mesh": "SM_Wep_Spear_06",
+      "palette": "iron",
+      "class": "great",
+      "rarity": "uncommon",
+      "description": "A short-bladed partisan on a dark shaft. Carried in the low tunnels where a long spear catches."
+    },
+    {
+      "id": "dr-spear-07",
+      "name": "Gold Winged Spear",
+      "pack": "dr",
+      "mesh": "SM_Wep_Spear_07",
+      "palette": "base",
+      "class": "great",
+      "rarity": "epic",
+      "description": "A ceremonial spear with gilded wings at the socket. Ceremonial means nobody expected it to be used."
+    },
+    {
+      "id": "dr-spear-08",
+      "name": "Forge Lord's Spear",
+      "pack": "dr",
+      "mesh": "SM_Wep_Spear_08",
+      "palette": "base",
+      "class": "great",
+      "rarity": "epic",
+      "description": "Broad, heavy and rune-cut along the blade. The Forge Lord's honour guard carried a dozen; this is one."
+    },
+    {
+      "id": "fk-spear-01",
+      "name": "Boar Fork",
+      "pack": "fk",
+      "mesh": "SM_Wep_Spear_01",
+      "palette": "base",
+      "class": "great",
+      "rarity": "common",
+      "description": "A two-pronged hunting fork on a long pole. Holds a boar off; holds a man off too.",
+      "grip": 0.5
+    },
+    {
+      "id": "fk-spear-02",
+      "name": "Levy Spear",
+      "pack": "fk",
+      "mesh": "SM_Wep_Spear_02",
+      "palette": "base",
+      "class": "great",
+      "rarity": "common",
+      "description": "The kingdom's standard issue: an ash pole and a leaf blade. Thousands were made.",
+      "grip": 0.5
+    },
+    {
+      "id": "fk-spear-03",
+      "name": "Sergeant's Spear",
+      "pack": "fk",
+      "mesh": "SM_Wep_Spear_03",
+      "palette": "base",
+      "class": "great",
+      "rarity": "uncommon",
+      "description": "A levy spear with a broader head and a leather grip. Sergeants got the better ones.",
+      "grip": 0.5
+    },
+    {
+      "id": "fk-spear-04",
+      "name": "Winged Spear",
+      "pack": "fk",
+      "mesh": "SM_Wep_Spear_04",
+      "palette": "base",
+      "class": "great",
+      "rarity": "uncommon",
+      "description": "Two lugs below the blade stop it going in too deep. Somebody learned that the hard way.",
+      "grip": 0.5
+    },
+    {
+      "id": "fk-spear-05",
+      "name": "Ranseur",
+      "pack": "fk",
+      "mesh": "SM_Wep_Spear_05",
+      "palette": "base",
+      "class": "great",
+      "rarity": "rare",
+      "description": "A three-pointed head: one blade to thrust, two to catch and twist a sword away.",
+      "grip": 0.5
+    },
+    {
+      "id": "fk-spear-06",
+      "name": "Iron Pike",
+      "pack": "fk",
+      "mesh": "SM_Wep_Spear_06",
+      "palette": "base",
+      "class": "great",
+      "rarity": "common",
+      "description": "A long pike with a small iron head. Cheap to make and terrible to walk into.",
+      "grip": 0.5
+    },
+    {
+      "id": "fk-spear-07",
+      "name": "Azure Spear",
+      "pack": "fk",
+      "mesh": "SM_Wep_Spear_07",
+      "palette": "azure",
+      "class": "great",
+      "rarity": "rare",
+      "description": "A household spear with a blue-bound shaft and a bright blade.",
+      "grip": 0.5
+    },
+    {
+      "id": "fk-spear-08",
+      "name": "Knight's Lance",
+      "pack": "fk",
+      "mesh": "SM_Wep_Spear_08",
+      "palette": "base",
+      "class": "great",
+      "rarity": "rare",
+      "description": "A heavy lance meant for the saddle. On foot it is simply a very long, very sharp argument.",
+      "grip": 0.5
+    },
+    {
+      "id": "fk-spear-09",
+      "name": "Gilt Partisan",
+      "pack": "fk",
+      "mesh": "SM_Wep_Spear_09",
+      "palette": "gilt",
+      "class": "great",
+      "rarity": "epic",
+      "description": "A broad partisan blade with gilt fittings, the palace guard's pattern.",
+      "grip": 0.5
+    },
+    {
+      "id": "fk-spear-10",
+      "name": "Barbed Spear",
+      "pack": "fk",
+      "mesh": "SM_Wep_Spear_10",
+      "palette": "base",
+      "class": "great",
+      "rarity": "uncommon",
+      "description": "A spear whose head is barbed like a fish hook. Coming out hurts more than going in.",
+      "grip": 0.5
+    },
+    {
+      "id": "fk-spear-11",
+      "name": "Great Pike",
+      "pack": "fk",
+      "mesh": "SM_Wep_Spear_11",
+      "palette": "base",
+      "class": "great",
+      "rarity": "rare",
+      "description": "The longest spear in the kingdom's armoury. Reach that nothing on two legs can answer.",
+      "grip": 0.55
+    },
+    {
+      "id": "fk-spear-12",
+      "name": "Hunting Spear",
+      "pack": "fk",
+      "mesh": "SM_Wep_Spear_12",
+      "palette": "base",
+      "class": "great",
+      "rarity": "common",
+      "description": "A short, stout spear with a crossbar. A woodsman's tool that doubles as a weapon.",
+      "grip": -0.25
+    },
+    {
+      "id": "fk-knuckledagger-01",
+      "name": "Knuckle Dagger",
+      "pack": "fk",
+      "mesh": "SM_Wep_KnuckleDagger_01",
+      "palette": "base",
+      "class": "dagger",
+      "rarity": "uncommon",
+      "description": "A short blade on a fist grip. There is no way to hold it that is not a punch."
+    },
+    {
+      "id": "vk-spear-01",
+      "name": "Raider's Spear",
+      "pack": "vk",
+      "mesh": "SM_Wep_Spear_01",
+      "palette": "base",
+      "class": "great",
+      "rarity": "common",
+      "description": "A northern spear with a long ash shaft and a narrow head. The raiders' first weapon, before they earned an axe.",
+      "grip": 0.4
+    },
+    {
+      "id": "vk-spear-02",
+      "name": "Jarl's Spear",
+      "pack": "vk",
+      "mesh": "SM_Wep_Spear_02",
+      "palette": "base",
+      "class": "great",
+      "rarity": "rare",
+      "description": "A broad-bladed spear with a wrapped grip. Odin carried one; the Jarl carries this."
+    },
+    {
+      "id": "vk-spear-03",
+      "name": "Hewing Spear",
+      "pack": "vk",
+      "mesh": "SM_Wep_Spear_03",
+      "palette": "base",
+      "class": "great",
+      "rarity": "uncommon",
+      "description": "A spear with a blade long enough to cut. Thrust, then swing.",
+      "grip": 0.45
+    },
+    {
+      "id": "vk-fishingspear-01",
+      "name": "Fishing Spear",
+      "pack": "vk",
+      "mesh": "SM_Wep_FishingSpear_01",
+      "palette": "base",
+      "class": "great",
+      "rarity": "common",
+      "description": "A barbed fork for the shallows. It works on things that are not fish.",
+      "grip": -0.3
+    },
+    {
+      "id": "gb-spear-01",
+      "name": "Goblin Pig-Sticker",
+      "pack": "gb",
+      "mesh": "SM_Wep_Spear_01",
+      "palette": "base",
+      "class": "great",
+      "rarity": "common",
+      "description": "A crooked pole with a rusty blade lashed on. Goblins do not make spears, they assemble them."
+    },
+    {
+      "id": "gb-spear-02",
+      "name": "Skull-Spear",
+      "pack": "gb",
+      "mesh": "SM_Wep_Spear_02",
+      "palette": "base",
+      "class": "great",
+      "rarity": "uncommon",
+      "description": "A long spear with a spiked skull under the blade. The skull is decorative. The spike is not.",
+      "grip": -0.35
+    },
+    {
+      "id": "kn-halberd-01",
+      "name": "Halberd",
+      "pack": "kn",
+      "mesh": "SM_Wep_Halberd_01",
+      "palette": "base",
+      "class": "great",
+      "rarity": "rare",
+      "description": "Axe blade, spike and hook on a long haft. The castle guard's weapon: it does everything, none of it gently.",
+      "grip": 0.35
+    },
+    {
+      "id": "df-scythe-01",
+      "name": "Rune Scythe",
+      "pack": "df",
+      "mesh": "SM_Wep_Scythe_01",
+      "palette": "rune",
+      "class": "great",
+      "rarity": "epic",
+      "description": "A reaper's scythe with a rune-lit blade from the Fortress vaults. It was not made for wheat."
+    },
+    {
+      "id": "se-sai-02",
+      "name": "Paired Sai",
+      "pack": "se",
+      "mesh": "SM_Wep_Prong_02",
+      "palette": "crimson",
+      "class": "dagger",
+      "rarity": "rare",
+      "description": "A sai with its sheath, black iron and red cord. Carried in pairs; one is enough."
+    },
+    {
+      "id": "er-sword-01",
+      "name": "Sylvan Blade",
+      "pack": "er",
+      "mesh": "SM_Wep_Sword_01",
+      "palette": "base",
+      "class": "sword",
+      "rarity": "uncommon",
+      "description": "A straight elven sword with a leaf-shaped guard. Light in the hand and long in the reach."
+    },
+    {
+      "id": "er-sword-02",
+      "name": "Moonsteel Sword",
+      "pack": "er",
+      "mesh": "SM_Wep_Sword_02",
+      "palette": "moon",
+      "class": "sword",
+      "rarity": "rare",
+      "description": "A slim blade of pale moon-forged steel. It does not rust and it does not forgive."
+    },
+    {
+      "id": "er-sword-03",
+      "name": "Warden's Broadsword",
+      "pack": "er",
+      "mesh": "SM_Wep_Sword_03",
+      "palette": "base",
+      "class": "sword",
+      "rarity": "rare",
+      "description": "A wide-bladed sword with a channelled edge. The forest wardens' pattern."
+    },
+    {
+      "id": "er-sword-04",
+      "name": "Thornwood Greatsword",
+      "pack": "er",
+      "mesh": "SM_Wep_Sword_04",
+      "palette": "base",
+      "class": "great",
+      "rarity": "epic",
+      "description": "A great two-handed elven blade with a fuller running its length. Heavy for elven work, and elven work is never heavy."
+    },
+    {
+      "id": "er-sword-05",
+      "name": "Stagheart Cleaver",
+      "pack": "er",
+      "mesh": "SM_Wep_Sword_05",
+      "palette": "base",
+      "class": "great",
+      "rarity": "epic",
+      "description": "A vast leaf-bladed sword, the Stagheart guard's. It falls like a felled tree."
+    },
+    {
+      "id": "er-sword-06",
+      "name": "Duskwood Sabre",
+      "pack": "er",
+      "mesh": "SM_Wep_Sword_06",
+      "palette": "dusk",
+      "class": "sword",
+      "rarity": "uncommon",
+      "description": "A curved elven sabre with a dark wooden grip. Made for the paths at dusk."
+    },
+    {
+      "id": "er-sword-07",
+      "name": "Autumn Scimitar",
+      "pack": "er",
+      "mesh": "SM_Wep_Sword_07",
+      "palette": "autumn",
+      "class": "sword",
+      "rarity": "rare",
+      "description": "A deeply curved blade with fittings in autumn bronze. It cuts on the draw."
+    },
+    {
+      "id": "er-dagger-01",
+      "name": "Leaf Dagger",
+      "pack": "er",
+      "mesh": "SM_Wep_Dagger_01",
+      "palette": "base",
+      "class": "dagger",
+      "rarity": "common",
+      "description": "A slender elven dagger shaped like a willow leaf. Silent in and silent out."
+    },
+    {
+      "id": "er-dagger-02",
+      "name": "Twin-Leaf Dirk",
+      "pack": "er",
+      "mesh": "SM_Wep_Dagger_02",
+      "palette": "base",
+      "class": "dagger",
+      "rarity": "uncommon",
+      "description": "A dirk with a forked blade. Both edges are the sharp one."
+    },
+    {
+      "id": "er-dagger-03",
+      "name": "Sylvan Sickle-Knife",
+      "pack": "er",
+      "mesh": "SM_Wep_Dagger_03",
+      "palette": "base",
+      "class": "dagger",
+      "rarity": "uncommon",
+      "description": "A hooked knife with a wooden grip. A gardener's blade that took up other work."
+    },
+    {
+      "id": "er-dagger-04",
+      "name": "Moonsteel Kris",
+      "pack": "er",
+      "mesh": "SM_Wep_Dagger_04",
+      "palette": "moon",
+      "class": "dagger",
+      "rarity": "rare",
+      "description": "A waved blade of pale steel. The wave is not for show; the wound does not close."
+    },
+    {
+      "id": "er-dagger-05",
+      "name": "Warden's Knife",
+      "pack": "er",
+      "mesh": "SM_Wep_Dagger_05",
+      "palette": "base",
+      "class": "dagger",
+      "rarity": "common",
+      "description": "A plain elven knife with a bound grip. Every warden carries one."
+    },
+    {
+      "id": "er-dagger-06",
+      "name": "Crescent Dagger",
+      "pack": "er",
+      "mesh": "SM_Wep_Dagger_06",
+      "palette": "base",
+      "class": "dagger",
+      "rarity": "rare",
+      "description": "A blade curved into a half-moon. It catches a sword and takes the hand behind it."
+    },
+    {
+      "id": "er-dagger-07",
+      "name": "Autumn Twinblade",
+      "pack": "er",
+      "mesh": "SM_Wep_Dagger_07",
+      "palette": "autumn",
+      "class": "dagger",
+      "rarity": "epic",
+      "description": "Two blades on one grip, bronze and green. Held at the middle, it is two weapons.",
+      "grip": -0.3
+    },
+    {
+      "id": "er-dagger-08",
+      "name": "Thorn Dagger",
+      "pack": "er",
+      "mesh": "SM_Wep_Dagger_08",
+      "palette": "base",
+      "class": "dagger",
+      "rarity": "uncommon",
+      "description": "A short curved dagger the colour of thorns. Kept in the sleeve.",
+      "grip": -0.15
+    },
+    {
+      "id": "er-dagger-09",
+      "name": "Duskwood Talon",
+      "pack": "er",
+      "mesh": "SM_Wep_Dagger_09",
+      "palette": "dusk",
+      "class": "dagger",
+      "rarity": "rare",
+      "description": "A hooked dagger with a dark grip. It pulls as it cuts."
+    },
+    {
+      "id": "er-axe-01",
+      "name": "Crescent Axe",
+      "pack": "er",
+      "mesh": "SM_Wep_Axe_01",
+      "palette": "base",
+      "class": "axe",
+      "rarity": "uncommon",
+      "description": "An elven axe with a single moon-curved blade. Elegant, for an axe."
+    },
+    {
+      "id": "er-axe-02",
+      "name": "Twin Crescent Axe",
+      "pack": "er",
+      "mesh": "SM_Wep_Axe_02",
+      "palette": "base",
+      "class": "axe",
+      "rarity": "rare",
+      "description": "Two moon blades back to back. Whichever way it swings, an edge arrives."
+    },
+    {
+      "id": "er-axe-03",
+      "name": "Sylvan Battleaxe",
+      "pack": "er",
+      "mesh": "SM_Wep_Axe_03",
+      "palette": "base",
+      "class": "axe",
+      "rarity": "uncommon",
+      "description": "A long-hafted axe with a leaf-cut blade. Made for the wardens who prefer weight."
+    },
+    {
+      "id": "er-axe-04",
+      "name": "Thornwood Poleaxe",
+      "pack": "er",
+      "mesh": "SM_Wep_Axe_04",
+      "palette": "base",
+      "class": "great",
+      "rarity": "epic",
+      "description": "A great axe on a two-metre haft, blade and spike. It clears a path.",
+      "grip": 0.25
+    },
+    {
+      "id": "er-axe-05",
+      "name": "Moonsteel Axe",
+      "pack": "er",
+      "mesh": "SM_Wep_Axe_05",
+      "palette": "moon",
+      "class": "axe",
+      "rarity": "rare",
+      "description": "A pale-bladed axe of moon-forged steel with a green heart in the blade."
+    },
+    {
+      "id": "er-axe-06",
+      "name": "Warden's Hatchet",
+      "pack": "er",
+      "mesh": "SM_Wep_Axe_06",
+      "palette": "base",
+      "class": "axe",
+      "rarity": "common",
+      "description": "A short axe with a broad blade. It splits kindling and skulls with equal patience."
+    },
+    {
+      "id": "er-axe-07",
+      "name": "Autumn Hand-Axe",
+      "pack": "er",
+      "mesh": "SM_Wep_Axe_07",
+      "palette": "autumn",
+      "class": "axe",
+      "rarity": "common",
+      "description": "A one-hand axe in autumn bronze. Light enough to throw; better not to."
+    },
+    {
+      "id": "er-glaive-01",
+      "name": "Sylvan Glaive",
+      "pack": "er",
+      "mesh": "SM_Wep_Glaive_01",
+      "palette": "base",
+      "class": "great",
+      "rarity": "rare",
+      "description": "A wide curved blade on a short pole. It sweeps low and comes back high.",
+      "grip": -0.25
+    },
+    {
+      "id": "er-glaive-02",
+      "name": "Moonlit Twin-Glaive",
+      "pack": "er",
+      "mesh": "SM_Wep_Glaive_02",
+      "palette": "moon",
+      "class": "great",
+      "rarity": "epic",
+      "description": "A blade at either end of a long shaft. Spun, it is a wall; stopped, it is a spear."
+    },
+    {
+      "id": "er-hammer-01",
+      "name": "Grove Maul",
+      "pack": "er",
+      "mesh": "SM_Wep_Hammer_01",
+      "palette": "base",
+      "class": "hammer",
+      "rarity": "rare",
+      "description": "A heavy elven hammer with a green-stone head. The groves are quiet after it passes."
+    },
+    {
+      "id": "er-spear-01",
+      "name": "Sentinel's Spear",
+      "pack": "er",
+      "mesh": "SM_Wep_Spear_01",
+      "palette": "base",
+      "class": "great",
+      "rarity": "rare",
+      "description": "A long elven spear with a slender leaf head. The Sentinels stand with these at the forest's edge."
+    },
+    {
+      "id": "dk-sword-01",
+      "name": "Gravewarden Sword",
+      "pack": "dk",
+      "mesh": "SM_Wep_Sword_01",
+      "palette": "grave",
+      "class": "sword",
+      "rarity": "rare",
+      "description": "A long grey sword with a heavy guard. It was buried with its owner, who did not stay buried."
+    },
+    {
+      "id": "dk-sword-02",
+      "name": "Bloodletter Blade",
+      "pack": "dk",
+      "mesh": "SM_Wep_Sword_02",
+      "palette": "blood",
+      "class": "great",
+      "rarity": "epic",
+      "description": "A dark greatsword with a blade the colour of old blood. It has never been washed."
+    },
+    {
+      "id": "dk-sword-03",
+      "name": "Crypt Shortsword",
+      "pack": "dk",
+      "mesh": "SM_Wep_Sword_03",
+      "palette": "base",
+      "class": "sword",
+      "rarity": "uncommon",
+      "description": "A plain short sword from a crypt niche. The rust comes off; the cold does not."
+    },
+    {
+      "id": "dk-axe-01",
+      "name": "Sepulchre Axe",
+      "pack": "dk",
+      "mesh": "SM_Wep_Axe_01",
+      "palette": "base",
+      "class": "great",
+      "rarity": "epic",
+      "description": "A great axe with a skull-crested head and a shaft as long as a grave is deep.",
+      "grip": 0.2
+    },
+    {
+      "id": "dk-axe-02",
+      "name": "Barrow Axe",
+      "pack": "dk",
+      "mesh": "SM_Wep_Axe_02",
+      "palette": "base",
+      "class": "axe",
+      "rarity": "uncommon",
+      "description": "A one-hand axe with a broad iron blade, taken from a barrow. It remembers."
+    },
+    {
+      "id": "dk-cleaver-01",
+      "name": "Headsman's Cleaver",
+      "pack": "dk",
+      "mesh": "SM_Wep_Cleaver_01",
+      "palette": "base",
+      "class": "axe",
+      "rarity": "rare",
+      "description": "A square-bladed executioner's cleaver. One stroke was the contract."
+    },
+    {
+      "id": "dk-mace-01",
+      "name": "Crypt Mace",
+      "pack": "dk",
+      "mesh": "SM_Wep_Mace_01",
+      "palette": "base",
+      "class": "mace",
+      "rarity": "uncommon",
+      "description": "A flanged iron mace from the crypt guard. Heavy, cold and indifferent."
+    },
+    {
+      "id": "dk-mace-02",
+      "name": "Plaguebearer",
+      "pack": "dk",
+      "mesh": "SM_Wep_Mace_02",
+      "palette": "plague",
+      "class": "mace",
+      "rarity": "epic",
+      "description": "A mace with a red-glassed head that seems to breathe. Do not put it near your face."
+    },
+    {
+      "id": "dk-hammer-01",
+      "name": "Gravedigger's Hammer",
+      "pack": "dk",
+      "mesh": "SM_Wep_Hammer_01",
+      "palette": "base",
+      "class": "hammer",
+      "rarity": "rare",
+      "description": "A long-hafted hammer with a pick at the back. It digs holes and fills them.",
+      "grip": -0.2
+    },
+    {
+      "id": "dk-halberd-01",
+      "name": "Crypt Halberd",
+      "pack": "dk",
+      "mesh": "SM_Wep_Halberd_01",
+      "palette": "base",
+      "class": "great",
+      "rarity": "rare",
+      "description": "A halberd with a broad axe head and a long spike, the crypt guard's.",
+      "grip": 0.25
+    },
+    {
+      "id": "dk-halberd-02",
+      "name": "Gilded Poleaxe",
+      "pack": "dk",
+      "mesh": "SM_Wep_Halberd_02",
+      "palette": "base",
+      "class": "great",
+      "rarity": "epic",
+      "description": "A poleaxe with a gilt axe head and a hooked back. A lord's guard carried it; the lord is dust."
+    },
+    {
+      "id": "dk-polearm-01",
+      "name": "Bone Spear",
+      "pack": "dk",
+      "mesh": "SM_Wep_Polearm_01",
+      "palette": "grave",
+      "class": "great",
+      "rarity": "uncommon",
+      "description": "A polearm with a narrow bone-white blade. It is not bone. Probably."
+    },
+    {
+      "id": "dk-scythe-01",
+      "name": "Reaper's Scythe",
+      "pack": "dk",
+      "mesh": "SM_Wep_Scythe_01",
+      "palette": "base",
+      "class": "great",
+      "rarity": "epic",
+      "description": "A curved scythe blade on a bent iron shaft. Whose it was is not a question with a good answer."
+    },
+    {
+      "id": "dk-sickle-01",
+      "name": "Grave Sickle",
+      "pack": "dk",
+      "mesh": "SM_Wep_Sickle_01",
+      "palette": "base",
+      "class": "axe",
+      "rarity": "common",
+      "description": "A short iron sickle from a crypt offering table. It still cuts."
+    },
+    {
+      "id": "sa-odachi-01",
+      "name": "Odachi",
+      "pack": "sa",
+      "mesh": "SM_Wep_Odachi_01",
+      "palette": "base",
+      "class": "great",
+      "rarity": "epic",
+      "description": "A field sword longer than a man is tall, carried across the back and drawn with both hands. One cut is the whole fight.",
+      "scale": 100
+    },
+    {
+      "id": "sa-ninjato-01",
+      "name": "Ninjato",
+      "pack": "sa",
+      "mesh": "SM_Wep_Ninjato_01",
+      "palette": "black",
+      "class": "sword",
+      "rarity": "rare",
+      "description": "A straight short sword with a square guard. Plain, black and quick.",
+      "scale": 100
+    },
+    {
+      "id": "sa-tonfa-01",
+      "name": "Tonfa",
+      "pack": "sa",
+      "mesh": "SM_Wep_Tonfa_01",
+      "palette": "base",
+      "class": "club",
+      "rarity": "uncommon",
+      "description": "A hardwood baton with a side handle. It guards the forearm and breaks the other one.",
+      "scale": 100,
+      "grip": -0.2
+    },
+    {
+      "id": "sa-dagger-01",
+      "name": "Village Knife",
+      "pack": "sa",
+      "mesh": "SM_Wep_Dagger",
+      "palette": "base",
+      "class": "dagger",
+      "rarity": "common",
+      "description": "A broad utility knife from a rice village. It has cut more rope than throats, so far."
+    },
+    {
+      "id": "pride-spear",
+      "name": "Prism Lance",
+      "pack": "pr",
+      "mesh": "SM_Wep_Spear_01",
+      "palette": "alt01",
+      "class": "great",
+      "rarity": "legendary",
+      "description": "A bright two-handed spear. Long reach, a heavy thrust and every colour at once.",
+      "pride": true
+    },
+    {
+      "id": "pride-spear-dusk",
+      "name": "Dusk Lance",
+      "pack": "pr",
+      "mesh": "SM_Wep_Spear_01",
+      "palette": "alt02",
+      "class": "great",
+      "rarity": "legendary",
+      "description": "An alternate palette for the same balanced spear. A different look, equal power.",
+      "pride": true
+    },
+    {
+      "id": "pride-spear-dawn",
+      "name": "Dawn Lance",
+      "pack": "pr",
+      "mesh": "SM_Wep_Spear_01",
+      "palette": "alt03",
+      "class": "great",
+      "rarity": "legendary",
+      "description": "The prism lance in the colors of first light.",
+      "pride": true
+    },
+    {
+      "id": "pride-spear-tide",
+      "name": "Tide Lance",
+      "pack": "pr",
+      "mesh": "SM_Wep_Spear_01",
+      "palette": "alt05",
+      "class": "great",
+      "rarity": "legendary",
+      "description": "The prism lance in deep sea blues.",
+      "pride": true
+    },
+    {
+      "id": "pride-spear-verdant",
+      "name": "Verdant Lance",
+      "pack": "pr",
+      "mesh": "SM_Wep_Spear_01",
+      "palette": "alt08",
+      "class": "great",
+      "rarity": "legendary",
+      "description": "The prism lance in forest greens.",
+      "pride": true
     }
   ],
   "props": [
