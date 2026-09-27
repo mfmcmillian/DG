@@ -96,7 +96,7 @@ function pitTarget(): Target | undefined {
     const item = getEquipmentItemOrNull(hover.id)
     return { key: 'pit-take', x: tr.position.x, z: tr.position.z, at: AT_HOVER, title: item ? t(item.name) : t('Upgrade pit'), hint: t('hold to take'), run: () => { takePitResult() } }
   }
-  return { key: 'pit', x: tr.position.x, z: tr.position.z, at: AT_PIT, title: t('Upgrade pit'), hint: t('hold to offer a weapon'), run: () => { openUpgradePicker() } }
+  return { key: 'pit', x: tr.position.x, z: tr.position.z, at: AT_PIT, title: t('Upgrade pit'), hint: t('hold to offer gear'), run: () => { openUpgradePicker() } }
 }
 
 /** The ring is up, or a conversation is open: E belongs to the hall, not to the weapon. */

@@ -230,9 +230,9 @@ function toast(item: EquipmentItem, salvaged: number, wrongClass = false, raised
 
 /**
  * Gear changes hands: unlocked if new to this hero, sold on the spot if owned
- * or another class's. Armor falls with a rank (`up`, the difficulty's rarity):
- * a new piece is owned at that rank, and an owned piece that falls rarer than
- * the hero's copy is raised to it instead of being sold.
+ * or another class's. Gear falls with a rank (`up`, rarity steps above the
+ * page): a new item is owned at that rank, and an owned one that falls rarer
+ * than the hero's copy is raised to it instead of being sold.
  */
 function award(id: string, at: Vector3, up = 0) {
   const item = getEquipmentItemOrNull(id)
@@ -256,7 +256,7 @@ function award(id: string, at: Vector3, up = 0) {
     fxNumber(Vector3.add(at, Vector3.create(0, 0.9, 0)), item.name, 'note')
     run.found.push(item.id)
     toast(item, 0)
-  } else if (!item.weapon && up > upgradeRankOf(item.id)) {
+  } else if (!item.weapon?.pride && up > upgradeRankOf(item.id)) {
     // Owned, but this one fell rarer: the hero's copy becomes it.
     setUpgradeRank(item.id, up)
     fxSound('heal', 0.9)

@@ -1,4 +1,5 @@
 import { CreatedBy, engine, Entity, EntityState, PlayerIdentityData, RealmInfo, Transform } from '@dcl/sdk/ecs'
+import { clampLevel } from './shared/upgradeRanks'
 import { Vector3 } from '@dcl/sdk/math'
 import { isStateSyncronized, syncEntity } from '@dcl/sdk/network'
 import { CombatPose, isMeleeSwing, MAX_COMBAT_HEALTH } from './combatActions'
@@ -283,12 +284,30 @@ export function heroLoadout(id: string): EquipmentLoadout | undefined {
   return undefined
 }
 
-/** How many rarity steps the pit has given that weapon, as the hero's synced look declares. */
+/** How many rarity steps that weapon fell with, as the hero's synced look declares. */
 export function heroWeaponRank(id: string): number {
   for (const [entity, hero] of heroes()) {
-    if (heroOwner(entity, hero) === id) return Math.max(0, hero.weaponUp || 0)
+    if (heroOwner(entity, hero) === id) return unpackWeaponUp(hero.weaponUp).rank
   }
   return 0
+}
+
+/** The level the pit has forged that weapon to, as the hero's synced look declares. */
+export function heroWeaponLevel(id: string): number {
+  for (const [entity, hero] of heroes()) {
+    if (heroOwner(entity, hero) === id) return unpackWeaponUp(hero.weaponUp).level
+  }
+  return 1
+}
+
+/** `HeroBody.weaponUp`: the rarity steps (0..9) plus ten times the level. */
+export function packWeaponUp(rank: number, level: number): number {
+  return Math.max(0, Math.min(9, Math.floor(rank))) + 10 * clampLevel(level)
+}
+
+function unpackWeaponUp(packed: number | undefined): { rank: number; level: number } {
+  const v = Math.max(0, Math.floor(packed || 0))
+  return { rank: v % 10, level: clampLevel(Math.floor(v / 10)) }
 }
 
 /**
@@ -304,13 +323,36 @@ export function heroArmorRankOf(id: string): (itemId: string) => number {
   return () => 0
 }
 
-/** Pack a loadout's armor ranks the way `HeroBody.armorUp` carries them. */
-export function packArmorRanks(loadout: EquipmentLoadout, rankOf: (itemId: string) => number): string {
-  let out = ''
-  for (const slot of EQUIPMENT_SLOTS) {
-    if (slot.id !== 'weapon') out += String(Math.max(0, Math.min(9, rankOf(loadout[slot.id]))))
+/** The level the pit has forged each worn armor piece to, as the synced look declares: a lookup by item id like heroArmorRankOf. */
+export function heroArmorLevelOf(id: string): (itemId: string) => number {
+  for (const [entity, hero] of heroes()) {
+    if (heroOwner(entity, hero) !== id) continue
+    return armorLevelLookup(fullLoadout(hero), hero.armorUp)
   }
-  return out
+  return () => 1
+}
+
+/** Pack a loadout's armor ranks and levels the way `HeroBody.armorUp` carries them: six rank digits, then six base-36 level digits. */
+export function packArmorRanks(loadout: EquipmentLoadout, rankOf: (itemId: string) => number, levelOf: (itemId: string) => number = () => 1): string {
+  let ranks = ''
+  let levels = ''
+  for (const slot of EQUIPMENT_SLOTS) {
+    if (slot.id === 'weapon') continue
+    ranks += String(Math.max(0, Math.min(9, rankOf(loadout[slot.id]))))
+    levels += clampLevel(levelOf(loadout[slot.id])).toString(36)
+  }
+  return ranks + levels
+}
+
+function armorLevelLookup(loadout: EquipmentLoadout, packed: string | undefined): (itemId: string) => number {
+  const levels = new Map<string, number>()
+  let i = 6
+  for (const slot of EQUIPMENT_SLOTS) {
+    if (slot.id === 'weapon') continue
+    const n = parseInt(packed?.[i++] ?? '1', 36)
+    if (Number.isFinite(n) && n > 1) levels.set(loadout[slot.id], clampLevel(n))
+  }
+  return (itemId) => levels.get(itemId) ?? 1
 }
 
 function armorRankLookup(loadout: EquipmentLoadout, packed: string | undefined): (itemId: string) => number {

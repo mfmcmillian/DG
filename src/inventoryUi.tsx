@@ -14,6 +14,7 @@ import { RARITIES, rarityOf, weaponStatLine, weaponSubtitle } from './weapons'
 import { armorSetLine, armorStatLine, armorSummaryLine } from './armor'
 import { t } from './i18n'
 import { isGearNew, newGearCount } from './newGear'
+import { upgradeLevelOf } from './shared/upgradeRanks'
 
 const { white, muted, gold, line, panel, card, selectedGold, goldLine, coral } = menuColors
 /** The lobby's sheet, shared by every full-screen panel. */
@@ -40,7 +41,9 @@ function itemSubtitle(item: EquipmentItem): string {
   if (item.setLabel) {
     const where = armorSourceLabel(item.realm)
     const found = armorSourceComingSoon(item.realm) ? t('found in {realm} (coming soon)', { realm: t(where) }) : t('found in {realm}', { realm: t(where) })
-    return `${slotLabel(item.slot)} · ${t('{set} set', { set: item.setLabel })}${where ? ` · ${t(RARITIES[rarityOf(item.id)].label)} · ${found}` : ''}`
+    const level = upgradeLevelOf(item.id)
+    const forged = level > 1 ? ` · ${t('Level {n}', { n: level })}` : ''
+    return `${slotLabel(item.slot)} · ${t('{set} set', { set: item.setLabel })}${where ? ` · ${t(RARITIES[rarityOf(item.id)].label)}${forged} · ${found}` : ''}`
   }
   return slotLabel(item.slot)
 }

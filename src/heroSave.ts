@@ -15,7 +15,8 @@ import { onNet, sendNet } from './net'
 import { setProgress } from './party'
 import { requestHeroPreload } from './preloadPlan'
 import { loadSettings, serializeSettings } from './settings'
-import { loadUpgradeRanks, serializeUpgradeRanks } from './shared/upgradeRanks'
+import { convertLegacyWeaponRanks, loadUpgradeRanks, serializeUpgradeRanks } from './shared/upgradeRanks'
+import { parsePrefs } from './shared/prefs'
 
 type SaveState = {
   /** The host answered our load request. */
@@ -72,6 +73,8 @@ export function initializeHeroSave() {
       for (const slot of EQUIPMENT_SLOTS) if (slot.id !== 'weapon' && getEquipmentItemOrNull(`${legacy}-${slot.id}`)) unlockInventoryItem(`${legacy}-${slot.id}`)
     }
     loadUpgradeRanks(msg.ups)
+    // Before 2.8.6 the pit raised rarity; a weapon's steps were all its doing. They become levels.
+    if (!parsePrefs(msg.prefs).lv) convertLegacyWeaponRanks((id) => !!getEquipmentItemOrNull(id)?.weapon)
     // Armor from before it had to be earned comes off; the class default goes back on.
     enforceOwnedLoadout(msg.cid)
     // The title's Continue waits on this outfit; fetch it ahead of the queue.

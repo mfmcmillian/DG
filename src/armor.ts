@@ -1,19 +1,22 @@
-// What armor does. Every piece is worth a few percent, by its slot and its
+// What armor does. Every piece is worth a few percent, by its slot, its
 // rarity (the difficulty it fell on, kept as the hero's rank for that piece,
-// src/weapons.ts rollArmorRank): the chest, shoulders and legs take the sting out of blows
-// (toughness), the head and hands put weight behind the hero's own (might),
-// the boots add to the stamina bar. Wearing four pieces of one set adds a set
+// src/weapons.ts rollArmorRank) and the level the pit has forged it to: the
+// chest, shoulders and legs take the sting out of blows (toughness), the head
+// and hands put weight behind the hero's own (might), the boots add to the
+// stamina bar. Wearing four pieces of one set adds a set
 // bonus; all six doubles it. The host reads a hero's armor off the synced body
 // like the weapon (src/multiplayer.ts heroLoadout), so a client cannot claim
 // plate it is not wearing.
 
 import { EQUIPMENT_ITEMS, EQUIPMENT_SLOTS, EquipmentItem, EquipmentLoadout, EquipmentSlot, getEquipmentItemOrNull } from './equipmentCatalog'
 import { t } from './i18n'
-import { upgradeRankOf } from './shared/upgradeRanks'
+import { levelMultiplier, upgradeLevelOf, upgradeRankOf } from './shared/upgradeRanks'
 import { Rarity, RARITIES, rarityOf } from './weapons'
 
 /** How rare a hero's copy of an item is, by id: this hero's own ranks by default, a synced body's on the host. */
 export type RankOf = (itemId: string) => number
+/** The level the pit has forged a hero's copy of an item to, by id: likewise this hero's own by default. */
+export type LevelOf = (itemId: string) => number
 
 /** Percent points one piece is worth at each rarity. */
 const TIER: Record<Rarity, number> = { common: 1, uncommon: 1.5, rare: 2, epic: 3, legendary: 4 }
@@ -49,18 +52,19 @@ function isArmor(item: EquipmentItem | undefined): item is EquipmentItem {
 }
 
 /** What one piece is worth on its own. Empty slots and weapons are worth nothing here. */
-export function armorPieceStats(item: EquipmentItem | undefined, rankOf: RankOf = upgradeRankOf): ArmorStats {
+export function armorPieceStats(item: EquipmentItem | undefined, rankOf: RankOf = upgradeRankOf, levelOf: LevelOf = upgradeLevelOf): ArmorStats {
   if (!isArmor(item)) return NOTHING
   const rarity = rarityOf(item.id, rankOf(item.id))
-  const tier = TIER[rarity]
-  const health = HEALTH_TIER[rarity]
+  const forged = levelMultiplier(levelOf(item.id))
+  const tier = TIER[rarity] * forged
+  const health = HEALTH_TIER[rarity] * forged
   switch (item.slot as EquipmentSlot) {
     case 'chest': return { might: 0, toughness: tier * 2, stamina: 0, health: health * 2 }
     case 'shoulders':
     case 'legs': return { might: 0, toughness: tier, stamina: 0, health }
     case 'head':
     case 'hands': return { might: tier, toughness: 0, stamina: 0, health: 0 }
-    case 'boots': return { might: 0, toughness: 0, stamina: STAMINA_TIER[rarity], health: 0 }
+    case 'boots': return { might: 0, toughness: 0, stamina: STAMINA_TIER[rarity] * forged, health: 0 }
     default: return NOTHING
   }
 }
@@ -103,11 +107,11 @@ function setsWorn(loadout: EquipmentLoadout, rankOf: RankOf): Array<{ id: string
 }
 
 /** Everything a loadout's armor is worth, pieces and set bonus together. */
-export function armorBonuses(loadout: EquipmentLoadout | undefined, rankOf: RankOf = upgradeRankOf): ArmorBonuses {
+export function armorBonuses(loadout: EquipmentLoadout | undefined, rankOf: RankOf = upgradeRankOf, levelOf: LevelOf = upgradeLevelOf): ArmorBonuses {
   if (!loadout) return { might: 1, toughness: 1, stamina: 0, health: 0 }
   let total = NOTHING
   for (const slot of EQUIPMENT_SLOTS) {
-    if (slot.id !== 'weapon') total = add(total, armorPieceStats(getEquipmentItemOrNull(loadout[slot.id]), rankOf))
+    if (slot.id !== 'weapon') total = add(total, armorPieceStats(getEquipmentItemOrNull(loadout[slot.id]), rankOf, levelOf))
   }
   const set = setsWorn(loadout, rankOf)[0]
   if (set) total = add(total, armorSetStats(set.rarity, set.worn, setSize(set.id)))

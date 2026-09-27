@@ -140,7 +140,7 @@ export const Messages = {
     item: Schemas.String,
     /** The Warlord's drop: presented with a beam. */
     boss: Schemas.Boolean,
-    /** Rarity steps an armor piece fell with (src/weapons.ts rollArmorRank); 0 for weapons. */
+    /** Rarity steps the item fell with above its page (src/weapons.ts rollArmorRank, rollWeaponLoot). */
     up: Schemas.Int
   }),
   /** Client -> server: a one-line status the server prints, so client state shows in `server-logs`. */

@@ -60,12 +60,17 @@ export const HeroLook = engine.defineComponent('dg::HeroLook', {
     boots: Schemas.String,
     weapon: Schemas.String
   }),
-  /** Rarity steps the upgrade pit has given `loadout.weapon`; the host prices blows by it. */
+  /**
+   * `loadout.weapon` as the owner's copy is: the rarity steps it fell with plus
+   * ten times the level the pit forged it to (src/multiplayer.ts packWeaponUp);
+   * the host prices blows by it.
+   */
   weaponUp: Schemas.Int,
   /**
-   * Rarity steps of each worn armor piece, one digit per slot in
+   * The worn armor as the owner's copies are, one character per slot in
    * EQUIPMENT_SLOTS order without the weapon (head, chest, shoulders, hands,
-   * legs, boots), e.g. "020310"; the host sizes toughness and health by it.
+   * legs, boots): six digits of rarity steps, then six base-36 digits of pit
+   * level, e.g. "020310" + "11a131"; the host sizes toughness and health by it.
    */
   armorUp: Schemas.String,
   /**

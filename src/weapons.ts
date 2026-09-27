@@ -8,7 +8,7 @@
 import { Color4 } from '@dcl/sdk/math'
 import { ArmorRealm, EQUIPMENT_ITEMS, EquipmentItem, getEquipmentItemOrNull } from './equipmentCatalog'
 import { t } from './i18n'
-import { upgradeRankOf } from './shared/upgradeRanks'
+import { levelMultiplier, upgradeLevelOf, upgradeRankOf } from './shared/upgradeRanks'
 
 export type WeaponClass = 'sword' | 'dagger' | 'axe' | 'mace' | 'hammer' | 'club' | 'great' | 'bow' | 'staff' | 'sceptre'
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
@@ -65,17 +65,19 @@ export function weaponInfo(id: string): EquipmentItem['weapon'] | undefined {
 
 /**
  * How this weapon id fights. Unknown or missing weapons fight like a plain sword.
- * The rarity bonus counts the pit's upgrades: this hero's by default, or `rank`
- * steps when the host scores a blow with what the striker's HeroLook declares.
+ * The rarity bonus counts the steps the drop fell with and the damage the pit's
+ * level: this hero's by default, or `rank` and `level` when the host scores a
+ * blow with what the striker's HeroBody declares.
  */
-export function weaponStats(id: string | undefined, withBonus = true, rank?: number): WeaponStats {
+export function weaponStats(id: string | undefined, withBonus = true, rank?: number, level?: number): WeaponStats {
   const info = id ? weaponInfo(id) : undefined
   if (!info) return SWORD_STATS
   const cls = WEAPON_CLASSES[info.class]
   const rarity = raiseRarity(info.rarity, rank ?? upgradeRankOf(id))
   const pride = info.pride ? PRIDE.damage : 1
+  const forged = levelMultiplier(level ?? upgradeLevelOf(id))
   return {
-    damage: cls.damage * pride, stagger: cls.stagger, knockback: cls.knockback,
+    damage: cls.damage * pride * forged, stagger: cls.stagger, knockback: cls.knockback,
     bonus: withBonus ? RARITIES[rarity].bonus + (info.pride ? PRIDE.bonus : 0) : 0
   }
 }
@@ -92,16 +94,17 @@ export function nextRarity(rarity: Rarity): Rarity | undefined {
 }
 
 /**
- * How rare an item is as printed: a weapon's own rarity. Armor has no printed
- * rarity: every piece is common on the page, and the copy a hero owns is as
- * rare as the difficulty it fell on (rollArmorRank), kept as upgrade steps.
+ * How rare an item is as printed: a weapon's own rarity, the least it ever
+ * falls as. Armor has no printed rarity: every piece is common on the page.
+ * The copy a hero owns is as rare as the drop that brought it (rollArmorRank,
+ * rollWeaponLoot), kept as rarity steps above the page.
  */
 export function baseRarityOf(id: string): Rarity {
   const item = getEquipmentItemOrNull(id)
   return item?.weapon ? item.weapon.rarity : 'common'
 }
 
-/** How rare this hero's copy of an item is: its printed rarity raised by the drop's rank and the pit's upgrades. */
+/** How rare this hero's copy of an item is: its printed rarity raised by the steps its drop fell with. */
 export function rarityOf(id: string, rank: number = upgradeRankOf(id)): Rarity {
   return raiseRarity(baseRarityOf(id), rank)
 }
@@ -157,12 +160,12 @@ export function rarityColor(id: string): Color4 {
   return RARITIES[rarityOf(id)].color
 }
 
-/** "Epic · Sword · Dark Fortress" */
+/** "Epic · Level 4 · Sword · Dark Fortress" */
 export function weaponSubtitle(item: EquipmentItem): string {
   if (!item.weapon) return ''
-  const rank = upgradeRankOf(item.id)
   const rarity = t(RARITIES[rarityOf(item.id)].label)
-  const forged = rank > 0 ? ` · ${t('pit-forged from {rarity}', { rarity: t(RARITIES[item.weapon.rarity].label) })}` : ''
+  const level = upgradeLevelOf(item.id)
+  const forged = level > 1 ? ` · ${t('Level {n}', { n: level })}` : ''
   const pride = item.weapon.pride ? `${t('Pride')} · ` : ''
   return `${pride}${rarity}${forged} · ${t(WEAPON_CLASSES[item.weapon.class].label)} · ${item.weapon.pack}`
 }
@@ -247,11 +250,27 @@ export function rollRaidDrop(pool: WeaponClass[], rng: () => number = Math.rando
 export function rollWeaponDrop(
   source: DropSource, level: number, diff: number, rng: () => number = Math.random, pool?: WeaponClass[]
 ): string {
-  if (rng() >= DROP_CHANCE[source]) return ''
+  return rollWeaponLoot(source, level, diff, rng, pool).id
+}
+
+/** How often a drop is a lesser weapon raised to the rolled rarity rather than one printed at it. */
+const RAISED_SHARE = 0.5
+
+/**
+ * Roll a weapon drop with the rarity it falls as: `up` steps above the weapon's
+ * printed rarity (0 when it falls as printed). The rolled rarity is met either
+ * by a weapon printed at it or, half the time, by a lesser one raised to it, so
+ * the same sword can fall Common one day and Epic another. Pride weapons never
+ * rise.
+ */
+export function rollWeaponLoot(
+  source: DropSource, level: number, diff: number, rng: () => number = Math.random, pool?: WeaponClass[]
+): { id: string; up: number } {
+  if (rng() >= DROP_CHANCE[source]) return { id: '', up: 0 }
   // A Hard fortress boss, rarely, leaves a Pride weapon.
   if (source === 'boss' && diff >= 2 && rng() < PRIDE.bossChance) {
     const pride = rollPrideDrop(pool, rng)
-    if (pride) return pride
+    if (pride) return { id: pride, up: 0 }
   }
   const steps = level + diff + (source === 'boss' ? 2 : source === 'elite' ? 1 : 0)
   const weights = rarityWeights(steps)
@@ -272,11 +291,20 @@ export function rollWeaponDrop(
     }
   }
   const usable = pool ? lootWeapons().filter((item) => pool.includes(item.weapon!.class)) : lootWeapons()
-  // A class with no weapon at the rolled rarity takes the nearest rarity below it.
+  const target = RARITIES[rarity].rank
+  const printed = usable.filter((item) => item.weapon!.rarity === rarity)
+  const lesser = usable.filter((item) => RARITIES[item.weapon!.rarity].rank < target)
+  const draw = (list: EquipmentItem[]) => list[Math.min(list.length - 1, Math.floor(rng() * list.length))]
+  if (lesser.length && (!printed.length || rng() < RAISED_SHARE)) {
+    const pick = draw(lesser)
+    return { id: pick.id, up: target - RARITIES[pick.weapon!.rarity].rank }
+  }
+  if (printed.length) return { id: draw(printed).id, up: 0 }
+  // A class with nothing at or below the rolled rarity takes the nearest above it, as printed.
   let candidates: EquipmentItem[] = []
-  for (let rank = RARITIES[rarity].rank; rank >= 0 && !candidates.length; rank--) {
+  for (let rank = target + 1; rank < RARITY_ORDER.length && !candidates.length; rank++) {
     candidates = usable.filter((item) => item.weapon!.rarity === RARITY_ORDER[rank])
   }
-  if (!candidates.length) return ''
-  return candidates[Math.min(candidates.length - 1, Math.floor(rng() * candidates.length))].id
+  if (!candidates.length) return { id: '', up: 0 }
+  return { id: draw(candidates).id, up: 0 }
 }

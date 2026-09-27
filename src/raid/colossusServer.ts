@@ -16,7 +16,7 @@ import { PIT_CENTER, inPitArena } from '../dungeon/pit'
 import { heroClassOf, weaponPoolFor } from '../heroClasses'
 import { heroDownFor, reviveHero, strikeHero } from '../heroVitals'
 import { heroBonusesFor } from '../heroXp'
-import { allFighters, heroCharacters, heroWeapon, NetFighter } from '../multiplayer'
+import { allFighters, heroCharacters, heroWeapon, heroWeaponLevel, heroWeaponRank, NetFighter } from '../multiplayer'
 import { onNet, sendNet } from '../net'
 import { LEVELS, RAID_PARTY } from '../shared/levels'
 import { rollArmorDrop, rollArmorRank, rollRaidDrop, weaponStats } from '../weapons'
@@ -561,7 +561,7 @@ function onHit(id: string, part: string, motion: string, finisher: boolean) {
   // The head is a shot's mark; a sword cannot reach it even when the stone kneels.
   if (part === 'head' && !ranged) return
 
-  const weapon = weaponStats(heroWeapon(id))
+  const weapon = weaponStats(heroWeapon(id), true, heroWeaponRank(id), heroWeaponLevel(id))
   const hit = resolveCombatHit(m, false, finisher, weapon)
   const might = heroBonusesFor(id, cid ?? '').might
   let damage = Math.max(1, Math.round(hit.damage * might * (PART_MULT[part] ?? 1)))

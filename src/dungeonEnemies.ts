@@ -64,10 +64,10 @@ import {
 } from './combatFx'
 import { kickCrawlerCamera } from './dungeon/crawlerCamera'
 import { clearLoot, grantLootDirect, lootKindOf, spawnLoot } from './loot'
-import { rollArmorDrop, rollArmorRank, rollWeaponDrop, weaponStats } from './weapons'
+import { rollArmorDrop, rollArmorRank, rollWeaponLoot, weaponStats } from './weapons'
 import { AttackContext, maxHealth } from './roamingCombat'
 import {
-  allFighters, EnemyFxNet, EnemySnap, heroArmorRankOf, heroCharacters, HeroHit, heroLoadout, heroPosition, heroWeapon, heroWeaponRank, ImpactNet, isHeadless, isHost, localAddress, NetFighter, publishEnemies,
+  allFighters, EnemyFxNet, EnemySnap, heroArmorLevelOf, heroArmorRankOf, heroCharacters, HeroHit, heroLoadout, heroPosition, heroWeapon, heroWeaponLevel, heroWeaponRank, ImpactNet, isHeadless, isHost, localAddress, NetFighter, publishEnemies,
   publishEnemyFx, publishHitEnemy, publishHitSkill, publishImpact, publishLoot, publishRespawn, publishShot, publishSkillCast, setMultiplayerHandlers
 } from './multiplayer'
 
@@ -1926,7 +1926,7 @@ function applyRemoteHit(id: string, index: number, motion: string, finisher: boo
   const cid = heroCharacters((owner) => owner === id)[0]
   if (!heroClassMotionAllowed(cid, attack)) return
   // The weapon is read off the hero's synced body: the client never states its own damage.
-  const hit = { finisher, weapon: weaponStats(heroWeapon(id), true, heroWeaponRank(id)), might: hostMight(id, cid) }
+  const hit = { finisher, weapon: weaponStats(heroWeapon(id), true, heroWeaponRank(id), heroWeaponLevel(id)), might: hostMight(id, cid) }
   applyPlayerHit(attacker, e, attack, hit)
   const wide = isHeavyMotion(attack) || finisher
   for (const other of cleaveFrom(attacker, e, attack, wide)) {
@@ -1936,7 +1936,7 @@ function applyRemoteHit(id: string, index: number, motion: string, finisher: boo
 
 /** A hero's multiplier on damage dealt as the host applies it: their level, any buff on them, and the armor their body wears. */
 function hostMight(id: string, cid: string | undefined): number {
-  return heroBonusesFor(id, cid ?? '').might * buffMight(id) * armorBonuses(heroLoadout(id), heroArmorRankOf(id)).might
+  return heroBonusesFor(id, cid ?? '').might * buffMight(id) * armorBonuses(heroLoadout(id), heroArmorRankOf(id), heroArmorLevelOf(id)).might
 }
 
 /** The local hero's weapon, for the numbers it shows and the hits it hosts. */
@@ -1947,7 +1947,7 @@ function localWeapon(): WeaponModifiers {
 /** The local hero's bonus on damage dealt: their level (src/heroXp.ts), buffs, and their armor (src/armor.ts). */
 function localMight(): number {
   const me = localAddress()
-  return heroBonusesFor(me, getPlayerCharacterState().characterId ?? '').might * buffMight(me) * armorBonuses(heroLoadout(me), heroArmorRankOf(me)).might
+  return heroBonusesFor(me, getPlayerCharacterState().characterId ?? '').might * buffMight(me) * armorBonuses(heroLoadout(me), heroArmorRankOf(me), heroArmorLevelOf(me)).might
 }
 
 /** A blow's damage after the hero's level; a blow that landed never rounds to nothing. */
@@ -2323,7 +2323,7 @@ function applyRemoteSkillHit(id: string, index: number, skill: string) {
   if (reach === 0 || combatDistance(attacker, e) > reach) return
   if (Math.abs(attacker.position.y - e.position.y) > COMBAT_RULES.maximumVerticalReach + (eff.kind === 'shot' ? 2 : 0.5)) return
   if (!claimSkillHit(id, def)) return
-  applySkillHit(poseToward(attacker.position, e.position), e, def, { weapon: weaponStats(heroWeapon(id), true, heroWeaponRank(id)), might: hostMight(id, cid) })
+  applySkillHit(poseToward(attacker.position, e.position), e, def, { weapon: weaponStats(heroWeapon(id), true, heroWeaponRank(id), heroWeaponLevel(id)), might: hostMight(id, cid) })
 }
 
 /** Host: a blow belongs to a cast the hero made recently, and that cast has blows left to give. */
@@ -2362,7 +2362,7 @@ function hostSkillCast(id: string, def: SkillDef, x: number, z: number, _yaw: nu
       def, x, z, ticksLeft: e.ticks, interval: e.ticks > 1 ? e.seconds / (e.ticks - 1) : 0,
       // An aimed circle is a telegraph first; a slam lands with the blow.
       timer: e.at === 'aim' ? ZONE_TELEGRAPH : 0,
-      caster: id, weapon: weaponStats(heroWeapon(id), true, heroWeaponRank(id)), might: hostMight(id, cid)
+      caster: id, weapon: weaponStats(heroWeapon(id), true, heroWeaponRank(id), heroWeaponLevel(id)), might: hostMight(id, cid)
     })
   }
 }
@@ -2596,6 +2596,7 @@ function kill(e: Enemy) {
   const heart = e.boss ? 2 : Math.random() < 0.35 ? 1 : 0
   // The Warlord always drops a weapon, once; guards often, the rest rarely.
   let item = ''
+  let up = 0
   if (!e.boss || !sim.bossDropGiven) {
     // Drawn from what the party can wield: an all-archer party never sees a mace.
     const party = sim.party
@@ -2604,11 +2605,14 @@ function kill(e: Enemy) {
       const mine = getPlayerCharacterState().characterId
       if (mine) characters.push(mine)
     }
-    item = rollWeaponDrop(
+    const loot = rollWeaponLoot(
       e.boss ? 'boss' : e.archetype.role === 'elite' ? 'elite' : 'grunt', sim.level.id, sim.diff.id, Math.random, weaponPoolFor(characters))
+    item = loot.id
+    up = loot.up
   }
   if (e.boss && item) sim.bossDropGiven = true
-  publishLoot(sim.party, e.position.x, e.position.z, coin, heart, item, e.boss)
+  // A weapon falls as rare as the roll made it: `up` steps above the page.
+  publishLoot(sim.party, e.position.x, e.position.z, coin, heart, item, e.boss, up)
   // Armor: a piece of one of this realm's sets, cut for someone in the party. The
   // boss always leaves one; the rest only when they left no weapon.
   if (e.boss || !item) {

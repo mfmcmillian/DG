@@ -1,7 +1,7 @@
 // The pit's sheet: which weapon or armor piece to offer. Each of the hero's items is a card
-// with its icon, its rarity now and the one the fire could give it, the coins
-// it asks and the odds. Pick one, confirm, and the coins are spent and the shot
-// begins (src/pitCinematic.ts). Same dark sheet and gold rule as the settings;
+// with its icon, its level now and the one the fire will give it, and the coins
+// it asks. Pick one, confirm, and the coins are spent and the shot begins
+// (src/pitCinematic.ts). Same dark sheet and gold rule as the settings;
 // the world camera stays where it is behind the veil, so the hero is still by
 // the fire when the sheet closes.
 
@@ -14,7 +14,8 @@ import { t } from './i18n'
 import { getLootState } from './loot'
 import { menuColors, MenuAction as Action } from './menuUi'
 import { startPitCinematic } from './pitCinematic'
-import { attemptUpgrade, UpgradeOffer, upgradeOffers } from './upgrades'
+import { attemptUpgrade, LEVEL_PERCENT, UpgradeOffer, upgradeOffers } from './upgrades'
+import { MAX_LEVEL } from './shared/upgradeRanks'
 import { RARITIES } from './weapons'
 
 const { white, muted, gold, panel, card, line, goldLine, coral } = menuColors
@@ -94,11 +95,11 @@ function WeaponCard({ offer, scale: s }: { key?: string; offer: UpgradeOffer; sc
   const id = `up-${offer.id}`
   const selected = selectedId === offer.id
   const hover = hovered === id
-  const from = RARITIES[offer.from]
-  const to = offer.to ? RARITIES[offer.to] : undefined
+  const rarity = RARITIES[offer.rarity]
+  const to = offer.to
   const dim = !to
   return <UiEntity key={id} uiTransform={{ width: CARD.width * s, height: CARD.height * s, margin: { right: CARD.gap * s, bottom: CARD.gap * s },
-    padding: 8 * s, borderRadius: 4 * s, borderWidth: (selected ? 2 : 1) * s, borderColor: selected ? gold : hover ? goldLine : from.rank > 0 ? from.color : line,
+    padding: 8 * s, borderRadius: 4 * s, borderWidth: (selected ? 2 : 1) * s, borderColor: selected ? gold : hover ? goldLine : rarity.rank > 0 ? rarity.color : line,
     flexDirection: 'column', alignItems: 'center', opacity: dim ? 0.55 : 1, flexShrink: 0, pointerFilter: 'block' }}
     uiBackground={{ color: selected ? Color4.create(0.16, 0.12, 0.06, 0.96) : hover ? card : panel }}
     onMouseEnter={() => { hovered = id }} onMouseLeave={() => { if (hovered === id) hovered = '' }}
@@ -109,14 +110,14 @@ function WeaponCard({ offer, scale: s }: { key?: string; offer: UpgradeOffer; sc
     <Label value={item ? t(item.name) : offer.id} color={white} fontSize={11.5 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 18 * s, margin: { top: 4 * s }, flexShrink: 0, pointerFilter: 'none' }} />
     <UiEntity uiTransform={{ width: '100%', height: 16 * s, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
-      <Label value={t(from.label)} color={from.color} fontSize={10 * s} textAlign="middle-right" textWrap="nowrap"
+      <Label value={t('Lv {n}', { n: offer.from })} color={rarity.color} fontSize={10 * s} textAlign="middle-right" textWrap="nowrap"
         uiTransform={{ width: 58 * s, height: '100%', pointerFilter: 'none' }} />
       <Label value={to ? '→' : ''} color={muted} fontSize={11 * s} textAlign="middle-center" textWrap="nowrap"
         uiTransform={{ width: 16 * s, height: '100%', pointerFilter: 'none' }} />
-      <Label value={to ? t(to.label) : ''} color={to?.color ?? muted} fontSize={10 * s} textAlign="middle-left" textWrap="nowrap"
+      <Label value={to ? t('Lv {n}', { n: to }) : ''} color={to ? gold : muted} fontSize={10 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={{ width: 58 * s, height: '100%', pointerFilter: 'none' }} />
     </UiEntity>
-    <Label value={to ? `◆ ${offer.coins}  ·  ${Math.round(offer.chance * 100)}%` : t('Cannot rise further')}
+    <Label value={to ? `◆ ${offer.coins}` : t('Cannot rise further')}
       color={to ? (offer.affordable ? gold : coral) : muted} fontSize={10.5 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 16 * s, margin: { top: 4 * s }, flexShrink: 0, pointerFilter: 'none' }} />
   </UiEntity>
@@ -154,7 +155,7 @@ export function UpgradeUi() {
       </UiEntity>
       <UiEntity uiTransform={{ width: 200 * s, height: 2 * s, margin: { bottom: 10 * s }, flexShrink: 0, pointerFilter: 'none' }}
         uiBackground={{ color: gold }} />
-      <Label value={t('Offer a weapon or a piece of armor to the fire and it may come back one rarity higher. The coins are spent either way.')}
+      <Label value={t('Offer a weapon or a piece of armor to the fire and it comes back a level stronger, to level {max} at most. Every level adds {pct}% to what it does.', { max: MAX_LEVEL, pct: LEVEL_PERCENT })}
         color={muted} fontSize={11.5 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={{ width: '100%', height: 18 * s, margin: { bottom: 12 * s }, flexShrink: 0, pointerFilter: 'none' }} />
 
@@ -170,8 +171,8 @@ export function UpgradeUi() {
           {pages > 1 && <Action id="upgrade-next" text="›" onClick={() => turnPage(1, offers, pages)} width={38} height={38} scale={s} fontSize={20} accent="gold" disabled={page >= pages - 1} />}
         </UiEntity>
         <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', pointerFilter: 'none' }}>
-          <Label value={chosen?.to ? (chosen.affordable ? t('{n} coins · {p}% chance', { n: chosen.coins, p: Math.round(chosen.chance * 100) }) : t('Not enough coins'))
-            : chosen ? t('Already legendary') : ''}
+          <Label value={chosen?.to ? (chosen.affordable ? t('{n} coins · the fire always takes', { n: chosen.coins }) : t('Not enough coins'))
+            : chosen ? t('Already at level {n}', { n: MAX_LEVEL }) : ''}
             color={chosen?.to && !chosen.affordable ? coral : muted} fontSize={12 * s} textAlign="middle-right" textWrap="nowrap"
             uiTransform={{ width: 240 * s, height: 38 * s, margin: { right: 12 * s }, pointerFilter: 'none' }} />
           <Action id="upgrade-cancel" text={t('Cancel')} onClick={closeUpgradePicker} width={110} height={40} scale={s} fontSize={14} accent="gold" />

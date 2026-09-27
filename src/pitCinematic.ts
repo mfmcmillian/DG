@@ -127,7 +127,7 @@ function onRemotePitEvent(msg: PitEventNet) {
     ring(mouth, PIT_MOUTH_RADIUS * 1.4, 12, GOLD)
     fxLootBeam(mouth, GOLD)
     fxSound('reveal', 0.9)
-    fxNumber(above(mouth, HOVER_LIFT + 0.6), t('LEGENDARY'), 'coin')
+    fxNumber(above(mouth, HOVER_LIFT + 0.6), t('FORGED'), 'coin')
     return
   }
   fxLootBeam(mouth, color)
@@ -197,18 +197,18 @@ export function takePitResult(): boolean {
   const taken = takeUpgrade()
   const at = pitHoverItem()?.position
   if (taken && at) {
-    const color = RARITIES[taken.to].color
-    const legend = taken.success && taken.to === 'legendary'
+    const color = RARITIES[taken.rarity].color
+    const legend = taken.success && taken.max
     fxMagicBurst(at, taken.success ? color : ASH, legend ? 1.4 : 0.8)
     if (legend) fxGlitter(at, WHITE)
     fxSound(taken.success ? 'coin' : 'thud_straw', 0.8)
     if (legend) fxSound('heal', 0.9)
-    fxNumber(Vector3.add(at, Vector3.create(0, 0.3, 0)), taken.success ? t(RARITIES[taken.to].label) : t('Unchanged'), taken.success ? 'coin' : 'note')
+    fxNumber(Vector3.add(at, Vector3.create(0, 0.3, 0)), taken.success ? t('Level {n}', { n: taken.to }) : t('Unchanged'), taken.success ? 'coin' : 'note')
   }
   if (taken) {
     const name = getEquipmentItemOrNull(taken.id)?.name ?? taken.id
     hallNotice(taken.success
-      ? t('{name} is now {rarity}.', { name: t(name), rarity: t(RARITIES[taken.to].label) })
+      ? (taken.max ? t('{name} is forged to its last level, {n}.', { name: t(name), n: taken.to }) : t('{name} is now level {n}.', { name: t(name), n: taken.to }))
       : t('The fire did not take {name}. {n} coins lost.', { name: t(name), n: taken.coins }))
     // A paid-for step is not left to the next periodic save.
     flushHeroSave()
@@ -297,8 +297,9 @@ function ease(x: number) {
   return k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2
 }
 
+/** The last level gets the legendary show. */
 function isLegend(r: UpgradeResult | undefined): boolean {
-  return !!r && r.success && r.to === 'legendary'
+  return !!r && r.success && r.max
 }
 
 function above(p: Vector3, dy: number): Vector3 {
@@ -374,7 +375,7 @@ function update(dt: number) {
         fxSound('fire_flare', 1)
         // The blast rocks the rig.
         s.shake = 0.35
-        publishPitEvent('throw', result.id, result.to, result.success)
+        publishPitEvent('throw', result.id, result.max ? 'legendary' : result.rarity, result.success)
       }
     }
     // A legendary builds from the moment the weapon lands.
@@ -385,7 +386,7 @@ function update(dt: number) {
     if (s.t >= T_RESULT && !s.risen) {
       s.risen = true
       const shown = showItem(result.id, s.mouth)
-      const color = RARITIES[result.to].color
+      const color = RARITIES[result.rarity].color
       if (legend) {
         // Its own light comes up with it, and the hero squares up to it.
         hoverLight = engine.addEntity()
@@ -400,7 +401,7 @@ function update(dt: number) {
         fxDeathPuff(above(s.mouth, -0.6))
         fxSound('thud_straw', 0.8)
       }
-      publishPitEvent('result', result.id, result.to, result.success)
+      publishPitEvent('result', result.id, result.max ? 'legendary' : result.rarity, result.success)
     }
     if (s.risen && item !== undefined) {
       const k = ease((s.t - T_RESULT) / (legend ? T_LEGEND_RISE : T_RISE))
@@ -430,7 +431,7 @@ function update(dt: number) {
     const legend = isLegend(result)
     if (glitterT >= (legend ? 0.45 : 0.9) && at) {
       glitterT = 0
-      fxGlitter(at, result.success ? RARITIES[result.to].color : ASH)
+      fxGlitter(at, result.success ? RARITIES[result.rarity].color : ASH)
     }
     if (legend && at) {
       pulseT += step

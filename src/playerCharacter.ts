@@ -20,11 +20,11 @@ import {
 import { fxNumber, fxSlash, fxSound } from './combatFx'
 import { rearmAvatarHiding } from './avatarHiding'
 import { armorBonuses } from './armor'
-import { localAddress, packArmorRanks, playerAddressAsReported, publishHero, withdrawHero } from './multiplayer'
+import { localAddress, packArmorRanks, packWeaponUp, playerAddressAsReported, publishHero, withdrawHero } from './multiplayer'
 import { flushNativeMotion, mirrorLocalMotion, nativeHeroOn, nativeNote, setLocalNativeShown, stopNativeMotion, syncNativeWeapon } from './nativeHero'
 import { CRAWLER_CAMERA, isCrawlerCameraOn, kickCrawlerCamera } from './dungeon/crawlerCamera'
 import { SkillDef } from './shared/skills'
-import { upgradeRankOf } from './shared/upgradeRanks'
+import { upgradeLevelOf, upgradeRankOf } from './shared/upgradeRanks'
 
 type Locomotion = 'idle' | 'walk' | 'run'
 export type PlayerCharacterState = {
@@ -730,8 +730,8 @@ function publishLocalPlayer(player: { position: Vector3; rotation: Quaternion },
     hc: appearance.hairColor,
     skin: appearance.skinTone,
     loadout: { ...requestedLoadout },
-    weaponUp: upgradeRankOf(requestedLoadout.weapon),
-    armorUp: packArmorRanks(requestedLoadout, upgradeRankOf),
+    weaponUp: packWeaponUp(upgradeRankOf(requestedLoadout.weapon), upgradeLevelOf(requestedLoadout.weapon)),
+    armorUp: packArmorRanks(requestedLoadout, upgradeRankOf, upgradeLevelOf),
     native: nativeHeroOn(),
     block: roamingCombat.blocking,
     // The host reads `dodge` as "blows pass through right now": the roll's

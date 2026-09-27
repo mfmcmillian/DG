@@ -131,10 +131,10 @@ function linesFor(title: string, visit: number): string[] {
         visit === 0
           ? t('Hm. A {cls}. Your kit will want work before the deeper fortresses.', { cls })
           : t('Back again? Turn round, let me see what the fortresses left on you.'),
-        t('Armor here is earned, not bought. Every set belongs to one calling, and the fortresses drop pieces for whoever is fighting in them. The rarest come up out of the Pit.'),
+        t('Armor here is earned, not bought. Every set has a home, and the fortresses drop pieces for whoever is fighting in them. How rare a piece is was decided the moment it fell: the harder the run, the finer the steel.'),
         t('Chest, shoulders and legs turn a blow aside; a helm and gauntlets put weight behind your own. Boots keep your wind. Four pieces of one set count for more, and the whole set doubles it.'),
-        t('The fire behind me is the upgrade pit. Feed it coin and steel and the steel may come back keener: the same blade, one rank rarer, hitting that much harder.'),
-        t('Common steel takes the fire readily. The finer the blade, the more it resists, and the more coin the fire asks. What it refuses it gives back as it was. The coin it keeps.'),
+        t('The fire behind me is the upgrade pit. Feed it coin and steel and the steel comes back keener: the same blade, a level stronger, up to ten. It never refuses.'),
+        t('The first levels come cheap. The higher the steel already stands, the more coin the fire asks for the next. A blade forged to its tenth is worth showing off.'),
         t('Open your Inventory and you will see every set your calling can wear, and which pieces you are still missing. What is greyed is still down there somewhere.'),
         t('This on my back? Came off a raider who had no further use for it.')
       ]
