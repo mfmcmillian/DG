@@ -16,12 +16,18 @@
 //   lead in the direction of travel and hands the renderer long straight glides.
 //   Being scene-driven it is always a message hop behind the avatar, which at
 //   running speed reads as faint shake in the walls. Kept for Explorer builds
-//   whose Billboard predates `targetEntity`.
+//   whose Billboard predates `targetEntity`, and used on the Godot client (the
+//   mobile app): it carries player-parented entities with the avatar every
+//   render frame, yaw included, but evaluates Billboards only once per scene
+//   tick, so between ticks the rigid rig swings with every wobble of the
+//   avatar's heading and the camera shakes around the player. Damped mode never
+//   inherits the yaw; the look-at keeps the avatar pinned per frame regardless.
 
 import {
   Billboard, BillboardMode, EasingFunction, engine, Entity, MainCamera, Transform, Tween, VirtualCamera
 } from '@dcl/sdk/ecs'
 import { Quaternion, Vector3 } from '@dcl/sdk/math'
+import { clientKnown, isGodotClient } from '../clientInfo'
 
 export const CRAWLER_CAMERA = {
   mode: 'rigid' as 'rigid' | 'damped',
@@ -162,6 +168,32 @@ export function isCrawlerCameraOn(): boolean {
   return enabled
 }
 
+/** The mode is settled once the explorer has said what it is; until then the default rig may already be up. */
+let modeChosen = false
+
+/**
+ * Godot gets the damped rig (see the header). The hub asks for the camera on
+ * the first tick, before the explorer has answered, so a rigid rig may already
+ * exist by the time the answer comes: it is torn down and the damped one built
+ * in its place, live if the camera is on.
+ */
+function chooseMode(): boolean {
+  if (modeChosen || !clientKnown()) return false
+  modeChosen = true
+  const wanted = isGodotClient() ? 'damped' : 'rigid'
+  if (wanted === CRAWLER_CAMERA.mode) return false
+  for (const entity of [mount, heading, rig]) if (entity !== undefined) engine.removeEntity(entity)
+  mount = heading = rig = undefined
+  mountKicked = false
+  glideStart = undefined
+  CRAWLER_CAMERA.mode = wanted
+  if (enabled) {
+    enabled = false
+    setCrawlerCamera(true)
+  }
+  return true
+}
+
 export function setCrawlerCamera(on: boolean) {
   if (on === enabled) return
   enabled = on
@@ -169,6 +201,8 @@ export function setCrawlerCamera(on: boolean) {
     systemAdded = true
     engine.addSystem(followPlayer)
   }
+  // A rebuild has already brought the camera up.
+  if (on && chooseMode()) return
   if (aim === undefined) {
     aim = engine.addEntity()
     Transform.create(aim, { parent: engine.PlayerEntity, position: Vector3.create(0, CRAWLER_CAMERA.aimHeight, 0) })
@@ -291,6 +325,7 @@ function stepRigid(dt: number) {
 // --- damped mode -------------------------------------------------------------
 
 function followPlayer(dt: number) {
+  if (!modeChosen) chooseMode()
   if (!enabled || rig === undefined || dt <= 0) return
   ticks++
   try {
@@ -307,6 +342,8 @@ function step(dt: number) {
   const player = Transform.getOrNull(engine.PlayerEntity)?.position
   if (!player) return
 
+  // A style's boom glides here too; desiredPosition reads the blended values.
+  stepBoom(dt)
   clock += dt
   // The renderer hands us the player position at its own cadence, so a
   // per-frame delta alternates between zero and double. Measure velocity over a

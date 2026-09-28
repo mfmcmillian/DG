@@ -31,15 +31,29 @@ export function clientPlatform(): string {
 }
 
 /**
+ * The Godot explorer: the mobile app (and its desktop builds). It differs from
+ * the Unity client in ways the scene works around; each workaround names the
+ * difference where it is applied. False until the explorer has answered.
+ */
+export function isGodotClient(): boolean {
+  return agent.toLowerCase() === 'godot'
+}
+
+/** Whether the explorer has said what it is yet (it answers within the first few ticks). */
+export function clientKnown(): boolean {
+  return agent !== '' || platform !== ''
+}
+
+/**
  * Whether text markup (`<b>…</b>`) may sit on top of something tappable. The
- * Godot client (the mobile app) draws marked-up text with a RichTextLabel,
- * which swallows touches, so a bold caption laid over a button eats the tap
- * meant for the button; plain text lets it through. A label that has once
- * been rich stays rich there, so this is decided before the first draw and
- * an unknown client is treated as Godot.
+ * Godot client draws marked-up text with a RichTextLabel, which swallows
+ * touches, so a bold caption laid over a button eats the tap meant for the
+ * button; plain text lets it through. A label that has once been rich stays
+ * rich there, so this is decided before the first draw and an unknown client
+ * is treated as Godot.
  */
 export function markupOverTapsOk(): boolean {
-  return agent !== '' && agent.toLowerCase() !== 'godot'
+  return agent !== '' && !isGodotClient()
 }
 
 /** A milestone reached this session (sent once per session; the server keeps the first time ever). */
