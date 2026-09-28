@@ -41,6 +41,8 @@ import {
 } from './equipmentState'
 import { classAllowsArmor, classAllowsWeapon, HERO_CLASSES } from './heroClasses'
 import { isGearNew, markGearSeen } from './newGear'
+import { setLegendaryAura } from './legendaryAura'
+import { legendaryPieces } from './weapons'
 
 export type InventoryFilter = 'all' | 'other' | EquipmentSlot
 
@@ -357,6 +359,7 @@ export function revertInventoryPreview() {
     committedPreview = createPreview(previewLoadout)
   } else {
     setEquipmentPreviewWeapon(committedPreview, previewLoadout.weapon)
+    previewAura(committedPreview, previewLoadout)
   }
   state.loading = getEquipmentLoading(committedPreview)
   showPreview(committedPreview, state.loading === 'ready')
@@ -406,11 +409,16 @@ function replaceCandidate(loadout: EquipmentLoadout, autoCommit = false) {
     ) {
       removePreview(committedPreview)
       committedPreview = createPreview(previewLoadout)
+    } else {
+      previewAura(committedPreview, previewLoadout)
     }
     state.loading = getEquipmentLoading(committedPreview)
     showPreview(committedPreview, state.loading === 'ready')
   } else {
-    if (committedPreview !== undefined) setEquipmentPreviewWeapon(committedPreview, committed.weapon)
+    if (committedPreview !== undefined) {
+      setEquipmentPreviewWeapon(committedPreview, committed.weapon)
+      previewAura(committedPreview, committed)
+    }
     candidatePreview = createPreview(previewLoadout)
     state.loading = 'loading'
     showPreview(committedPreview, committedPreview !== undefined && getEquipmentLoading(committedPreview) === 'ready')
@@ -427,10 +435,17 @@ function createPreview(loadout: EquipmentLoadout): Entity {
     rotation: Quaternion.fromEulerDegrees(0, facing, 0)
   })
   setEquipmentAvatar(root, state.characterId, loadout, false, { preloadWeapons: ownedWeaponIds(state.characterId), presentation: 'menu' })
+  previewAura(root, loadout)
   // Show the outfit in a relaxed standing pose, including the matching sword clip.
   setEquipmentMotion(root, 'idle')
   showPreview(root, false)
   return root
+}
+
+/** The legendary aura on a preview, as this hero's copies of the outfit shown are. */
+function previewAura(root: Entity, loadout: EquipmentLoadout) {
+  const { weapon, pieces } = legendaryPieces(loadout)
+  setLegendaryAura(root, weapon, pieces)
 }
 
 function showPreview(root: Entity | undefined, visible: boolean) {

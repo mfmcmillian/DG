@@ -12,9 +12,11 @@ import {
   destroyEquipmentAvatar, getEquipmentLoading, setEquipmentAvatar, setEquipmentMotion, setEquipmentVisible
 } from './equipmentAvatar'
 import {
-  appearanceOf, fullLoadout, heroOwner, heroWeapon, localAddress, netStatus, playerAddressAsReported, playerEntityByAddress, publishDiag,
-  remoteHeroes
+  appearanceOf, fullLoadout, heroArmorRankOf, heroOwner, heroWeapon, heroWeaponRank, localAddress, netStatus, playerAddressAsReported,
+  playerEntityByAddress, publishDiag, remoteHeroes
 } from './multiplayer'
+import { setLegendaryAura } from './legendaryAura'
+import { legendaryPieces } from './weapons'
 import { createHeroNameTag, destroyHeroNameTag, updateHeroNameTag } from './heroNameTag'
 import { heroLevel } from './heroXp'
 import { syncNativeExclusions, syncNativeWeapon } from './nativeHero'
@@ -54,6 +56,10 @@ type Replica = {
   turn: number
   /** The lift above the anchor the body was last placed with; re-placed when the client is identified. */
   pivot: number
+  /** The synced ranks the aura was last set from (`weaponUp|armorUp`); legendary copies light the body. */
+  auraKey: string
+  /** Whether the weapon in hand is a legendary copy, for the embers on a native hero's weapon. */
+  weaponLegendary: boolean
   /** Billboard over the head: the owner's Decentraland display name. */
   nameTag: Entity
 }
@@ -114,7 +120,7 @@ function createReplica(id: string, hero: HeroView): Replica {
   rearmAvatarHiding()
   return {
     id, anchor, root, attachedAs: '', look: '', motion: 'idle', netMotion: 'idle', seq: hero.seq, echoGrace: 0, retryIn: 0,
-    beat: hero.beat, silence: 0, turn: 0, pivot, nameTag: createHeroNameTag(root)
+    beat: hero.beat, silence: 0, turn: 0, pivot, auraKey: '', weaponLegendary: false, nameTag: createHeroNameTag(root)
   }
 }
 
@@ -256,6 +262,17 @@ function updateRemotePlayers(dt: number) {
       replica.look = look
       loadOutfit(replica, hero)
     }
+    // Legendary copies, as the owner's synced ranks declare them (the ids alone say nothing of rank).
+    const auraKey = `${look}|${hero.weaponUp}|${hero.armorUp}`
+    if (auraKey !== replica.auraKey) {
+      replica.auraKey = auraKey
+      const armorRank = heroArmorRankOf(id)
+      const weaponRank = heroWeaponRank(id)
+      const loadout = fullLoadout(hero)
+      const { weapon, pieces } = legendaryPieces(loadout, (item) => (item === loadout.weapon ? weaponRank : armorRank(item)))
+      replica.weaponLegendary = weapon
+      setLegendaryAura(replica.root, weapon, pieces)
+    }
 
     // Ride the renderer's avatar, addressed exactly as the renderer spells it.
     // Until the renderer shows one there is nothing to stand next to, so the body waits unseen.
@@ -314,7 +331,7 @@ function updateRemotePlayers(dt: number) {
     if (native && reported) natives.push(reported)
     setEquipmentVisible(replica.root, shown && !native)
     updateHeroNameTag(replica.nameTag, id, shown && !native, heroLevel(id, hero.cid))
-    if (speaking) syncNativeWeapon(id, native ? reported : undefined, hero.loadout.weapon)
+    if (speaking) syncNativeWeapon(id, native ? reported : undefined, hero.loadout.weapon, replica.weaponLegendary)
     // The anchor turns with the native avatar, which the renderer interpolates
     // smoothly; the body normally adds nothing, so a turn shows the instant the
     // avatar makes it. Only while the owner is locked on does the body take the

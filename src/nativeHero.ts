@@ -36,6 +36,7 @@ import { setAvatarHidingExclusions } from './avatarHiding'
 import { EquipmentMotion } from './combatAnimations'
 import { devToolsOn } from './devAccess'
 import { getEquipmentItemOrNull } from './equipmentCatalog'
+import { weaponEmbers } from './legendaryAura'
 import { localAddress, playerAddressAsReported } from './multiplayer'
 import nativeWeapons from './nativeWeapons.json'
 import { getSettings } from './settings'
@@ -308,21 +309,22 @@ function tweakRotation(grip: WeaponGrip) {
   return Quaternion.fromEulerDegrees(e.x, e.y, e.z)
 }
 
-type HeldWeapon = { anchor: Entity; model: Entity; weaponId: string; hand: 'l' | 'r'; avatarId: string; grip: WeaponGrip }
+type HeldWeapon = { anchor: Entity; model: Entity; weaponId: string; hand: 'l' | 'r'; avatarId: string; grip: WeaponGrip; embers?: Entity }
 const held = new Map<string, HeldWeapon>()
 
 /**
  * Show `weaponId` in the hand of the avatar the renderer calls `avatarId`
- * (undefined = take it away). Keyed by the lower-case address.
+ * (undefined = take it away). Keyed by the lower-case address. A legendary
+ * copy carries its embers (legendaryAura) on the model, so they ride the hand.
  */
-export function syncNativeWeapon(id: string, avatarId: string | undefined, weaponId: string | undefined) {
+export function syncNativeWeapon(id: string, avatarId: string | undefined, weaponId: string | undefined, legendary = false) {
   const def = weaponId ? WEAPONS[weaponId] : undefined
   const current = held.get(id)
   if (!def || !avatarId || !weaponId) {
     if (current) removeHeld(id, current)
     return
   }
-  if (current && current.weaponId === weaponId && current.avatarId === avatarId && current.hand === def.hand) return
+  if (current && current.weaponId === weaponId && current.avatarId === avatarId && current.hand === def.hand && (current.embers !== undefined) === legendary) return
   if (current) removeHeld(id, current)
   const anchor = engine.addEntity()
   Transform.create(anchor)
@@ -334,10 +336,11 @@ export function syncNativeWeapon(id: string, avatarId: string | undefined, weapo
   const model = engine.addEntity()
   Transform.create(model, { parent: anchor, position: Vector3.clone(WEAPON_TWEAK[grip].position), rotation: tweakRotation(grip) })
   GltfContainer.create(model, { src: def.src, visibleMeshesCollisionMask: 0, invisibleMeshesCollisionMask: 0 })
-  held.set(id, { anchor, model, weaponId, hand: def.hand, avatarId, grip })
+  held.set(id, { anchor, model, weaponId, hand: def.hand, avatarId, grip, embers: legendary ? weaponEmbers(model) : undefined })
 }
 
 function removeHeld(id: string, w: HeldWeapon) {
+  if (w.embers !== undefined) engine.removeEntity(w.embers)
   engine.removeEntity(w.model)
   engine.removeEntity(w.anchor)
   held.delete(id)

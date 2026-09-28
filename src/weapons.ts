@@ -6,7 +6,7 @@
 // decides its flat damage bonus and how often the dungeon hands one over.
 
 import { Color4 } from '@dcl/sdk/math'
-import { ArmorRealm, EQUIPMENT_ITEMS, EquipmentItem, getEquipmentItemOrNull } from './equipmentCatalog'
+import { ArmorRealm, EQUIPMENT_ITEMS, EQUIPMENT_SLOTS, EquipmentItem, EquipmentLoadout, getEquipmentItemOrNull } from './equipmentCatalog'
 import { t } from './i18n'
 import { levelFlatBonus, levelMultiplier, upgradeLevelOf, upgradeRankOf } from './shared/upgradeRanks'
 
@@ -108,6 +108,19 @@ export function baseRarityOf(id: string): Rarity {
 /** How rare this hero's copy of an item is: its printed rarity raised by the steps its drop fell with. */
 export function rarityOf(id: string, rank: number = upgradeRankOf(id)): Rarity {
   return raiseRarity(baseRarityOf(id), rank)
+}
+
+/**
+ * What of a loadout is legendary, by the ranks `rankOf` gives each copy (this
+ * hero's own by default; a remote hero's as their synced look declares): the
+ * weapon, and how many armor pieces. Drives the aura (src/legendaryAura.ts).
+ */
+export function legendaryPieces(loadout: EquipmentLoadout, rankOf: (id: string) => number = upgradeRankOf): { weapon: boolean; pieces: number } {
+  let pieces = 0
+  for (const slot of EQUIPMENT_SLOTS) {
+    if (slot.id !== 'weapon' && rarityOf(loadout[slot.id], rankOf(loadout[slot.id])) === 'legendary') pieces++
+  }
+  return { weapon: rarityOf(loadout.weapon, rankOf(loadout.weapon)) === 'legendary', pieces }
 }
 
 /** Armor pieces of every set found in `realms`. Any class wears any set. */

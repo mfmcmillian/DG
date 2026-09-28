@@ -5,6 +5,7 @@ import {
 import { EQUIPMENT_SLOTS, EquipmentItem, EquipmentLoadout, getEquipmentItem } from './equipmentCatalog'
 import { COMBAT_CLIPS, EQUIPMENT_CLIPS, EquipmentMotion, JumpMotion } from './combatAnimations'
 import { appearanceArmor, appearanceHair, appearancePart, BodyType, CharacterAppearance, getCommittedAppearance, normalizeAppearance } from './appearance'
+import { moveAura, removeAura, setAuraShown } from './legendaryAura'
 import roamingModels from './roamingModels.json'
 import enemyBodies from './enemyBodies.json'
 import folkBodies from './folkBodies.json'
@@ -260,6 +261,7 @@ export function setEquipmentVisible(root: Entity, visible: boolean) {
   if (!avatar) return
   avatar.visible = visible
   if (avatar.current) showAssembly(avatar.current, visible)
+  setAuraShown(root, visible)
 }
 
 /** Register interaction handlers on these child mesh entities, not the empty root. */
@@ -307,6 +309,7 @@ export function transferEquipmentAvatar(sourceRoot: Entity, targetRoot: Entity):
   }
   avatars.delete(sourceRoot)
   avatars.set(targetRoot, avatar)
+  moveAura(sourceRoot, targetRoot)
   // The presentation stance belongs to the menu, not the playable character.
   avatar.presentation = 'gameplay'
   const pose = assemblyPose(avatar, avatar.current)
@@ -319,6 +322,7 @@ export function destroyEquipmentAvatar(root: Entity) {
   if (!avatar) return
   for (const part of avatar.parts.values()) removePart(part)
   avatars.delete(root)
+  removeAura(root)
 }
 
 function removePart(part: CachedPart) {

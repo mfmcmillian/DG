@@ -20,6 +20,8 @@ import {
 import { fxNumber, fxSlash, fxSound } from './combatFx'
 import { rearmAvatarHiding } from './avatarHiding'
 import { armorBonuses } from './armor'
+import { setLegendaryAura } from './legendaryAura'
+import { legendaryPieces } from './weapons'
 import { localAddress, packArmorRanks, packWeaponUp, playerAddressAsReported, publishHero, withdrawHero } from './multiplayer'
 import { flushNativeMotion, mirrorLocalMotion, nativeHeroOn, nativeNote, setLocalNativeShown, stopNativeMotion, syncNativeWeapon } from './nativeHero'
 import { CRAWLER_CAMERA, isCrawlerCameraOn, kickCrawlerCamera } from './dungeon/crawlerCamera'
@@ -535,10 +537,23 @@ export function setPlayerCharacter(
   setGearHealth(armorBonuses(requestedLoadout).health)
   active = true
   setEquipmentAvatar(root, nextCharacterId, requestedLoadout, false, requestedOptions)
+  localAura(root)
   // The equipment adapter retains the previous ready assembly during replacement.
   // Keep its visibility and native-avatar suppression while the new outfit loads.
   setEquipmentVisible(root, visible)
   setEquipmentMotion(root, locomotion)
+}
+
+/** The legendary aura for our own outfit: this hero's copies as the pit has raised them. */
+function localAura(root: Entity) {
+  if (!requestedLoadout) return
+  const { weapon, pieces } = legendaryPieces(requestedLoadout)
+  setLegendaryAura(root, weapon, pieces)
+}
+
+/** Whether the weapon in our hand is a legendary copy (the embers on the native avatar's weapon). */
+function localWeaponLegendary(): boolean {
+  return requestedLoadout ? legendaryPieces(requestedLoadout).weapon : false
 }
 
 /** Adopt the already loaded creator model instead of preparing a second copy. */
@@ -554,6 +569,7 @@ export function adoptPlayerCharacter(
   characterId = nextCharacterId
   requestedLoadout = { ...loadout }
   requestedOptions = { ...options }
+  localAura(root)
   setGearStamina(armorBonuses(requestedLoadout).stamina)
   setGearHealth(armorBonuses(requestedLoadout).health)
   active = true
@@ -715,7 +731,7 @@ function updatePlayerCharacter(dt: number) {
   if (!shown || !native) stopNativeMotion()
   const me = localAddress()
   setLocalNativeShown(shown && native)
-  syncNativeWeapon('local', shown && native && me ? playerAddressAsReported(me) : undefined, requestedLoadout?.weapon)
+  syncNativeWeapon('local', shown && native && me ? playerAddressAsReported(me) : undefined, requestedLoadout?.weapon, localWeaponLegendary())
   publishLocalPlayer(player, dt)
 }
 
