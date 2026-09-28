@@ -1,5 +1,5 @@
 import {
-  CameraMode, CameraType, engine, Entity, InputAction, InputModifier, inputSystem, PointerLock, PrimaryPointerInfo, Transform
+  CameraMode, CameraType, engine, Entity, InputAction, InputModifier, inputSystem, MainCamera, PointerLock, PrimaryPointerInfo, Transform
 } from '@dcl/sdk/ecs'
 import { hallPromptActive } from './hallPrompt'
 import { Quaternion, Vector3 } from '@dcl/sdk/math'
@@ -696,7 +696,12 @@ function updatePlayerCharacter(dt: number) {
 
   const canReplace = hasReadyCharacter && !!localAddress()
 
-  const firstPerson = CameraMode.getOrNull(engine.CameraEntity)?.mode === CameraType.CT_FIRST_PERSON
+  // Only the native camera can be in first person. Under one of the scene's own
+  // cameras the mode is whatever the client cares to report (the Godot client
+  // says first person, its cinematic camera being a plain Camera3D), and the
+  // body is what that camera is there to show.
+  const sceneCamera = MainCamera.getOrNull(engine.CameraEntity)?.virtualCameraEntity !== undefined
+  const firstPerson = !sceneCamera && CameraMode.getOrNull(engine.CameraEntity)?.mode === CameraType.CT_FIRST_PERSON
   const shown = canReplace && !suspended && !firstPerson
   // Fighting as the avatar: the body keeps fighting unseen; the weapon rides the avatar's hand.
   const native = nativeHeroOn()

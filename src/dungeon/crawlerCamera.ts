@@ -344,6 +344,10 @@ function step(dt: number) {
 
   // A style's boom glides here too; desiredPosition reads the blended values.
   stepBoom(dt)
+  if (isGodotClient()) {
+    stepPlaced(dt, player)
+    return
+  }
   clock += dt
   // The renderer hands us the player position at its own cadence, so a
   // per-frame delta alternates between zero and double. Measure velocity over a
@@ -448,6 +452,29 @@ function step(dt: number) {
   glideDuration = duration
   glideT0 = clock
   Tween.setMove(rig, predicted, end, duration * 1000, EasingFunction.EF_LINEAR)
+}
+
+/** Godot: how fast the rig closes on the player (1/s). Stiff, so a stop is a stop, not a drift. */
+const PLACED_FOLLOW = 30
+
+/**
+ * Godot per tick: the rig is placed outright, no glide and no lead. That
+ * client advances Tweens only once per scene tick, so a glide gains nothing
+ * there and its start time differs from ours by a tick, which showed as a hop
+ * at every renewal; and its player samples are fresh each tick, so there is
+ * no cadence beat to reckon across. The lead, retracting after a stop, read as
+ * the camera wandering on; it is gone. The look-at still pins the avatar on
+ * screen every frame, so what remains is the world advancing at tick rate.
+ */
+function stepPlaced(dt: number, player: Vector3) {
+  if (rig === undefined) return
+  kick = Vector3.scale(kick, Math.exp(-dt * CRAWLER_CAMERA.kickDecay))
+  const target = desiredPosition(player, Vector3.Zero())
+  current = current && Vector3.distance(current, target) < 4
+    ? Vector3.lerp(current, target, 1 - Math.exp(-dt * PLACED_FOLLOW))
+    : target
+  if (Tween.has(rig)) Tween.deleteFrom(rig)
+  Transform.getMutable(rig).position = Vector3.add(current, kick)
 }
 
 /** Where the renderer's current glide has the rig by now (it holds its end once it runs out). */
