@@ -90,8 +90,8 @@ const EMOTES: Partial<Record<EquipmentMotion, Emote>> = {
   hit: { loop: false, upperWhenMoving: true },
   death: { loop: false, upperWhenMoving: false, sticky: true },
   bow_shoot: { loop: false, upperWhenMoving: true },
-  // The volley keeps its own masked clip: the aimed shot's arms release at another moment and aim another way.
-  bow_volley: { loop: false, upperWhenMoving: true },
+  // The volley is the leaping shot and plays whole: the swing roots the player, so the clip is not cut.
+  bow_volley: { loop: false, upperWhenMoving: false },
   bow_bash: { loop: false, upperWhenMoving: true },
   cast_bolt: { loop: false, upperWhenMoving: true },
   cast_nova: { loop: false, upperWhenMoving: true }
