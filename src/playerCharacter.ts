@@ -167,8 +167,14 @@ const TURN_SECONDS = 0.08
  * Where the free cursor points, as a heading from the player: the cursor's world
  * ray met with the ground at the player's feet (or, pointing at the sky, the
  * ray's own heading). Undefined while the pointer is locked or nothing is known.
+ *
+ * Not under the overhead camera: the Explorer frees the cursor whenever a scene
+ * camera has the view, so there it is merely present, not an aim. Shots go the
+ * way the player moves (or to the lock-on from a standstill), and the draw on
+ * the avatar always agrees with the arrow.
  */
 function cursorAimYaw(): number | undefined {
+  if (isCrawlerCameraOn()) return undefined
   if (PointerLock.getOrNull(engine.CameraEntity)?.isPointerLocked !== false) return undefined
   // The ray leaves the camera; the component carries only its direction.
   const dir = PrimaryPointerInfo.getOrNull(engine.RootEntity)?.worldRayDirection
