@@ -1,6 +1,7 @@
 import { AvatarAnchorPointType, AvatarAttach, engine, Entity, PlayerIdentityData, Transform } from '@dcl/sdk/ecs'
 import { Quaternion, Vector3 } from '@dcl/sdk/math'
 import { rearmAvatarHiding } from './avatarHiding'
+import { isGodotClient } from './explorerAgent'
 import { HeroAttackMotion, isRangedAttack, WeaponMotion } from './combatActions'
 import { shotProfile, shotProfileForMotion, skillShotProfile } from './heroClasses'
 import { skillById } from './shared/skills'
@@ -51,6 +52,8 @@ type Replica = {
   silence: number
   /** The body's yaw offset from the native avatar it rides (radians), eased toward its target. */
   turn: number
+  /** The lift above the anchor the body was last placed with; re-placed when the client is identified. */
+  pivot: number
   /** Billboard over the head: the owner's Decentraland display name. */
   nameTag: Entity
 }
@@ -63,9 +66,16 @@ const TURN_RATE = 14
  * does not expose them to the scene's hierarchy). AvatarAttach with the
  * player's address is the supported way to ride along with them. Its POSITION
  * anchor keeps the old client's pivot, 0.75 m below the feet; the body is
- * raised back onto the ground.
+ * raised back onto the ground. The Godot client (the mobile app) anchors
+ * POSITION at the avatar node itself, whose origin is the player's feet, so
+ * there the same lift would hang the body in the air: no correction.
  */
 const ATTACH_PIVOT_CORRECTION = 0.75
+
+/** How far to raise the body above the POSITION anchor on this client; unknown clients get the desktop value. */
+function attachPivotCorrection(): number {
+  return isGodotClient() ? 0 : ATTACH_PIVOT_CORRECTION
+}
 const RETRY_SECONDS = 3
 const DIAG_SECONDS = 10
 
@@ -98,12 +108,13 @@ function createReplica(id: string, hero: HeroView): Replica {
   const anchor = engine.addEntity()
   Transform.create(anchor)
   const root = engine.addEntity()
-  Transform.create(root, { parent: anchor, position: Vector3.create(0, ATTACH_PIVOT_CORRECTION, 0) })
+  const pivot = attachPivotCorrection()
+  Transform.create(root, { parent: anchor, position: Vector3.create(0, pivot, 0) })
   // A hero arriving means a native avatar arrived too; make sure the hide catches it.
   rearmAvatarHiding()
   return {
     id, anchor, root, attachedAs: '', look: '', motion: 'idle', netMotion: 'idle', seq: hero.seq, echoGrace: 0, retryIn: 0,
-    beat: hero.beat, silence: 0, turn: 0, nameTag: createHeroNameTag(root)
+    beat: hero.beat, silence: 0, turn: 0, pivot, nameTag: createHeroNameTag(root)
   }
 }
 
@@ -255,6 +266,12 @@ function updateRemotePlayers(dt: number) {
       AvatarAttach.createOrReplace(replica.anchor, { avatarId: reported, anchorPointId: AvatarAnchorPointType.AAPT_POSITION })
     }
     if (reported) attached++
+    // The explorer names itself a moment after the first heroes appear.
+    const pivot = attachPivotCorrection()
+    if (pivot !== replica.pivot) {
+      replica.pivot = pivot
+      Transform.getMutable(replica.root).position = Vector3.create(0, pivot, 0)
+    }
 
     // Follow the owner's clip. A new `seq` restarts it even when the name did not
     // change (two hits in a row). A clip we already started from the server's
