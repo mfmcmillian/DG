@@ -27,7 +27,7 @@ import {
   Billboard, BillboardMode, EasingFunction, engine, Entity, MainCamera, Transform, Tween, VirtualCamera
 } from '@dcl/sdk/ecs'
 import { Quaternion, Vector3 } from '@dcl/sdk/math'
-import { clientKnown, isGodotClient } from '../clientInfo'
+import { clientKnown, isGodotClient } from '../explorerAgent'
 
 export const CRAWLER_CAMERA = {
   mode: 'rigid' as 'rigid' | 'damped',

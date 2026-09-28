@@ -1,7 +1,7 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { Color4 } from '@dcl/sdk/math'
 import { kitSliced, UI_KIT } from './uiKit'
-import { markupOverTapsOk } from './clientInfo'
+import { markupOverTapsOk } from './explorerAgent'
 
 /** A button caption in bold, except on clients whose rich text would swallow the tap (see clientInfo). */
 export function boldCaption(text: string): string {
