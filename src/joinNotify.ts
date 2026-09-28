@@ -5,12 +5,13 @@
 // be scraped and spammed, as the last one was.
 
 import { AvatarBase, engine, PlayerIdentityData } from '@dcl/sdk/ecs'
+import { noteArrival, platformOf } from './visitLog'
 
 const JOIN_RELAY_URL = 'https://decentracraft-nine.vercel.app/api/join'
 /** A player who leaves and comes straight back is not announced twice. */
 const COOLDOWN_MS = 120000
-/** How long to hold a notice waiting for the profile name to arrive. */
-const NAME_WAIT_SECONDS = 4
+/** How long to hold a notice waiting for the profile name and the client's `hello` (its platform) to arrive. */
+const NAME_WAIT_SECONDS = 6
 
 const present = new Set<string>()
 const names = new Map<string, string>()
@@ -51,7 +52,7 @@ function update(dt: number) {
 
   for (const [address, waited] of [...pending]) {
     const next = waited + step
-    if (names.has(address) || next >= NAME_WAIT_SECONDS) {
+    if ((names.has(address) && platformOf(address)) || next >= NAME_WAIT_SECONDS) {
       pending.delete(address)
       post(address)
     } else {
@@ -64,19 +65,21 @@ function arrived(address: string) {
   const now = Date.now()
   if (now - (notifiedAt.get(address) ?? 0) < COOLDOWN_MS) return
   notifiedAt.set(address, now)
-  if (names.has(address)) post(address)
+  noteArrival(address)
+  if (names.has(address) && platformOf(address)) post(address)
   else pending.set(address, 0)
 }
 
 function post(address: string) {
   const name = names.get(address) || shortAddress(address)
   const online = present.size
+  const explorer = platformOf(address)
   void (async () => {
     try {
       const response = await fetch(JOIN_RELAY_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ game: 'antrom', name, address, online })
+        body: JSON.stringify({ game: 'antrom', name, address, online, platform: explorer?.platform ?? '', agent: explorer?.agent ?? '' })
       })
       if (!response.ok) console.log(`[Server] discord join notify failed: ${response.status}`)
     } catch (error) {

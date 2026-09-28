@@ -38,6 +38,7 @@ import { installNetDebug } from './netDebug'
 import { initializeParty } from './party'
 import { initializeHeroSave } from './heroSave'
 import { initializeHeroXp } from './heroXp'
+import { initializeClientInfo } from './clientInfo'
 import { initializeHeroSkills } from './heroSkills'
 import { initializePartyServer } from './partyServer'
 import { HUB_LEVEL } from './shared/levels'
@@ -81,6 +82,7 @@ function initClient() {
   initializeProjectiles()
   initializeLoot()
   initializeMultiplayer(false)
+  initializeClientInfo()
   initializeAvatarHiding()
   initializeRemotePlayers()
 

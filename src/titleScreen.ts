@@ -1,4 +1,5 @@
 import { executeTask } from '@dcl/sdk/ecs'
+import { markMilestone } from './clientInfo'
 import { closeSceneCamera, openSceneCamera, prepareSceneCameraReturn, SceneCameraSession } from './sceneCamera'
 import { MENU_CAMERA_POSITION, MENU_CAMERA_TARGET } from './menuPreviewStage'
 import { closePicker, getPickerState, openPicker } from './characterPicker'
@@ -25,6 +26,7 @@ export function openTitle() {
   if (!next) return
   session = next
   open = true
+  markMilestone('title')
 }
 
 /** The title doubles as the loading screen: nobody enters until the hall is in. */

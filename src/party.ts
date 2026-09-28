@@ -4,6 +4,7 @@
 // changes, rebuilds the dungeon for it and puts the player on the entrance.
 
 import { engine, InputModifier, PointerLock, Transform } from '@dcl/sdk/ecs'
+import { markMilestone } from './clientInfo'
 import { getDungeonState, loadDungeon } from './dungeon'
 import { PIT_GATE_REACH, PIT_GATE_TAG, WAR_TABLE_TAG } from './dungeon/hub'
 import { setClientRun } from './dungeonEnemies'
@@ -503,6 +504,7 @@ function enterRun(party: PartyInfo) {
   applyCameraSetting()
   loadDungeon(level.seed, level.style)
   movePlayerToSpawn()
+  markMilestone(`dungeon:${level.id}`)
   console.log(`[DG] entering ${level.name} (${difficultyById(party.diff).name}) with party ${party.id}, run ${party.run}`)
 }
 

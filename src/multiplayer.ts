@@ -576,6 +576,18 @@ export function publishDiag(note: string) {
   sendNet('diag', { note })
 }
 
+/** Client -> server, once: the explorer this client runs in (src/clientInfo.ts). Queued until the room is up, like diag. */
+export function publishHello(platform: string, agent: string) {
+  if (hostMode || isSolo()) return
+  sendNet('hello', { platform, agent })
+}
+
+/** Client -> server: a milestone reached, for the visit log (src/visitLog.ts). */
+export function publishMark(what: string) {
+  if (hostMode || isSolo()) return
+  sendNet('mark', { what })
+}
+
 /** Whether this client has received the server's state (its messages are sent, not queued). */
 export function isClientSynced(): boolean {
   return clientReady()

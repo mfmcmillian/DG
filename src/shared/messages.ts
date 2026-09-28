@@ -145,6 +145,10 @@ export const Messages = {
   }),
   /** Client -> server: a one-line status the server prints, so client state shows in `server-logs`. */
   diag: Schemas.Map({ note: Schemas.String }),
+  /** Client -> server, once on arrival: the explorer it runs in (getExplorerInformation), for the visit log and the join notice. */
+  hello: Schemas.Map({ platform: Schemas.String, agent: Schemas.String }),
+  /** Client -> server: a milestone reached ('title', 'champion', 'champion-new', 'dungeon:<level>', 'raid'), kept in the visit log. */
+  mark: Schemas.Map({ what: Schemas.String }),
   /**
    * Client -> server -> all: a hero's offering at the upgrade pit, for the FX
    * everyone in the hall sees. `beat` is 'throw' (the weapon went in) or

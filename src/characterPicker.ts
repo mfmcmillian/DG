@@ -5,6 +5,7 @@ import {
   Transform
 } from '@dcl/sdk/ecs'
 import { Quaternion } from '@dcl/sdk/math'
+import { markMilestone } from './clientInfo'
 import { openSceneCamera, closeSceneCamera, prepareSceneCameraReturn, SceneCameraSession } from './sceneCamera'
 import {
   createMenuPreviewStage, destroyMenuPreviewStage, MENU_CAMERA_POSITION, MENU_CAMERA_TARGET,
@@ -151,6 +152,7 @@ export function adoptSavedCharacter(id: string): boolean {
   state.equippedId = character.id
   state.selectedId = character.id
   state.hasCreatedCharacter = true
+  markMilestone('champion')
   return true
 }
 
@@ -219,6 +221,7 @@ export function confirmCharacter() {
       }
       state.equippedId = selected.id
       state.hasCreatedCharacter = true
+      markMilestone('champion-new')
       leavePicker()
     } catch (error) {
       console.log('Character creation handoff failed', error)
