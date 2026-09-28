@@ -284,7 +284,13 @@ function lungeDistance(motion: HeroAttackMotion): number {
   // A skill's clip has no authored step: the lock-on sets its carry, up to a leap's reach.
   const authored = LUNGE_DISTANCE[motion] as number | undefined
   const max = motion === 'leap' || authored === undefined ? LEAP_MAX : LUNGE_MAX
-  return isRangedAttack(motion) ? 0 : Math.min(max, stepIn ?? authored ?? 0)
+  if (isRangedAttack(motion)) return 0
+  // Shown as the avatar, a swing at nothing stands and swings: its clip plays on
+  // the avatar whole, where travel would have it cut or masked to the arms. The
+  // lock-on still steps in to reach, and the leap, whose point is the ground it
+  // covers, keeps its flight.
+  const fallback = nativeHeroOn() && motion !== 'leap' ? 0 : authored ?? 0
+  return Math.min(max, stepIn ?? fallback)
 }
 
 /** The wind-up carries the body toward where it faces, arriving as the blow lands. */
@@ -684,14 +690,14 @@ function updatePlayerCharacter(dt: number) {
   }
   // Shown as the avatar, the clip queued this tick goes out now, after a turn to
   // the lock-on when the avatar is off it (shots only: a swing's lunge turns the
-  // player on its own). A swing whose lunge will carry the player is masked to
-  // the upper body even from a standstill: the travel would cut a full-body clip.
+  // player on its own). A swing that steps in to a locked target plays whole all
+  // the same, on trial: the glide is timed to end as the blow lands, so if the
+  // renderer's reset at its end cuts anything it is the recovery, not the swing.
   const face = facingOverride
   flushNativeMotion(
     face !== undefined && Math.abs(lockDelta) > LOCK_TURN_MIN
       ? (motion) => (isRangedAttack(motion as WeaponMotion) ? turnPlayer(face) : undefined)
-      : undefined,
-    (motion) => roamingCombat.swing?.motion === motion && lungeDistance(motion as HeroAttackMotion) >= 0.05
+      : undefined
   )
 
   const canReplace = hasReadyCharacter && !!localAddress()

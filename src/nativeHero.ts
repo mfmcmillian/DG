@@ -12,8 +12,10 @@
 // moment the player moves, or the jump key is read (playerCharacter keeps the
 // controller's jump gated for that: Space is the guard). Blocks, the stun and
 // the fall root the player already (roamingCombat), so they play through; a
-// swing made on the move, or one whose lunge is about to carry the player, is
-// masked to the upper body so the legs keep running. The roll has no clip.
+// swing made on the move is masked to the upper body so the legs keep running.
+// A swing from a standstill plays whole: at nothing it does not step
+// (playerCharacter.lungeDistance), and the step in to a locked target is on
+// trial unmasked, the glide ending as the blow lands. The roll has no clip.
 //
 // Facing: the body turns toward a locked-on enemy on its own (playerCharacter's
 // facingOverride); the avatar cannot be turned that way, so before a clip that
@@ -33,6 +35,7 @@ import { stopEmote, triggerSceneEmote } from '~system/RestrictedActions'
 import { setAvatarHidingExclusions } from './avatarHiding'
 import { EquipmentMotion } from './combatAnimations'
 import { devToolsOn } from './devAccess'
+import { getEquipmentItemOrNull } from './equipmentCatalog'
 import { localAddress, playerAddressAsReported } from './multiplayer'
 import nativeWeapons from './nativeWeapons.json'
 import { getSettings } from './settings'
@@ -178,17 +181,10 @@ export function mirrorLocalMotion(motion: EquipmentMotion, restart: boolean, mov
  * this tick; when it returns a promise the clip waits for the turn to finish
  * (the renderer resets the animator when an interpolated move ends, which would
  * cut a clip already playing), so the shot goes where the avatar looks.
- * `carried` says whether the clip's own wind-up is about to move the player (a
- * swing's lunge): the renderer cuts a full-body emote as soon as the avatar
- * travels, so such a clip is masked to the upper body like one made on the move.
  */
-export function flushNativeMotion(
-  turn: ((motion: EquipmentMotion) => Promise<void> | undefined) | undefined,
-  carried?: (motion: EquipmentMotion) => boolean
-) {
+export function flushNativeMotion(turn: ((motion: EquipmentMotion) => Promise<void> | undefined) | undefined) {
   if (!pending) return
-  const { motion, loop } = pending
-  const upper = pending.upper || (!!EMOTES[motion]?.upperWhenMoving && !!carried?.(motion))
+  const { motion, loop, upper } = pending
   pending = undefined
   if (!commsAllow(motion, loop)) {
     // A stance held back is not being played: let it be asked for again on the next change.
@@ -261,35 +257,58 @@ const WEAPONS: Readonly<Record<string, NativeWeapon>> = nativeWeapons as Record<
 
 /**
  * The static weapon models are baked into the avatar's hand-bone space by the
- * export script. These nudge every one of them at once, for when the renderer's
- * anchor frame turns out not to be the glTF joint's. Metres and Euler degrees;
- * the developer panel changes them live (nudgeWeaponTweak) to find the values.
+ * export script. These nudge them, for when the renderer's anchor frame turns
+ * out not to be the glTF joint's, one set per grip: the Berserker's heavy iron
+ * sits in the hand differently from the blades, bows and staves. Metres and
+ * Euler degrees; the developer panel changes them live (nudgeWeaponTweak) to
+ * find the values.
  */
+type WeaponGrip = 'blade' | 'heavy'
 // Found in-world with the developer panel: the avatar's grip sits a touch off the model's.
-const WEAPON_TWEAK = { position: Vector3.create(0.1, 0, 0), euler: Vector3.create(15, 330, 0) }
+const WEAPON_TWEAK: Record<WeaponGrip, { position: Vector3.MutableVector3; euler: Vector3.MutableVector3 }> = {
+  blade: { position: Vector3.create(0.1, 0, 0), euler: Vector3.create(15, 330, 0) },
+  heavy: { position: Vector3.create(0.1, 0.2, 0), euler: Vector3.create(30, 315, 0) }
+}
+/** The weapon classes that take the heavy grip (heroClasses: the Berserker's). */
+const HEAVY_GRIP = new Set<string>(['axe', 'hammer', 'club', 'great'])
 
-/** Developer: turn or move every held weapon by a step and re-apply; the label shows where it landed. */
+function gripOf(weaponId: string): WeaponGrip {
+  const cls = getEquipmentItemOrNull(weaponId)?.weapon?.class
+  return cls !== undefined && HEAVY_GRIP.has(cls) ? 'heavy' : 'blade'
+}
+
+/** The grip the developer panel is tuning: that of the weapon in our own hand, else the blades'. */
+function tunedGrip(): WeaponGrip {
+  const mine = held.get(localAddress())
+  return mine ? mine.grip : 'blade'
+}
+
+/** Developer: turn or move every held weapon of our grip by a step and re-apply; the label shows where it landed. */
 export function nudgeWeaponTweak(kind: 'rotate' | 'move', axis: 'x' | 'y' | 'z', amount: number) {
-  const v = kind === 'rotate' ? WEAPON_TWEAK.euler : WEAPON_TWEAK.position
+  const grip = tunedGrip()
+  const tweak = WEAPON_TWEAK[grip]
+  const v = kind === 'rotate' ? tweak.euler : tweak.position
   v[axis] = kind === 'rotate' ? ((v[axis] + amount) % 360 + 360) % 360 : Math.round((v[axis] + amount) * 1000) / 1000
   for (const w of held.values()) {
+    if (w.grip !== grip) continue
     const t = Transform.getMutable(w.model)
-    t.position = Vector3.clone(WEAPON_TWEAK.position)
-    t.rotation = tweakRotation()
+    t.position = Vector3.clone(tweak.position)
+    t.rotation = tweakRotation(grip)
   }
 }
 
 export function weaponTweakLabel(): string {
-  const e = WEAPON_TWEAK.euler
-  const p = WEAPON_TWEAK.position
-  return `rot ${e.x} ${e.y} ${e.z}  pos ${p.x} ${p.y} ${p.z}`
+  const grip = tunedGrip()
+  const { euler: e, position: p } = WEAPON_TWEAK[grip]
+  return `${grip} rot ${e.x} ${e.y} ${e.z}  pos ${p.x} ${p.y} ${p.z}`
 }
 
-function tweakRotation() {
-  return Quaternion.fromEulerDegrees(WEAPON_TWEAK.euler.x, WEAPON_TWEAK.euler.y, WEAPON_TWEAK.euler.z)
+function tweakRotation(grip: WeaponGrip) {
+  const e = WEAPON_TWEAK[grip].euler
+  return Quaternion.fromEulerDegrees(e.x, e.y, e.z)
 }
 
-type HeldWeapon = { anchor: Entity; model: Entity; weaponId: string; hand: 'l' | 'r'; avatarId: string }
+type HeldWeapon = { anchor: Entity; model: Entity; weaponId: string; hand: 'l' | 'r'; avatarId: string; grip: WeaponGrip }
 const held = new Map<string, HeldWeapon>()
 
 /**
@@ -311,10 +330,11 @@ export function syncNativeWeapon(id: string, avatarId: string | undefined, weapo
     avatarId,
     anchorPointId: def.hand === 'l' ? AvatarAnchorPointType.AAPT_LEFT_HAND : AvatarAnchorPointType.AAPT_RIGHT_HAND
   })
+  const grip = gripOf(weaponId)
   const model = engine.addEntity()
-  Transform.create(model, { parent: anchor, position: Vector3.clone(WEAPON_TWEAK.position), rotation: tweakRotation() })
+  Transform.create(model, { parent: anchor, position: Vector3.clone(WEAPON_TWEAK[grip].position), rotation: tweakRotation(grip) })
   GltfContainer.create(model, { src: def.src, visibleMeshesCollisionMask: 0, invisibleMeshesCollisionMask: 0 })
-  held.set(id, { anchor, model, weaponId, hand: def.hand, avatarId })
+  held.set(id, { anchor, model, weaponId, hand: def.hand, avatarId, grip })
 }
 
 function removeHeld(id: string, w: HeldWeapon) {
