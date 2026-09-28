@@ -157,11 +157,14 @@ export const Messages = {
    * Client -> server: a lobby action. `action` is one of go (a party whose doors
    * close on a timer), create (a party that waits), join, leave, ready, unready,
    * set (level/diff, leader only), hold (leader: stop or restart the timer),
-   * start (leader only).
+   * start (leader only), invite (`party` is the address invited; a sender
+   * with no party gets one, held open).
    */
   party: Schemas.Map({ action: Schemas.String, party: Schemas.String, level: Schemas.Int, diff: Schemas.Int }),
   /** Server -> all: every party in the room. Sent on each change and every few seconds. */
   parties: Schemas.Map({ list: Schemas.Array(PartySnap) }),
+  /** Server -> one client: `from` asks `to` into party `party` (its level and difficulty for the card). */
+  invite: Schemas.Map({ from: Schemas.String, to: Schemas.String, party: Schemas.String, level: Schemas.Int, diff: Schemas.Int }),
 
   // --- saved heroes -------------------------------------------------------------
   /** Client -> server: persist this hero (appearance, gear, coins, unlocks) under the sender's wallet. */

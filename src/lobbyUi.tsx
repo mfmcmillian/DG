@@ -19,7 +19,9 @@ import { devToolsOn } from './devAccess'
 import { openSettings } from './settings'
 import { openInventory } from './inventory'
 import { IconButton } from './hudButtons'
-import { closeLobby, openLobby } from './party'
+import { closeLobby, invitePending, invitePlayer, openLobby } from './party'
+import { presence } from './presence'
+import { InviteToast } from './inviteUi'
 import { DIFFICULTIES, difficultyAllowed, levelById, LEVELS, levelUnlocked, MAX_PARTY } from './shared/levels'
 import { localXp } from './heroXp'
 import { getPreloadGroup } from './preload'
@@ -63,7 +65,7 @@ function layout() {
   const scale = Math.min((screenWidth - left - right) / FRAME.width, (screenHeight - top - bottom) / FRAME.height, 1.1)
   const width = FRAME.width * scale
   const height = FRAME.height * scale
-  return { scale, width, height, x: left + (screenWidth - left - right - width) / 2, y: top + (screenHeight - top - bottom - height) / 2 }
+  return { scale, width, height, screenWidth, screenHeight, x: left + (screenWidth - left - right - width) / 2, y: top + (screenHeight - top - bottom - height) / 2 }
 }
 
 export function heroLabel(address: string): string {
@@ -244,6 +246,42 @@ function OpenParties({ scale: s }: { scale: number }) {
   </UiEntity>
 }
 
+/** Most hall players the invite list shows before folding the rest into "+n more". */
+const INVITE_ROWS = 4
+
+/**
+ * Everyone else in the hall who has a champion picked, each with a button to
+ * ask them along. Without a party the first invite opens one and holds the
+ * doors; with one, the list stops once the seats are taken.
+ */
+function InviteList({ scale: s, party }: { scale: number; party?: PartyInfo }) {
+  const people = presence().filter((p) => p.inHall && !p.me && !!p.cls && !party?.members.includes(p.id))
+  if (people.length === 0) return null
+  const rows = people.slice(0, INVITE_ROWS)
+  const seats = party ? MAX_PARTY - party.members.length : MAX_PARTY - 1
+  return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', flexShrink: 0, margin: { top: 18 * s }, pointerFilter: 'none' }}>
+    <Heading title={t('IN THE HALL')} scale={s} />
+    {rows.map((p) => {
+      const pending = invitePending(p.id)
+      return <UiEntity key={p.id} uiTransform={{ width: '100%', height: 36 * s, margin: { bottom: 4 * s }, padding: { left: 12 * s, right: 6 * s },
+        borderRadius: 4 * s, borderWidth: s, borderColor: line, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}
+        uiBackground={{ color: panel }}>
+        <Label value={heroLabel(p.id)} color={white} fontSize={13 * s} textAlign="middle-left" textWrap="nowrap"
+          uiTransform={{ width: (RIGHT - 250) * s, height: '100%', pointerFilter: 'none' }} />
+        <Label value={p.cls} color={muted} fontSize={11 * s} textAlign="middle-right" textWrap="nowrap"
+          uiTransform={{ width: 130 * s, height: '100%', margin: { right: 8 * s }, pointerFilter: 'none' }} />
+        <Action id={`invite-${p.id}`} text={pending ? t('Invited') : t('Invite')} accent="gold" width={84} height={26} scale={s} fontSize={12}
+          disabled={pending || seats <= 0} onClick={() => invitePlayer(p.id)} />
+      </UiEntity>
+    })}
+    {people.length > rows.length && <Label value={t('+{n} more', { n: people.length - rows.length })} color={muted} fontSize={11 * s} textAlign="middle-right" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 16 * s, flexShrink: 0, pointerFilter: 'none' }} />}
+    <Label value={seats <= 0 ? t('The party is full.') : party ? t('An invite stands for a while; they join when they answer.') : t('Inviting someone opens a party and holds the doors.')}
+      color={muted} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 16 * s, margin: { top: 4 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+  </UiEntity>
+}
+
 /**
  * Our party while its doors are open. The leader closes them (Go now), holds
  * them for friends, or cancels; a member only needs to stand there. Readiness
@@ -285,6 +323,7 @@ function PartyCard({ scale: s, party }: { scale: number; party: PartyInfo }) {
       {leader && <Action id="party-hold" text={held ? t('Close the doors') : t('Hold the doors')} width={130} height={44} scale={s} fontSize={13} accent="gold" active={held} onClick={holdDoors} />}
       <Action id="party-leave" text={leader ? t('Cancel') : t('Stay here')} width={110} height={44} scale={s} fontSize={13} accent="gold" onClick={leaveParty} />
     </UiEntity>
+    {party.members.length < MAX_PARTY && <InviteList scale={s} party={party} />}
   </UiEntity>
 }
 
@@ -301,6 +340,7 @@ function NoParty({ scale: s }: { scale: number }) {
       color={synced ? muted : coral} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 18 * s, margin: { top: 8 * s }, flexShrink: 0, pointerFilter: 'none' }} />
     <OpenParties scale={s} />
+    <InviteList scale={s} />
   </UiEntity>
 }
 
@@ -327,7 +367,7 @@ function LobbyTools({ scale: s }: { scale: number }) {
 }
 
 export function LobbyUi() {
-  const { scale: s, width, height, x, y } = layout()
+  const { scale: s, width, height, x, y, screenWidth, screenHeight } = layout()
   const party = myParty()
   const canPick = !party || isLeader()
   const banner = getLobbyState().banner
@@ -364,5 +404,6 @@ export function LobbyUi() {
         </UiEntity>
       </UiEntity>
     </UiEntity>
+    <InviteToast width={screenWidth} top={Math.min(y + height + 12 * s, screenHeight - 90 * s)} scale={s} />
   </UiEntity>
 }

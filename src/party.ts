@@ -17,7 +17,8 @@ import { isRealmPreloaded } from './preloadPlan'
 import { t } from './i18n'
 import { getPickerState } from './characterPicker'
 import { getPlayerCharacterState } from './playerCharacter'
-import { COMING_SOON, DIFFICULTIES, difficultyById, HUB_LEVEL, levelById, LEVELS, RAID_PARTY, RealmDefinition } from './shared/levels'
+import { COMING_SOON, DIFFICULTIES, difficultyById, HUB_LEVEL, levelById, LEVELS, MAX_PARTY, RAID_PARTY, RealmDefinition } from './shared/levels'
+import { fxSound } from './combatFx'
 
 /** What the player has picked in the lobby before they have a party of their own. */
 let pickLevel = 0
@@ -130,7 +131,70 @@ export function initializeParty() {
   onNet('progress', (msg) => {
     if (msg.id.toLowerCase() === localAddress()) state.progress = [...msg.progress]
   })
+  onNet('invite', (msg) => {
+    if (msg.to.toLowerCase() !== localAddress() || myPhase() !== HUB) return
+    const from = msg.from.toLowerCase()
+    const at = invites.findIndex((i) => i.from === from)
+    if (at >= 0) invites.splice(at, 1)
+    invites.unshift({ from, party: msg.party, level: msg.level, diff: msg.diff, left: INVITE_SECONDS })
+    fxSound('reveal', 0.5)
+  })
   engine.addSystem(update)
+}
+
+// --- invites ------------------------------------------------------------------------------
+
+/** Somebody in the hall asking us into their party. */
+export type Invite = { from: string; party: string; level: number; diff: number; left: number }
+
+/** How long an invite stands, on both sides. */
+const INVITE_SECONDS = 45
+const invites: Invite[] = []
+/** Who we have invited lately, and for how much longer the card says so. */
+const sent = new Map<string, number>()
+
+/** Invites waiting on us, newest first, for the toast. */
+export function incomingInvites(): readonly Invite[] {
+  return invites
+}
+
+/** Ask `address` into our party (the host opens one for us, held, if we have none). */
+export function invitePlayer(address: string) {
+  const target = address.toLowerCase()
+  if (!target || target === localAddress() || myPhase() !== HUB) return
+  const pick = getLobbyPick()
+  if (act('invite', target, pick.level, pick.diff)) sent.set(target, INVITE_SECONDS)
+}
+
+/** We invited them not long ago; the card shows "Invited" rather than the button. */
+export function invitePending(address: string): boolean {
+  return (sent.get(address.toLowerCase()) ?? 0) > 0
+}
+
+export function acceptInvite(invite: Invite) {
+  invites.length = 0
+  joinParty(invite.party)
+}
+
+export function declineInvite(invite: Invite) {
+  const at = invites.indexOf(invite)
+  if (at >= 0) invites.splice(at, 1)
+}
+
+/** Count the clocks down and drop invites to parties that have filled, gone, or set off. */
+function tickInvites(dt: number) {
+  for (let i = invites.length - 1; i >= 0; i--) {
+    const invite = invites[i]
+    invite.left -= dt
+    const party = state.parties.find((p) => p.id === invite.party)
+    const stale = !party || party.state !== 'open' || party.members.length >= MAX_PARTY || party.members.includes(localAddress())
+    // The party snapshot travels just ahead of the invite; give it a moment before judging.
+    if (invite.left <= 0 || (invite.left < INVITE_SECONDS - 1 && stale)) invites.splice(i, 1)
+  }
+  for (const [id, left] of [...sent.entries()]) {
+    if (left - dt <= 0) sent.delete(id)
+    else sent.set(id, left - dt)
+  }
 }
 
 export function getLobbyState(): Readonly<LobbyState> {
@@ -343,6 +407,7 @@ const GREET_AFTER_SECONDS = 0.8
 function update(dt: number) {
   const span = Number.isFinite(dt) && dt > 0 ? dt : 0
   state.silence += span
+  tickInvites(span)
   if (state.noticeFor > 0) {
     state.noticeFor -= span
     if (state.noticeFor <= 0) state.notice = ''

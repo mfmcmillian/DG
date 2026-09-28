@@ -37,6 +37,7 @@ import { formatTime, heroLabel, partyTitle } from './lobbyUi'
 import { DIFFICULTIES, LEVELS, MAX_PARTY } from './shared/levels'
 import { fxSound } from './combatFx'
 import { t, tn } from './i18n'
+import { InviteToast } from './inviteUi'
 import { pitCinematicPlaying } from './pitCinematic'
 
 /** Still shaking hands with the party server (solo play never waits). */
@@ -690,6 +691,7 @@ export function WorldHudUi() {
     {ready && <ResultsOverlay width={width} height={height} scale={s} />}
     {ready && <HubPrompt width={width} bottom={bottom + lift} scale={s} />}
     {ready && <HubNotice width={width} top={vitalsTop - 60 * s} scale={s} />}
+    {ready && <InviteToast width={width} top={vitalsTop} scale={s} />}
     {ready && <TrainingTally width={width} top={vitalsTop - 8 * s} scale={s} />}
     {ready && <LevelUpNotice width={width} top={vitalsTop + 60 * s} scale={s} />}
     {ready && <HintStrip width={width} bottom={bottom + lift + 128 * s} scale={s} />}

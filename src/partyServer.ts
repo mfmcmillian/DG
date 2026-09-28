@@ -61,6 +61,8 @@ const DECISION_SECONDS = 120
 /** "Go" opens the doors for this long so others in the hall can step in; a joiner is given at least this much. */
 const DOOR_SECONDS = 15
 const JOIN_GRACE_SECONDS = 8
+/** Doors on a timer wait at least this long after an invite goes out, so the answer can arrive. */
+const INVITE_HOLD_SECONDS = 30
 const BROADCAST_SECONDS = 3
 
 const parties = new Map<string, Party>()
@@ -298,6 +300,22 @@ function handleAction(id: string, action: string, partyId: string, level: number
       // Joining is the pick; the leader still has to start (or the doors close).
       party.ready.add(id)
       if (party.doors > 0) party.doors = Math.max(party.doors, elapsed + JOIN_GRACE_SECONDS)
+      break
+    }
+    case 'invite': {
+      const target = partyId.toLowerCase()
+      if (!target || target === id || phaseOf(id) !== HUB || phaseOf(target) !== HUB) return
+      let party = partyOfMember(id)
+      if (party && party.state !== 'open') return
+      // No party yet: one is made and held, so the doors wait for the answer.
+      if (!party) {
+        handleAction(id, 'create', '', level, diff)
+        party = partyOfMember(id)
+      }
+      if (!party || party.members.length >= MAX_PARTY || party.members.includes(target)) return
+      if (party.doors > 0) party.doors = Math.max(party.doors, elapsed + INVITE_HOLD_SECONDS)
+      sendNet('invite', { from: id, to: target, party: party.id, level: party.level, diff: party.diff }, { to: [target] })
+      console.log(`[Server] ${id} invites ${target} to ${party.id}`)
       break
     }
     case 'hold': {
