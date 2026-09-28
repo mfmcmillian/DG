@@ -22,6 +22,13 @@
 //   tick, so between ticks the rigid rig swings with every wobble of the
 //   avatar's heading and the camera shakes around the player. Damped mode never
 //   inherits the yaw; the look-at keeps the avatar pinned per frame regardless.
+//
+//   On Godot the damped path is a *relay* (see stepRelay): that client advances
+//   Tweens only once per scene tick too, so a rig placed or tweened from the
+//   scene moves in tick-sized steps against an avatar that moves every frame.
+//   The one thing its camera controller does interpolate per render frame is
+//   the transition between two virtual cameras, so the scene hands the camera a
+//   fresh mount every tick and the controller glides it there.
 
 import {
   Billboard, BillboardMode, EasingFunction, engine, Entity, MainCamera, Transform, Tween, VirtualCamera
@@ -212,6 +219,11 @@ export function setCrawlerCamera(on: boolean) {
     return
   }
   if (on) {
+    if (isGodotClient()) {
+      kick = Vector3.Zero()
+      relayStart()
+      return
+    }
     if (rig === undefined) {
       rig = engine.addEntity()
       Transform.create(rig, { position: Vector3.create(48, CRAWLER_CAMERA.height, 60) })
@@ -247,6 +259,7 @@ export function setCrawlerCamera(on: boolean) {
     MainCamera.createOrReplace(engine.CameraEntity, { virtualCameraEntity: undefined })
     if (rig !== undefined && Tween.has(rig)) Tween.deleteFrom(rig)
     glideStart = undefined
+    relayStop()
   }
 }
 
@@ -326,7 +339,7 @@ function stepRigid(dt: number) {
 
 function followPlayer(dt: number) {
   if (!modeChosen) chooseMode()
-  if (!enabled || rig === undefined || dt <= 0) return
+  if (!enabled || dt <= 0) return
   ticks++
   try {
     if (CRAWLER_CAMERA.mode === 'rigid') stepRigid(dt)
@@ -338,17 +351,17 @@ function followPlayer(dt: number) {
 }
 
 function step(dt: number) {
-  if (rig === undefined) return
   const player = Transform.getOrNull(engine.PlayerEntity)?.position
   if (!player) return
 
   // A style's boom glides here too; desiredPosition reads the blended values.
   stepBoom(dt)
+  clock += dt
   if (isGodotClient()) {
-    stepPlaced(dt, player)
+    stepRelay(dt, player)
     return
   }
-  clock += dt
+  if (rig === undefined) return
   // The renderer hands us the player position at its own cadence, so a
   // per-frame delta alternates between zero and double. Measure velocity over a
   // window instead, then ease the lead so it cannot flicker.
@@ -454,27 +467,117 @@ function step(dt: number) {
   Tween.setMove(rig, predicted, end, duration * 1000, EasingFunction.EF_LINEAR)
 }
 
-/** Godot: how fast the rig closes on the player (1/s). Stiff, so a stop is a stop, not a drift. */
-const PLACED_FOLLOW = 30
+// --- Godot relay ---------------------------------------------------------------
+//
+// Godot's camera controller (dcl_global_camera_controller.gd) applies scene
+// Transforms and Tweens once per scene tick, so anything the scene moves
+// steps at tick rate while the avatar moves every render frame; the camera
+// used to be placed that way, and the world snapped along beside the walking
+// hero. What that controller does do every render frame is glide the camera
+// from wherever it is to a *newly targeted* virtual camera over the target's
+// transition time, reading the target's transform live. So each tick the scene
+// puts a spare mount where the camera should be, gives it a transition a few
+// ticks long, and retargets MainCamera at it: the camera is always mid-glide
+// toward a fresh mount, moving every frame, and the next tick redirects it
+// before it arrives. The look-at rides on the player, so aim is per frame too.
+//
+// Arriving matters: when a glide completes the controller *reparents* the
+// camera under that mount, and if that mount were later moved the camera would
+// jump with it. The scene cannot ask where the camera is parented, so it keeps
+// book: a mount whose target was held for about its transition time may have
+// been reached and is retired from reuse; one held well past it certainly was,
+// and every earlier retiree is then free again, because the camera can only
+// be under the mount it reached last.
+
+const RELAY = {
+  /** Transition length in scene ticks; the camera must not arrive before the next retarget. */
+  spanTicks: 3,
+  minTime: 0.05,
+  maxTime: 0.5,
+  /** The first glide, from the player's own camera into the dungeon. */
+  entryTime: 0.8,
+  /** Held this close (s) to its transition time, a mount is treated as reached. */
+  reachSlack: 0.025,
+  /** Held this long (s) past it, a mount was certainly reached and every older retiree is free. */
+  settled: 0.25,
+  /** Retirees beyond this many are recycled oldest first; the camera is not under a mount that old. */
+  maxRetired: 24,
+  /** Targets closer than this (m) count as unchanged and hold the current mount. */
+  holdEpsilon: 0.001
+}
+
+/** The mount MainCamera points at, where it was put, and when. */
+let relayCurrent: Entity | undefined
+let relayTarget: Vector3 | undefined
+let relaySwitched = 0
+let relayTime = 0
+/** Mounts free to be moved, and mounts the camera may be parented under. */
+const relayPool: Entity[] = []
+let relayRetired: Entity[] = []
+/** Smoothed scene tick length (s). */
+let relayTickAvg = 0.05
+
+function relayMount(): Entity {
+  const spare = relayPool.shift()
+  if (spare !== undefined) return spare
+  const mount = engine.addEntity()
+  Transform.create(mount)
+  return mount
+}
+
+function relayStart() {
+  // Whatever the camera was under before is off limits until a settled hold proves otherwise.
+  if (relayCurrent !== undefined) relayRetired.push(relayCurrent)
+  relayCurrent = undefined
+  relayTarget = undefined
+  const player = Transform.getOrNull(engine.PlayerEntity)?.position
+  if (player) stepRelay(0, player)
+}
+
+function relayStop() {
+  if (relayCurrent !== undefined) relayRetired.push(relayCurrent)
+  relayCurrent = undefined
+  relayTarget = undefined
+}
 
 /**
- * Godot per tick: the rig is placed outright, no glide and no lead. That
- * client advances Tweens only once per scene tick, so a glide gains nothing
- * there and its start time differs from ours by a tick, which showed as a hop
- * at every renewal; and its player samples are fresh each tick, so there is
- * no cadence beat to reckon across. The lead, retracting after a stop, read as
- * the camera wandering on; it is gone. The look-at still pins the avatar on
- * screen every frame, so what remains is the world advancing at tick rate.
+ * Godot per tick: retarget the camera at a spare mount placed where it should
+ * be, glide time a few ticks. Straight from the player sample: the lead, which
+ * retracted after a stop and read as the camera wandering on, is gone, and the
+ * glide already lags a little. A target that has not moved holds the current
+ * mount, so a stop is a stop.
  */
-function stepPlaced(dt: number, player: Vector3) {
-  if (rig === undefined) return
+function stepRelay(dt: number, player: Vector3) {
+  if (dt > 0) relayTickAvg += (dt - relayTickAvg) * 0.2
   kick = Vector3.scale(kick, Math.exp(-dt * CRAWLER_CAMERA.kickDecay))
-  const target = desiredPosition(player, Vector3.Zero())
-  current = current && Vector3.distance(current, target) < 4
-    ? Vector3.lerp(current, target, 1 - Math.exp(-dt * PLACED_FOLLOW))
-    : target
-  if (Tween.has(rig)) Tween.deleteFrom(rig)
-  Transform.getMutable(rig).position = Vector3.add(current, kick)
+  const target = Vector3.add(desiredPosition(player, Vector3.Zero()), kick)
+  if (relayCurrent !== undefined && relayTarget && Vector3.distance(relayTarget, target) < RELAY.holdEpsilon) return
+
+  const next = relayMount()
+  if (relayCurrent !== undefined) {
+    const held = clock - relaySwitched
+    if (held >= relayTime + RELAY.settled) {
+      relayPool.push(...relayRetired)
+      relayRetired = [relayCurrent]
+    } else if (held >= relayTime - RELAY.reachSlack) {
+      relayRetired.push(relayCurrent)
+      if (relayRetired.length > RELAY.maxRetired) relayPool.push(relayRetired.shift()!)
+    } else {
+      relayPool.push(relayCurrent)
+    }
+  }
+  relayTime = relayCurrent === undefined
+    ? RELAY.entryTime
+    : Math.min(RELAY.maxTime, Math.max(RELAY.minTime, RELAY.spanTicks * relayTickAvg))
+  Transform.getMutable(next).position = target
+  VirtualCamera.createOrReplace(next, {
+    lookAtEntity: aim,
+    defaultTransition: { transitionMode: VirtualCamera.Transition.Time(relayTime) }
+  })
+  MainCamera.createOrReplace(engine.CameraEntity, { virtualCameraEntity: next })
+  relayCurrent = next
+  relayTarget = target
+  relaySwitched = clock
 }
 
 /** Where the renderer's current glide has the rig by now (it holds its end once it runs out). */
