@@ -71,7 +71,10 @@ function requestMove(position: Vector3, cameraTarget?: Vector3): Promise<boolean
     .then((result) => {
       // A teleport can land the avatar shown; run it through the hide again.
       rearmAvatarHiding()
-      return result.success
+      // Only an explicit refusal counts. The mobile (Godot) client answers with
+      // an empty object, so an absent flag is a queued move, not a rejection;
+      // the arrival watch below is what confirms the teleport took.
+      return result.success !== false
     })
     .finally(() => { if (movement === pending) movement = undefined })
   movement = pending
@@ -110,8 +113,10 @@ function updatePlayerPlacement(dt: number) {
     arrival.elapsed += dt
     const player = Transform.getOrNull(engine.PlayerEntity)?.position
     const target = arrival.position
+    // The height window is loose on top: clients differ in where on the body
+    // they report the player, and a teleport may settle from a little above.
     if (arrival.requested && player && Math.abs(player.x - target.x) < 0.35 && Math.abs(player.z - target.z) < 0.35 &&
-      player.y >= RECOVERY_Y && player.y <= target.y + 0.5) {
+      player.y >= RECOVERY_Y && player.y <= target.y + 1.5) {
       const ready = arrival
       arrival = undefined
       placed = true
