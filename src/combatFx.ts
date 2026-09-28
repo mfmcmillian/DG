@@ -15,9 +15,10 @@ const BLEND_ADD = 1 as PBParticleSystem_BlendMode
 const PLAYING = 0 as PBParticleSystem_PlaybackState
 const STOPPED = 2 as PBParticleSystem_PlaybackState
 import { Color3, Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
-import { WeaponMotion } from './combatActions'
+import { BladeTint, bladeTrailReady, fxBladeTrail, setBladeContactHandler, updateBladeTrails, warmBladeTrails } from './bladeTrail'
+import { isHeavyMotion, WeaponMotion } from './combatActions'
 import { COMBAT_CLIPS } from './combatAnimations'
-import { playerEntityByAddress } from './multiplayer'
+import { isHeadless, playerEntityByAddress } from './multiplayer'
 
 export type FxSound =
   | 'swing_light' | 'swing_heavy' | 'hit_light' | 'hit_heavy' | 'block' | 'hurt'
@@ -90,6 +91,7 @@ export function initializeCombatFx() {
     speakers.push(e)
   }
   engine.addSystem(update)
+  setBladeContactHandler(fxBladeFlecks)
   warmFx()
 }
 
@@ -113,6 +115,7 @@ function warmFx() {
   Transform.create(anchor, { position: Vector3.clone(HIDDEN) })
   fxSlash(anchor, 'attack_light')
   fxSlash(anchor, 'attack_heavy')
+  if (!isHeadless()) warmBladeTrails(anchor)
 }
 
 // --- bursts ------------------------------------------------------------------
@@ -236,6 +239,30 @@ export function fxWoodHit(position: Vector3, heavy: boolean, straw: boolean) {
 
 // --- sword swipes ------------------------------------------------------------
 
+/**
+ * Motes thrown off the blade at the top of the stroke, in the trail's own
+ * colours: not the sparks of a hit (src/combatFx.ts fxImpact has those), just
+ * the energy the swing sheds, so they are few, small and light.
+ */
+export function fxBladeFlecks(position: Vector3, tint: BladeTint, heavy: boolean) {
+  const count = Math.round((heavy ? 12 : 7) * tint.flecks)
+  if (count <= 0) return
+  burst('sparks', position, {
+    texture: { src: TEX.sparkle },
+    blendMode: BLEND_ADD,
+    lifetime: 0.3,
+    maxParticles: 16,
+    gravity: -2,
+    initialSize: { start: 0.08, end: heavy ? 0.2 : 0.14 },
+    sizeOverTime: { start: 1, end: 0 },
+    initialColor: { start: Color4.create(tint.core.r, tint.core.g, tint.core.b, 1), end: Color4.create(tint.core.r, tint.core.g, tint.core.b, 1) },
+    colorOverTime: { start: Color4.create(tint.haze.r, tint.haze.g, tint.haze.b, 1), end: Color4.create(tint.tail.r, tint.tail.g, tint.tail.b, 0) },
+    initialVelocitySpeed: { start: 1.5, end: heavy ? 4 : 3 },
+    shape: ParticleSystem.Shape.Sphere({ radius: 0.15 }),
+    bursts: { values: [{ time: 0, count }] }
+  }, 0.4)
+}
+
 const SLASH_FRAMES = 4
 const SLASH_DURATION = 0.22
 
@@ -247,12 +274,20 @@ function slashUvs(frame: number): number[] {
 }
 
 /**
- * Sword swipe: a flipbook crescent on a plane parented to the attacker's body
- * (so it moves with them between ticks), timed to bloom on the swing's contact
- * frame. Lights sweep a flat arc across the front (the second light mirrored,
- * as the return stroke); heavies drop a tall arc turned toward the camera.
+ * Sword swipe. With a baked weapon in hand (src/bladeTrail.ts) the blade drags
+ * a glowing ribbon along its real path through the clip. Otherwise (goblins,
+ * bodies whose weapon we do not know) a flipbook crescent on a plane parented
+ * to the attacker's body (so it moves with them between ticks), timed to bloom
+ * on the swing's contact frame. Lights sweep a flat arc across the front (the
+ * second light mirrored, as the return stroke); heavies drop a tall arc turned
+ * toward the camera.
  */
-export function fxSlash(anchor: Entity, motion: WeaponMotion) {
+export function fxSlash(anchor: Entity, motion: WeaponMotion, weapon?: string) {
+  // The headless host has no eyes: the ribbon is dozens of planes redrawn every frame, so it keeps the old one-plane crescent.
+  if (!isHeadless() && bladeTrailReady(motion, weapon)) {
+    fxBladeTrail(anchor, motion, weapon!)
+    return
+  }
   const clip = COMBAT_CLIPS[motion]
   const contact = clip.contact ?? clip.duration * 0.45
   let slot = slashes.find((x) => x.life >= x.duration)
@@ -281,8 +316,8 @@ export function fxSlash(anchor: Entity, motion: WeaponMotion) {
   slot.life = 0
   slot.frame = -1
   slot.anchor = anchor
-  slot.heavy = motion === 'attack_heavy' || motion === 'heavy_combo_c' || motion === 'leap' || motion === 'flourish_heavy'
-  slot.mirror = motion === 'attack_light2' || motion === 'attack_light3'
+  slot.heavy = isHeavyMotion(motion)
+  slot.mirror = motion === 'attack_light2' || motion === 'attack_light3' || motion === 'fencing'
   VisibilityComponent.getMutable(slot.entity).visible = false
 }
 
@@ -669,6 +704,7 @@ function update(dt: number) {
     }
   }
   for (const sl of slashes) updateSlash(sl, dt)
+  updateBladeTrails(dt)
   for (const n of numbers) {
     if (n.life >= n.duration) continue
     n.life = Math.min(n.duration, n.life + dt)

@@ -2,7 +2,11 @@
 // in saveHero/savedHero), so new switches never touch the frozen wire schema.
 // settings.ts writes it on the client; the host reads the bits it enforces.
 
-export type Prefs = { camera?: unknown; camV?: unknown; dev?: unknown; nat?: unknown; open?: unknown; lang?: unknown; hints?: unknown; fresh?: unknown; lv?: unknown }
+export type Prefs = {
+  camera?: unknown; camV?: unknown; dev?: unknown; nat?: unknown; open?: unknown; lang?: unknown; hints?: unknown; fresh?: unknown; lv?: unknown
+  /** Saved since the Blade class started on a plain sword (2.8.15); absent, the hero began with the Prism Saber and owns it. */
+  ps?: unknown
+}
 
 export function parsePrefs(json: string | undefined): Prefs {
   if (!json) return {}

@@ -109,7 +109,7 @@ export function applyCameraSetting() {
 
 export function serializeSettings(): string {
   return JSON.stringify({
-    camera: settings.camera, camV: CAMERA_GENERATION, dev: settings.devTools ? 1 : 0, nat: settings.nativeAvatar ? 1 : 0, open: settings.openAll ? 1 : 0, lang: settings.language, hints: seenHints(), fresh: newGearIds(), lv: 1
+    camera: settings.camera, camV: CAMERA_GENERATION, dev: settings.devTools ? 1 : 0, nat: settings.nativeAvatar ? 1 : 0, open: settings.openAll ? 1 : 0, lang: settings.language, hints: seenHints(), fresh: newGearIds(), lv: 1, ps: 1
   })
 }
 

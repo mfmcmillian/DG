@@ -412,7 +412,7 @@ const ASSETS = {
       "hands": "knight-hands",
       "legs": "knight-legs",
       "boots": "knight-boots",
-      "weapon": "pride-sword"
+      "weapon": "fk-sword-03"
     },
     "scout": {
       "head": "scout-head",

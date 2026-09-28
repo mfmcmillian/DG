@@ -9,6 +9,7 @@ import { adoptSavedCharacter, CHARACTERS, getEquippedCharacter, getPickerState }
 import { EQUIPMENT_SLOTS, EquipmentLoadout, getEquipmentItemOrNull } from './equipmentCatalog'
 import { getCommittedLoadout, setCommittedLoadout } from './equipmentState'
 import { enforceOwnedLoadout, getUnlockedItems, unlockInventoryItem } from './inventory'
+import { classOfCharacter } from './heroClasses'
 import { getLootState, setCoins } from './loot'
 import { isClientSynced, isSoloMode, localAddress } from './multiplayer'
 import { onNet, sendNet } from './net'
@@ -72,9 +73,14 @@ export function initializeHeroSave() {
     if (legacy && loadout && EQUIPMENT_SLOTS.some((slot) => loadout[slot.id]?.startsWith(`${legacy}-`))) {
       for (const slot of EQUIPMENT_SLOTS) if (slot.id !== 'weapon' && getEquipmentItemOrNull(`${legacy}-${slot.id}`)) unlockInventoryItem(`${legacy}-${slot.id}`)
     }
+    // Before 2.8.15 a Blade hero started with the Prism Saber, a Pride weapon,
+    // never gated because it was the starter. A hero saved before that owns it
+    // still, whatever is in hand today; new heroes start on a plain sword.
+    const prefs = parsePrefs(msg.prefs)
+    if (!prefs.ps && classOfCharacter(msg.cid) === 'blade') unlockInventoryItem('pride-sword')
     loadUpgradeRanks(msg.ups)
     // Before 2.8.6 the pit raised rarity; a weapon's steps were all its doing. They become levels.
-    if (!parsePrefs(msg.prefs).lv) convertLegacyWeaponRanks((id) => !!getEquipmentItemOrNull(id)?.weapon)
+    if (!prefs.lv) convertLegacyWeaponRanks((id) => !!getEquipmentItemOrNull(id)?.weapon)
     // Armor from before it had to be earned comes off; the class default goes back on.
     enforceOwnedLoadout(msg.cid)
     // The title's Continue waits on this outfit; fetch it ahead of the queue.

@@ -474,7 +474,7 @@ const combatHooks: RoamingCombatHooks = {
     if (context.skill?.effect.kind === 'aura') {
       fxSound('roar', 0.55)
     } else if (!isRangedAttack(motion)) {
-      if (characterRoot !== undefined && isSlashMotion(motion)) fxSlash(characterRoot, motion)
+      if (characterRoot !== undefined && isSlashMotion(motion)) fxSlash(characterRoot, motion, getPlayerWeapon())
       fxSound(isHeavyMotion(motion) || !!context.skill ? 'swing_heavy' : 'swing_light', 0.7)
     }
     motionEvent = true

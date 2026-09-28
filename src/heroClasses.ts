@@ -61,7 +61,9 @@ export const HERO_CLASSES: Record<HeroClass, HeroClassDefinition> = {
     label: 'Blade',
     blurb: 'Steel in hand. Light strings, heavy blows and a guard to hide behind.',
     weaponClasses: ['sword', 'dagger', 'mace'],
-    starterWeapon: 'pride-sword',
+    // A plain arming sword. Until 2.8.15 this was the Prism Saber, a Pride
+    // weapon; heroes saved with it keep it (src/heroSave.ts).
+    starterWeapon: 'fk-sword-03',
     light: ['attack_light', 'attack_light2', 'attack_light'],
     heavy: 'attack_heavy',
     block: 'block',

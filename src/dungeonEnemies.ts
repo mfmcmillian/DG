@@ -1132,7 +1132,7 @@ function updateBoss(e: Enemy, dt: number, target: NetFighter, fighters: NetFight
       e.blocking = false
       playMotion(e, motion, true)
       if (!slam) {
-        fxSlash(e.body, slashStyle(motion))
+        fxSlash(e.body, motion, e.archetype.weapon)
         fxSound(isHeavyMotion(motion) ? 'swing_heavy' : 'swing_light', 0.55)
       }
     }
@@ -1154,12 +1154,6 @@ function weaponOf(attack: BossAttack): WeaponMotion {
   if (attack === 'slam') return 'flourish_heavy'
   if (attack === 'roll') return 'fencing'
   return attack
-}
-
-function slashStyle(motion: WeaponMotion): AttackMotion {
-  if (motion === 'attack_light2' || motion === 'fencing' || motion === 'attack_light3') return 'attack_light2'
-  if (isHeavyMotion(motion)) return 'attack_heavy'
-  return 'attack_light'
 }
 
 function updateEnemy(e: Enemy, dt: number, target: NetFighter, fighters: NetFighter[]) {
@@ -1252,7 +1246,7 @@ function updateEnemy(e: Enemy, dt: number, target: NetFighter, fighters: NetFigh
     e.blocking = false
     playMotion(e, motion, true)
     if (!slam) {
-      fxSlash(e.body, motion)
+      fxSlash(e.body, motion, e.archetype.weapon)
       fxSound(motion === 'attack_heavy' ? 'swing_heavy' : 'swing_light', 0.45)
     }
   }
@@ -1875,7 +1869,7 @@ function shootEnemies(attacker: CombatPose, motion: HeroAttackMotion, context: A
   }
   const simAtLaunch = sim
   launchShot({
-    origin, yaw, pitch, profile, motion, finisher: context.finisher,
+    origin, yaw, pitch, profile, motion, finisher: context.finisher, weapon: getPlayerWeapon(),
     // Each arrow of a volley lands its own blow; a projectile stops at the first body it meets.
     onHit: (t, at) => {
       // The sim may have been rebuilt while the arrow flew; the index means nothing then.
@@ -2825,9 +2819,9 @@ function applyEnemySnapshots(party: string, list: EnemySnap[]) {
       const attack = asAttack(snap.m)
       const style = attack ?? (snap.m === 'flourish_heavy' || snap.m === 'stab' || snap.m === 'heavy_combo_a' ||
         snap.m === 'heavy_combo_b' || snap.m === 'heavy_combo_c' || snap.m === 'leap' || snap.m === 'fencing' ||
-        snap.m === 'attack_light3' ? slashStyle(snap.m) : undefined)
+        snap.m === 'attack_light3' ? snap.m : undefined)
       if (reset && style) {
-        fxSlash(e.body, style)
+        fxSlash(e.body, style, e.archetype.weapon)
         fxSound(isHeavyMotion(style) ? 'swing_heavy' : 'swing_light', 0.45)
       }
     }

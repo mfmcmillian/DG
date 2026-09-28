@@ -11,7 +11,7 @@ import {
   destroyEquipmentAvatar, getEquipmentLoading, setEquipmentAvatar, setEquipmentMotion, setEquipmentVisible
 } from './equipmentAvatar'
 import {
-  appearanceOf, fullLoadout, heroOwner, localAddress, netStatus, playerAddressAsReported, playerEntityByAddress, publishDiag,
+  appearanceOf, fullLoadout, heroOwner, heroWeapon, localAddress, netStatus, playerAddressAsReported, playerEntityByAddress, publishDiag,
   remoteHeroes
 } from './multiplayer'
 import { createHeroNameTag, destroyHeroNameTag, updateHeroNameTag } from './heroNameTag'
@@ -212,7 +212,7 @@ export function presentRemoteShot(p: { id: string; motion: string; x: number; y:
   const cid = replica ? heroCidOf(replica) : undefined
   const profile = shotProfile(cid, motion) ?? shotProfileForMotion(motion)
   if (!profile) return
-  launchShot({ origin: Vector3.create(p.x, p.y, p.z), yaw: p.yaw, pitch: p.pitch, profile, motion, finisher: false })
+  launchShot({ origin: Vector3.create(p.x, p.y, p.z), yaw: p.yaw, pitch: p.pitch, profile, motion, finisher: false, weapon: heroWeapon(p.id) })
 }
 
 /** The character the replica's look key was built from. */
@@ -271,7 +271,7 @@ function updateRemotePlayers(dt: number) {
         // through its own dungeon in these same metres is out of earshot.
         const heard = restart && partyOf(id) === myPhase
         if (heard && MELEE_MOTIONS.has(motion)) {
-          fxSlash(replica.root, motion as WeaponMotion)
+          fxSlash(replica.root, motion as WeaponMotion, hero.loadout.weapon)
           fxSound(LIGHT_MOTIONS.has(motion) ? 'swing_light' : 'swing_heavy', 0.55)
         } else if (heard && motion === 'bow_bash') {
           fxSound('swing_light', 0.55)

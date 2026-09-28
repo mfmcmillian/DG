@@ -9,10 +9,14 @@
 // other players fired arrive as `shot` messages and are flown here as visuals
 // only: the blow they land is announced by the host's enemy snapshot.
 
-import { Billboard, BillboardMode, engine, Entity, GltfContainer, Material, MaterialTransparencyMode, MeshRenderer, Transform, VisibilityComponent } from '@dcl/sdk/ecs'
+import {
+  Billboard, BillboardMode, engine, Entity, GltfContainer, Material, MaterialTransparencyMode, MeshRenderer, TextureWrapMode, Transform,
+  VisibilityComponent
+} from '@dcl/sdk/ecs'
 import { Color3, Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
+import { BladeTint, bladeTintFor, HOSTILE_TINT } from './bladeTrail'
 import { HeroAttackMotion } from './combatActions'
-import { fxImpact, fxMagicBurst, fxSlam, fxSound } from './combatFx'
+import { fxBladeFlecks, fxImpact, fxMagicBurst, fxSlam, fxSound } from './combatFx'
 import { COURTYARD } from './courtyard'
 import { isDungeonFloor } from './dungeon'
 import { ProjectileKind, ShotProfile } from './heroClasses'
@@ -36,11 +40,17 @@ export type Shot = {
   onHit?: (target: ProjectileTarget, at: Vector3) => void
   /** A goblin's shot: flies past the enemies (its own side) and ends at `range`; the host lands the hurt itself. */
   hostile?: boolean
+  /** The bow it left (an arrow's tracer takes its colour from it, src/bladeTrail.ts). */
+  weapon?: string
 }
 
 type Projectile = {
   entity: Entity
   glow?: Entity
+  /** An arrow's tracer: two crossed planes behind the head, so the streak reads from any side. */
+  tracer?: Entity
+  tracerPlanes?: Entity[]
+  tracerTint?: BladeTint
   kind: ProjectileKind
   position: Vector3
   velocity: Vector3
@@ -71,6 +81,10 @@ function colorOf(kind: ProjectileKind): Color4 {
   return kind === 'orb' ? ORB_COLOR : kind === 'venom' ? VENOM_COLOR : BOLT_COLOR
 }
 const GLOW_TEXTURE = 'images/fx/soft_spot.png'
+const TRACER_TEXTURE = 'images/fx/arrow_streak.png'
+/** How far behind the arrowhead the tracer reaches, and how wide it is. */
+const TRACER_LENGTH = 1.7
+const TRACER_WIDTH = 0.16
 
 /** dungeonEnemies hands over the enemies shots can reach. */
 export function setProjectileTargets(fn: () => ProjectileTarget[]) {
@@ -115,10 +129,13 @@ export function launchShot(shot: Shot) {
     p.onHit = shot.onHit
     p.hostile = !!shot.hostile
     p.live = true
+    if (p.tracer !== undefined) tintTracer(p, shot.hostile ? HOSTILE_TINT : bladeTintFor(shot.weapon))
     place(p)
     VisibilityComponent.createOrReplace(p.entity, { visible: true })
     if (p.glow !== undefined) VisibilityComponent.createOrReplace(p.glow, { visible: true })
   }
+  // The release: a few motes off the bow hand in the arrow's colour.
+  if (profile.kind === 'arrow' && !shot.hostile) fxBladeFlecks(shot.origin, bladeTintFor(shot.weapon), n > 1)
   if (shot.hostile) fxSound(profile.kind === 'arrow' ? 'bow' : 'swing_heavy', 0.5)
   else fxSound(profile.kind === 'arrow' ? 'swing_light' : 'swing_heavy', profile.kind === 'orb' ? 0.6 : 0.45)
 }
@@ -156,8 +173,34 @@ function create(kind: ProjectileKind): Projectile {
   const entity = engine.addEntity()
   Transform.create(entity, { position: Vector3.create(0, -40, 0) })
   let glow: Entity | undefined
+  let tracer: Entity | undefined
+  let tracerPlanes: Entity[] | undefined
   if (kind === 'arrow') {
     GltfContainer.create(entity, { src: ARROW_MODEL, visibleMeshesCollisionMask: 0, invisibleMeshesCollisionMask: 0 })
+    // The tracer hangs behind the head along the arrow's -Z, its planes' U
+    // (bright end at u = 1) pointing up the shaft toward the head.
+    tracer = engine.addEntity()
+    const turn = Quaternion.fromEulerDegrees(0, -90, 0)
+    const flip = Vector3.rotate(Vector3.Right(), turn).z < 0 ? -1 : 1
+    Transform.create(tracer, { parent: entity, position: Vector3.create(0, 0, -TRACER_LENGTH / 2), rotation: turn })
+    tracerPlanes = []
+    for (const roll of [0, 90]) {
+      const plane = engine.addEntity()
+      Transform.create(plane, {
+        parent: tracer, rotation: Quaternion.fromEulerDegrees(roll, 0, 0), scale: Vector3.create(flip * TRACER_LENGTH, TRACER_WIDTH, 1)
+      })
+      MeshRenderer.setPlane(plane, [0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1])
+      const map = Material.Texture.Common({ src: TRACER_TEXTURE, wrapMode: TextureWrapMode.TWM_CLAMP })
+      Material.setPbrMaterial(plane, {
+        texture: map, emissiveTexture: map,
+        albedoColor: Color4.create(0.1, 0.1, 0.1, 0.8),
+        emissiveColor: Color3.create(1, 1, 1),
+        emissiveIntensity: 3,
+        transparencyMode: MaterialTransparencyMode.MTM_ALPHA_BLEND,
+        castShadows: false
+      })
+      tracerPlanes.push(plane)
+    }
   } else {
     const orb = kind === 'orb'
     const size = orb ? 0.55 : kind === 'venom' ? 0.34 : 0.28
@@ -190,8 +233,21 @@ function create(kind: ProjectileKind): Projectile {
   VisibilityComponent.create(entity, { visible: false })
   if (glow !== undefined) VisibilityComponent.create(glow, { visible: false })
   return {
-    entity, glow, kind, position: Vector3.Zero(), velocity: Vector3.Zero(), travelled: 0, range: 0, radius: 0,
+    entity, glow, tracer, tracerPlanes, kind, position: Vector3.Zero(), velocity: Vector3.Zero(), travelled: 0, range: 0, radius: 0,
     pierce: false, pierced: new Set<number>(), motion: 'attack_light', finisher: false, hostile: false, live: false
+  }
+}
+
+function tintTracer(p: Projectile, tint: BladeTint) {
+  if (p.tracerTint === tint || !p.tracerPlanes) return
+  p.tracerTint = tint
+  for (const plane of p.tracerPlanes) {
+    const m = Material.getMutable(plane)
+    if (m.material?.$case === 'pbr') {
+      m.material.pbr.albedoColor = Color4.create(tint.haze.r * 0.12, tint.haze.g * 0.12, tint.haze.b * 0.12, tint.hazeAlpha + 0.15)
+      m.material.pbr.emissiveColor = Color3.create(tint.haze.r, tint.haze.g, tint.haze.b)
+      m.material.pbr.emissiveIntensity = tint.hazeGlow + 1
+    }
   }
 }
 
@@ -210,6 +266,13 @@ function place(p: Projectile) {
     // The arrow model runs along +Z; look down the velocity so the tip leads.
     const dir = Vector3.normalize(p.velocity)
     t.rotation = Quaternion.fromLookAt(Vector3.Zero(), dir)
+    if (p.tracer !== undefined) {
+      // The tracer grows out of the bow over the first metre rather than poking back through the archer.
+      const reach = Math.min(1, p.travelled / TRACER_LENGTH)
+      const tt = Transform.getMutable(p.tracer)
+      tt.position = Vector3.create(0, 0, -TRACER_LENGTH * reach / 2)
+      tt.scale = Vector3.create(reach, 1, 1)
+    }
   }
 }
 
@@ -327,5 +390,5 @@ function strike(p: Projectile, at: Vector3) {
 
 /** Assets the title-screen preloader should warm. */
 export function projectileAssets(): string[] {
-  return [ARROW_MODEL, GLOW_TEXTURE]
+  return [ARROW_MODEL, GLOW_TEXTURE, TRACER_TEXTURE]
 }
