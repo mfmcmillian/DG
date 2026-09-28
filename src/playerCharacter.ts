@@ -463,7 +463,7 @@ const combatHooks: RoamingCombatHooks = {
     // Shown as the avatar, a swing or shot made on the move goes the way the
     // player is moving, which is the way the avatar faces; the lock-on only
     // steers swings made from a standstill.
-    if (nativeHeroOn() && cursor === undefined && (locomotion !== 'idle' || moveDirection() !== undefined)) setPlayerFacingOverride(undefined)
+    if (nativeHeroOn() && cursor === undefined && playerMoving()) setPlayerFacingOverride(undefined)
     // Swings announce themselves; a shot's sound is the projectile leaving at the contact frame.
     if (context.skill?.effect.kind === 'aura') {
       fxSound('roar', 0.55)
@@ -702,15 +702,20 @@ function updatePlayerCharacter(dt: number) {
   publishLocalPlayer(player, dt)
 }
 
-/** Ground speed below which the body's locomotion is not the player moving: the nudge of a turn (TURN_NUDGE over TURN_SECONDS) reads as a slow run. */
-const MOVING_SPEED = 0.8
+/**
+ * The player is on the move, as far as an attack is concerned: a held movement
+ * key counts before the feet have covered ground, and the body's locomotion
+ * counts until it has settled. The one reading for both where a shot goes
+ * (onAttackStart) and whether its clip is masked to the upper body
+ * (mirrorMotion): the two must never disagree, or the arms draw one way and
+ * the arrow flies another.
+ */
+function playerMoving(): boolean {
+  return locomotion !== 'idle' || moveDirection() !== undefined
+}
 
 function mirrorMotion(motion: EquipmentMotion, restart: boolean) {
-  // A held movement key counts as moving before the feet have covered ground: the
-  // clip is masked from its first frame. The body's own reading only counts at a
-  // real pace; the turn before a shot moves the player a few centimetres, which is
-  // a run to the locomotion but nothing the renderer would cut a clip for.
-  mirrorLocalMotion(motion, restart, moveDirection() !== undefined || (locomotion !== 'idle' && groundSpeed >= MOVING_SPEED))
+  mirrorLocalMotion(motion, restart, playerMoving())
 }
 
 /** Our HeroBody: what everyone else needs to show this hero. */
