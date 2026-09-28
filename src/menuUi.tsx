@@ -1,6 +1,12 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { Color4 } from '@dcl/sdk/math'
 import { kitSliced, UI_KIT } from './uiKit'
+import { markupOverTapsOk } from './clientInfo'
+
+/** A button caption in bold, except on clients whose rich text would swallow the tap (see clientInfo). */
+export function boldCaption(text: string): string {
+  return markupOverTapsOk() ? `<b>${text}</b>` : text
+}
 
 export const menuColors = {
   white: Color4.create(0.96, 0.955, 0.91, 1),
@@ -52,7 +58,7 @@ export function MenuAction({ id, text, onClick, width, height = 42, scale: s,
     onMouseEnter={disabled ? undefined : () => { hoveredAction = id }}
     onMouseLeave={() => { if (hoveredAction === id) hoveredAction = '' }}
     onMouseDown={disabled ? undefined : onClick}>
-    <Label value={primary ? `<b>${text}</b>` : text} color={primary ? ink : active ? mark : hover ? white : muted}
+    <Label value={primary ? boldCaption(text) : text} color={primary ? ink : active ? mark : hover ? white : muted}
       fontSize={fontSize * s} textWrap="nowrap"
       uiTransform={{ width: '100%', height: '100%', flexShrink: 0, pointerFilter: 'none' }} />
   </UiEntity>
@@ -85,7 +91,7 @@ export function KitButton({ id, text, onClick, width, height = 64, scale: s,
       uiBackground={{ ...kitSliced(UI_KIT.btnGoldFill), color: fillColor }} />
     <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width: '100%', height: '100%', pointerFilter: 'none' }}
       uiBackground={kitSliced(UI_KIT.btnGoldFrame)} />
-    <Label value={`<b>${text}</b>`} color={lit ? ink : white} fontSize={fontSize * s} textWrap="nowrap"
+    <Label value={boldCaption(text)} color={lit ? ink : white} fontSize={fontSize * s} textWrap="nowrap"
       uiTransform={{ width: '76%', height: '100%', flexShrink: 0, pointerFilter: 'none' }} />
   </UiEntity>
 }

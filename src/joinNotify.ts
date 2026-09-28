@@ -10,8 +10,14 @@ import { noteArrival, platformOf } from './visitLog'
 const JOIN_RELAY_URL = 'https://decentracraft-nine.vercel.app/api/join'
 /** A player who leaves and comes straight back is not announced twice. */
 const COOLDOWN_MS = 120000
-/** How long to hold a notice waiting for the profile name and the client's `hello` (its platform) to arrive. */
-const NAME_WAIT_SECONDS = 6
+/**
+ * How long to hold a notice waiting for the profile name and the client's
+ * `hello` (its platform) to arrive. The mobile client takes the better part of
+ * a minute to load the scene after the server already sees the player, so a
+ * short window posts the notice with no platform. A returning player's stored
+ * platform resolves within a frame or two, so only first visits wait this long.
+ */
+const NAME_WAIT_SECONDS = 60
 
 const present = new Set<string>()
 const names = new Map<string, string>()
@@ -52,7 +58,7 @@ function update(dt: number) {
 
   for (const [address, waited] of [...pending]) {
     const next = waited + step
-    if ((names.has(address) && platformOf(address)) || next >= NAME_WAIT_SECONDS) {
+    if ((names.has(address) && platformOf(address)) || next >= NAME_WAIT_SECONDS || !present.has(address)) {
       pending.delete(address)
       post(address)
     } else {

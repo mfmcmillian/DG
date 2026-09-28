@@ -5,6 +5,7 @@ import {
   getCombatState, closeCombat, rematchCombat, retryCombat,
   requestLightAttack, requestHeavyAttack, requestCombatJump
 } from './combat'
+import { boldCaption } from './menuUi'
 
 const ink = Color4.create(0.025, 0.075, 0.09, 1)
 const white = Color4.create(0.97, 0.965, 0.94, 1)
@@ -51,7 +52,7 @@ function Action({ id, text, hint, onClick, width, height = 42, scale: s, primary
     onMouseEnter={() => { hovered = id }}
     onMouseLeave={() => { if (hovered === id) hovered = '' }}
     onMouseDown={disabled ? undefined : onClick}>
-    <Label value={`<b>${text}</b>`} color={lit ? ink : white} fontSize={(hint ? 17 : 15) * s} textWrap="nowrap"
+    <Label value={boldCaption(text)} color={lit ? ink : white} fontSize={(hint ? 17 : 15) * s} textWrap="nowrap"
       uiTransform={{ width: '100%', height: (hint ? 25 : height) * s, flexShrink: 0, pointerFilter: 'none' }} />
     {hint && <Label value={hint} color={lit ? ink : muted} fontSize={12 * s} textWrap="nowrap"
       uiTransform={{ width: '100%', height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />}
