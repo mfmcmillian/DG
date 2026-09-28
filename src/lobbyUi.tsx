@@ -290,7 +290,8 @@ function InviteList({ scale: s, party }: { scale: number; party?: PartyInfo }) {
 function PartyCard({ scale: s, party }: { scale: number; party: PartyInfo }) {
   const me = localAddress()
   const leader = isLeader()
-  const gate = realmGate(party.level)
+  // The leader may be paging through the coming-soon realms: the run still goes to the party's level, but not from that page.
+  const gate = realmGate(getLobbyPick().level)
   const wait = doorsWait(party)
   const held = party.wait <= 0
   const countdown = held ? t('The doors are held. Go when you are ready.') : t('Doors close in {n}s', { n: Math.ceil(wait) })
@@ -323,7 +324,7 @@ function PartyCard({ scale: s, party }: { scale: number; party: PartyInfo }) {
       {leader && <Action id="party-hold" text={held ? t('Close the doors') : t('Hold the doors')} width={130} height={44} scale={s} fontSize={13} accent="gold" active={held} onClick={holdDoors} />}
       <Action id="party-leave" text={leader ? t('Cancel') : t('Stay here')} width={110} height={44} scale={s} fontSize={13} accent="gold" onClick={leaveParty} />
     </UiEntity>
-    {party.members.length < MAX_PARTY && <InviteList scale={s} party={party} />}
+    {party.members.length < MAX_PARTY && !comingSoonPick(getLobbyPick().level) && <InviteList scale={s} party={party} />}
   </UiEntity>
 }
 
@@ -340,7 +341,7 @@ function NoParty({ scale: s }: { scale: number }) {
       color={synced ? muted : coral} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 18 * s, margin: { top: 8 * s }, flexShrink: 0, pointerFilter: 'none' }} />
     <OpenParties scale={s} />
-    <InviteList scale={s} />
+    {!soon && <InviteList scale={s} />}
   </UiEntity>
 }
 

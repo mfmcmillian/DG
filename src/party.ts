@@ -23,10 +23,19 @@ import { fxSound } from './combatFx'
 /** What the player has picked in the lobby before they have a party of their own. */
 let pickLevel = 0
 let pickDiff = 0
+/** The party the pick was last lined up with, so a new one starts the pages at its level. */
+let pickedFor = ''
 
+/**
+ * The page and difficulty the war table shows. In a party that is the party's,
+ * except that a leader with the doors open may page on past the last dungeon
+ * to the coming-soon realms, which no party can hold (the host clamps).
+ */
 export function getLobbyPick(): { level: number; diff: number } {
   const party = myParty()
-  return { level: party ? party.level : pickLevel, diff: party ? party.diff : pickDiff }
+  if (!party) return { level: pickLevel, diff: pickDiff }
+  const browsing = party.state === 'open' && party.leader === localAddress() && comingSoonPick(pickLevel) !== undefined
+  return { level: browsing ? pickLevel : party.level, diff: party.diff }
 }
 
 /** Pages on the war table: every dungeon, then the realms with no map yet (COMING_SOON), which cannot be picked for a party. */
@@ -127,6 +136,13 @@ export function initializeParty() {
       members: p.members.map((m) => m.toLowerCase()), ready: p.ready.map((m) => m.toLowerCase()),
       time: p.time, slain: p.slain, total: p.total, won: p.won, run: p.run, wait: p.wait
     }))
+    // A party we were not in a moment ago: the pages start where it is going.
+    const mine = myParty()
+    const key = mine ? mine.id : ''
+    if (key !== pickedFor) {
+      pickedFor = key
+      if (mine) pickLevel = mine.level
+    }
   })
   onNet('progress', (msg) => {
     if (msg.id.toLowerCase() === localAddress()) state.progress = [...msg.progress]
