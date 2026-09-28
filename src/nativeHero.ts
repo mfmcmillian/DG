@@ -60,11 +60,7 @@ type Emote = {
   upperWhenMoving: boolean
   /** A one-shot that holds its last pose (the fall): stopped explicitly when the body moves on. */
   sticky?: boolean
-  /**
-   * The clip to play instead under the upper-body mask. The volley is a leaping
-   * turn; masked, its spin lands in the spine on standing legs. On the move the
-   * archer fires it as an aimed shot from the arms instead.
-   */
+  /** The clip to play instead under the upper-body mask, when a motion's own masked form is no use. */
   upperAs?: EquipmentMotion
 }
 
@@ -94,7 +90,8 @@ const EMOTES: Partial<Record<EquipmentMotion, Emote>> = {
   hit: { loop: false, upperWhenMoving: true },
   death: { loop: false, upperWhenMoving: false, sticky: true },
   bow_shoot: { loop: false, upperWhenMoving: true },
-  bow_volley: { loop: false, upperWhenMoving: true, upperAs: 'bow_shoot' },
+  // The volley keeps its own masked clip: the aimed shot's arms release at another moment and aim another way.
+  bow_volley: { loop: false, upperWhenMoving: true },
   bow_bash: { loop: false, upperWhenMoving: true },
   cast_bolt: { loop: false, upperWhenMoving: true },
   cast_nova: { loop: false, upperWhenMoving: true }
