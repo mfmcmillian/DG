@@ -60,6 +60,12 @@ type Emote = {
   upperWhenMoving: boolean
   /** A one-shot that holds its last pose (the fall): stopped explicitly when the body moves on. */
   sticky?: boolean
+  /**
+   * The clip to play instead under the upper-body mask. The volley is a leaping
+   * turn; masked, its spin lands in the spine on standing legs. On the move the
+   * archer fires it as an aimed shot from the arms instead.
+   */
+  upperAs?: EquipmentMotion
 }
 
 /** Motions with a retargeted clip. Idle, walk, run and the jumps are the avatar's own locomotion. */
@@ -88,7 +94,7 @@ const EMOTES: Partial<Record<EquipmentMotion, Emote>> = {
   hit: { loop: false, upperWhenMoving: true },
   death: { loop: false, upperWhenMoving: false, sticky: true },
   bow_shoot: { loop: false, upperWhenMoving: true },
-  bow_volley: { loop: false, upperWhenMoving: true },
+  bow_volley: { loop: false, upperWhenMoving: true, upperAs: 'bow_shoot' },
   bow_bash: { loop: false, upperWhenMoving: true },
   cast_bolt: { loop: false, upperWhenMoving: true },
   cast_nova: { loop: false, upperWhenMoving: true }
@@ -192,13 +198,15 @@ export function flushNativeMotion(
     if (activeLoop === motion) activeLoop = undefined
     return
   }
+  const clip = upper ? EMOTES[motion]?.upperAs ?? motion : motion
   const turning = turn?.(motion)
-  if (turning) turning.then(() => play(motion, loop, upper), () => play(motion, loop, upper))
-  else play(motion, loop, upper)
+  if (turning) turning.then(() => play(clip, loop, upper), () => play(clip, loop, upper))
+  else play(clip, loop, upper)
 }
 
 function play(motion: EquipmentMotion, loop: boolean, upper: boolean) {
   lastAsk = { motion, at: Date.now() }
+  nativeNote(`${motion}${upper ? ' (upper body)' : ''}${loop ? ' loop' : ''}`)
   // Under the upper-body mask the renderer keeps the locomotion's pelvis, so the
   // masked clip is the variant solved for a rest pelvis: a side-on archer's arms
   // would otherwise swing a quarter turn off the way the avatar walks and shoots.

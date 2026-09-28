@@ -702,9 +702,15 @@ function updatePlayerCharacter(dt: number) {
   publishLocalPlayer(player, dt)
 }
 
+/** Ground speed below which the body's locomotion is not the player moving: the nudge of a turn (TURN_NUDGE over TURN_SECONDS) reads as a slow run. */
+const MOVING_SPEED = 0.8
+
 function mirrorMotion(motion: EquipmentMotion, restart: boolean) {
-  // A held movement key counts as moving before the feet have covered ground: the clip is masked from its first frame.
-  mirrorLocalMotion(motion, restart, locomotion !== 'idle' || moveDirection() !== undefined)
+  // A held movement key counts as moving before the feet have covered ground: the
+  // clip is masked from its first frame. The body's own reading only counts at a
+  // real pace; the turn before a shot moves the player a few centimetres, which is
+  // a run to the locomotion but nothing the renderer would cut a clip for.
+  mirrorLocalMotion(motion, restart, moveDirection() !== undefined || (locomotion !== 'idle' && groundSpeed >= MOVING_SPEED))
 }
 
 /** Our HeroBody: what everyone else needs to show this hero. */
