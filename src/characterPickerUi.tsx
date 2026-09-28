@@ -11,8 +11,11 @@ import { kitTexture, UI_KIT } from './uiKit'
 import { isSettingsOpen } from './settings'
 import { SettingsUi } from './settingsUi'
 import { isUpgradePickerOpen, UpgradeUi } from './upgradeUi'
-import { isSavedHeroReady, isTitleOpen, isTitleReady, isTitleResuming, titleBegin, titleContinue, titleResumeSaved } from './titleScreen'
-import { getHeroSaveState, isHeroSavePending, isHeroSaveUnreachable, savedHeroName } from './heroSave'
+import {
+  isPickerFromSave, isSavedHeroReady, isTitleChanging, isTitleLooking, isTitleOpen, isTitleReady, isTitleResuming,
+  pickerBackToTitle, titleAskChange, titleBegin, titleCancelChange, titleContinue, titleResumeSaved
+} from './titleScreen'
+import { getHeroSaveState, isHeroSaveUnreachable, savedHeroName } from './heroSave'
 import { getLobbyState } from './party'
 import { LobbyUi } from './lobbyUi'
 import { GAME_VERSION } from './version'
@@ -222,6 +225,8 @@ function TitleScreen() {
   const unreachable = isHeroSaveUnreachable()
   const heroReady = isSavedHeroReady()
   const resuming = isTitleResuming()
+  const looking = isTitleLooking()
+  const changing = isTitleChanging()
   const top = Math.max(80, screenHeight * 0.18)
   return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}
     uiBackground={kitTexture(UI_KIT.titleBg)}>
@@ -233,7 +238,11 @@ function TitleScreen() {
         uiTransform={{ width: 520 * s, height: 70 * s, flexShrink: 0, pointerFilter: 'none' }} />
       <UiEntity uiTransform={{ width: 200 * s, height: 28 * s, margin: { top: 4 * s, bottom: 36 * s }, flexShrink: 0, pointerFilter: 'none' }}
         uiBackground={kitTexture(UI_KIT.flourish)} />
-      {ready
+      {ready && looking
+        // Nothing to press until the wallet has answered: a new champion made now would overwrite the saved one.
+        ? <Action id="title-looking" text={t('Looking for your champion…')} onClick={() => undefined} disabled
+          width={340} height={52} scale={s} fontSize={18} />
+        : ready
         ? <UiEntity uiTransform={{ flexDirection: 'column', alignItems: 'flex-start', pointerFilter: 'none' }}>
           {saved.found && !created && <UiEntity uiTransform={{ margin: { bottom: 12 * s }, pointerFilter: 'none' }}>
             <Action id="title-resume"
@@ -248,15 +257,26 @@ function TitleScreen() {
               color={muted} fontSize={13 * s} textAlign="top-left"
               uiTransform={{ width: 480 * s, height: 44 * s, flexShrink: 0, pointerFilter: 'none' }} />
           </UiEntity>}
-          <Action id="title-enter" text={saved.found ? t('New champion') : unreachable ? t('Play offline') : t('New game')} onClick={titleBegin} disabled={resuming}
-            primary={!saved.found && !unreachable} accent="gold" width={340} height={52} scale={s} fontSize={18} />
+          {saved.found && !created
+            // With a champion saved, another class is a change of champion, not a new game: coins, gear and levels stay. Asked twice.
+            ? changing
+              ? <UiEntity uiTransform={{ flexDirection: 'column', alignItems: 'flex-start', pointerFilter: 'none' }}>
+                <Label value={t('Change champion? Your coins, gear and levels stay.')} color={muted} fontSize={13 * s} textAlign="middle-left" textWrap="nowrap"
+                  uiTransform={{ width: 480 * s, height: 22 * s, margin: { bottom: 8 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+                <UiEntity uiTransform={{ flexDirection: 'row', pointerFilter: 'none' }}>
+                  <UiEntity uiTransform={{ margin: { right: 10 * s }, pointerFilter: 'none' }}>
+                    <Action id="title-change-yes" text={t('Change')} onClick={titleBegin} disabled={resuming} accent="gold" width={165} height={40} scale={s} fontSize={14} />
+                  </UiEntity>
+                  <Action id="title-change-no" text={t('Back')} onClick={titleCancelChange} width={165} height={40} scale={s} fontSize={14} />
+                </UiEntity>
+              </UiEntity>
+              : <Action id="title-change" text={t('Change champion')} onClick={titleAskChange} disabled={resuming} accent="gold" width={200} height={36} scale={s} fontSize={13} />
+            : <Action id="title-enter" text={unreachable ? t('Play offline') : t('New game')} onClick={titleBegin} disabled={resuming}
+              primary={!unreachable} accent="gold" width={340} height={52} scale={s} fontSize={18} />}
           {created && <UiEntity uiTransform={{ margin: { top: 12 * s }, pointerFilter: 'none' }}>
             <Action id="title-continue" text={t('Continue')} onClick={titleContinue} primary
               width={340} height={52} scale={s} fontSize={18} />
           </UiEntity>}
-          {!saved.found && !created && !unreachable && isHeroSavePending() && <Label value={t('Looking for a saved champion…')} color={muted} fontSize={13 * s}
-            textAlign="middle-left" textWrap="nowrap"
-            uiTransform={{ width: 400 * s, height: 24 * s, margin: { top: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
         </UiEntity>
         : <TitleLoading scale={s} />}
       <UiEntity uiTransform={{ margin: { top: 40 * s }, pointerFilter: 'none' }}>
@@ -338,6 +358,7 @@ function Picker() {
       </UiEntity>
       <UiEntity uiTransform={{ positionType: 'absolute', position: { right: 0, top: 18 * s }, pointerFilter: 'none' }}>
         {state.hasCreatedCharacter && <Action id="close" text="×" onClick={closePicker} width={38} height={38} scale={s} fontSize={26} accent="gold" disabled={state.confirming} />}
+        {!state.hasCreatedCharacter && isPickerFromSave() && <Action id="picker-back" text={t('Back')} onClick={pickerBackToTitle} width={90} height={38} scale={s} fontSize={14} accent="gold" disabled={state.confirming} />}
       </UiEntity>
       <OutfitPresets scale={s} />
       {editing && <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 654 * s }, width: 234 * s, pointerFilter: 'none' }}>
