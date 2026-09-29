@@ -14,7 +14,7 @@ import { getLootState, setCoins } from './loot'
 import { isClientSynced, isSoloMode, localAddress } from './multiplayer'
 import { onNet, sendNet } from './net'
 import { setProgress } from './party'
-import { requestHeroPreload, scheduleHeroPreload } from './preloadPlan'
+import { requestHeroPreload } from './preloadPlan'
 import { loadSettings, serializeSettings } from './settings'
 import { addGear, bagRevision, clearBag, convertLegacyBag, loadBag, serializeBag } from './shared/gearBag'
 import { parsePrefs } from './shared/prefs'
@@ -52,11 +52,7 @@ export function initializeHeroSave() {
     state.loaded = true
     state.found = msg.found && CHARACTERS.some((c) => c.id === msg.cid)
     setProgress(msg.progress)
-    if (!state.found) {
-      // No champion: the picker is next, and it shows every hero.
-      scheduleHeroPreload()
-      return
-    }
+    if (!state.found) return
     // A champion made this session while the answer was on its way is the
     // player's choice: it replaces the save (the writer below sends it), and
     // only the level progress, which belongs to the wallet, is taken up.

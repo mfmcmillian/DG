@@ -4,7 +4,7 @@ import { closeSceneCamera, openSceneCamera, prepareSceneCameraReturn, SceneCamer
 import { MENU_CAMERA_POSITION, MENU_CAMERA_TARGET } from './menuPreviewStage'
 import { closePicker, getPickerState, openPicker } from './characterPicker'
 import { isPreloadComplete } from './preload'
-import { firstRealmStyle, heroGroupId, isRealmPreloaded, PRELOAD_HUB, scheduleHeroPreload, whenFirstRealmReady } from './preloadPlan'
+import { heroGroupId, PRELOAD_HUB } from './preloadPlan'
 import { continueSavedHero, getHeroSaveState, isHeroSavePending, isHeroSaveUnreachable } from './heroSave'
 
 let open = false
@@ -15,8 +15,6 @@ let resuming = false
 let changing = false
 /** The picker was opened from a title that held a saved champion: it offers the way back. */
 let pickerFromSave = false
-/** How long Continue waits on the first realm before entering with it still streaming. */
-const FIRST_REALM_WAIT_SECONDS = 12
 
 export function isTitleOpen(): boolean {
   return open
@@ -44,11 +42,6 @@ export function isSavedHeroReady(): boolean {
 
 export function isTitleResuming(): boolean {
   return resuming
-}
-
-/** Continue was pressed and is waiting on the first realm (the button says which and how far along). */
-export function isTitleLoadingRealm(): boolean {
-  return resuming && !isRealmPreloaded(firstRealmStyle())
 }
 
 /**
@@ -83,8 +76,6 @@ export function isPickerFromSave(): boolean {
 export function titleBegin() {
   if (!open || !isTitleReady() || resuming || isTitleLooking()) return
   markMilestone('play')
-  // The picker shows every hero: their looks download now.
-  scheduleHeroPreload()
   pickerFromSave = getHeroSaveState().found && !getPickerState().hasCreatedCharacter
   changing = false
   closeSceneCamera(session)
@@ -122,9 +113,6 @@ export function titleResumeSaved() {
   resuming = true
   executeTask(async () => {
     try {
-      // The first realm's models parse on the renderer's main thread; taken in
-      // here, behind the title, they are a bar instead of a stutter in the hall.
-      await whenFirstRealmReady(FIRST_REALM_WAIT_SECONDS)
       await prepareSceneCameraReturn(current, true)
       if (!continueSavedHero()) throw new Error('The saved hero could not be taken up')
       closeSceneCamera(current)

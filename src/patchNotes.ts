@@ -6,11 +6,8 @@
 export type PatchNote = { version: string; notes: string[] }
 
 export const PATCH_NOTES: PatchNote[] = [
-  { version: '2.8.41', notes: [
-    'Nothing downloads behind you in the hall any more: a realm loads at the war table when it is picked, with a bar.'
-  ] },
-  { version: '2.8.40', notes: [
-    'Continue takes in the first fortress behind the title, so the hall no longer stutters for the first few steps.'
+  { version: '2.8.42', notes: [
+    'The background downloads wait a few seconds after your hero arrives, so the first steps in the hall are smoother.'
   ] },
   { version: '2.8.39', notes: [
     'Smoother frames: the bag is no longer read end to end every frame.'

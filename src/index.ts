@@ -34,6 +34,7 @@ import { initializeMultiplayer } from './multiplayer'
 import { initializeRemotePlayers } from './remotePlayers'
 import { initializeAvatarHiding } from './avatarHiding'
 import { adoptPlayerCharacter, initializePlayerCharacter, setPlayerCharacter } from './playerCharacter'
+import { holdPreloadQueue } from './preload'
 import { planPreload } from './preloadPlan'
 import { GAME_VERSION } from './version'
 import { installNetDebug } from './netDebug'
@@ -117,7 +118,11 @@ function initClient() {
   openTitle()
 }
 
+/** Seconds after a hero is placed before the background downloads resume, so their first steps are not spent unpacking a realm. */
+const HALL_BREATHER_SECONDS = 8
+
 function applyCharacter(character: CharacterDefinition, previewRoot?: Entity): boolean {
+  holdPreloadQueue(HALL_BREATHER_SECONDS)
   if (previewRoot !== undefined) return adoptPlayerCharacter(previewRoot, character.id, getCommittedLoadout(character.id))
   setPlayerCharacter(character.id, getCommittedLoadout(character.id))
   return true

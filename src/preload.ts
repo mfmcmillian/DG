@@ -61,6 +61,8 @@ const IN_FLIGHT = 1
 const groups = new Map<string, Group>()
 const order: string[] = []
 let systemAdded = false
+/** Seconds before the next background group may start (see holdPreloadQueue). */
+let held = 0
 
 function isSettled(s: LoadingState) {
   return s === LoadingState.FINISHED || s === LoadingState.FINISHED_WITH_ERROR || s === LoadingState.NOT_FOUND
@@ -135,6 +137,18 @@ export function releasePreload(id: string) {
   schedule()
 }
 
+/**
+ * Keep the background queue from starting anything new for `seconds`. The
+ * renderer unpacks what it downloads on the thread that draws the frames, so
+ * a realm's kit arriving while the hero takes their first steps in the hall
+ * shows as a stutter; the hall calls this when a hero is placed. A group
+ * already downloading carries on, and an urgent request (something a button
+ * is waiting on) still starts at once.
+ */
+export function holdPreloadQueue(seconds: number) {
+  held = Math.max(held, seconds)
+}
+
 /** The group currently downloading that a loading line should talk about (earliest incomplete). */
 export function currentPreloadGroup(): Readonly<PreloadGroup> | undefined {
   for (const id of order) {
@@ -155,6 +169,7 @@ function request(g: Group) {
 }
 
 function schedule() {
+  if (held > 0) return
   let inFlight = 0
   for (const id of order) {
     const g = groups.get(id)!
@@ -179,6 +194,13 @@ function start(g: Group) {
 function updatePreload(dt: number) {
   if (!Number.isFinite(dt) || dt <= 0) return
   let released = false
+  if (held > 0) {
+    held -= dt
+    if (held <= 0) {
+      held = 0
+      released = true
+    }
+  }
   for (const id of order) {
     const g = groups.get(id)!
     if (!g.started || g.complete) continue

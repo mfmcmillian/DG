@@ -15,7 +15,7 @@ import { SettingsUi } from './settingsUi'
 import { isUpgradePickerOpen, UpgradeUi } from './upgradeUi'
 import { isSellOpen, SellUi } from './sellUi'
 import {
-  isPickerFromSave, isSavedHeroReady, isTitleLoadingRealm, isTitleLooking, isTitleOpen, isTitleReady, isTitleResuming,
+  isPickerFromSave, isSavedHeroReady, isTitleLooking, isTitleOpen, isTitleReady, isTitleResuming,
   pickerBackToTitle, titleBegin, titleContinue, titleResumeSaved
 } from './titleScreen'
 import { getHeroSaveState, isHeroSaveUnreachable, savedHeroName } from './heroSave'
@@ -25,7 +25,7 @@ import { GAME_VERSION } from './version'
 import { getPreloadGroup, releasePreload } from './preload'
 import { t } from './i18n'
 import { LanguageRow } from './languageUi'
-import { firstRealmGroup, heroGroupId, preloadCaption, PRELOAD_HUB } from './preloadPlan'
+import { heroGroupId, preloadCaption, PRELOAD_HUB } from './preloadPlan'
 import { BODY_TYPES, HAIR_STYLES, HAIR_COLORS, SKIN_TONES } from './appearance'
 import {
   CHARACTERS, getPickerState, getSelectedCharacter,
@@ -287,7 +287,7 @@ function TitleActions({ created, saved, unreachable, heroReady, resuming, scale:
   const savedOnly = saved && !created
   const caption = savedOnly ? t('Continue as {name}', { name: savedHeroName() }) : ''
   const preparing = savedOnly && !heroReady
-  const playText = resuming ? (isTitleLoadingRealm() ? preloadCaption(firstRealmGroup()) : t('Entering the hall…'))
+  const playText = resuming ? t('Entering the hall…')
     : preparing ? preloadCaption(getPreloadGroup(heroGroupId(getHeroSaveState().cid)), t('Preparing'))
     : unreachable && !created ? t('Play offline') : t('Play')
   const play = savedOnly ? titleResumeSaved : created ? titleContinue : titleBegin
