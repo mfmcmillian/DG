@@ -9,6 +9,7 @@ import {
   toggleSpawnMarkers
 } from './index'
 import { nativeHeroOn, nativeNotes, nudgeWeaponTweak, weaponTweakLabel } from '../nativeHero'
+import { systemProfile } from '../sysProfile'
 
 const CAMERAS: Array<{ id: CameraChoice; label: string; hint: string; openOnly: boolean }> = [
   { id: 'native', label: 'Native cam', hint: 'Explorer camera, player can zoom', openOnly: false },
@@ -135,6 +136,25 @@ function DevPanel() {
         textAlign="middle-left"
       />
       {nativeHeroOn() && <WeaponTweak />}
+      <SystemsReadout />
+    </UiEntity>
+  )
+}
+
+/** Where the frame goes: the JavaScript time per frame, the time outside it, and the heaviest systems. */
+function SystemsReadout() {
+  const r = systemProfile()
+  if (!r.rows.length) return null
+  return (
+    <UiEntity uiTransform={{ flexDirection: 'column', margin: { top: 8 } }}>
+      <Label value={`Frame · ${r.fps.toFixed(0)} fps · js ${r.frameAvg.toFixed(1)} ms (peak ${r.framePeak}) · outside js ${r.gapAvg.toFixed(1)} ms`}
+        fontSize={12} color={MUTED} uiTransform={{ height: 18 }} textAlign="middle-left" />
+      {r.rows.slice(0, 10).map((row) => (
+        <UiEntity key={row.name} uiTransform={{ flexDirection: 'row', justifyContent: 'space-between', height: 16 }}>
+          <Label value={row.name.length > 30 ? `${row.name.slice(0, 29)}…` : row.name} fontSize={11} color={TEXT} uiTransform={{ width: 190, height: 16 }} textAlign="middle-left" />
+          <Label value={`${row.avg.toFixed(2)} ms · peak ${row.peak} · ${Math.round(row.share * 100)}%`} fontSize={11} color={MUTED} uiTransform={{ width: 130, height: 16 }} textAlign="middle-right" />
+        </UiEntity>
+      ))}
     </UiEntity>
   )
 }

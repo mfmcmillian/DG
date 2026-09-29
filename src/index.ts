@@ -1,3 +1,5 @@
+// First, so every system added after it is timed (the developer panel's Systems readout).
+import { onSystemProfile, systemProfileText } from './sysProfile'
 import { AvatarLocomotionSettings, engine, Entity } from '@dcl/sdk/ecs'
 import { isServer as isServerApi } from '~system/EngineApi'
 import './shared/messages'
@@ -35,6 +37,7 @@ import { initializeRemotePlayers } from './remotePlayers'
 import { initializeAvatarHiding } from './avatarHiding'
 import { adoptPlayerCharacter, initializePlayerCharacter, setPlayerCharacter } from './playerCharacter'
 import { holdPreloadQueue } from './preload'
+import { devToolsOn } from './devAccess'
 import { planPreload } from './preloadPlan'
 import { GAME_VERSION } from './version'
 import { installNetDebug } from './netDebug'
@@ -116,6 +119,11 @@ function initClient() {
   initializePartyServer()
   setupCharacterPickerUi()
   openTitle()
+  // With the developer switch on, where the frame goes, every third window (about six seconds).
+  let windows = 0
+  onSystemProfile((r) => {
+    if (devToolsOn() && ++windows % 3 === 0) console.log(`[DG] frame: ${systemProfileText(r)}`)
+  })
 }
 
 /** Seconds after a hero is placed before the background downloads resume, so their first steps are not spent unpacking a realm. */
