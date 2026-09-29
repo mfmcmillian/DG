@@ -1,6 +1,6 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { Color4 } from '@dcl/sdk/math'
-import { uiViewport } from './uiScale'
+import { uiViewport, wholeCanvas } from './uiScale'
 import {
   getCombatState, closeCombat, rematchCombat, retryCombat,
   requestLightAttack, requestHeavyAttack, requestCombatJump
@@ -134,8 +134,8 @@ export function CombatUi() {
   const rivalStatus = state.rivalBlocking ? 'Guarding' : actionLabel(state.rivalAction)
   const telegraph = typeof state.rivalTelegraph === 'string' ? state.rivalTelegraph : ''
 
-  return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}
-    uiBackground={{ color: Color4.create(0.015, 0.025, 0.045, showPanel ? 0.28 : 0) }}>
+  return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}>
+    <UiEntity uiTransform={wholeCanvas()} uiBackground={{ color: Color4.create(0.015, 0.025, 0.045, showPanel ? 0.28 : 0) }} />
     <UiEntity uiTransform={{ positionType: 'absolute', position: { left: x, top: y }, width: 1600 * s, height: 900 * s, pointerFilter: 'none' }}>
       {/* The top-center HUD leaves Decentraland's corner controls clear. */}
       <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 380 * s, top: 104 * s }, width: 840 * s,

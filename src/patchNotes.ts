@@ -7,7 +7,8 @@ export type PatchNote = { version: string; notes: string[] }
 
 export const PATCH_NOTES: PatchNote[] = [
   { version: '2.8.30', notes: [
-    'The screens now fit every display the same way, phones included.'
+    'The screens now fit every display the same way, phones included.',
+    'The title and the sheets reach the edges of a phone screen again.'
   ] },
   { version: '2.8.29', notes: [
     'A new front door: the crest, one Play, and this panel.'

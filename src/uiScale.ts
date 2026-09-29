@@ -11,6 +11,7 @@
 
 import { engine, UiCanvasInformation } from '@dcl/sdk/ecs'
 import { isMobile } from '@dcl/sdk/platform'
+import type { UiTransformProps } from '@dcl/sdk/react-ecs'
 
 /** The screen the layouts are drawn for; passed to the renderer as the virtual screen. */
 export const VIRTUAL_SCREEN = { width: 1600, height: 900 }
@@ -67,5 +68,19 @@ export function uiViewport(): UiViewport {
     canvas: { width: fullWidth, height: fullHeight, originX: device.left, originY: device.top },
     reserved,
     mobile: isMobile()
+  }
+}
+
+/**
+ * A transform for a backdrop that covers the whole canvas rather than the root:
+ * the root stops at the device's safe margins, and a title or a veil should not
+ * leave the scene showing round the notch and the home bar. Put it on a layer
+ * of its own, drawn under the content, which stays laid out inside the root.
+ */
+export function wholeCanvas(): UiTransformProps {
+  const { canvas } = uiViewport()
+  return {
+    positionType: 'absolute', position: { left: -canvas.originX, top: -canvas.originY },
+    width: canvas.width, height: canvas.height, pointerFilter: 'none'
   }
 }

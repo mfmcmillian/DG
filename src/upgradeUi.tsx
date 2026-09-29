@@ -18,7 +18,7 @@ import { startPitCinematic } from './pitCinematic'
 import { attemptUpgrade, LEVEL_FLAT_DAMAGE, LEVEL_PERCENT, UpgradeOffer, upgradeOffers } from './upgrades'
 import { MAX_LEVEL } from './shared/upgradeRanks'
 import { RARITIES } from './weapons'
-import { uiViewport } from './uiScale'
+import { uiViewport, wholeCanvas } from './uiScale'
 
 const { white, muted, gold, ink, panel, card, line, goldLine, coral } = menuColors
 const veil = Color4.create(0.01, 0.02, 0.03, 0.62)
@@ -140,8 +140,8 @@ export function UpgradeUi() {
   const canOffer = !!chosen?.to && chosen.affordable
   // Every card carries a right margin, the last one too, so the row is measured with it.
   const gridWidth = PER_ROW * (CARD.width + CARD.gap)
-  return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}
-    uiBackground={{ color: veil }}>
+  return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}>
+    <UiEntity uiTransform={wholeCanvas()} uiBackground={{ color: veil }} />
     <UiEntity uiTransform={{ width, height, positionType: 'absolute', position: { left: x, top: y },
       padding: { left: 40 * s, right: 40 * s, top: 28 * s, bottom: 28 * s }, borderRadius: 6 * s, borderWidth: s, borderColor: goldLine,
       flexDirection: 'column', pointerFilter: 'none' }}

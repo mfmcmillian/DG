@@ -7,7 +7,7 @@
 
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { Color4 } from '@dcl/sdk/math'
-import { uiViewport } from './uiScale'
+import { uiViewport, wholeCanvas } from './uiScale'
 import { playerDisplayName } from './heroNameTag'
 import { isClientSynced, localAddress } from './multiplayer'
 import { menuColors, MenuAction as Action } from './menuUi'
@@ -370,8 +370,8 @@ export function LobbyUi() {
   const party = myParty()
   const canPick = !party || isLeader()
   const banner = getLobbyState().banner
-  return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}
-    uiBackground={{ color: veil }}>
+  return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}>
+    <UiEntity uiTransform={wholeCanvas()} uiBackground={{ color: veil }} />
     <UiEntity uiTransform={{ width, height, positionType: 'absolute', position: { left: x, top: y },
       padding: { left: 40 * s, right: 40 * s, top: 28 * s, bottom: 28 * s }, borderRadius: 6 * s, borderWidth: s, borderColor: goldLine,
       flexDirection: 'column', pointerFilter: 'none' }}

@@ -1,6 +1,6 @@
 import ReactEcs, { Label, ReactEcsRenderer, UiEntity } from '@dcl/sdk/react-ecs'
 import { Color4 } from '@dcl/sdk/math'
-import { uiViewport, VIRTUAL_SCREEN } from './uiScale'
+import { uiViewport, VIRTUAL_SCREEN, wholeCanvas } from './uiScale'
 import { getInventoryState } from './inventory'
 import { InventoryUi } from './inventoryUi'
 import { getCombatState } from './combat'
@@ -250,10 +250,9 @@ function TitleScreen() {
   // The crest and what stands under it are one column, centred a little above the middle.
   const column = EMBLEM.height * s + 20 * s + 130 * s
   const columnTop = Math.max(top + 12 * s, (screenHeight - column) / 2 - 10 * s)
-  return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}
-    uiBackground={kitTexture(UI_KIT.titleBg)}>
-    <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}
-      uiBackground={{ color: titleVeil }} />
+  return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}>
+    <UiEntity uiTransform={wholeCanvas()} uiBackground={kitTexture(UI_KIT.titleBg)} />
+    <UiEntity uiTransform={wholeCanvas()} uiBackground={{ color: titleVeil }} />
     <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: columnTop }, width: '100%',
       flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
       <UiEntity uiTransform={{ width: EMBLEM.width * s, height: EMBLEM.height * s, flexShrink: 0, pointerFilter: 'none' }}
@@ -374,7 +373,7 @@ function TitleLoading({ scale: s }: { scale: number }) {
 }
 
 function HallVeil() {
-  return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}>
+  return <UiEntity uiTransform={wholeCanvas()}>
     <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width: '22%', height: '100%', pointerFilter: 'none' }}
       uiBackground={{ color: veilDeep }} />
     <UiEntity uiTransform={{ positionType: 'absolute', position: { right: 0, top: 0 }, width: '22%', height: '100%', pointerFilter: 'none' }}
