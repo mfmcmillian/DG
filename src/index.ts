@@ -19,6 +19,7 @@ import { initializeHallFolk } from './hallFolk'
 import { initializeHallTalk } from './hallTalk'
 import { initializeHallGuide } from './hallGuide'
 import { initializeHallPrompt } from './hallPrompt'
+import { initializeTouchControls } from './touchControls'
 import { initializePitFire } from './pitFire'
 import { initializeBackdrop } from './backdrop'
 import { initializePitCinematic } from './pitCinematic'
@@ -95,6 +96,7 @@ function initClient() {
   initializeHallFolk()
   initializeHallTalk()
   initializeHallPrompt()
+  initializeTouchControls()
   initializeHallGuide()
   initializePitFire()
   initializeBackdrop()
