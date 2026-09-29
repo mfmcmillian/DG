@@ -142,20 +142,25 @@ function rarityTally(loadout: EquipmentLoadout): Array<{ rarity: Rarity; count: 
   return [...RARITY_ORDER].reverse().filter((rarity) => counts.has(rarity)).map((rarity) => ({ rarity, count: counts.get(rarity)! }))
 }
 
-/** The tally as a row of coloured labels: "2 Legendary · 3 Rare · 2 Common", each in its rarity's colour. */
+/**
+ * The tally as a row of coloured labels, "2 Legendary · 3 Rare · 2 Common", each in its rarity's
+ * colour, set large enough to read from across the room. It fills the bay between the sockets and
+ * wraps onto a second row when the outfit is mixed enough to need it.
+ */
 function RarityTally({ loadout, scale: s }: { loadout: EquipmentLoadout; scale: number }) {
   const tally = rarityTally(loadout)
   if (!tally.length) return null
-  const font = 10.5
-  return <UiEntity uiTransform={{ ...rect(60, 140, 510, 18, s), flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
+  const font = 31.5
+  const row = 40
+  return <UiEntity uiTransform={{ ...rect(97, 142, 426, row * 2, s), flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignContent: 'flex-start' }}>
     {tally.map(({ rarity, count }, i) => {
       const text = `${count} ${t(RARITIES[rarity].label)}`
-      return <UiEntity key={`tally-${rarity}`} uiTransform={{ flexDirection: 'row', alignItems: 'center', height: '100%', pointerFilter: 'none' }}>
+      return <UiEntity key={`tally-${rarity}`} uiTransform={{ flexDirection: 'row', alignItems: 'center', height: row * s, pointerFilter: 'none' }}>
         {i > 0 && <Label value="·" color={muted} fontSize={font * s} textAlign="middle-center" textWrap="nowrap"
-          uiTransform={{ width: 14 * s, height: '100%', pointerFilter: 'none' }} />}
-        <UiEntity uiTransform={{ width: 6 * s, height: 6 * s, margin: { right: 5 * s }, flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: RARITIES[rarity].color }} />
+          uiTransform={{ width: 24 * s, height: '100%', pointerFilter: 'none' }} />}
+        <UiEntity uiTransform={{ width: 12 * s, height: 12 * s, margin: { right: 8 * s }, flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: RARITIES[rarity].color }} />
         <Label value={text} color={RARITIES[rarity].color} fontSize={font * s} textAlign="middle-left" textWrap="nowrap"
-          uiTransform={{ width: text.length * font * 0.58 * s, height: '100%', pointerFilter: 'none' }} />
+          uiTransform={{ width: text.length * font * 0.56 * s, height: '100%', pointerFilter: 'none' }} />
       </UiEntity>
     })}
   </UiEntity>
