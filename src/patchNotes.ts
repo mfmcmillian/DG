@@ -6,12 +6,6 @@
 export type PatchNote = { version: string; notes: string[] }
 
 export const PATCH_NOTES: PatchNote[] = [
-  { version: '2.8.38', notes: [
-    'The stutter the music brought in 2.8.37 is gone.'
-  ] },
-  { version: '2.8.37', notes: [
-    'The hall has music. Settings has a Music row: Off, Low, Medium or High.'
-  ] },
   { version: '2.8.36', notes: [
     'Your party\'s health shows under your own bars in a run; a downed ally reads DOWN.'
   ] },

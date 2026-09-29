@@ -8,8 +8,6 @@ export type Prefs = {
   ps?: unknown
   /** Saved since gear became copies in a bag (2.8.35); absent, `unlocks` and `ups` are converted into one. */
   bg?: unknown
-  /** Music loudness, 0 (off) .. 3 (high); absent, medium. */
-  mus?: unknown
 }
 
 export function parsePrefs(json: string | undefined): Prefs {

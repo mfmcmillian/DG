@@ -1,5 +1,5 @@
-// Player settings: the language, the camera the hero is played with, how loud
-// the music plays, and whether the developer panel shows. Saved with the hero (heroSave.ts carries them as a
+// Player settings: the language, the camera the hero is played with, and
+// whether the developer panel shows. Saved with the hero (heroSave.ts carries them as a
 // JSON string in `prefs`, so new settings never need a schema change) and
 // applied whenever they load or change.
 
@@ -24,20 +24,14 @@ export type Settings = {
   nativeAvatar: boolean
   /** Developer: every level of every realm selectable, whatever the progress says. The host honours it from the saved prefs. */
   openAll: boolean
-  /** Music loudness step: an index into MUSIC_OPTIONS, and src/music.ts MUSIC_VOLUMES. */
-  music: number
 }
-
-/** The Music row's steps, quietest first. */
-export const MUSIC_OPTIONS = ['Off', 'Low', 'Medium', 'High']
-const MUSIC_DEFAULT = 2
 
 export const CAMERA_OPTIONS: Array<{ id: CameraPreference; name: string; blurb: string }> = [
   { id: 'crawler', name: 'Overhead', blurb: 'High and pitched down, fixed heading. Walls facing the camera drop to parapets.' },
   { id: 'native', name: 'Third person', blurb: 'The Decentraland camera: behind the hero, turns with the mouse, zoom as you like.' }
 ]
 
-const DEFAULTS: Settings = { language: 'en', camera: 'crawler', devTools: false, nativeAvatar: false, openAll: false, music: MUSIC_DEFAULT }
+const DEFAULTS: Settings = { language: 'en', camera: 'crawler', devTools: false, nativeAvatar: false, openAll: false }
 /** Bumping this puts every saved hero back on the default camera on their next load. */
 const CAMERA_GENERATION = 2
 const settings: Settings = { ...DEFAULTS }
@@ -105,11 +99,6 @@ export function setOpenAll(on: boolean) {
   settings.openAll = on
 }
 
-/** The music follows on the next frame (src/music.ts fades to it). */
-export function setMusicLevel(step: number) {
-  settings.music = Math.max(0, Math.min(MUSIC_OPTIONS.length - 1, Math.round(step)))
-}
-
 /** Put the saved camera on. */
 export function applyCameraSetting() {
   const current: CameraChoice = getDungeonState().camera
@@ -120,7 +109,7 @@ export function applyCameraSetting() {
 
 export function serializeSettings(): string {
   return JSON.stringify({
-    camera: settings.camera, camV: CAMERA_GENERATION, dev: settings.devTools ? 1 : 0, nat: settings.nativeAvatar ? 1 : 0, open: settings.openAll ? 1 : 0, lang: settings.language, mus: settings.music, hints: seenHints(), fresh: newGearIds(), lv: 1, ps: 1, bg: 1
+    camera: settings.camera, camV: CAMERA_GENERATION, dev: settings.devTools ? 1 : 0, nat: settings.nativeAvatar ? 1 : 0, open: settings.openAll ? 1 : 0, lang: settings.language, hints: seenHints(), fresh: newGearIds(), lv: 1, ps: 1, bg: 1
   })
 }
 
@@ -135,7 +124,6 @@ export function loadSettings(json: string) {
     settings.camera = value.camV === CAMERA_GENERATION && chosen ? 'native' : 'crawler'
     settings.devTools = value.dev === 1 || value.dev === true
     settings.openAll = prefsOpenAll(json)
-    settings.music = typeof value.mus === 'number' && value.mus >= 0 && value.mus < MUSIC_OPTIONS.length ? Math.round(value.mus) : MUSIC_DEFAULT
     // A save from before languages, or one made in another session's tongue,
     // never overrides a choice made on this title screen.
     if (isLanguage(value.lang) && !languageChosen) setLanguage(settings.language = value.lang)
