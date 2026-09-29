@@ -17,13 +17,13 @@
  * both: uniques, new vs returning, sessions and their length, retention by age
  * since first visit, the funnel, runs and raids, deaths, XP, upgrades, loot.
  *
- * Developers (src/shared/developers.ts) are left out, so a testing session never
- * reads as a returning player. Days are UTC.
+ * Everyone counts, developers included: a test session is a session, and the
+ * day record names who came, so a report can leave any wallet out afterwards.
+ * Days are UTC.
  */
 
 import { engine } from '@dcl/sdk/ecs'
 import { EnvVar, Storage } from '@dcl/sdk/server'
-import { DEVELOPERS } from './shared/developers'
 import { GAME_VERSION } from './version'
 import { updateVisit } from './visitLog'
 
@@ -143,10 +143,6 @@ function dayOf(ms: number): number {
 
 function bump(table: Record<string, number>, key: string, by = 1) {
   table[key] = (table[key] ?? 0) + by
-}
-
-function excluded(address: string): boolean {
-  return DEVELOPERS.has(address.toLowerCase())
 }
 
 /** Run `fn` on today's record once it is loaded, and note that something changed. */
@@ -287,7 +283,7 @@ export function setMetricsLevelProbe(probe: (address: string) => number | undefi
 
 /** A player is in the scene. Counts them for the day and opens their session. */
 export function metricsEnter(address: string) {
-  if (!active || excluded(address)) return
+  if (!active) return
   const id = address.toLowerCase()
   const now = Date.now()
   sessions.set(id, { since: now, hello: false })
@@ -315,7 +311,7 @@ export function metricsEnter(address: string) {
 
 /** A player left the scene: the session's length, and whether it was a bounce. */
 export function metricsLeave(address: string) {
-  if (!active || excluded(address)) return
+  if (!active) return
   const id = address.toLowerCase()
   const session = sessions.get(id)
   sessions.delete(id)
@@ -347,7 +343,7 @@ export function metricsPresent(count: number) {
 
 /** The client said what it is: the platform for the day's split, and the load time until it spoke. */
 export function metricsHello(address: string, platform: string) {
-  if (!active || excluded(address)) return
+  if (!active) return
   const id = address.toLowerCase()
   const session = sessions.get(id)
   const now = Date.now()
@@ -369,7 +365,7 @@ export function metricsHello(address: string, platform: string) {
  * counts as `dungeon`). Returns nothing; the stamp is what makes it once.
  */
 export function metricsMark(address: string, what: string) {
-  if (!active || excluded(address)) return
+  if (!active) return
   const id = address.toLowerCase()
   void updateVisit(id, (v) => {
     if (v.marks[what]) return false
@@ -402,14 +398,14 @@ export function metricsRaid(event: keyof DayStats['raid']) {
 }
 
 export function metricsDeath(address: string) {
-  if (!active || excluded(address)) return
+  if (!active) return
   withDay((day) => { day.deaths++ })
   metricsMark(address, 'death')
 }
 
 /** Experience awarded, and the levels it crossed. */
 export function metricsXp(address: string, amount: number, levelBefore: number, levelAfter: number) {
-  if (!active || excluded(address)) return
+  if (!active) return
   withDay((day) => {
     day.xp += Math.max(0, Math.round(amount))
     if (levelAfter > levelBefore) day.levelUps += levelAfter - levelBefore
@@ -418,7 +414,7 @@ export function metricsXp(address: string, amount: number, levelBefore: number, 
 
 /** A piece went into the fire (as the client reports it; the result is not validated here). */
 export function metricsUpgrade(address: string, success: boolean) {
-  if (!active || excluded(address)) return
+  if (!active) return
   withDay((day) => {
     day.upgrades.attempt++
     if (success) day.upgrades.success++
