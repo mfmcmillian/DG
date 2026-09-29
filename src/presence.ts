@@ -2,7 +2,7 @@
 // the room (ours first) plus anyone the renderer reports who has not made a
 // champion yet, with where each of them is.
 
-import { engine, PlayerIdentityData } from '@dcl/sdk/ecs'
+import { engine, PlayerIdentityData, Transform } from '@dcl/sdk/ecs'
 import { CHARACTERS } from './characterPicker'
 import { heroTagText } from './heroNameTag'
 import { heroLevel } from './heroXp'
@@ -51,9 +51,11 @@ export function presence(): Presence[] {
     seen.set(id, { id, name: heroTagText(id), cls, me: id === me, ...whereabouts(id) })
   }
   // Players in the scene without a hero body yet: on the title or making a champion.
-  for (const [, identity] of engine.getEntitiesWith(PlayerIdentityData)) {
+  // Only those the explorer places in the scene (a Transform): in a World it also
+  // reports identities for people who are elsewhere in the realm, and those have none.
+  for (const [entity, identity] of engine.getEntitiesWith(PlayerIdentityData)) {
     const id = identity.address?.toLowerCase()
-    if (!id || seen.has(id)) continue
+    if (!id || seen.has(id) || !Transform.getOrNull(entity)) continue
     seen.set(id, { id, name: heroTagText(id), cls: '', where: 'at the gate', short: 'Gate', me: id === me, inHall: false })
   }
   return [...seen.values()].sort((a, b) => (a.me === b.me ? a.name.localeCompare(b.name) : a.me ? -1 : 1))
