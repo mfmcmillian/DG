@@ -22,6 +22,7 @@ import { getHeroSaveState, isHeroSaveUnreachable, savedHeroName } from './heroSa
 import { getLobbyState } from './party'
 import { LobbyUi } from './lobbyUi'
 import { GAME_VERSION } from './version'
+import { goToNewHome, hasMoved } from './home'
 import { getPreloadGroup, releasePreload } from './preload'
 import { t } from './i18n'
 import { LanguageRow } from './languageUi'
@@ -239,7 +240,27 @@ function titleLayout() {
   return { s, screenWidth, screenHeight, left: reserved.left, right: reserved.right, top: reserved.top, bottom: reserved.bottom }
 }
 
+/** The old home's title: the crest and one button that sends the player to the World. */
+function MovedScreen() {
+  const { s, screenHeight, top } = titleLayout()
+  const column = EMBLEM.height * s + 20 * s + 130 * s
+  const columnTop = Math.max(top + 12 * s, (screenHeight - column) / 2 - 10 * s)
+  return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}>
+    <UiEntity uiTransform={wholeCanvas()} uiBackground={kitTexture(UI_KIT.titleBg)} />
+    <UiEntity uiTransform={wholeCanvas()} uiBackground={{ color: titleVeil }} />
+    <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: columnTop }, width: '100%',
+      flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
+      <UiEntity uiTransform={{ width: EMBLEM.width * s, height: EMBLEM.height * s, flexShrink: 0, pointerFilter: 'none' }}
+        uiBackground={kitTexture(UI_KIT.titleEmblem)} />
+      <UiEntity uiTransform={{ width: 560 * s, margin: { top: 20 * s }, flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
+        <Action id="title-moved" text={t('New location')} onClick={goToNewHome} primary accent="gold" width={260} height={64} scale={s} fontSize={24} />
+      </UiEntity>
+    </UiEntity>
+  </UiEntity>
+}
+
 function TitleScreen() {
+  if (hasMoved()) return <MovedScreen />
   const { s, screenWidth, screenHeight, left, right, top, bottom } = titleLayout()
   const created = getPickerState().hasCreatedCharacter
   const ready = isTitleReady()
