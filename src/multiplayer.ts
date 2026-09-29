@@ -6,7 +6,7 @@ import { CombatPose, isMeleeSwing, MAX_COMBAT_HEALTH } from './combatActions'
 import { EquipmentMotion } from './combatAnimations'
 import { CharacterAppearance } from './appearance'
 import { EquipmentLoadout, EQUIPMENT_SLOTS, sanitizeLoadout } from './equipmentCatalog'
-import { dropHero, heroHealth, initializeHeroVitals, rememberHeartDrop, resetHero } from './heroVitals'
+import { dropHero, heroHealth, heroMaxHealth, initializeHeroVitals, rememberHeartDrop, resetHero } from './heroVitals'
 import { HeroBody, HeroLook, HeroView } from './shared/heroBody'
 import { room } from './shared/messages'
 import { metricsLoot, metricsUpgrade } from './metrics'
@@ -641,7 +641,7 @@ let onHitEnemy: ((id: string, i: number, motion: string, finisher: boolean) => v
 let onHitPlayer: ((hit: HeroHit) => void) | undefined
 let onHeal: ((id: string, amount: number, health: number) => void) | undefined
 let onRevive: ((id: string, health: number, inPlace: boolean) => void) | undefined
-let onVitals: ((id: string, health: number) => void) | undefined
+let onVitals: ((id: string, health: number, max: number) => void) | undefined
 let onImpact: ((p: ImpactNet, from: string) => void) | undefined
 let onShot: ((p: ShotNet) => void) | undefined
 let onEnemies: ((party: string, list: EnemySnap[]) => void) | undefined
@@ -699,7 +699,7 @@ function bindClient() {
   onNet('hitPlayer', (msg) => onHitPlayer?.(msg))
   onNet('heal', (msg) => onHeal?.(msg.id, msg.amount, msg.health))
   onNet('revive', (msg) => onRevive?.(msg.id, msg.health, msg.inPlace))
-  onNet('vitals', (msg) => onVitals?.(msg.id, msg.health))
+  onNet('vitals', (msg) => onVitals?.(msg.id, msg.health, msg.max))
   onNet('impact', (msg) => {
     if (msg.id === localAddress()) return
     onImpact?.(msg, msg.id)
@@ -842,7 +842,7 @@ function trackHeroes(dt: number) {
       t = { entity: primary.entity, cid: primary.hero.cid, missing: 0 }
       tracked.set(id, t)
       resetHero(id)
-      sendNet('vitals', { id, health: heroHealth(id) })
+      sendNet('vitals', { id, health: heroHealth(id), max: heroMaxHealth(id) })
       console.log(`[Server] hero ${id} joined as ${primary.hero.cid}; player transform: ${present.has(id) ? 'yes' : 'no'}; heroes: ${tracked.size}`)
       onJoin?.(id)
       continue
@@ -852,7 +852,7 @@ function trackHeroes(dt: number) {
       // A different character is a fresh hero.
       t.cid = primary.hero.cid
       resetHero(id)
-      sendNet('vitals', { id, health: heroHealth(id) })
+      sendNet('vitals', { id, health: heroHealth(id), max: heroMaxHealth(id) })
     }
     if (present.has(id)) {
       t.missing = 0
@@ -882,7 +882,7 @@ function trackHeroes(dt: number) {
   vitalsAge += span
   if (vitalsAge >= VITALS_SECONDS) {
     vitalsAge = 0
-    for (const id of tracked.keys()) sendNet('vitals', { id, health: heroHealth(id) })
+    for (const id of tracked.keys()) sendNet('vitals', { id, health: heroHealth(id), max: heroMaxHealth(id) })
   }
   heartbeatAge += span
   if (heartbeatAge >= HEARTBEAT_SECONDS) {

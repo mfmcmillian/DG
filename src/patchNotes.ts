@@ -6,6 +6,9 @@
 export type PatchNote = { version: string; notes: string[] }
 
 export const PATCH_NOTES: PatchNote[] = [
+  { version: '2.8.36', notes: [
+    'Your party\'s health shows under your own bars in a run; a downed ally reads DOWN.'
+  ] },
   { version: '2.8.35', notes: [
     'Every weapon can now fall at any rarity, common to legendary; only the Pride weapons are fixed.',
     'Each find is its own piece: a second copy sits beside the first instead of replacing it, up to 60 weapons and 120 armor.',

@@ -39,6 +39,7 @@ import { fxSound } from './combatFx'
 import { t, tn } from './i18n'
 import { InviteToast } from './inviteUi'
 import { pitCinematicPlaying } from './pitCinematic'
+import { partyVitals } from './allyVitals'
 
 /** Still shaking hands with the party server (solo play never waits). */
 function joining() {
@@ -149,6 +150,45 @@ function HallRoster({ scale: s }: { scale: number }) {
 const CARD_WIDTH = 258
 const CARD_PAD = 11
 
+/** Most allies the party readout lists before folding the rest into "+n more" (a raid party can outgrow a dungeon's). */
+const ALLY_ROWS = 7
+const downGrey = Color4.create(0.5, 0.54, 0.6, 0.9)
+
+/**
+ * Under our own bars in a run: the rest of the party, each with the health
+ * the host last stated for them. A downed ally reads DOWN in place of the
+ * number, so whoever is nearest knows to go and raise them.
+ */
+function PartyVitals({ inner, scale: s }: { inner: number; scale: number }) {
+  const allies = partyVitals()
+  if (!allies.length) return null
+  const shown = allies.slice(0, ALLY_ROWS)
+  const rowHeight = 18 * s
+  const nameWidth = 92 * s
+  const numberWidth = 54 * s
+  const barWidth = inner - nameWidth - numberWidth - 8 * s
+  return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', flexShrink: 0, pointerFilter: 'none' }}>
+    <Rule scale={s} />
+    <Label value={`${t('PARTY')}  ${allies.length + 1}`} color={gold} font="sans-serif" fontSize={9 * s} textAlign="middle-left" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 14 * s, flexShrink: 0, margin: { bottom: 2 * s }, pointerFilter: 'none' }} />
+    {shown.map((a) => {
+      const ratio = a.down ? 0 : Math.max(0, Math.min(1, a.health / Math.max(1, a.max)))
+      return <UiEntity key={a.id} uiTransform={{ width: '100%', height: rowHeight, flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+        <Label value={fit(a.name, 13)} color={a.down ? downGrey : white} font="sans-serif" fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
+          uiTransform={{ width: nameWidth, height: rowHeight, flexShrink: 0, pointerFilter: 'none' }} />
+        <UiEntity uiTransform={{ width: barWidth, height: 7 * s, padding: s, borderRadius: 3 * s, flexShrink: 0, flexDirection: 'row', margin: { left: 4 * s, right: 4 * s }, pointerFilter: 'none' }}
+          uiBackground={{ color: track }}>
+          <UiEntity uiTransform={{ width: `${ratio * 100}%`, height: '100%', borderRadius: 2 * s, pointerFilter: 'none' }} uiBackground={{ color: ratio < 0.3 ? staminaLow : red }} />
+        </UiEntity>
+        <Label value={a.down ? t('DOWN') : `${Math.ceil(a.health)} / ${Math.round(a.max)}`} color={a.down ? staminaLow : muted} font="sans-serif" fontSize={10 * s}
+          textAlign="middle-right" textWrap="nowrap" uiTransform={{ width: numberWidth, height: rowHeight, flexShrink: 0, pointerFilter: 'none' }} />
+      </UiEntity>
+    })}
+    {allies.length > shown.length && <Label value={t('+{n} more', { n: allies.length - shown.length })} color={muted} font="sans-serif" fontSize={10 * s}
+      textAlign="middle-right" textWrap="nowrap" uiTransform={{ width: '100%', height: 16 * s, flexShrink: 0, pointerFilter: 'none' }} />}
+  </UiEntity>
+}
+
 function PlayerVitals({ right, top, scale: s }: { right: number; top: number; scale: number }) {
   const state = getWorldRivalState()
   if (!state.visible) return null
@@ -199,6 +239,7 @@ function PlayerVitals({ right, top, scale: s }: { right: number; top: number; sc
         textAlign="middle-right" textWrap="nowrap"
         uiTransform={{ width: 120 * s, height: 20 * s, flexShrink: 0, pointerFilter: 'none' }} />
     </UiEntity>
+    <PartyVitals inner={inner} scale={s} />
     </UiEntity>}
   </UiEntity>
 }

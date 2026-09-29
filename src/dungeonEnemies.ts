@@ -67,6 +67,7 @@ import { clearLoot, grantLootDirect, lootKindOf, spawnLoot } from './loot'
 import { rollArmorDrop, rollArmorRank, rollWeaponLoot, weaponStats } from './weapons'
 import { newGearUid } from './shared/gearBag'
 import { AttackContext, maxHealth } from './roamingCombat'
+import { noteAllyHealth } from './allyVitals'
 import {
   allFighters, EnemyFxNet, EnemySnap, heroArmorLevelOf, heroArmorRankOf, heroCharacters, HeroHit, heroMembers, heroLoadout, heroPosition, heroWeapon, heroWeaponLevel, heroWeaponRank, ImpactNet, isHeadless, isHost, localAddress, NetFighter, publishEnemies,
   publishEnemyFx, publishHitEnemy, publishHitSkill, publishImpact, publishLoot, publishRespawn, publishShot, publishSkillCast, setMultiplayerHandlers
@@ -267,17 +268,30 @@ export function initializeDungeonEnemies() {
     shot: (p) => {
       if (samePhase(p.id)) presentRemoteShot(p)
     },
-    hitPlayer: applyHeroHit,
+    hitPlayer: (hit) => {
+      if (hit.id !== localAddress() && !hit.blocked && !hit.dodged) noteAllyHealth(hit.id, hit.health)
+      applyHeroHit(hit)
+    },
     heal: (id, amount, health) => {
       if (id === localAddress()) healPlayer(amount, health)
-      else if (samePhase(id)) presentRemoteHeal(id, amount)
+      else {
+        noteAllyHealth(id, health)
+        if (samePhase(id)) presentRemoteHeal(id, amount)
+      }
     },
-    revive: (id, _health, inPlace) => {
+    revive: (id, health, inPlace) => {
       if (id === localAddress()) recoverPlayer(inPlace)
-      else if (samePhase(id)) presentRemoteRevive(id)
+      else {
+        // Back on their feet at full: the health is the ceiling until the next vitals says otherwise.
+        noteAllyHealth(id, health, health)
+        if (samePhase(id)) presentRemoteRevive(id)
+      }
     },
-    vitals: (id, health) => {
-      if (id !== localAddress()) return
+    vitals: (id, health, max) => {
+      if (id !== localAddress()) {
+        noteAllyHealth(id, health, max)
+        return
+      }
       const change = reconcilePlayerHealth(health)
       if (change === 'died') onLocalDefeated()
       else if (change === 'revived') recoverPlayer()

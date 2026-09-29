@@ -59,11 +59,13 @@ export const Messages = {
   /** Server -> all: a downed hero is back on their feet at full health; `inPlace` when an ally raised them where they fell. */
   revive: Schemas.Map({ id: Schemas.String, health: Schemas.Number, inPlace: Schemas.Boolean }),
   /**
-   * Server -> all: the ledger's current health for one hero. Sent when the
-   * server first meets a hero and every couple of seconds after, so a client
-   * that missed a `hitPlayer`, `heal` or `revive` pulls back in line.
+   * Server -> all: the ledger's current health for one hero, and the ceiling
+   * it counts to (level and armor decide it, and only the host knows every
+   * hero's). Sent when the server first meets a hero and every couple of
+   * seconds after, so a client that missed a `hitPlayer`, `heal` or `revive`
+   * pulls back in line and the party readout draws each bar to scale.
    */
-  vitals: Schemas.Map({ id: Schemas.String, health: Schemas.Number }),
+  vitals: Schemas.Map({ id: Schemas.String, health: Schemas.Number, max: Schemas.Number }),
   /** Client -> server: the hero walked over a heart it saw at (x, z). */
   pickup: Schemas.Map({ x: Schemas.Number, z: Schemas.Number }),
   /** Client -> server: the local recover countdown ran out without a revive. */
