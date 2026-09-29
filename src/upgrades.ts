@@ -9,7 +9,7 @@
 // the drop that brought it (src/weapons.ts rollArmorRank / rollWeaponLoot).
 
 import { getEquipmentItemOrNull } from './equipmentCatalog'
-import { ownedArmorIds, ownedWeaponIds } from './inventory'
+import { getCommittedLoadout, ownedArmorIds, ownedWeaponIds } from './inventory'
 import { getLootState, spendCoins } from './loot'
 import { LEVEL_FLAT, LEVEL_STEP, MAX_LEVEL, setUpgradeLevel, upgradeLevelOf } from './shared/upgradeRanks'
 import { Rarity, rarityOf, RARITIES } from './weapons'
@@ -31,6 +31,8 @@ export type UpgradeOffer = {
   rarity: Rarity
   /** The purse covers it. */
   affordable: boolean
+  /** The hero has it on right now: what the fire does to it shows in the next fight. */
+  equipped: boolean
 }
 
 export type UpgradeResult = {
@@ -55,16 +57,20 @@ export function upgradeOffer(id: string): UpgradeOffer {
   const from = upgradeLevelOf(id)
   const to = from < MAX_LEVEL ? from + 1 : undefined
   const coins = to ? LEVEL_COSTS[Math.min(LEVEL_COSTS.length - 1, from - 1)] : 0
-  return { id, from, to, coins, rarity: rarityOf(id), affordable: !!to && getLootState().coins >= coins }
+  const slot = getEquipmentItemOrNull(id)?.slot
+  const equipped = slot !== undefined && getCommittedLoadout()[slot] === id
+  return { id, from, to, coins, rarity: rarityOf(id), affordable: !!to && getLootState().coins >= coins, equipped }
 }
 
-/** Everything this hero could offer, weapons then armor, the ones that can still rise first, the furthest along before the rest. */
+/** Everything this hero could offer: the ones that can still rise first, what the hero wears before the rest, then the furthest along. */
 export function upgradeOffers(): UpgradeOffer[] {
   const offers = [
     ...ownedWeaponIds().filter((id) => id !== 'none-weapon' && !!getEquipmentItemOrNull(id)?.weapon),
     ...ownedArmorIds()
   ].map(upgradeOffer)
-  return offers.sort((a, b) => Number(!!b.to) - Number(!!a.to) || b.from - a.from || RARITIES[b.rarity].rank - RARITIES[a.rarity].rank || a.id.localeCompare(b.id))
+  return offers.sort((a, b) =>
+    Number(!!b.to) - Number(!!a.to) || Number(b.equipped) - Number(a.equipped) || b.from - a.from
+    || RARITIES[b.rarity].rank - RARITIES[a.rarity].rank || a.id.localeCompare(b.id))
 }
 
 /**

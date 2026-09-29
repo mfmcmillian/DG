@@ -1,6 +1,7 @@
 // The pit's sheet: which weapon or armor piece to offer. Each of the hero's items is a card
 // with its icon, its level now and the one the fire will give it, and the coins
-// it asks. Pick one, confirm, and the coins are spent and the shot begins
+// it asks; what the hero has on wears a WORN tag and comes first, since that is
+// what the next fight feels. Pick one, confirm, and the coins are spent and the shot begins
 // (src/pitCinematic.ts). Same dark sheet and gold rule as the settings;
 // the world camera stays where it is behind the veil, so the hero is still by
 // the fire when the sheet closes.
@@ -18,7 +19,7 @@ import { attemptUpgrade, LEVEL_FLAT_DAMAGE, LEVEL_PERCENT, UpgradeOffer, upgrade
 import { MAX_LEVEL } from './shared/upgradeRanks'
 import { RARITIES } from './weapons'
 
-const { white, muted, gold, panel, card, line, goldLine, coral } = menuColors
+const { white, muted, gold, ink, panel, card, line, goldLine, coral } = menuColors
 const veil = Color4.create(0.01, 0.02, 0.03, 0.62)
 const sheet = Color4.create(0.025, 0.045, 0.07, 0.97)
 const FRAME = { width: 760, height: 600 }
@@ -120,6 +121,12 @@ function WeaponCard({ offer, scale: s }: { key?: string; offer: UpgradeOffer; sc
     <Label value={to ? `◆ ${offer.coins}` : t('Cannot rise further')}
       color={to ? (offer.affordable ? gold : coral) : muted} fontSize={10.5 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 16 * s, margin: { top: 4 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+    {offer.equipped && <UiEntity uiTransform={{ width: 46 * s, height: 16 * s, positionType: 'absolute', position: { top: -8 * s, right: 8 * s },
+      borderRadius: 8 * s, alignItems: 'center', justifyContent: 'center', pointerFilter: 'none' }}
+      uiBackground={{ color: gold }}>
+      <Label value={t('WORN')} color={ink} font="sans-serif" fontSize={9 * s} textWrap="nowrap"
+        uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} />
+    </UiEntity>}
   </UiEntity>
 }
 
@@ -171,7 +178,7 @@ export function UpgradeUi() {
           {pages > 1 && <Action id="upgrade-next" text="›" onClick={() => turnPage(1, offers, pages)} width={38} height={38} scale={s} fontSize={20} accent="gold" disabled={page >= pages - 1} />}
         </UiEntity>
         <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', pointerFilter: 'none' }}>
-          <Label value={chosen?.to ? (chosen.affordable ? t('{n} coins · the fire always takes', { n: chosen.coins }) : t('Not enough coins'))
+          <Label value={chosen?.to ? (chosen.affordable ? t(chosen.equipped ? '{n} coins · worn now · the fire always takes' : '{n} coins · the fire always takes', { n: chosen.coins }) : t('Not enough coins'))
             : chosen ? t('Already at level {n}', { n: MAX_LEVEL }) : ''}
             color={chosen?.to && !chosen.affordable ? coral : muted} fontSize={12 * s} textAlign="middle-right" textWrap="nowrap"
             uiTransform={{ width: 240 * s, height: 38 * s, margin: { right: 12 * s }, pointerFilter: 'none' }} />
