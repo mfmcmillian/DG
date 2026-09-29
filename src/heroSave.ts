@@ -8,7 +8,7 @@ import { getCommittedAppearance, normalizeAppearance, setCommittedAppearance } f
 import { adoptSavedCharacter, CHARACTERS, getEquippedCharacter, getPickerState } from './characterPicker'
 import { EQUIPMENT_SLOTS, EquipmentLoadout, getEquipmentItemOrNull } from './equipmentCatalog'
 import { getCommittedLoadout, setCommittedLoadout } from './equipmentState'
-import { enforceOwnedLoadout, getUnlockedItems, unlockInventoryItem } from './inventory'
+import { enforceOwnedLoadout, getUnlockedItems } from './inventory'
 import { classOfCharacter } from './heroClasses'
 import { getLootState, setCoins } from './loot'
 import { isClientSynced, isSoloMode, localAddress } from './multiplayer'
@@ -16,8 +16,9 @@ import { onNet, sendNet } from './net'
 import { setProgress } from './party'
 import { requestHeroPreload } from './preloadPlan'
 import { loadSettings, serializeSettings } from './settings'
-import { convertLegacyWeaponRanks, loadUpgradeRanks, serializeUpgradeRanks } from './shared/upgradeRanks'
+import { addGear, clearBag, convertLegacyBag, loadBag, serializeBag } from './shared/gearBag'
 import { parsePrefs } from './shared/prefs'
+import { printedRankOf } from './weapons'
 
 type SaveState = {
   /** The host answered our load request. */
@@ -65,22 +66,37 @@ export function initializeHeroSave() {
     }))
     const loadout = parseLoadout(msg.loadout)
     if (loadout) setCommittedLoadout(msg.cid, loadout)
-    for (const id of msg.unlocks) unlockInventoryItem(id)
-    // Before 2.8.0 a hero started in a set of its class (Elven Warden, Sorcerer,
-    // Paladin, Northman) that was never gated; now those drop in their realms.
-    // A hero still wearing any of it owns the whole set, so nothing is taken away.
-    const legacy = LEGACY_STARTERS[msg.cid] ?? ''
-    if (legacy && loadout && EQUIPMENT_SLOTS.some((slot) => loadout[slot.id]?.startsWith(`${legacy}-`))) {
-      for (const slot of EQUIPMENT_SLOTS) if (slot.id !== 'weapon' && getEquipmentItemOrNull(`${legacy}-${slot.id}`)) unlockInventoryItem(`${legacy}-${slot.id}`)
-    }
-    // Before 2.8.15 a Blade hero started with the Prism Saber, a Pride weapon,
-    // never gated because it was the starter. A hero saved before that owns it
-    // still, whatever is in hand today; new heroes start on a plain sword.
     const prefs = parsePrefs(msg.prefs)
-    if (!prefs.ps && classOfCharacter(msg.cid) === 'blade') unlockInventoryItem('pride-sword')
-    loadUpgradeRanks(msg.ups)
-    // Before 2.8.6 the pit raised rarity; a weapon's steps were all its doing. They become levels.
-    if (!prefs.lv) convertLegacyWeaponRanks((id) => !!getEquipmentItemOrNull(id)?.weapon)
+    if (prefs.bg) {
+      loadBag(msg.bag)
+    } else {
+      // A save from before the bag (2.8.34 and earlier): one copy per unlocked
+      // item, at the rarity and level `ups` gave it. Before 2.8.6 the pit raised
+      // rarity, and a weapon's steps were all its doing: those become levels first.
+      clearBag()
+      const ups = prefs.lv ? msg.ups : msg.ups.map((entry) => {
+        const at = entry.lastIndexOf(':')
+        const id = entry.slice(0, at)
+        if (at <= 0 || !getEquipmentItemOrNull(id)?.weapon) return entry
+        const [rank, level] = entry.slice(at + 1).split('/').map(Number)
+        return `${id}:0/${Math.max(level || 1, 1 + (rank || 0) * 2)}`
+      })
+      convertLegacyBag(msg.unlocks, ups, printedRankOf)
+      // Before 2.8.0 a hero started in a set of its class (Elven Warden, Sorcerer,
+      // Paladin, Northman) that was never gated; now those drop in their realms.
+      // A hero still wearing any of it owns the whole set, so nothing is taken away.
+      const legacy = LEGACY_STARTERS[msg.cid] ?? ''
+      if (legacy && loadout && EQUIPMENT_SLOTS.some((slot) => loadout[slot.id]?.startsWith(`${legacy}-`))) {
+        for (const slot of EQUIPMENT_SLOTS) {
+          const id = `${legacy}-${slot.id}`
+          if (slot.id !== 'weapon' && getEquipmentItemOrNull(id)) addGear(id, 0, 1, `m-${id}`, true)
+        }
+      }
+      // Before 2.8.15 a Blade hero started with the Prism Saber, a Pride weapon,
+      // never gated because it was the starter. A hero saved before that owns it
+      // still, whatever is in hand today; new heroes start on a plain sword.
+      if (!prefs.ps && classOfCharacter(msg.cid) === 'blade') addGear('pride-sword', 0, 1, 'm-pride-sword', true)
+    }
     // Armor from before it had to be earned comes off; the class default goes back on.
     enforceOwnedLoadout(msg.cid)
     // The title's Continue waits on this outfit; fetch it ahead of the queue.
@@ -137,7 +153,7 @@ function parseLoadout(json: string): EquipmentLoadout | undefined {
 function fingerprint(cid: string): string {
   const a = getCommittedAppearance(cid)
   const l = getCommittedLoadout(cid)
-  return [cid, a.bodyType, a.hairStyle, a.hairColor, a.skinTone, ...EQUIPMENT_SLOTS.map((s) => l[s.id]), ...getUnlockedItems(), ...serializeUpgradeRanks(), serializeSettings()].join('|')
+  return [cid, a.bodyType, a.hairStyle, a.hairColor, a.skinTone, ...EQUIPMENT_SLOTS.map((s) => l[s.id]), ...serializeBag(), serializeSettings()].join('#')
 }
 
 function update(dt: number) {
@@ -160,7 +176,7 @@ function update(dt: number) {
   const a = getCommittedAppearance(cid)
   sendNet('saveHero', {
     cid, body: a.bodyType, hair: a.hairStyle, hc: a.hairColor, skin: a.skinTone,
-    loadout: JSON.stringify(getCommittedLoadout(cid)), coins, unlocks: getUnlockedItems(), prefs: serializeSettings(), ups: serializeUpgradeRanks()
+    loadout: JSON.stringify(getCommittedLoadout(cid)), coins, unlocks: getUnlockedItems(), prefs: serializeSettings(), ups: [], bag: serializeBag()
   })
   lastSaved = now
   lastSavedCoins = coins
@@ -175,7 +191,7 @@ export function flushHeroSave() {
   const coins = getLootState().coins
   sendNet('saveHero', {
     cid, body: a.bodyType, hair: a.hairStyle, hc: a.hairColor, skin: a.skinTone,
-    loadout: JSON.stringify(getCommittedLoadout(cid)), coins, unlocks: getUnlockedItems(), prefs: serializeSettings(), ups: serializeUpgradeRanks()
+    loadout: JSON.stringify(getCommittedLoadout(cid)), coins, unlocks: getUnlockedItems(), prefs: serializeSettings(), ups: [], bag: serializeBag()
   })
   lastSaved = fingerprint(cid)
   lastSavedCoins = coins

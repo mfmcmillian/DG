@@ -24,6 +24,7 @@ import { initializePitFire } from './pitFire'
 import { initializeBackdrop } from './backdrop'
 import { initializePitCinematic } from './pitCinematic'
 import { initializeUpgradePicker } from './upgradeUi'
+import { initializeSellSheet } from './sellUi'
 import { initializeHints } from './hints'
 import { initializeColossusClient } from './raid/colossusClient'
 import { initializeCombatFx } from './combatFx'
@@ -102,6 +103,7 @@ function initClient() {
   initializeBackdrop()
   initializePitCinematic()
   initializeUpgradePicker()
+  initializeSellSheet()
   initializeHints()
   initializeColossusClient()
   // Lobby mirror and saved hero ride on the room; a client that goes solo also

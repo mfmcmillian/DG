@@ -24,6 +24,7 @@ import { atWarTable, getLobbyState, myPhase, openLobby } from './party'
 import { HUB } from './partyLookup'
 import { pitCinematicPlaying, pitHoverItem, pitResultHovering, takePitResult } from './pitCinematic'
 import { isUpgradePickerOpen, openUpgradePicker } from './upgradeUi'
+import { isSellOpen } from './sellUi'
 import { getEquipmentItemOrNull } from './equipmentCatalog'
 
 /** How long E is held for the ring to close. */
@@ -65,7 +66,7 @@ function targetNow(): Target | undefined {
   const talk = getTalkState()
   if (talk.open) return undefined
   // The pit's shot and its sheet own the screen.
-  if (pitCinematicPlaying() || isUpgradePickerOpen()) return undefined
+  if (pitCinematicPlaying() || isUpgradePickerOpen() || isSellOpen()) return undefined
   const pit = pitTarget()
   const who = talk.near
   if (who) {

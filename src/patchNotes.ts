@@ -6,6 +6,12 @@
 export type PatchNote = { version: string; notes: string[] }
 
 export const PATCH_NOTES: PatchNote[] = [
+  { version: '2.8.35', notes: [
+    'Every weapon can now fall at any rarity, common to legendary; only the Pride weapons are fixed.',
+    'Each find is its own piece: a second copy sits beside the first instead of replacing it, up to 60 weapons and 120 armor.',
+    'Each hero in a party rolls their own drops; nobody shares a find.',
+    'The Quartermaster buys the extras in your bag for coin.'
+  ] },
   { version: '2.8.30', notes: [
     'The screens now fit every display the same way, phones included.',
     'The title and the sheets reach the edges of a phone screen again.'

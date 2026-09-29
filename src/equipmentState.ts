@@ -27,6 +27,14 @@ export function getCommittedLoadout(characterId: string): EquipmentLoadout {
   return { ...loadout }
 }
 
+/** Whether any character this session has `id` on (the bag counts such a copy as worn, not loose). */
+export function isItemCommitted(id: string): boolean {
+  for (const loadout of committedLoadouts.values()) {
+    for (const slot of EQUIPMENT_SLOTS) if (loadout[slot.id] === id) return true
+  }
+  return false
+}
+
 export function setCommittedLoadout(characterId: string, next: EquipmentLoadout): void {
   const loadout = getCommittedLoadout(characterId)
   for (const slot of EQUIPMENT_SLOTS) {

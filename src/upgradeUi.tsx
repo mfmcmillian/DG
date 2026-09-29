@@ -50,7 +50,7 @@ export function openUpgradePicker(): boolean {
   open = true
   page = 0
   hovered = ''
-  selectedId = offers.find((o) => !!o.to && o.affordable)?.id ?? offers[0].id
+  selectedId = offers.find((o) => !!o.to && o.affordable)?.uid ?? offers[0].uid
   InputModifier.createOrReplace(engine.PlayerEntity, { mode: InputModifier.Mode.Standard({ disableAll: true }) })
   PointerLock.createOrReplace(engine.CameraEntity, { isPointerLocked: false })
   return true
@@ -74,7 +74,7 @@ function confirm() {
 function turnPage(step: number, offers: UpgradeOffer[], pages: number) {
   page = Math.max(0, Math.min(pages - 1, page + step))
   const shown = offers.slice(page * PER_PAGE, page * PER_PAGE + PER_PAGE)
-  if (!shown.some((o) => o.id === selectedId)) selectedId = (shown.find((o) => !!o.to && o.affordable) ?? shown[0])?.id ?? selectedId
+  if (!shown.some((o) => o.uid === selectedId)) selectedId = (shown.find((o) => !!o.to && o.affordable) ?? shown[0])?.uid ?? selectedId
 }
 
 /** In virtual pixels of the UI root (uiScale.ts): the sheet fits the room the screen has, and never grows past its drawn size. */
@@ -92,8 +92,8 @@ function layout() {
 
 function WeaponCard({ offer, scale: s }: { key?: string; offer: UpgradeOffer; scale: number }) {
   const item = getEquipmentItemOrNull(offer.id)
-  const id = `up-${offer.id}`
-  const selected = selectedId === offer.id
+  const id = `up-${offer.uid}`
+  const selected = selectedId === offer.uid
   const hover = hovered === id
   const rarity = RARITIES[offer.rarity]
   const to = offer.to
@@ -103,14 +103,14 @@ function WeaponCard({ offer, scale: s }: { key?: string; offer: UpgradeOffer; sc
     flexDirection: 'column', alignItems: 'center', opacity: dim ? 0.55 : 1, flexShrink: 0, pointerFilter: 'block' }}
     uiBackground={{ color: selected ? Color4.create(0.16, 0.12, 0.06, 0.96) : hover ? card : panel }}
     onMouseEnter={() => { hovered = id }} onMouseLeave={() => { if (hovered === id) hovered = '' }}
-    onMouseDown={() => { selectedId = offer.id }}>
+    onMouseDown={() => { selectedId = offer.uid }}>
     {item?.icon ? <UiEntity uiTransform={{ width: 72 * s, height: 72 * s, flexShrink: 0, pointerFilter: 'none' }}
       uiBackground={{ textureMode: 'stretch', texture: { src: item.icon } }} />
       : <UiEntity uiTransform={{ width: 72 * s, height: 72 * s, flexShrink: 0, pointerFilter: 'none' }} />}
     <Label value={item ? t(item.name) : offer.id} color={white} fontSize={11.5 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 18 * s, margin: { top: 4 * s }, flexShrink: 0, pointerFilter: 'none' }} />
     <UiEntity uiTransform={{ width: '100%', height: 16 * s, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
-      <Label value={t('Lv {n}', { n: offer.from })} color={rarity.color} fontSize={10 * s} textAlign="middle-right" textWrap="nowrap"
+      <Label value={`${t(rarity.label)} · ${t('Lv {n}', { n: offer.from })}`} color={rarity.color} fontSize={10 * s} textAlign="middle-right" textWrap="nowrap"
         uiTransform={{ width: 58 * s, height: '100%', pointerFilter: 'none' }} />
       <Label value={to ? '→' : ''} color={muted} fontSize={11 * s} textAlign="middle-center" textWrap="nowrap"
         uiTransform={{ width: 16 * s, height: '100%', pointerFilter: 'none' }} />
@@ -135,7 +135,7 @@ export function UpgradeUi() {
   const pages = Math.max(1, Math.ceil(offers.length / PER_PAGE))
   page = Math.min(page, pages - 1)
   const shown = offers.slice(page * PER_PAGE, page * PER_PAGE + PER_PAGE)
-  const chosen = offers.find((o) => o.id === selectedId)
+  const chosen = offers.find((o) => o.uid === selectedId)
   const coins = getLootState().coins
   const canOffer = !!chosen?.to && chosen.affordable
   // Every card carries a right margin, the last one too, so the row is measured with it.
@@ -166,7 +166,7 @@ export function UpgradeUi() {
         uiTransform={{ width: '100%', height: 18 * s, margin: { bottom: 12 * s }, flexShrink: 0, pointerFilter: 'none' }} />
 
       <UiEntity uiTransform={{ width: gridWidth * s, height: (PER_PAGE / PER_ROW) * (CARD.height + CARD.gap) * s, flexDirection: 'row', flexWrap: 'wrap', alignContent: 'flex-start', alignSelf: 'center', flexShrink: 0, pointerFilter: 'none' }}>
-        {shown.map((offer) => <WeaponCard key={offer.id} offer={offer} scale={s} />)}
+        {shown.map((offer) => <WeaponCard key={offer.uid} offer={offer} scale={s} />)}
       </UiEntity>
 
       <UiEntity uiTransform={{ width: '100%', height: 44 * s, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>

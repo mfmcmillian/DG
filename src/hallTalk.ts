@@ -11,6 +11,7 @@ import { getPlayerCharacterState } from './playerCharacter'
 import { attendHallFolk, FolkView, hallFolkNear } from './hallFolk'
 import { showGuide } from './hallGuide'
 import { openInventory, setInventoryFilter } from './inventory'
+import { openSell } from './sellUi'
 import { heroClassOf } from './heroClasses'
 import { localXp } from './heroXp'
 import { getLobbyState, myParty, myPhase, openLobby } from './party'
@@ -23,7 +24,8 @@ import { t } from './i18n'
 /** What a character can do for the hero, offered on their last line. */
 export type TalkAction = { label: string; run: () => void }
 
-export type TalkOpen = { title: string; lines: string[]; index: number; action?: TalkAction }
+/** `action` waits for the last line; `offer` is their trade, on every line, so nobody sits through the talk to get to it. */
+export type TalkOpen = { title: string; lines: string[]; index: number; action?: TalkAction; offer?: TalkAction }
 
 export type TalkState = {
   /** Who is near enough to talk to, when nobody is being talked to. */
@@ -51,7 +53,7 @@ export function openTalk() {
   const n = visits.get(who.title) ?? 0
   visits.set(who.title, n + 1)
   talkingTo = who
-  state.open = { title: who.title, lines: linesFor(who.title, n), index: 0, action: actionFor(who.title) }
+  state.open = { title: who.title, lines: linesFor(who.title, n), index: 0, action: actionFor(who.title), offer: offerFor(who.title) }
   attendHallFolk(who.key)
 }
 
@@ -109,6 +111,16 @@ function actionFor(title: string): TalkAction | undefined {
   }
 }
 
+/** Their trade, on every line: the Quartermaster buys the bag's extras. */
+function offerFor(title: string): TalkAction | undefined {
+  switch (title) {
+    case 'Quartermaster':
+      return { label: t('Sell my extras'), run: () => { closeTalk(); openSell() } }
+    default:
+      return undefined
+  }
+}
+
 // --- what they say -----------------------------------------------------------------------
 
 /** The hero as the folk see them: class, level, and where the skills stand. */
@@ -131,7 +143,8 @@ function linesFor(title: string, visit: number): string[] {
         visit === 0
           ? t('Hm. A {cls}. Your kit will want work before the deeper fortresses.', { cls })
           : t('Back again? Turn round, let me see what the fortresses left on you.'),
-        t('Armor here is earned, not bought. Every set has a home, and the fortresses drop pieces for whoever is fighting in them. How rare a piece is was decided the moment it fell: the harder the run, the finer the steel.'),
+        t('Armor here is earned, not bought. Every set has a home, and the fortresses drop pieces for whoever is fighting in them. How rare a piece is was decided the moment it fell: the harder the run, the finer the steel. Any blade can fall plain or legendary; only the Pride weapons are what they are.'),
+        t('Your bag holds sixty weapons and a hundred and twenty pieces of armor, what you wear aside. Every find is its own piece: two of the same sword, one plain and one legendary, sit side by side. When the bag is full, what the fortresses leave stays on the floor. Bring me what you do not need and I pay coin for it, more for finer steel and for anything the fire has been fed.'),
         t('Chest, shoulders and legs turn a blow aside; a helm and gauntlets put weight behind your own. Boots keep your wind. Four pieces of one set count for more, and the whole set doubles it.'),
         t('The fire behind me is the upgrade pit. Feed it coin and steel and the steel comes back keener: the same blade, a level stronger, up to ten. It never refuses.'),
         t('The first levels come cheap. The higher the steel already stands, the more coin the fire asks for the next. A blade forged to its tenth is worth showing off.'),

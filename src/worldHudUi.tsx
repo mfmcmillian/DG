@@ -282,15 +282,15 @@ function LootToasts({ right, bottom, scale: s }: { right: number; bottom: number
     width: cardWidth, flexDirection: 'column-reverse', pointerFilter: 'none' }}>
     {toasts.map((toast, i) => {
       const fade = Math.max(0, Math.min(1, (TOAST_SECONDS - toast.age) / 0.9))
-      const rarity = RARITIES[rarityOf(toast.item.id)]
+      const rarity = RARITIES[toast.rarity]
       const rarityColor = rarity.color
       const subtitle = toast.salvaged > 0
-        ? `${toast.wrongClass ? t('Cut for another class') : t('Already owned')}  ·  ${t('salvaged for {n} coins', { n: toast.salvaged })}`
-        : toast.raised ? `${t(RARITIES[toast.raised].label)}  ·  ${t('{set} set', { set: toast.item.setLabel ?? '' })}  ·  ${t('your copy is now this rare')}`
+        ? `${toast.wrongClass ? t('Cut for another class') : t('Already carried')}  ·  ${t('salvaged for {n} coins', { n: toast.salvaged })}`
+        : toast.full ? `${t(rarity.label)}  ·  ${t('Bag full · the Quartermaster buys extras')}`
         : toast.item.weapon ? `${t(rarity.label)}  ·  ${t(WEAPON_CLASSES[toast.item.weapon.class].label)}  ·  ${t('now in your inventory')}`
-        : `${t(rarity.label)}  ·  ${t('{set} set', { set: toast.item.setLabel ?? '' })}  ·  ${armorStatLine(toast.item) || t('now in your wardrobe')}`
+        : `${t(rarity.label)}  ·  ${t('{set} set', { set: toast.item.setLabel ?? '' })}  ·  ${armorStatLine(toast.item, RARITIES[toast.rarity].rank, 1) || t('now in your wardrobe')}`
       return <UiEntity key={`${toast.item.id}-${i}`} uiTransform={{ width: cardWidth, height: cardHeight, margin: { top: 6 * s },
-        padding: 7 * s, borderRadius: 8 * s, borderWidth: s, borderColor: withAlpha(toast.salvaged > 0 ? line : rarityColor, fade * 0.9),
+        padding: 7 * s, borderRadius: 8 * s, borderWidth: s, borderColor: withAlpha(toast.salvaged > 0 ? line : toast.full ? staminaLow : rarityColor, fade * 0.9),
         flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: withAlpha(panel, fade) }}>
         <UiEntity uiTransform={{ width: 40 * s, height: 40 * s, borderRadius: 6 * s, flexShrink: 0, pointerFilter: 'none' }}
           uiBackground={{ color: withAlpha(track, fade), textureMode: 'stretch', texture: { src: toast.item.icon } }} />
@@ -326,7 +326,12 @@ function LootCards({ found, salvaged, width, scale: s, resultKey }: { found: str
     revealedShown = 0
   }
   const age = (Date.now() - revealStart) / 1000
-  const items = found.map((id) => getEquipmentItemOrNull(id)).filter((item) => !!item)
+  // Each find is "item@rank": the copy's own rarity, not whatever the hero has in use.
+  const items = found.map((entry) => {
+    const [id, rank] = entry.split('@')
+    const item = getEquipmentItemOrNull(id)
+    return item ? { ...item, rank: Number(rank) || 0 } : undefined
+  }).filter((item) => !!item)
   const perRow = Math.max(1, Math.min(items.length || 1, Math.floor((width + CARD.gap * s) / ((CARD.w + CARD.gap) * s)), 5))
   const shown = items.slice(0, perRow * 2)
   const more = items.length - shown.length
@@ -350,7 +355,7 @@ function LootCards({ found, salvaged, width, scale: s, resultKey }: { found: str
       {row.map((item, k) => {
         const index = r * perRow + k
         const up = index < revealed
-        const rarity = RARITIES[rarityOf(item.id)]
+        const rarity = RARITIES[rarityOf(item.id, item.rank)]
         const fresh = up && age - REVEAL_FIRST - index * REVEAL_EVERY < 0.3
         const grow = fresh ? 1.06 : 1
         return <UiEntity key={`${item.id}-${index}`} uiTransform={{ width: CARD.w * s * grow, height: CARD.h * s * grow, margin: { left: (CARD.gap / 2) * s, right: (CARD.gap / 2) * s },
@@ -511,6 +516,7 @@ function TalkPanel({ width, bottom, scale: s, open }: { width: number; bottom: n
   const panelWidth = Math.min(600 * s, width * 0.72)
   const last = open.index + 1 >= open.lines.length
   const action = last ? open.action : undefined
+  const offer = open.offer
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - panelWidth) / 2, bottom },
     width: panelWidth, flexDirection: 'column', alignItems: 'center', padding: { top: 10 * s, bottom: 10 * s, left: 16 * s, right: 16 * s },
     borderRadius: 8 * s, borderWidth: s, borderColor: line, pointerFilter: 'block' }} uiBackground={{ color: panel }}>
@@ -519,8 +525,11 @@ function TalkPanel({ width, bottom, scale: s, open }: { width: number; bottom: n
     <Label value={open.lines[open.index] ?? ''} color={white} font="sans-serif" fontSize={13 * s} textAlign="middle-center" textWrap="wrap"
       uiTransform={{ width: '100%', height: 66 * s, margin: { top: 4 * s, bottom: 8 * s }, pointerFilter: 'none' }} />
     <UiEntity uiTransform={{ flexDirection: 'row', justifyContent: 'center', pointerFilter: 'none' }}>
+      {offer && <UiEntity uiTransform={{ margin: { right: 8 * s }, pointerFilter: 'none' }}>
+        <MenuAction id="talk-offer" text={offer.label} onClick={offer.run} width={180} height={34} scale={s} fontSize={13} primary />
+      </UiEntity>}
       {action && <UiEntity uiTransform={{ margin: { right: 8 * s }, pointerFilter: 'none' }}>
-        <MenuAction id="talk-action" text={action.label} onClick={action.run} width={220} height={34} scale={s} fontSize={13} primary />
+        <MenuAction id="talk-action" text={action.label} onClick={action.run} width={220} height={34} scale={s} fontSize={13} primary={!offer} />
       </UiEntity>}
       <TextAction id="talk-next" text={last ? t('Farewell') : `${t('Go on')}  (${open.index + 1}/${open.lines.length})`} onClick={nextLine} scale={s} width={150} />
       {!last && <UiEntity uiTransform={{ margin: { left: 8 * s }, pointerFilter: 'none' }}>

@@ -367,6 +367,16 @@ function armorRankLookup(loadout: EquipmentLoadout, packed: string | undefined):
   return (itemId) => ranks.get(itemId) ?? 0
 }
 
+/** Every hero whose owner passes `member`, ours included: the wallet and the character it plays. */
+export function heroMembers(member: (id: string) => boolean): Array<{ id: string; cid: string }> {
+  const out: Array<{ id: string; cid: string }> = []
+  for (const [entity, hero] of heroes()) {
+    const id = heroOwner(entity, hero)
+    if (member(id) && hero.cid && !out.some((h) => h.id === id)) out.push({ id, cid: hero.cid })
+  }
+  return out
+}
+
 /** The character (`cid`) of every hero body whose owner passes `member`, ours included. */
 export function heroCharacters(member: (id: string) => boolean): string[] {
   const out: string[] = []
@@ -609,11 +619,18 @@ export function publishEnemyFx(fx: EnemyFxNet) {
 }
 
 /** `item` is a weapon id from the catalog, or '' when the kill dropped no weapon. */
-export function publishLoot(party: string, x: number, z: number, coin: number, heart: number, item: string, boss: boolean, up = 0) {
+/**
+ * Announce a drop. Coins and hearts go to the whole party; gear goes to one
+ * hero (`to`), each member having had their own roll, with the copy's id
+ * (`uid`) minted here so the bag can tell copies apart.
+ */
+export function publishLoot(
+  party: string, x: number, z: number, coin: number, heart: number, item: string, boss: boolean, up = 0, to?: string, uid = ''
+) {
   if (!isHost()) return
   rememberHeartDrop(x, z, heart)
   metricsLoot(coin, item, boss)
-  sendNet('loot', { party, x, z, coin, heart, item, boss, up })
+  sendNet('loot', { party, x, z, coin, heart, item, boss, up, uid }, to ? { to: [to] } : undefined)
 }
 
 export type HeroHit = {
@@ -629,7 +646,7 @@ let onImpact: ((p: ImpactNet, from: string) => void) | undefined
 let onShot: ((p: ShotNet) => void) | undefined
 let onEnemies: ((party: string, list: EnemySnap[]) => void) | undefined
 let onEnemyFx: ((fx: EnemyFxNet) => void) | undefined
-let onLoot: ((party: string, x: number, z: number, coin: number, heart: number, item: string, boss: boolean, up: number) => void) | undefined
+let onLoot: ((party: string, x: number, z: number, coin: number, heart: number, item: string, boss: boolean, up: number, uid: string) => void) | undefined
 let onJoin: ((id: string) => void) | undefined
 let onLeave: ((id: string) => void) | undefined
 let onHitSkill: ((id: string, i: number, skill: string) => void) | undefined
@@ -705,7 +722,7 @@ function bindClient() {
     sinceSnapshot = 0
     onEnemies?.(msg.party, msg.list.map((e) => ({ ...e, m: e.m as EquipmentMotion })))
   })
-  onNet('loot', (msg) => onLoot?.(msg.party, msg.x, msg.z, msg.coin, msg.heart, msg.item, msg.boss, msg.up || 0))
+  onNet('loot', (msg) => onLoot?.(msg.party, msg.x, msg.z, msg.coin, msg.heart, msg.item, msg.boss, msg.up || 0, msg.uid || ''))
   onNet('enemyFx', (msg) => onEnemyFx?.(msg))
   engine.addSystem(tickNetDiag)
   engine.addSystem(watchForServer)

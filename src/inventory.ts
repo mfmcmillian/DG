@@ -37,20 +37,30 @@ import {
 } from './equipmentAvatar'
 import {
   getCommittedLoadout as readCommittedLoadout,
+  isItemCommitted,
   setCommittedLoadout
 } from './equipmentState'
 import { classAllowsArmor, classAllowsWeapon, HERO_CLASSES } from './heroClasses'
 import { isGearNew, markGearSeen } from './newGear'
 import { setLegendaryAura } from './legendaryAura'
 import { legendaryPieces } from './weapons'
+import { addGear, bagRow, bagRowsOf, clearBag, ownsGear, setActiveGear, setGearProbes } from './shared/gearBag'
 
 export type InventoryFilter = 'all' | 'other' | EquipmentSlot
+
+/**
+ * One card in the backpack: a copy the hero owns, or the free copy of a
+ * starter piece (`virtual`, not in the bag, shown until a real one is found).
+ */
+export type InventoryEntry = { uid: string; item: EquipmentItem; rank: number; level: number; virtual: boolean }
 
 export interface InventoryState {
   open: boolean
   characterId: string
   selectedSlot: EquipmentSlot
   selectedItemId: string
+  /** The copy the selected card stands for ('s:<item>' for a starter's free copy). */
+  selectedUid: string
   filter: InventoryFilter
   page: number
   loading: 'loading' | 'ready' | 'error'
@@ -61,6 +71,7 @@ const state: InventoryState = {
   characterId: 'vanguard',
   selectedSlot: 'chest',
   selectedItemId: '',
+  selectedUid: '',
   filter: 'all',
   page: 0,
   loading: 'loading'
@@ -87,6 +98,7 @@ export function initializeInventory(
   onApply = applyEquipment
   if (initialized) return
   initialized = true
+  setGearProbes((id) => (getEquipmentItemOrNull(id)?.slot === 'weapon' ? 'weapon' : 'armor'), isItemCommitted)
   engine.addSystem(inventorySystem)
 }
 
@@ -115,12 +127,16 @@ export function getInventoryIsDirty(): boolean {
 // Loot-gated gear: locked until the dungeon hands it over. Every loot weapon
 // but the class starters (sword, axe, bow, staff) is earned, and so is every
 // armor piece but the starter outfit every new hero wears (DEFAULT_LOADOUTS):
-// a set's pieces drop in its realm.
+// a set's pieces drop in its realm. What is owned lives in the bag
+// (src/shared/gearBag.ts), one row per copy; a starter has a free copy besides.
 export const STARTER_WEAPON = HERO_CLASSES.blade.starterWeapon
 const STARTER_WEAPONS = new Set<string>(Object.values(HERO_CLASSES).map((c) => c.starterWeapon))
 const STARTER_ARMOR = new Set<string>(Object.values(DEFAULT_LOADOUTS).flatMap((l) => EQUIPMENT_SLOTS.filter((s) => s.id !== 'weapon').map((s) => l[s.id])))
 const GATED_ITEMS = EQUIPMENT_ITEMS.filter((item) => item.weapon ? !STARTER_WEAPONS.has(item.id) : !!item.realm && !STARTER_ARMOR.has(item.id)).map((item) => item.id)
-const lockedItems = new Set<string>(GATED_ITEMS)
+const GATED = new Set<string>(GATED_ITEMS)
+
+/** The uid a starter's free copy goes by in the backpack. */
+export const FREE_COPY = 's:'
 
 /** Gear the hero's class can use: a weapon of its classes, armor cut for it (empty slots always pass). */
 function usableByHero(item: EquipmentItem, characterId: string = getEquippedCharacter().id): boolean {
@@ -134,13 +150,13 @@ export function isUsableByHero(id: string, characterId: string = getEquippedChar
   return !!item && usableByHero(item, characterId)
 }
 
-/** A slot that holds gear the hero has not earned (a save from before armor was) goes back to the class default. */
+/** A slot that holds gear the hero has not earned (a save from before armor was, or a copy since sold) goes back to the class default. */
 export function enforceOwnedLoadout(characterId: string): boolean {
   const committed = readCommittedLoadout(characterId)
   const defaults = DEFAULT_LOADOUTS[characterId] ?? DEFAULT_LOADOUTS.vanguard
   let changed = false
   for (const slot of EQUIPMENT_SLOTS) {
-    if (lockedItems.has(committed[slot.id])) {
+    if (isInventoryItemLocked(committed[slot.id])) {
       committed[slot.id] = defaults[slot.id]
       changed = true
     }
@@ -149,62 +165,78 @@ export function enforceOwnedLoadout(characterId: string): boolean {
   return changed
 }
 
+/** Gear that must be earned and has not been: no copy in the bag. */
 export function isInventoryItemLocked(id: string): boolean {
-  return lockedItems.has(id)
+  return GATED.has(id) && !ownsGear(id)
 }
 
-/** Returns true when the item was locked and is now available. */
-export function unlockInventoryItem(id: string): boolean {
-  return lockedItems.delete(id)
-}
-
-/** Developer: hand over every loot weapon and armor piece so they can be inspected on the hero. Saved with the hero like any unlock. */
+/** Developer: hand over one copy of every loot weapon and armor piece so they can be inspected on the hero. Saved with the hero like any find. */
 export function unlockAllWeapons(): number {
   let granted = 0
-  for (const id of GATED_ITEMS) if (lockedItems.delete(id)) granted++
+  for (const id of GATED_ITEMS) if (!ownsGear(id) && addGear(id, 0, 1, `d-${id}`, true)) granted++
   return granted
 }
 
-/** Developer: back to the starter gear only. Unequips anything that is no longer owned. */
+/** Developer: back to the starter gear only. The bag is emptied; anything worn from it comes off. */
 export function relockAllWeapons() {
-  for (const id of GATED_ITEMS) lockedItems.add(id)
+  clearBag()
   const character = getEquippedCharacter()
   if (enforceOwnedLoadout(character.id)) onApply(character)
 }
 
-/** Gated items the hero has earned; what a saved hero carries between sessions. */
+/** Gated items the hero owns at least one copy of. */
 export function getUnlockedItems(): string[] {
-  return GATED_ITEMS.filter((id) => !lockedItems.has(id))
+  return GATED_ITEMS.filter((id) => ownsGear(id))
 }
 
 /** Weapons this hero can equip right now: the class starter plus everything looted for the class. */
 export function ownedWeaponIds(characterId: string = getEquippedCharacter().id): string[] {
-  return EQUIPMENT_ITEMS.filter((item) => item.slot === 'weapon' && !lockedItems.has(item.id) && usableByHero(item, characterId)).map((item) => item.id)
+  return EQUIPMENT_ITEMS.filter((item) => item.slot === 'weapon' && !isInventoryItemLocked(item.id) && usableByHero(item, characterId)).map((item) => item.id)
 }
 
 /** Armor this hero owns: the starter outfit and every piece the dungeons handed over (empty slots excluded). */
 export function ownedArmorIds(): string[] {
-  return EQUIPMENT_ITEMS.filter((item) => !item.weapon && item.slot !== 'weapon' && !!item.set && !lockedItems.has(item.id)).map((item) => item.id)
+  return EQUIPMENT_ITEMS.filter((item) => !item.weapon && item.slot !== 'weapon' && !!item.set && !isInventoryItemLocked(item.id)).map((item) => item.id)
 }
 
-/**
- * The backpack: what the hero owns first, then the class's gear still to be
- * found (dimmed, with where it drops), so the wardrobe reads as something to
- * fill out. Locked pieces can be previewed but not equipped.
- */
-/** The backpack shows what the hero owns: the class's gear that has been earned (or never needed earning). */
-export function getInventoryItems(): EquipmentItem[] {
-  return filtered(wardrobe().filter((item) => !lockedItems.has(item.id)))
+/** The cards for one catalog item: its free copy when it is a starter the hero owns no copy of, then every copy in the bag. */
+function entriesFor(item: EquipmentItem): InventoryEntry[] {
+  const rows = bagRowsOf(item.id)
+  const out: InventoryEntry[] = []
+  if (!GATED.has(item.id) && !rows.length) out.push({ uid: FREE_COPY + item.id, item, rank: 0, level: 1, virtual: true })
+  for (const row of rows) out.push({ uid: row.uid, item, rank: row.rank, level: row.level, virtual: false })
+  return out
+}
+
+/** The card `uid` stands for, if the hero still has it. */
+export function inventoryEntry(uid: string): InventoryEntry | undefined {
+  if (uid.startsWith(FREE_COPY)) {
+    const item = getEquipmentItemOrNull(uid.slice(FREE_COPY.length))
+    return item && !GATED.has(item.id) ? { uid, item, rank: 0, level: 1, virtual: true } : undefined
+  }
+  const row = bagRow(uid)
+  const item = row ? getEquipmentItemOrNull(row.item) : undefined
+  return row && item ? { uid, item, rank: row.rank, level: row.level, virtual: false } : undefined
+}
+
+/** The backpack: every copy the hero owns that its class can use, under the current filter. */
+export function getInventoryItems(): InventoryEntry[] {
+  return filtered(wardrobe()).flatMap(entriesFor)
 }
 
 /** Owned gear not yet looked at, whatever the filter (the backpack's NEW tags and tab dots). */
-export function getInventoryNewItems(): EquipmentItem[] {
-  return wardrobe().filter((item) => !lockedItems.has(item.id) && isGearNew(item.id))
+export function getInventoryNewItems(): InventoryEntry[] {
+  return wardrobe().flatMap(entriesFor).filter((entry) => isGearNew(entry.uid))
 }
 
 /** Everything the class could ever own under the current filter, for the "N of M found" count. */
 export function getInventoryTotalCount(): number {
   return filtered(wardrobe()).length
+}
+
+/** How many different items of the class's gear the hero has found (the starters count). */
+export function getInventoryFoundCount(): number {
+  return filtered(wardrobe()).filter((item) => !isInventoryItemLocked(item.id)).length
 }
 
 function wardrobe(): EquipmentItem[] {
@@ -216,6 +248,11 @@ function filtered(items: EquipmentItem[]): EquipmentItem[] {
   if (state.filter === 'all') return items
   if (state.filter === 'other') return items.filter((item) => item.slot !== 'head' && item.slot !== 'chest' && item.slot !== 'weapon')
   return items.filter((item) => item.slot === state.filter)
+}
+
+/** The copy of an item the hero uses, as a card uid: the active row, or the free copy. */
+function activeUidOf(itemId: string): string {
+  return bagRowsOf(itemId)[0]?.uid ?? FREE_COPY + itemId
 }
 
 /** Runs once when the inventory closes (the lobby uses it to come back). */
@@ -241,13 +278,14 @@ export function openInventory(options: { onClose?: () => void } = {}): boolean {
   state.loading = 'loading'
   previewLoadout = getCommittedLoadout()
   state.selectedItemId = previewLoadout[state.selectedSlot]
+  state.selectedUid = activeUidOf(state.selectedItemId)
   equipmentWasApplied = false
   pendingUnequip = undefined
   facing = MENU_PREVIEW_FACING
   generation++
 
   // Something new in the bag: open on its page so it is not missed.
-  const firstNew = getInventoryItems().findIndex((item) => isGearNew(item.id))
+  const firstNew = getInventoryItems().findIndex((entry) => isGearNew(entry.uid))
   if (firstNew >= 0) state.page = Math.floor(firstNew / PAGE_SIZE)
 
   stage = createMenuPreviewStage('inventory')
@@ -284,19 +322,35 @@ export function selectInventorySlot(slot: EquipmentSlot) {
   if (!state.open || !EQUIPMENT_SLOTS.some((entry) => entry.id === slot)) return
   state.selectedSlot = slot
   state.selectedItemId = getCommittedLoadout()[slot]
+  state.selectedUid = activeUidOf(state.selectedItemId)
   state.filter = slot
   state.page = 0
   revertInventoryPreview()
 }
 
-export function selectInventoryItem(id: string) {
+/**
+ * Pick a card. A copy of the item already on the hero needs no preview: it
+ * becomes the copy in use there and then (same look, its own rarity and
+ * level). Anything else is tried on first.
+ */
+export function selectInventoryItem(uid: string) {
   if (!state.open) return
-  const item = EQUIPMENT_ITEMS.find((entry) => entry.id === id)
-  if (!item) return
-  markGearSeen(item.id)
+  const entry = inventoryEntry(uid)
+  if (!entry) return
+  markGearSeen(uid)
+  const item = entry.item
   state.selectedSlot = item.slot
   state.selectedItemId = item.id
-  const next = getCommittedLoadout()
+  state.selectedUid = uid
+  const committed = getCommittedLoadout()
+  if (committed[item.slot] === item.id && !getInventoryIsDirty()) {
+    if (!entry.virtual && setActiveGear(uid)) {
+      equipmentWasApplied = true
+      if (committedPreview !== undefined) previewAura(committedPreview, committed)
+    }
+    return
+  }
+  const next = { ...committed }
   next[item.slot] = item.id
   replaceCandidate(next)
 }
@@ -317,7 +371,7 @@ export function setInventoryPage(page: number) {
 export function equipSelectedItem() {
   if (!state.open || state.loading !== 'ready' || !getInventoryIsDirty()) return
   const item = EQUIPMENT_ITEMS.find((entry) => entry.id === state.selectedItemId && entry.slot === state.selectedSlot)
-  if (!item || previewLoadout?.[item.slot] !== item.id || lockedItems.has(item.id)) return
+  if (!item || previewLoadout?.[item.slot] !== item.id || isInventoryItemLocked(item.id)) return
   const readyPreview = candidatePreview ?? committedPreview
   if (readyPreview === undefined || getEquipmentLoading(readyPreview) !== 'ready') return
   if (candidatePreview === undefined && item.slot !== 'weapon') return
@@ -325,6 +379,8 @@ export function equipSelectedItem() {
   const committed = getCommittedLoadout()
   committed[item.slot] = item.id
   setCommittedLoadout(state.characterId, committed)
+  // The card picked is the copy that goes on.
+  if (!state.selectedUid.startsWith(FREE_COPY) && bagRow(state.selectedUid)?.item === item.id) setActiveGear(state.selectedUid)
   previewLoadout = getCommittedLoadout()
   pendingUnequip = undefined
   equipmentWasApplied = true
@@ -343,6 +399,7 @@ export function unequipSelectedSlot() {
   const next = getCommittedLoadout()
   next[state.selectedSlot] = item.id
   state.selectedItemId = item.id
+  state.selectedUid = FREE_COPY + item.id
   replaceCandidate(next, true)
 }
 
@@ -354,6 +411,7 @@ export function revertInventoryPreview() {
   candidatePreview = undefined
   previewLoadout = getCommittedLoadout()
   state.selectedItemId = previewLoadout[state.selectedSlot]
+  state.selectedUid = activeUidOf(state.selectedItemId)
   if (committedPreview === undefined || getEquipmentLoading(committedPreview) === 'error') {
     removePreview(committedPreview)
     committedPreview = createPreview(previewLoadout)

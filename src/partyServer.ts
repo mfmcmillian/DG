@@ -54,8 +54,10 @@ type Party = {
 type SavedHero = {
   cid: string; body: string; hair: string; hc: string; skin: string
   loadout: string; coins: number; unlocks: string[]; prefs?: string
-  /** "itemId:ranks" per weapon the pit has raised (absent on saves from before it). */
+  /** Before the bag: "itemId:ranks" per raised item (absent on saves from before the pit). */
   ups?: string[]
+  /** The bag, "uid|item|rank|level|a" per copy (src/shared/gearBag.ts); absent on saves from before 2.8.35. */
+  bag?: string[]
 }
 
 /** How long the party may stand on the results before the host walks it back to the hall. */
@@ -105,7 +107,7 @@ function bind() {
     const id = context.from.toLowerCase()
     const hero: SavedHero = {
       cid: msg.cid, body: msg.body, hair: msg.hair, hc: msg.hc, skin: msg.skin,
-      loadout: msg.loadout, coins: msg.coins, unlocks: [...msg.unlocks], prefs: msg.prefs, ups: [...msg.ups]
+      loadout: msg.loadout, coins: msg.coins, unlocks: [...msg.unlocks], prefs: msg.prefs, ups: [...msg.ups], bag: [...msg.bag]
     }
     heroes.set(id, hero)
     void persist(id, 'hero', hero)
@@ -210,9 +212,16 @@ function heroFactsOf(address: string): HeroFacts | undefined {
   const p = progress.get(id) ?? []
   const hero = heroes.get(id)
   let ranks = 0
-  for (const entry of hero?.ups ?? []) {
-    const level = Number(entry.slice(entry.lastIndexOf(':') + 1).split('/')[1] ?? '1')
-    if (Number.isFinite(level) && level > 1) ranks += level - 1
+  if (hero?.bag?.length) {
+    for (const entry of hero.bag) {
+      const level = Number(entry.split('|')[3] ?? '1')
+      if (Number.isFinite(level) && level > 1) ranks += level - 1
+    }
+  } else {
+    for (const entry of hero?.ups ?? []) {
+      const level = Number(entry.slice(entry.lastIndexOf(':') + 1).split('/')[1] ?? '1')
+      if (Number.isFinite(level) && level > 1) ranks += level - 1
+    }
   }
   return {
     cid, class: heroClassOf(cid).label, level: levelForXp(best), xp: best, totalXp,
@@ -266,6 +275,7 @@ async function answerLoad(from: string) {
     unlocks: hero?.unlocks ?? [],
     prefs: hero?.prefs ?? '',
     ups: hero?.ups ?? [],
+    bag: hero?.bag ?? [],
     progress: p,
     xp: JSON.stringify(xp)
   }, { to: [from] })

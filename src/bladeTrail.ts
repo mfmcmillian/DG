@@ -150,21 +150,21 @@ export type BladeTint = Tint
 export function setBladeContactHandler(fn: (world: Vector3, tint: Tint, heavy: boolean) => void) {
   onContact = fn
 }
-const RARITY_GLOW: Record<string, number> = { common: 0.8, uncommon: 0.9, rare: 1, epic: 1.15, legendary: 1.3 }
-
-/** The look a weapon leaves: by its class, Pride overriding, rarer glowing brighter. */
+/**
+ * The look a weapon leaves: by its class, Pride overriding. Rarity belongs to the copy, not
+ * the weapon, and a remote swing does not say which copy, so the trail does not read it.
+ */
 export function bladeTintFor(weapon: string | undefined): Tint {
   const info = weapon ? getEquipmentItemOrNull(weapon)?.weapon : undefined
   if (!info) return STEEL
   if (info.pride) return GOLD
-  const base =
+  return (
     info.class === 'dagger' ? QUICK :
     info.class === 'mace' ? IRON :
     info.class === 'axe' || info.class === 'hammer' || info.class === 'club' || info.class === 'great' ? EMBER :
     info.class === 'staff' || info.class === 'sceptre' ? ARCANE :
     info.class === 'bow' ? WIND : STEEL
-  const k = RARITY_GLOW[info.rarity] ?? 1
-  return k === 1 ? base : { ...base, coreGlow: base.coreGlow * k, hazeGlow: base.hazeGlow * k }
+  )
 }
 
 /** Whether a swing by this weapon leaves a trail: the weapon and the clip must both be baked. */

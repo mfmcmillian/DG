@@ -13,12 +13,13 @@
 import { engine } from '@dcl/sdk/ecs'
 import { attackRange, isHeavyMotion, isRangedAttack, resolveCombatHit, WeaponMotion } from '../combatActions'
 import { PIT_CENTER, inPitArena } from '../dungeon/pit'
-import { heroClassOf, weaponPoolFor } from '../heroClasses'
+import { classAllowsArmor, heroClassOf, weaponPoolFor } from '../heroClasses'
 import { heroDownFor, reviveHero, strikeHero } from '../heroVitals'
 import { heroBonusesFor } from '../heroXp'
 import { metricsHeroCount, metricsMark, metricsRaid } from '../metrics'
 import { allFighters, heroCharacters, heroWeapon, heroWeaponLevel, heroWeaponRank, NetFighter } from '../multiplayer'
 import { onNet, sendNet } from '../net'
+import { newGearUid } from '../shared/gearBag'
 import { LEVELS, RAID_PARTY } from '../shared/levels'
 import { rollArmorDrop, rollArmorRank, rollRaidDrop, weaponStats } from '../weapons'
 import {
@@ -616,13 +617,13 @@ function fall() {
     metricsMark(id, 'raid-clear')
     metricsHeroCount(id, 'raidClears')
     const mine = heroCharacters((owner) => owner === id)
-    const item = rollRaidDrop(mine.length ? weaponPoolFor(mine) : pool)
+    const { id: item, up } = rollRaidDrop(mine.length ? weaponPoolFor(mine) : pool)
     const f = allFighters().find((x) => x.address === id)
     const at = f ? f.position : { x: center.x, z: center.z + 6 }
-    sendNet('loot', { party: RAID_PARTY, x: at.x, z: at.z, coin: 60, heart: 1, item, boss: true, up: 0 }, { to: [id] })
-    // And a piece of armor from any open realm, always legendary: the Colossus rolls as a Hard boss.
-    const armor = rollArmorDrop('boss', LEVELS.map((l) => l.realm))
-    if (armor) sendNet('loot', { party: RAID_PARTY, x: at.x + 0.6, z: at.z - 0.6, coin: 0, heart: 0, item: armor, boss: true, up: rollArmorRank('boss', 2) }, { to: [id] })
+    sendNet('loot', { party: RAID_PARTY, x: at.x, z: at.z, coin: 60, heart: 1, item, boss: true, up, uid: item ? newGearUid() : '' }, { to: [id] })
+    // And a piece of armor from any open realm, cut for this hero, always legendary: the Colossus rolls as a Hard boss.
+    const armor = rollArmorDrop('boss', LEVELS.map((l) => l.realm), Math.random, (piece) => mine.every((cid) => classAllowsArmor(cid, piece.hero)))
+    if (armor) sendNet('loot', { party: RAID_PARTY, x: at.x + 0.6, z: at.z - 0.6, coin: 0, heart: 0, item: armor, boss: true, up: rollArmorRank('boss', 2), uid: newGearUid() }, { to: [id] })
     announce('kill', item ? 'The Colossus yields a Legendary.' : 'The Colossus is broken.', xp, [id])
   }
   cb.saveXp()

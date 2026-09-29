@@ -141,7 +141,9 @@ export const Messages = {
     /** The Warlord's drop: presented with a beam. */
     boss: Schemas.Boolean,
     /** Rarity steps the item fell with above its page (src/weapons.ts rollArmorRank, rollWeaponLoot). */
-    up: Schemas.Int
+    up: Schemas.Int,
+    /** The copy's id in the bag (src/shared/gearBag.ts), minted by the host; '' for coins and hearts. */
+    uid: Schemas.String
   }),
   /** Client -> server: a one-line status the server prints, so client state shows in `server-logs`. */
   diag: Schemas.Map({ note: Schemas.String }),
@@ -184,8 +186,10 @@ export const Messages = {
     unlocks: Schemas.Array(Schemas.String),
     /** Player settings as JSON (camera, dev panel), same reasoning as loadout. */
     prefs: Schemas.String,
-    /** The pit's upgrades, "itemId:ranks" per raised weapon. */
-    ups: Schemas.Array(Schemas.String)
+    /** Before the bag (2.8.34): "itemId:ranks" per raised item. Kept so old saves still read; new saves send it empty. */
+    ups: Schemas.Array(Schemas.String),
+    /** The bag: "uid|item|rank|level|a" per copy the wallet owns (src/shared/gearBag.ts). */
+    bag: Schemas.Array(Schemas.String)
   }),
   /** Client -> server: send me what you have saved for my wallet. */
   loadHero: Schemas.Map({ v: Schemas.Int }),
@@ -203,6 +207,8 @@ export const Messages = {
     unlocks: Schemas.Array(Schemas.String),
     prefs: Schemas.String,
     ups: Schemas.Array(Schemas.String),
+    /** The bag as saved; empty for a save from before it, which the client converts from `unlocks` and `ups`. */
+    bag: Schemas.Array(Schemas.String),
     progress: Schemas.Array(Schemas.Int),
     /** Experience per champion as JSON ({ cid: xp }); the server owns and awards it. */
     xp: Schemas.String

@@ -129,14 +129,14 @@ function pct(v: number): string {
 }
 
 /** What a piece is worth, in words: "-3% damage taken", "+2% damage dealt", "+6 stamina". */
-export function armorStatLine(item: EquipmentItem | undefined): string {
-  const s = armorPieceStats(item)
+export function armorStatLine(item: EquipmentItem | undefined, rank?: number, level?: number): string {
+  const s = armorPieceStats(item, rank === undefined ? undefined : () => rank, level === undefined ? undefined : () => level as number)
   const parts: string[] = []
   if (s.toughness) parts.push(t('-{pct}% damage taken', { pct: pct(s.toughness) }))
   if (s.might) parts.push(t('+{pct}% damage dealt', { pct: pct(s.might) }))
   if (s.stamina) parts.push(t('+{n} stamina', { n: s.stamina }))
   if (s.health) parts.push(t('+{n} health', { n: s.health }))
-  const level = item ? upgradeLevelOf(item.id) : 1
+  if (level === undefined) level = item ? upgradeLevelOf(item.id) : 1
   if (level > 1) parts.push(t('Level {n}: +{pct}% to all of it', { n: level, pct: pct((levelMultiplier(level) - 1) * 100) }))
   return parts.join(' · ')
 }

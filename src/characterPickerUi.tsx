@@ -13,6 +13,7 @@ import { kitTexture, UI_KIT } from './uiKit'
 import { isSettingsOpen } from './settings'
 import { SettingsUi } from './settingsUi'
 import { isUpgradePickerOpen, UpgradeUi } from './upgradeUi'
+import { isSellOpen, SellUi } from './sellUi'
 import {
   isPickerFromSave, isSavedHeroReady, isTitleLooking, isTitleOpen, isTitleReady, isTitleResuming,
   pickerBackToTitle, titleBegin, titleContinue, titleResumeSaved
@@ -436,7 +437,7 @@ export function setupCharacterPickerUi() {
   ReactEcsRenderer.setUiRenderer(
     () => getCombatState().open ? <CombatUi /> : getInventoryState().open ? <InventoryUi />
       : isTitleOpen() ? <TitleScreen /> : getPickerState().open ? <Picker />
-        : isSettingsOpen() ? <SettingsUi /> : getLobbyState().open ? <LobbyUi /> : isUpgradePickerOpen() ? <UpgradeUi /> : <WorldHudUi />,
+        : isSettingsOpen() ? <SettingsUi /> : getLobbyState().open ? <LobbyUi /> : isUpgradePickerOpen() ? <UpgradeUi /> : isSellOpen() ? <SellUi /> : <WorldHudUi />,
     // Every layout is drawn in virtual pixels of one screen (uiScale.ts); the SDK
     // scales it to the canvas and keeps the root inside the device's safe margins.
     { virtualWidth: VIRTUAL_SCREEN.width, virtualHeight: VIRTUAL_SCREEN.height, screenInset: 'device' }

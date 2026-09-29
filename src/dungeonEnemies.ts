@@ -21,7 +21,7 @@ import {
   combatDistance, CombatPose, COMBAT_RULES, createSwing, facesCombatant, HeroAttackMotion, isHeavyMotion, isRangedAttack,
   MAX_COMBAT_HEALTH, MELEE, resolveCombatHit, resolveSkillHit, Swing, WeaponModifiers, WeaponMotion
 } from './combatActions'
-import { classOfCharacter, heroClassOf, shotProfile, skillShotProfile, weaponPoolFor } from './heroClasses'
+import { classAllowsArmor, classOfCharacter, heroClassOf, shotProfile, skillShotProfile, weaponPoolFor } from './heroClasses'
 import { SkillDef, skillById } from './shared/skills'
 import { clearProjectiles, launchShot, ProjectileTarget, setProjectileTargets, SHOT_HEIGHT } from './projectiles'
 import { BOG_GONG } from './dungeon/bogmaw'
@@ -65,9 +65,10 @@ import {
 import { kickCrawlerCamera } from './dungeon/crawlerCamera'
 import { clearLoot, grantLootDirect, lootKindOf, spawnLoot } from './loot'
 import { rollArmorDrop, rollArmorRank, rollWeaponLoot, weaponStats } from './weapons'
+import { newGearUid } from './shared/gearBag'
 import { AttackContext, maxHealth } from './roamingCombat'
 import {
-  allFighters, EnemyFxNet, EnemySnap, heroArmorLevelOf, heroArmorRankOf, heroCharacters, HeroHit, heroLoadout, heroPosition, heroWeapon, heroWeaponLevel, heroWeaponRank, ImpactNet, isHeadless, isHost, localAddress, NetFighter, publishEnemies,
+  allFighters, EnemyFxNet, EnemySnap, heroArmorLevelOf, heroArmorRankOf, heroCharacters, HeroHit, heroMembers, heroLoadout, heroPosition, heroWeapon, heroWeaponLevel, heroWeaponRank, ImpactNet, isHeadless, isHost, localAddress, NetFighter, publishEnemies,
   publishEnemyFx, publishHitEnemy, publishHitSkill, publishImpact, publishLoot, publishRespawn, publishShot, publishSkillCast, setMultiplayerHandlers
 } from './multiplayer'
 
@@ -2588,47 +2589,46 @@ function kill(e: Enemy) {
   sim.slain++
   const coin = Math.round((e.boss ? 10 : 2 + Math.floor(Math.random() * 3)) * sim.coinScale)
   const heart = e.boss ? 2 : Math.random() < 0.35 ? 1 : 0
-  // The Warlord always drops a weapon, once; guards often, the rest rarely.
-  let item = ''
-  let up = 0
-  if (!e.boss || !sim.bossDropGiven) {
-    // Drawn from what the party can wield: an all-archer party never sees a mace.
-    const party = sim.party
-    const characters = heroCharacters((id) => partyOf(id) === party)
-    if (!isHeadless() && partyOf(localAddress()) === party) {
-      const mine = getPlayerCharacterState().characterId
-      if (mine) characters.push(mine)
+  const source = e.boss ? 'boss' : e.archetype.role === 'elite' ? 'elite' : 'grunt'
+  // Coins and hearts are the party's; everyone sees the same.
+  publishLoot(sim.party, e.position.x, e.position.z, coin, heart, '', e.boss, 0)
+  // Gear is rolled for each hero in turn, from what their own class can wield
+  // or wear, so two heroes over one kill find different things. The Warlord
+  // always drops a weapon, once; guards often, the rest rarely.
+  if (e.boss && sim.bossDropGiven) return
+  const party = sim.party
+  const members = heroMembers((id) => partyOf(id) === party)
+  if (!isHeadless() && partyOf(localAddress()) === party && !members.some((m) => m.id === localAddress())) {
+    const mine = getPlayerCharacterState().characterId
+    if (mine) members.push({ id: localAddress(), cid: mine })
+  }
+  for (const member of members) {
+    // A weapon falls as rare as the roll made it: `up` steps above the page.
+    const loot = rollWeaponLoot(source, sim.level.id, sim.diff.id, Math.random, weaponPoolFor([member.cid]))
+    if (loot.id) publishLoot(party, e.position.x, e.position.z, 0, 0, loot.id, e.boss, loot.up, member.id, newGearUid())
+    // Armor: a piece of one of this realm's sets, cut for this hero. The boss
+    // always leaves one; the rest only when they left no weapon.
+    if (e.boss || !loot.id) {
+      const armor = rollArmorDrop(source, ARMOR_DROP_REALMS[sim.level.realm] as ArmorRealm[], Math.random, (piece) => classAllowsArmor(member.cid, piece.hero))
+      // How rare the piece is follows the difficulty it fell on, not the map.
+      if (armor) publishLoot(party, e.position.x + 0.4, e.position.z - 0.4, 0, 0, armor, e.boss, rollArmorRank(source, sim.diff.id), member.id, newGearUid())
     }
-    const loot = rollWeaponLoot(
-      e.boss ? 'boss' : e.archetype.role === 'elite' ? 'elite' : 'grunt', sim.level.id, sim.diff.id, Math.random, weaponPoolFor(characters))
-    item = loot.id
-    up = loot.up
   }
-  if (e.boss && item) sim.bossDropGiven = true
-  // A weapon falls as rare as the roll made it: `up` steps above the page.
-  publishLoot(sim.party, e.position.x, e.position.z, coin, heart, item, e.boss, up)
-  // Armor: a piece of one of this realm's sets, cut for someone in the party. The
-  // boss always leaves one; the rest only when they left no weapon.
-  if (e.boss || !item) {
-    const source = e.boss ? 'boss' : e.archetype.role === 'elite' ? 'elite' : 'grunt'
-    const armor = rollArmorDrop(source, ARMOR_DROP_REALMS[sim.level.realm] as ArmorRealm[])
-    // How rare the piece is follows the difficulty it fell on, not the map.
-    if (armor) publishLoot(sim.party, e.position.x + 0.4, e.position.z - 0.4, 0, 0, armor, e.boss, rollArmorRank(source, sim.diff.id))
-  }
+  if (e.boss) sim.bossDropGiven = true
 }
 
-function grantLoot(party: string, x: number, z: number, coin: number, heart: number, item: string, boss: boolean, up: number) {
+function grantLoot(party: string, x: number, z: number, coin: number, heart: number, item: string, boss: boolean, up: number, uid: string) {
   if (!clientSim || party !== clientSim.party) return
   const origin = Vector3.create(x, COURTYARD.characterFloorY, z)
   if (heart > 0) spawnLoot(origin, 'heart', heart)
   const gear = item ? getEquipmentItemOrNull(item) : undefined
   if (boss) {
-    // The boss's reward is the run's prize: it goes straight to every hero in the party.
-    grantLootDirect(coin, gear?.id, up)
+    // The boss's reward is the run's prize: it goes straight to the hero where they stand.
+    grantLootDirect(coin, gear?.id, up, uid)
     return
   }
   if (coin > 0) spawnLoot(origin, 'coin', coin)
-  if (gear) spawnLoot(origin, lootKindOf(gear), 1, item, boss, up)
+  if (gear) spawnLoot(origin, lootKindOf(gear), 1, item, boss, up, uid)
 }
 
 function presentDeath(e: Enemy) {

@@ -6,6 +6,8 @@ export type Prefs = {
   camera?: unknown; camV?: unknown; dev?: unknown; nat?: unknown; open?: unknown; lang?: unknown; hints?: unknown; fresh?: unknown; lv?: unknown
   /** Saved since the Blade class started on a plain sword (2.8.15); absent, the hero began with the Prism Saber and owns it. */
   ps?: unknown
+  /** Saved since gear became copies in a bag (2.8.35); absent, `unlocks` and `ups` are converted into one. */
+  bg?: unknown
 }
 
 export function parsePrefs(json: string | undefined): Prefs {
