@@ -22,12 +22,22 @@
  */
 
 import { engine } from '@dcl/sdk/ecs'
-import { Storage } from '@dcl/sdk/server'
+import { EnvVar, Storage } from '@dcl/sdk/server'
 import { DEVELOPERS } from './shared/developers'
+import { GAME_VERSION } from './version'
 import { updateVisit } from './visitLog'
 
 const SUMMARY_KEY = 'metrics:summary'
 const DAY_PREFIX = 'metrics:day:'
+/**
+ * The dashboard on the website reads the summary from here; the server posts
+ * it after each write, signed with the METRICS_KEY server environment
+ * variable (`npx sdk-commands storage env set METRICS_KEY --value …`), which
+ * the site holds too. No key, no post: the counters still land in storage.
+ */
+const DASHBOARD_URL = 'https://decentracraft-nine.vercel.app/api/metrics'
+/** How many days the dashboard is sent; it draws at most a quarter. */
+const PUSH_DAYS = 180
 /** How many days the summary keeps; older ones stay in their own day records. */
 const SUMMARY_DAYS = 400
 /** How long a player can be gone and still be on the same session when they come back. */
@@ -183,6 +193,36 @@ async function write(day: DayStats) {
     await Storage.set(SUMMARY_KEY, summary)
   } catch (error) {
     console.log(`[Metrics] could not write ${day.day}`, error)
+  }
+  await push()
+}
+
+let pushKey: string | undefined | null
+let pushWarned = false
+
+/** The summary to the website's dashboard, when there is a key to sign it with. */
+async function push() {
+  if (pushKey === undefined) {
+    try {
+      pushKey = (await EnvVar.get('METRICS_KEY')) || null
+    } catch {
+      pushKey = null
+    }
+  }
+  if (!pushKey) {
+    if (!pushWarned) console.log('[Metrics] no METRICS_KEY; the dashboard is not fed')
+    pushWarned = true
+    return
+  }
+  try {
+    const response = await fetch(DASHBOARD_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-metrics-key': pushKey },
+      body: JSON.stringify({ game: 'antrom', version: GAME_VERSION, updated: Date.now(), days: summary.days.slice(-PUSH_DAYS) })
+    })
+    if (!response.ok) console.log(`[Metrics] dashboard refused the summary: ${response.status}`)
+  } catch (error) {
+    console.log('[Metrics] could not reach the dashboard', error)
   }
 }
 
