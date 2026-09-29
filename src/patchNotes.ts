@@ -6,6 +6,9 @@
 export type PatchNote = { version: string; notes: string[] }
 
 export const PATCH_NOTES: PatchNote[] = [
+  { version: '2.8.39', notes: [
+    'Smoother frames: the bag is no longer read end to end every frame.'
+  ] },
   { version: '2.8.36', notes: [
     'Your party\'s health shows under your own bars in a run; a downed ally reads DOWN.'
   ] },

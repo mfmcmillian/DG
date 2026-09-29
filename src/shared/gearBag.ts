@@ -40,6 +40,10 @@ export const MAX_RANK = 4
 const bag = new Map<string, GearInstance>()
 /** For each item the hero owns copies of, the copy in use: the one on the hero, or the one to put on. */
 const active = new Map<string, string>()
+/** How many copies of each item the bag holds, so owning and the copy in use are answered without a scan. */
+const copies = new Map<string, number>()
+/** Counts up on every change, so a caller that runs each frame (the save's dirty check) can compare a number instead of the bag. */
+let revision = 0
 
 let kindOf: (item: string) => BagKind = () => 'weapon'
 let wornProbe: (item: string) => boolean = () => false
@@ -94,16 +98,26 @@ export function bagRowsOf(item: string): GearInstance[] {
 }
 
 export function ownsGear(item: string): boolean {
-  for (const row of bag.values()) if (row.item === item) return true
-  return false
+  return (copies.get(item) ?? 0) > 0
 }
 
-/** The copy of `item` the hero uses: the one marked active, else the best owned. */
+/** Changes on every write; equal numbers mean an unchanged bag. */
+export function bagRevision(): number {
+  return revision
+}
+
+/**
+ * The copy of `item` the hero uses: the one marked active, else the best
+ * owned. Read many times a frame (the synced look, the legendary check, every
+ * stat), so an item with no copies answers from the count, not a scan.
+ */
 export function activeGear(item: string | undefined): GearInstance | undefined {
-  if (!item) return undefined
+  if (!item || !(copies.get(item) ?? 0)) return undefined
   const chosen = bag.get(active.get(item) ?? '')
   if (chosen && chosen.item === item) return chosen
-  return bagRowsOf(item)[0]
+  const best = bagRowsOf(item)[0]
+  if (best) active.set(item, best.uid)
+  return best
 }
 
 /** How many rarity steps `id`'s copy in use has been raised (0 when never, or when the hero owns none). */
@@ -148,7 +162,9 @@ export function addGear(item: string, rank: number, level = 1, uid = newGearUid(
   if (!force && bagFull(kindOf(item))) return undefined
   const row: GearInstance = { uid, item, rank: clampRank(rank), level: clampLevel(level) }
   bag.set(uid, row)
+  copies.set(item, (copies.get(item) ?? 0) + 1)
   if (!active.has(item)) active.set(item, uid)
+  revision++
   return row
 }
 
@@ -157,11 +173,15 @@ export function removeGear(uid: string): GearInstance | undefined {
   const row = bag.get(uid)
   if (!row) return undefined
   bag.delete(uid)
+  const left = (copies.get(row.item) ?? 1) - 1
+  if (left > 0) copies.set(row.item, left)
+  else copies.delete(row.item)
   if (active.get(row.item) === uid) {
     active.delete(row.item)
     const next = bagRowsOf(row.item)[0]
     if (next) active.set(row.item, next.uid)
   }
+  revision++
   return row
 }
 
@@ -169,6 +189,7 @@ export function setGearLevel(uid: string, level: number): boolean {
   const row = bag.get(uid)
   if (!row) return false
   row.level = clampLevel(level)
+  revision++
   return true
 }
 
@@ -177,12 +198,15 @@ export function setActiveGear(uid: string): boolean {
   const row = bag.get(uid)
   if (!row) return false
   active.set(row.item, uid)
+  revision++
   return true
 }
 
 export function clearBag() {
   bag.clear()
   active.clear()
+  copies.clear()
+  revision++
 }
 
 // --- the save ----------------------------------------------------------------------------
@@ -204,8 +228,10 @@ export function loadBag(entries: readonly string[] | undefined) {
     if (!uid || !item) continue
     const row: GearInstance = { uid, item, rank: clampRank(Number(rankText)), level: clampLevel(Number(levelText)) }
     bag.set(uid, row)
+    copies.set(item, (copies.get(item) ?? 0) + 1)
     if (flag === 'a' || !active.has(item)) active.set(item, uid)
   }
+  revision++
 }
 
 /**

@@ -16,7 +16,7 @@ import { onNet, sendNet } from './net'
 import { setProgress } from './party'
 import { requestHeroPreload } from './preloadPlan'
 import { loadSettings, serializeSettings } from './settings'
-import { addGear, clearBag, convertLegacyBag, loadBag, serializeBag } from './shared/gearBag'
+import { addGear, bagRevision, clearBag, convertLegacyBag, loadBag, serializeBag } from './shared/gearBag'
 import { parsePrefs } from './shared/prefs'
 import { printedRankOf } from './weapons'
 
@@ -153,7 +153,8 @@ function parseLoadout(json: string): EquipmentLoadout | undefined {
 function fingerprint(cid: string): string {
   const a = getCommittedAppearance(cid)
   const l = getCommittedLoadout(cid)
-  return [cid, a.bodyType, a.hairStyle, a.hairColor, a.skinTone, ...EQUIPMENT_SLOTS.map((s) => l[s.id]), ...serializeBag(), serializeSettings()].join('#')
+  // The bag goes in as its revision, not its rows: this runs every frame, and a bag of a hundred copies is not for serializing that often.
+  return [cid, a.bodyType, a.hairStyle, a.hairColor, a.skinTone, ...EQUIPMENT_SLOTS.map((s) => l[s.id]), bagRevision(), serializeSettings()].join('#')
 }
 
 function update(dt: number) {
