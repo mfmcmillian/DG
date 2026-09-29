@@ -4,7 +4,9 @@
  * A player's `visit` record in server-side storage: the explorer they arrive
  * with (`hello`, sent by the client from getExplorerInformation), how many
  * times they have come, and the first time they reached each milestone the
- * client marks (title screen shown, champion picked, a dungeon entered). It
+ * client marks (title screen shown, champion picked, a dungeon entered), and
+ * what the metrics (src/metrics.ts) add: sessions, seconds in the scene, the
+ * days they were here, and the milestones the server sees for itself. It
  * answers "did the visitor on mobile get past the title?" after the fact:
  *
  *   npx sdk-commands storage player get visit --address 0x...
@@ -12,6 +14,7 @@
  * The join notice (src/joinNotify.ts) reads the platform from here.
  */
 import { Storage } from '@dcl/sdk/server'
+import { metricsHello, metricsMark } from './metrics'
 import { onNet } from './net'
 
 export type Visit = {
@@ -22,13 +25,19 @@ export type Visit = {
   first: number
   last: number
   visits: number
+  /** Sessions: arrivals more than half an hour after the last time they left. */
+  sessions: number
+  /** Seconds spent in the scene, over every session. */
+  seconds: number
+  /** Whole UTC days (since the epoch) with at least one session; the report reads retention from it. */
+  days: number[]
   /** Milestone -> epoch ms of the first time it was reached. */
   marks: Record<string, number>
 }
 
 const KEY = 'visit'
 /** Milestones the client may mark; anything else is dropped (the message is public). */
-const MARKS = new Set(['title', 'champion', 'champion-new', 'dungeon', 'raid'])
+const MARKS = new Set(['title', 'play', 'champion', 'champion-new', 'dungeon', 'raid'])
 
 const records = new Map<string, Visit>()
 const loading = new Map<string, Promise<Visit>>()
@@ -42,7 +51,8 @@ export function initializeVisitLog() {
     const platform = String(msg.platform || '').slice(0, 16)
     const agent = String(msg.agent || '').slice(0, 48)
     console.log(`[Client ${context.from}] explorer ${agent || '?'} on ${platform || '?'}`)
-    void record(context.from, (v) => {
+    metricsHello(context.from, platform)
+    void updateVisit(context.from, (v) => {
       if (v.platform === platform && v.agent === agent) return false
       v.platform = platform
       v.agent = agent
@@ -51,21 +61,17 @@ export function initializeVisitLog() {
   })
   onNet('mark', (msg, context) => {
     if (!context) return
-    const what = String(msg.what || '')
+    const what = String(msg.what || '').slice(0, 32)
     const base = what.split(':')[0]
     if (!MARKS.has(base)) return
     console.log(`[Client ${context.from}] reached ${what}`)
-    void record(context.from, (v) => {
-      if (v.marks[what]) return false
-      v.marks[what] = Date.now()
-      return true
-    })
+    metricsMark(context.from, what)
   })
 }
 
 /** A player walked in: another visit on their record. */
 export function noteArrival(address: string) {
-  void record(address, (v) => {
+  void updateVisit(address, (v) => {
     v.visits += 1
     v.last = Date.now()
     return true
@@ -95,6 +101,8 @@ async function load(address: string): Promise<Visit> {
       const v: Visit = {
         platform: stored?.platform ?? '', agent: stored?.agent ?? '',
         first: stored?.first ?? now, last: stored?.last ?? now, visits: stored?.visits ?? 0,
+        sessions: stored?.sessions ?? 0, seconds: stored?.seconds ?? 0,
+        days: Array.isArray(stored?.days) ? stored!.days : [],
         marks: stored?.marks ?? {}
       }
       records.set(id, v)
@@ -107,7 +115,7 @@ async function load(address: string): Promise<Visit> {
 }
 
 /** Apply a change to the player's record and write it back when it changed anything. */
-async function record(address: string, change: (v: Visit) => boolean) {
+export async function updateVisit(address: string, change: (v: Visit) => boolean) {
   const id = address.toLowerCase()
   const v = await load(id)
   if (!change(v)) return

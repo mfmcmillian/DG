@@ -5,6 +5,7 @@
 // be scraped and spammed, as the last one was.
 
 import { AvatarBase, engine, PlayerIdentityData } from '@dcl/sdk/ecs'
+import { metricsEnter, metricsLeave, metricsPresent } from './metrics'
 import { noteArrival, platformOf } from './visitLog'
 
 const JOIN_RELAY_URL = 'https://decentracraft-nine.vercel.app/api/join'
@@ -55,6 +56,10 @@ function update(dt: number) {
   for (const address of inScene) present.add(address)
   // Only now, with the count including the newcomer, announce them.
   for (const address of inScene) if (!previous.has(address)) arrived(address)
+  // The metrics see every coming and going, not just the announced ones.
+  for (const address of inScene) if (!previous.has(address)) metricsEnter(address)
+  for (const address of previous) if (!inScene.has(address)) metricsLeave(address)
+  metricsPresent(present.size)
 
   for (const [address, waited] of [...pending]) {
     const next = waited + step

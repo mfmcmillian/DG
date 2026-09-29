@@ -75,6 +75,7 @@ export function isPickerFromSave(): boolean {
 
 export function titleBegin() {
   if (!open || !isTitleReady() || resuming || isTitleLooking()) return
+  markMilestone('play')
   pickerFromSave = getHeroSaveState().found && !getPickerState().hasCreatedCharacter
   changing = false
   closeSceneCamera(session)
@@ -94,6 +95,7 @@ export function pickerBackToTitle() {
 /** A hero made earlier this session: just drop the title. */
 export function titleContinue() {
   if (!open || !isTitleReady() || resuming || !getPickerState().hasCreatedCharacter) return
+  markMilestone('play')
   closeSceneCamera(session)
   session = undefined
   open = false
@@ -106,6 +108,7 @@ export function titleContinue() {
  */
 export function titleResumeSaved() {
   if (!open || !isTitleReady() || resuming || !isSavedHeroReady()) return
+  markMilestone('play')
   const current = session
   resuming = true
   executeTask(async () => {

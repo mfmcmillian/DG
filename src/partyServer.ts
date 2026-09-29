@@ -17,6 +17,7 @@ import { createRunSim, destroyRunSim, runStatus } from './dungeonEnemies'
 import { healHero, heroHealth, heroMaxHealth, RAID_RECOVER_SECONDS, RECOVER_SECONDS, reviveHero, setRecoverPolicy } from './heroVitals'
 import { addXp, heroLevel, setXpRecord, xpRecordOf } from './heroXp'
 import { heroCharacters, isHeadless, onHostStart, setMultiplayerHandlers } from './multiplayer'
+import { metricsMark, metricsParty, metricsRaid, metricsRun, metricsXp, setMetricsLevelProbe } from './metrics'
 import { onNet, sendNet } from './net'
 import { HUB, setPartyLookup } from './partyLookup'
 import {
@@ -24,7 +25,7 @@ import {
   RAID_OPEN, RAID_PARTY
 } from './shared/levels'
 import { initializeColossusServer } from './raid/colossusServer'
-import { clearXp, killXp, XpRecord } from './shared/progression'
+import { clearXp, killXp, levelForXp, XpRecord } from './shared/progression'
 import { prefsHaveDevTools, prefsOpenAll } from './shared/prefs'
 
 type PartyState = 'open' | 'running' | 'done'
@@ -86,6 +87,13 @@ export function initializePartyServer() {
 
 function bind() {
   if (isHeadless()) setPartyLookup(phaseOf)
+  // The metrics note a hero's level as they leave; only the party server knows it.
+  setMetricsLevelProbe((address) => {
+    const id = address.toLowerCase()
+    if (!xpLoaded.has(id)) return undefined
+    const cid = championOf(id)
+    return cid ? heroLevel(id, cid) : undefined
+  })
   onNet('party', (msg, context) => {
     if (!context) return
     handleAction(context.from.toLowerCase(), msg.action, msg.party, msg.level, msg.diff)
@@ -188,6 +196,7 @@ function awardXp(id: string, amount: number, why: 'kill' | 'clear') {
   if (!cid) return
   const xp = addXp(id, cid, amount)
   xpDirty.add(id)
+  metricsXp(id, amount, levelForXp(xp - Math.round(amount)), levelForXp(xp))
   sendNet('xp', { id, cid, xp, gained: Math.round(amount), why })
 }
 
@@ -288,6 +297,7 @@ function handleAction(id: string, action: string, partyId: string, level: number
         doors: action === 'go' ? elapsed + DOOR_SECONDS : 0
       }
       parties.set(party.id, party)
+      metricsParty('formed')
       console.log(`[Server] party ${party.id} ${action === 'go' ? 'going' : 'created'} by ${id}`)
       break
     }
@@ -297,6 +307,7 @@ function handleAction(id: string, action: string, partyId: string, level: number
       if (party.members.includes(id)) return
       leaveParty(id, false)
       party.members.push(id)
+      metricsParty('joined')
       // Joining is the pick; the leader still has to start (or the doors close).
       party.ready.add(id)
       if (party.doors > 0) party.doors = Math.max(party.doors, elapsed + JOIN_GRACE_SECONDS)
@@ -335,6 +346,8 @@ function handleAction(id: string, action: string, partyId: string, level: number
       leaveParty(id, false)
       raid.members.push(id)
       restoreHero(id)
+      metricsRaid('join')
+      metricsMark(id, 'raid')
       console.log(`[Server] ${id} descends to the Pit (${raid.members.length} inside)`)
       break
     }
@@ -411,6 +424,8 @@ function beginRun(party: Party) {
   for (const m of party.members) restoreHero(m)
   createRunSim(party.id, party.level, party.diff)
   party.total = runStatus(party.id)?.total ?? 0
+  metricsRun('enter', party.level, { members: party.members.length })
+  for (const m of party.members) metricsMark(m, `dungeon:${party.level}`)
   console.log(`[Server] party ${party.id} started level ${party.level + 1} (${DIFFICULTIES[party.diff].name}) with ${party.members.length} hero(es), run ${party.run}`)
 }
 
@@ -439,6 +454,7 @@ function leaveParty(id: string, announce = true) {
   party.ready.delete(id)
   // Walking out of a fight (or its results) lands in the hall on your feet.
   if (party.state !== 'open') restoreHero(id)
+  if (party.state === 'running' && party.id !== RAID_PARTY) metricsRun('leave', party.level)
   if (party.id === RAID_PARTY) {
     // The arena stays; the Colossus notices on its own.
   } else if (party.members.length === 0) {
@@ -458,6 +474,8 @@ function finishRun(party: Party, won: boolean) {
   // Going deeper is a fresh pick for every member; the leader's click counts as theirs.
   party.ready = new Set()
   console.log(`[Server] party ${party.id} ${won ? 'cleared' : 'fell in'} level ${party.level + 1} after ${(elapsed - party.started).toFixed(0)}s`)
+  metricsRun(won ? 'clear' : 'wipe', party.level, { seconds: elapsed - party.started })
+  if (won) for (const member of party.members) metricsMark(member, 'clear')
   if (won) {
     const level = LEVELS[party.level]
     const diff = difficultyById(party.diff)

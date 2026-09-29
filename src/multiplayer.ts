@@ -9,6 +9,7 @@ import { EquipmentLoadout, EQUIPMENT_SLOTS, sanitizeLoadout } from './equipmentC
 import { dropHero, heroHealth, initializeHeroVitals, rememberHeartDrop, resetHero } from './heroVitals'
 import { HeroBody, HeroLook, HeroView } from './shared/heroBody'
 import { room } from './shared/messages'
+import { metricsLoot, metricsUpgrade } from './metrics'
 import { enterSolo, isSolo, onNet, sendNet } from './net'
 import { GAME_VERSION } from './version'
 
@@ -611,6 +612,7 @@ export function publishEnemyFx(fx: EnemyFxNet) {
 export function publishLoot(party: string, x: number, z: number, coin: number, heart: number, item: string, boss: boolean, up = 0) {
   if (!isHost()) return
   rememberHeartDrop(x, z, heart)
+  metricsLoot(coin, item, boss)
   sendNet('loot', { party, x, z, coin, heart, item, boss, up })
 }
 
@@ -745,6 +747,7 @@ function bindServer() {
   })
   onNet('pitEvent', (msg, context) => {
     if (!context || isSolo()) return
+    if (msg.beat === 'result') metricsUpgrade(context.from, !!msg.success)
     sendNet('pitEvent', { ...msg, id: context.from.toLowerCase() })
   })
   onNet('hitSkill', (msg, context) => {

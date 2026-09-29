@@ -8,6 +8,7 @@ import { engine } from '@dcl/sdk/ecs'
 import { MAX_COMBAT_HEALTH } from './combatActions'
 import { armorBonuses } from './armor'
 import { heroBonusesFor } from './heroXp'
+import { metricsDeath } from './metrics'
 import { heroArmorLevelOf, heroArmorRankOf, heroCharacters, heroLoadout, heroPosition } from './multiplayer'
 import { onNet, sendNet } from './net'
 
@@ -156,7 +157,10 @@ export function strikeHero(
   const toughness = heroBonusesFor(id, cid).toughness * buffToughness(id) * armorBonuses(heroLoadout(id), heroArmorRankOf(id), heroArmorLevelOf(id)).toughness
   const dealt = blocked || dodged ? 0 : Math.max(0, Math.round(damage * toughness))
   v.health = Math.max(0, v.health - dealt)
-  if (v.health === 0) v.deadFor = 0
+  if (v.health === 0) {
+    v.deadFor = 0
+    metricsDeath(id)
+  }
   sendNet('hitPlayer', { id, damage: dealt, stagger, yaw, health: v.health, blocked, dodged })
 }
 

@@ -7,6 +7,7 @@ import { initializeDungeonEnemies } from './dungeonEnemies'
 import { initializePartyServer } from './partyServer'
 import { initializeJoinNotify } from './joinNotify'
 import { initializeVisitLog } from './visitLog'
+import { initializeMetrics } from './metrics'
 import { HUB_LEVEL } from './shared/levels'
 
 /**
@@ -24,5 +25,6 @@ export function initServer() {
   initializeDungeonEnemies()
   initializePartyServer()
   initializeVisitLog()
+  initializeMetrics()
   initializeJoinNotify()
 }

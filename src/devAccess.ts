@@ -8,9 +8,7 @@ import { executeTask } from '@dcl/sdk/ecs'
 import { getRealm } from '~system/Runtime'
 import { localAddress } from './multiplayer'
 import { getSettings } from './settings'
-
-/** Wallets allowed the developer tools in the deployed scene (lower case). */
-const DEVELOPERS = new Set<string>(['0xfe2d424af0df49bb3316cb2e9f574b0d09cf98ad'])
+import { DEVELOPERS } from './shared/developers'
 
 let preview = false
 let asked = false

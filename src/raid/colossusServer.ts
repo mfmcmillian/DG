@@ -16,6 +16,7 @@ import { PIT_CENTER, inPitArena } from '../dungeon/pit'
 import { heroClassOf, weaponPoolFor } from '../heroClasses'
 import { heroDownFor, reviveHero, strikeHero } from '../heroVitals'
 import { heroBonusesFor } from '../heroXp'
+import { metricsMark, metricsRaid } from '../metrics'
 import { allFighters, heroCharacters, heroWeapon, heroWeaponLevel, heroWeaponRank, NetFighter } from '../multiplayer'
 import { onNet, sendNet } from '../net'
 import { LEVELS, RAID_PARTY } from '../shared/levels'
@@ -191,6 +192,7 @@ function update(dt: number) {
         brain.dealt.clear()
         brain.aggro.clear()
         announce('wake', 'The chains groan. The Colossus stirs.')
+        metricsRaid('wake')
         console.log('[Colossus] wakes')
       }
       break
@@ -207,6 +209,7 @@ function update(dt: number) {
         setState('dormant')
         brain.fires = []
         announce('leave', 'Nothing stirs in the Pit. The stone settles.')
+        metricsRaid('abandon')
         console.log('[Colossus] abandoned, resets')
         break
       }
@@ -599,6 +602,7 @@ function fall() {
   setState('dying')
   brain.fires = []
   announce('fall', 'THE CHAINED COLOSSUS IS BROKEN')
+  metricsRaid('clear')
   console.log('[Colossus] falls')
   let total = 0
   for (const v of brain.dealt.values()) total += v
@@ -609,6 +613,7 @@ function fall() {
     const share = total > 0 ? (brain.dealt.get(id) ?? 0) / total : 1 / Math.max(1, members.length)
     const xp = Math.round(XP_KILL * (0.5 + 0.5 * Math.max(XP_PARTICIPATION_MIN, Math.min(1, share * members.length))))
     cb.awardXp(id, xp)
+    metricsMark(id, 'raid-clear')
     const mine = heroCharacters((owner) => owner === id)
     const item = rollRaidDrop(mine.length ? weaponPoolFor(mine) : pool)
     const f = allFighters().find((x) => x.address === id)
@@ -641,6 +646,7 @@ function wiping(dt: number): boolean {
     brain.pts = []
     brain.fires = []
     announce('wipe', 'THE PARTY HAS FALLEN')
+    metricsRaid('wipe')
     console.log('[Colossus] wipes the party')
     return true
   }
