@@ -121,16 +121,39 @@ function legacySaves(): Promise<Saves> {
   return legacy
 }
 
-async function seed(id: string) {
+/**
+ * Whether the wallet already has a hero here. Asked of the service directly:
+ * Storage.player.get answers null for "absent" and for "the request failed"
+ * alike, and only a confirmed absence may be seeded over.
+ */
+async function heroPresent(id: string): Promise<boolean | undefined> {
+  const base = await getStorageServerUrl()
+  const res = await signedFetch({ url: `${base}/players/${encodeURIComponent(id)}/values/hero`, init: { method: 'GET', headers: {} } })
+  if (res.ok) return true
+  if (res.status === 404) return false
+  console.log(`[Server] could not check ${id} for a hero: ${res.status} ${res.statusText} ${res.body || ''}`.slice(0, 300))
+  return undefined
+}
+
+/** Resolves true when the wallet is settled (seeded, already here, or not in the file); false when it should be tried again. */
+async function seed(id: string): Promise<boolean> {
   const entry = (await legacySaves())[id]
-  if (!entry) return
+  if (!entry) return true
   try {
-    const have = await Storage.player.get(id, 'hero')
-    if (have) return
-    for (const [key, value] of Object.entries(entry)) await Storage.player.set(id, key, value)
+    const present = await heroPresent(id)
+    if (present === undefined) return false
+    if (present) return true
+    for (const [key, value] of Object.entries(entry)) {
+      if (!(await Storage.player.set(id, key, value))) {
+        console.log(`[Server] seeding ${id} stopped at ${key}; will try again on the next read`)
+        return false
+      }
+    }
     console.log(`[Server] seeded ${id} from ${LEGACY_FILE} (${Object.keys(entry).join(', ')})`)
+    return true
   } catch (error) {
     console.log(`[Server] could not seed ${id}`, error)
+    return false
   }
 }
 
@@ -144,7 +167,9 @@ export function seedLegacySave(address: string): Promise<void> {
   const id = address.toLowerCase()
   let pending = seeding.get(id)
   if (!pending) {
-    pending = seed(id)
+    pending = seed(id).then((settled) => {
+      if (!settled) seeding.delete(id)
+    })
     seeding.set(id, pending)
   }
   return pending

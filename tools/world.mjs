@@ -14,7 +14,10 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 
-const WORLD = { name: 'dungeons.dcl.eth', placesConfig: { optOut: true } }
+// No Places opt-out: the storage service finds a World's scene through the
+// Places API, so an unlisted World gets "Scene not found in Places API" on
+// every save and load.
+const WORLD = { name: 'dungeons.dcl.eth' }
 const WORLDS_CONTENT = 'https://worlds-content-server.decentraland.org'
 
 const path = 'scene.json'
