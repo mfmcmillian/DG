@@ -43,7 +43,7 @@ function targetVolume(): number {
 function musicSystem(dt: number) {
   if (voice === undefined) return
   const want = trackHere()
-  const target = want === clip ? targetVolume() : 0
+  const target = want && want === clip ? targetVolume() : 0
   const step = (MUSIC_VOLUMES[MUSIC_VOLUMES.length - 1] / FADE_SECONDS) * dt
   level = level < target ? Math.min(target, level + step) : Math.max(target, level - step)
 
@@ -55,10 +55,16 @@ function musicSystem(dt: number) {
     source.playing = clip !== '' && targetVolume() > 0
     return
   }
-  const source = AudioSource.getMutable(voice)
+  // Look before touching: getMutable marks the component changed even when
+  // nothing is written, and a change every frame is a message to the renderer
+  // every frame. Only a fade, a settings change or a swap writes.
+  const current = AudioSource.get(voice)
   const playing = clip !== '' && level > 0
+  const volumeMoved = Math.abs((current.volume ?? 0) - level) > 0.001
+  if (current.playing === playing && !volumeMoved) return
+  const source = AudioSource.getMutable(voice)
   if (source.playing !== playing) source.playing = playing
-  if (Math.abs((source.volume ?? 0) - level) > 0.001) source.volume = level
+  if (volumeMoved) source.volume = level
 }
 
 export function initializeMusic() {
