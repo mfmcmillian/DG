@@ -14,7 +14,7 @@ import { getLootState, setCoins } from './loot'
 import { isClientSynced, isSoloMode, localAddress } from './multiplayer'
 import { onNet, sendNet } from './net'
 import { setProgress } from './party'
-import { requestHeroPreload, scheduleLatePreload } from './preloadPlan'
+import { requestHeroPreload, scheduleHeroPreload } from './preloadPlan'
 import { loadSettings, serializeSettings } from './settings'
 import { addGear, bagRevision, clearBag, convertLegacyBag, loadBag, serializeBag } from './shared/gearBag'
 import { parsePrefs } from './shared/prefs'
@@ -54,7 +54,7 @@ export function initializeHeroSave() {
     setProgress(msg.progress)
     if (!state.found) {
       // No champion: the picker is next, and it shows every hero.
-      scheduleLatePreload(0)
+      scheduleHeroPreload()
       return
     }
     // A champion made this session while the answer was on its way is the

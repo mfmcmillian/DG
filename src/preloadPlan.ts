@@ -3,13 +3,16 @@
 // a realm's enemies are fetched before its run starts. The rest streams in
 // behind, in the order a new player is likely to meet it.
 //
-// Every model the renderer takes in costs it a frame or two to parse, so
-// start-up asks for two groups only: the hall and the first realm. Continue
-// waits a few seconds on the first realm (whenFirstRealmReady) rather than let
-// it land as a stutter in the hall's first steps; the other heroes' looks, the
-// later realms and the raid are asked for afterwards (scheduleLatePreload),
-// once the player is in and standing still, or at once when the picker is
-// about to show the heroes.
+// Every model the renderer takes in costs it a frame or two to parse, and it
+// does so whether or not anyone is looking: a group streaming behind a player
+// in the hall is a stutter for as long as it lasts. So nothing streams behind
+// play. Start-up asks for two groups, the hall and the first realm, both
+// behind the title (Continue waits on the first realm: whenFirstRealmReady).
+// The other heroes' looks are asked for when the picker is about to show them
+// (scheduleHeroPreload). The later realms and the raid are not asked for at
+// all until a door needs them: the war table requests the picked realm and
+// shows "Preparing…" until it is in (src/lobbyUi.tsx), the Pit gate the same
+// for the raid (src/raid/raidHudUi.tsx).
 
 import { CHARACTERS } from './characterPicker'
 import { fxSoundAssets, fxTextureAssets } from './combatFx'
@@ -28,7 +31,7 @@ import { engine } from '@dcl/sdk/ecs'
 import { getPreloadGroup, isPreloadComplete, preloadGroup, PreloadGroup } from './preload'
 import { projectileAssets } from './projectiles'
 import { partSources } from './raid/colossusPose'
-import { LEVELS, RAID_LEVEL, RAID_OPEN, REALMS } from './shared/levels'
+import { LEVELS, RAID_LEVEL, REALMS } from './shared/levels'
 import { t } from './i18n'
 
 /** The hall the title looks out on, plus the small FX set every run uses. */
@@ -117,29 +120,18 @@ export function planPreload() {
   if (first) requestRealmPreload(first)
 }
 
-/** Seconds until the late groups are asked for; -1 when nothing is scheduled. */
-let lateIn = -1
-let lateRequested = false
+let heroesRequested = false
 /** Continues waiting on the first realm: resolve when it is in, or when their patience runs out. */
 const waiting: Array<{ left: number; resolve: () => void }> = []
 
 /**
- * Ask for everything the start-up plan left out, `seconds` from now: the other
- * heroes' default looks (the picker shows them), the later realms, the raid.
- * A sooner call wins over a later one; once requested, further calls do nothing.
+ * The heroes' default looks, for a picker about to show them (New game, a save
+ * that came back empty, the offline title). Once is enough.
  */
-export function scheduleLatePreload(seconds: number) {
-  if (lateRequested) return
-  lateIn = lateIn < 0 ? seconds : Math.min(lateIn, seconds)
-}
-
-function planLatePreload() {
-  if (lateRequested) return
-  lateRequested = true
-  lateIn = -1
+export function scheduleHeroPreload() {
+  if (heroesRequested) return
+  heroesRequested = true
   for (const c of CHARACTERS) requestHeroPreload(c.id, getCommittedLoadout(c.id))
-  for (const style of realmStyles().slice(1)) requestRealmPreload(style)
-  if (RAID_OPEN) requestRealmPreload(RAID_LEVEL.style)
 }
 
 /**
@@ -154,10 +146,6 @@ export function whenFirstRealmReady(capSeconds: number): Promise<void> {
 
 function tick(dt: number) {
   const span = Number.isFinite(dt) && dt > 0 ? dt : 0
-  if (lateIn >= 0) {
-    lateIn -= span
-    if (lateIn <= 0) planLatePreload()
-  }
   if (waiting.length) {
     const ready = isRealmPreloaded(firstRealmStyle())
     for (let i = waiting.length - 1; i >= 0; i--) {

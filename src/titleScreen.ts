@@ -4,7 +4,7 @@ import { closeSceneCamera, openSceneCamera, prepareSceneCameraReturn, SceneCamer
 import { MENU_CAMERA_POSITION, MENU_CAMERA_TARGET } from './menuPreviewStage'
 import { closePicker, getPickerState, openPicker } from './characterPicker'
 import { isPreloadComplete } from './preload'
-import { firstRealmStyle, heroGroupId, isRealmPreloaded, PRELOAD_HUB, scheduleLatePreload, whenFirstRealmReady } from './preloadPlan'
+import { firstRealmStyle, heroGroupId, isRealmPreloaded, PRELOAD_HUB, scheduleHeroPreload, whenFirstRealmReady } from './preloadPlan'
 import { continueSavedHero, getHeroSaveState, isHeroSavePending, isHeroSaveUnreachable } from './heroSave'
 
 let open = false
@@ -17,8 +17,6 @@ let changing = false
 let pickerFromSave = false
 /** How long Continue waits on the first realm before entering with it still streaming. */
 const FIRST_REALM_WAIT_SECONDS = 12
-/** Seconds after entering the hall before the rest of the plan downloads behind the player. */
-const LATE_PRELOAD_AFTER_SECONDS = 5
 
 export function isTitleOpen(): boolean {
   return open
@@ -86,7 +84,7 @@ export function titleBegin() {
   if (!open || !isTitleReady() || resuming || isTitleLooking()) return
   markMilestone('play')
   // The picker shows every hero: their looks download now.
-  scheduleLatePreload(0)
+  scheduleHeroPreload()
   pickerFromSave = getHeroSaveState().found && !getPickerState().hasCreatedCharacter
   changing = false
   closeSceneCamera(session)
@@ -132,7 +130,6 @@ export function titleResumeSaved() {
       closeSceneCamera(current)
       session = undefined
       open = false
-      scheduleLatePreload(LATE_PRELOAD_AFTER_SECONDS)
     } catch (error) {
       console.log('Saved hero continue failed', error)
     } finally {
