@@ -17,7 +17,8 @@ import { createRunSim, destroyRunSim, runStatus } from './dungeonEnemies'
 import { healHero, heroHealth, heroMaxHealth, RAID_RECOVER_SECONDS, RECOVER_SECONDS, reviveHero, setRecoverPolicy } from './heroVitals'
 import { addXp, heroLevel, setXpRecord, xpRecordOf } from './heroXp'
 import { heroCharacters, isHeadless, onHostStart, setMultiplayerHandlers } from './multiplayer'
-import { metricsMark, metricsParty, metricsRaid, metricsRun, metricsXp, setMetricsLevelProbe } from './metrics'
+import { HeroFacts, metricsHeroCount, metricsMark, metricsParty, metricsRaid, metricsRun, metricsXp, setMetricsHeroProbe, setMetricsLevelProbe } from './metrics'
+import { heroClassOf } from './heroClasses'
 import { onNet, sendNet } from './net'
 import { HUB, setPartyLookup } from './partyLookup'
 import {
@@ -94,6 +95,7 @@ function bind() {
     const cid = championOf(id)
     return cid ? heroLevel(id, cid) : undefined
   })
+  setMetricsHeroProbe(heroFactsOf)
   onNet('party', (msg, context) => {
     if (!context) return
     handleAction(context.from.toLowerCase(), msg.action, msg.party, msg.level, msg.diff)
@@ -187,6 +189,36 @@ async function xpOf(id: string): Promise<XpRecord> {
 /** The champion a wallet is playing right now: the synced body first, the save as a fallback. */
 function championOf(id: string): string {
   return heroCharacters((owner) => owner === id)[0] ?? heroes.get(id)?.cid ?? ''
+}
+
+/** The leaderboard's view of a wallet: its most experienced champion, and what the saves say. */
+function heroFactsOf(address: string): HeroFacts | undefined {
+  const id = address.toLowerCase()
+  if (!xpLoaded.has(id)) return undefined
+  const record = xpRecordOf(id)
+  let cid = championOf(id)
+  let best = record[cid] ?? 0
+  let totalXp = 0
+  for (const [champion, xp] of Object.entries(record)) {
+    totalXp += xp
+    if (xp > best) {
+      best = xp
+      cid = champion
+    }
+  }
+  if (!cid) return undefined
+  const p = progress.get(id) ?? []
+  const hero = heroes.get(id)
+  let ranks = 0
+  for (const entry of hero?.ups ?? []) {
+    const level = Number(entry.slice(entry.lastIndexOf(':') + 1).split('/')[1] ?? '1')
+    if (Number.isFinite(level) && level > 1) ranks += level - 1
+  }
+  return {
+    cid, class: heroClassOf(cid).label, level: levelForXp(best), xp: best, totalXp,
+    cleared: p.filter((d) => d > 0).length, hardest: p.reduce((m, d) => Math.max(m, d), 0),
+    coins: hero?.coins ?? 0, ranks
+  }
 }
 
 /** Award experience to whichever champion the wallet is playing and tell the room. */
@@ -425,7 +457,10 @@ function beginRun(party: Party) {
   createRunSim(party.id, party.level, party.diff)
   party.total = runStatus(party.id)?.total ?? 0
   metricsRun('enter', party.level, { members: party.members.length })
-  for (const m of party.members) metricsMark(m, `dungeon:${party.level}`)
+  for (const m of party.members) {
+    metricsMark(m, `dungeon:${party.level}`)
+    metricsHeroCount(m, 'runs')
+  }
   console.log(`[Server] party ${party.id} started level ${party.level + 1} (${DIFFICULTIES[party.diff].name}) with ${party.members.length} hero(es), run ${party.run}`)
 }
 
@@ -475,7 +510,10 @@ function finishRun(party: Party, won: boolean) {
   party.ready = new Set()
   console.log(`[Server] party ${party.id} ${won ? 'cleared' : 'fell in'} level ${party.level + 1} after ${(elapsed - party.started).toFixed(0)}s`)
   metricsRun(won ? 'clear' : 'wipe', party.level, { seconds: elapsed - party.started })
-  if (won) for (const member of party.members) metricsMark(member, 'clear')
+  if (won) for (const member of party.members) {
+    metricsMark(member, 'clear')
+    metricsHeroCount(member, 'clears')
+  }
   if (won) {
     const level = LEVELS[party.level]
     const diff = difficultyById(party.diff)

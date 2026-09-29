@@ -5,7 +5,7 @@
 // be scraped and spammed, as the last one was.
 
 import { AvatarBase, engine, PlayerIdentityData } from '@dcl/sdk/ecs'
-import { metricsEnter, metricsLeave, metricsPresent } from './metrics'
+import { metricsEnter, metricsLeave, metricsPresent, setMetricsNameProbe } from './metrics'
 import { noteArrival, platformOf } from './visitLog'
 
 const JOIN_RELAY_URL = 'https://decentracraft-nine.vercel.app/api/join'
@@ -29,6 +29,7 @@ let initialized = false
 export function initializeJoinNotify() {
   if (initialized) return
   initialized = true
+  setMetricsNameProbe((address) => names.get(address.toLowerCase()))
   engine.addSystem(update)
 }
 

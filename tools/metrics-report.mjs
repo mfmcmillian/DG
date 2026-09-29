@@ -5,9 +5,14 @@
 //   node tools/metrics-report.mjs --days 7        a shorter window
 //   node tools/metrics-report.mjs summary.json    from a saved copy (raw JSON or the CLI's printout)
 //   node tools/metrics-report.mjs --csv days.csv  also writes one row per day
+//   node tools/metrics-report.mjs --web           reads what the server last pushed to the
+//                                                 dashboard instead (no signature; includes
+//                                                 the champions leaderboard)
 //
 // The storage read is `npx sdk-commands storage scene get metrics:summary`,
 // which opens the linker page for a signature; set DCL_PRIVATE_KEY to skip it.
+// The leaderboard lives under `metrics:heroes`, so it only shows up with
+// --web or a saved dashboard response.
 
 import { spawnSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
@@ -22,6 +27,8 @@ const flag = (name, fallback) => {
 }
 const windowDays = Math.max(1, Number(flag('--days', '30')) || 30)
 const csvPath = flag('--csv', '')
+const web = args.includes('--web')
+const DASHBOARD = 'https://decentracraft.app/api/metrics?game=antrom'
 const file = args.find((a) => !a.startsWith('--'))
 
 function extractJson(text) {
@@ -32,8 +39,13 @@ function extractJson(text) {
   return JSON.parse(text.slice(from, to + 1))
 }
 
-function readSummary() {
+async function readSummary() {
   if (file) return extractJson(readFileSync(file, 'utf8'))
+  if (web) {
+    const response = await fetch(DASHBOARD)
+    if (!response.ok) throw new Error(`dashboard read failed (${response.status})`)
+    return response.json()
+  }
   const cli = process.platform === 'win32' ? 'npx.cmd' : 'npx'
   const run = spawnSync(cli, ['sdk-commands', 'storage', 'scene', 'get', 'metrics:summary'], { encoding: 'utf8', stdio: ['inherit', 'pipe', 'inherit'], shell: process.platform === 'win32' })
   if (run.status !== 0) {
@@ -43,7 +55,7 @@ function readSummary() {
   return extractJson(run.stdout)
 }
 
-const summary = readSummary()
+const summary = await readSummary()
 const all = Array.isArray(summary.days) ? [...summary.days].sort((a, b) => (a.day < b.day ? -1 : 1)) : []
 if (all.length === 0) {
   console.log('No days on record yet.')
@@ -163,6 +175,17 @@ if (levelRows.length) {
     buckets[key] = (buckets[key] ?? 0) + count
   }
   line('Hero levels at leaving', Object.entries(buckets).map(([range, count]) => `${range}: ${count}`).join(' · '))
+}
+
+const heroes = Array.isArray(summary.heroes) ? summary.heroes : []
+if (heroes.length) {
+  heading('Champions (lifetime, top 10 by level)')
+  const ranked = [...heroes].sort((a, b) => (b.level || 0) - (a.level || 0) || (b.totalXp || 0) - (a.totalXp || 0)).slice(0, 10)
+  const shortAddress = (a) => `${a.slice(0, 6)}…${a.slice(-4)}`
+  for (const [i, h] of ranked.entries()) {
+    console.log(`  ${String(i + 1).padStart(2)}. ${(h.name || shortAddress(h.address)).padEnd(24)} ${(h.class || '–').padEnd(8)} lvl ${String(h.level || 0).padStart(2)}  ${String(h.totalXp || 0).padStart(7)} xp  clears ${String(h.clears || 0).padStart(3)}  deaths ${String(h.deaths || 0).padStart(3)}  colossus ${h.raidClears || 0}  ${(((h.seconds || 0) / 3600).toFixed(1) + ' h').padStart(7)}`)
+  }
+  line('Players on the board', String(heroes.length))
 }
 
 heading('Per day')

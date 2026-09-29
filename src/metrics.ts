@@ -92,7 +92,46 @@ export type DayStats = {
 export type DaySummary = Omit<DayStats, 'players'>
 type Summary = { days: DaySummary[] }
 
+/**
+ * One line per player for the leaderboard: their best champion and how far it
+ * has come, and lifetime counts the day records only hold as totals. Kept as
+ * `metrics:heroes` and sent to the dashboard with the summary.
+ */
+export type HeroRow = {
+  address: string
+  /** The avatar's name when last seen; '' until the explorer said. */
+  name: string
+  /** The champion with the most XP: its id, class label, level and XP. */
+  cid: string
+  class: string
+  level: number
+  xp: number
+  /** XP over every champion the wallet has played. */
+  totalXp: number
+  /** Levels with at least one clear, and the hardest difficulty cleared anywhere (1-based; 0 = none). */
+  cleared: number
+  hardest: number
+  runs: number
+  clears: number
+  deaths: number
+  raidClears: number
+  sessions: number
+  seconds: number
+  first: number
+  last: number
+  coins: number
+  /** Pit ranks over every piece the fire has raised. */
+  ranks: number
+}
+
+/** What the party server knows about a wallet's champions, on demand. */
+export type HeroFacts = Pick<HeroRow, 'cid' | 'class' | 'level' | 'xp' | 'totalXp' | 'cleared' | 'hardest' | 'coins' | 'ranks'>
+
 type Session = { since: number; hello: boolean }
+
+const HEROES_KEY = 'metrics:heroes'
+/** How many leaderboard lines the dashboard is sent. */
+const PUSH_HEROES = 300
 
 let active = false
 let current: DayStats | undefined
@@ -104,6 +143,40 @@ let flushIn = FLUSH_SECONDS
 const sessions = new Map<string, Session>()
 const lastLeft = new Map<string, number>()
 let levelProbe: ((address: string) => number | undefined) | undefined
+let heroProbe: ((address: string) => HeroFacts | undefined) | undefined
+let nameProbe: ((address: string) => string | undefined) | undefined
+const heroes = new Map<string, HeroRow>()
+let heroesDirty = false
+
+function emptyHero(address: string): HeroRow {
+  const now = Date.now()
+  return {
+    address, name: '', cid: '', class: '', level: 0, xp: 0, totalXp: 0, cleared: 0, hardest: 0,
+    runs: 0, clears: 0, deaths: 0, raidClears: 0, sessions: 0, seconds: 0, first: now, last: now, coins: 0, ranks: 0
+  }
+}
+
+/** The player's leaderboard line, brought up to date from the probes, then changed. */
+function touchHero(address: string, change?: (row: HeroRow) => void) {
+  if (!active) return
+  const id = address.toLowerCase()
+  let row = heroes.get(id)
+  if (!row) {
+    row = emptyHero(id)
+    heroes.set(id, row)
+  }
+  const name = nameProbe?.(id)
+  if (name) row.name = name
+  const facts = heroProbe?.(id)
+  if (facts) Object.assign(row, facts)
+  change?.(row)
+  heroesDirty = true
+}
+
+/** The leaderboard, most experienced first. */
+function heroRows(limit = Infinity): HeroRow[] {
+  return [...heroes.values()].sort((a, b) => b.totalXp - a.totalXp || b.seconds - a.seconds).slice(0, limit)
+}
 
 function emptyDay(day: string): DayStats {
   return {
@@ -187,6 +260,10 @@ async function write(day: DayStats) {
   try {
     await Storage.set(DAY_PREFIX + day.day, day)
     await Storage.set(SUMMARY_KEY, summary)
+    if (heroesDirty) {
+      heroesDirty = false
+      await Storage.set(HEROES_KEY, { rows: heroRows() })
+    }
   } catch (error) {
     console.log(`[Metrics] could not write ${day.day}`, error)
   }
@@ -214,7 +291,10 @@ async function push() {
     const response = await fetch(DASHBOARD_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-metrics-key': pushKey },
-      body: JSON.stringify({ game: 'antrom', version: GAME_VERSION, updated: Date.now(), days: summary.days.slice(-PUSH_DAYS) })
+      body: JSON.stringify({
+        game: 'antrom', version: GAME_VERSION, updated: Date.now(),
+        days: summary.days.slice(-PUSH_DAYS), heroes: heroRows(PUSH_HEROES)
+      })
     })
     if (!response.ok) console.log(`[Metrics] dashboard refused the summary: ${response.status}`)
   } catch (error) {
@@ -243,6 +323,10 @@ async function load() {
       if (page.data.length === 0 || offset >= page.pagination.total) break
     }
     current = stored ? { ...emptyDay(day), ...stored } : emptyDay(day)
+    const ledger = await Storage.get<{ rows: HeroRow[] }>(HEROES_KEY)
+    if (ledger && Array.isArray(ledger.rows)) {
+      for (const row of ledger.rows) if (row && typeof row.address === 'string') heroes.set(row.address, { ...emptyHero(row.address), ...row })
+    }
   } catch (error) {
     console.log('[Metrics] could not load; counting from now', error)
     current = emptyDay(day)
@@ -263,7 +347,7 @@ function tick(dt: number) {
   flushIn = FLUSH_SECONDS
   if (!loaded) return
   rollDay()
-  if (!dirty) return
+  if (!dirty && !heroesDirty) return
   dirty = false
   void write(current!)
 }
@@ -281,6 +365,21 @@ export function setMetricsLevelProbe(probe: (address: string) => number | undefi
   levelProbe = probe
 }
 
+/** Tells the metrics how to read a wallet's champions for the leaderboard (the party server knows). */
+export function setMetricsHeroProbe(probe: (address: string) => HeroFacts | undefined) {
+  heroProbe = probe
+}
+
+/** Tells the metrics how to read a player's avatar name (the join notice keeps them). */
+export function setMetricsNameProbe(probe: (address: string) => string | undefined) {
+  nameProbe = probe
+}
+
+/** A player's lifetime count went up by one: a run entered or cleared, a death, the Colossus broken. */
+export function metricsHeroCount(address: string, key: 'runs' | 'clears' | 'deaths' | 'raidClears') {
+  touchHero(address, (row) => { row[key]++ })
+}
+
 /** A player is in the scene. Counts them for the day and opens their session. */
 export function metricsEnter(address: string) {
   if (!active) return
@@ -296,6 +395,11 @@ export function metricsEnter(address: string) {
     if (!v.days) v.days = []
     const seenToday = v.days.includes(activeDay)
     if (!seenToday) v.days.push(activeDay)
+    touchHero(id, (row) => {
+      row.sessions = v.sessions
+      row.first = Math.min(row.first, v.first)
+      row.last = now
+    })
     withDay((day) => {
       if (!resumed) day.sessions++
       if (!(id in day.players)) {
@@ -323,6 +427,10 @@ export function metricsLeave(address: string) {
   void updateVisit(id, (v) => {
     v.seconds = (v.seconds ?? 0) + seconds
     v.last = now
+    touchHero(id, (row) => {
+      row.seconds = v.seconds
+      row.last = now
+    })
     const bounced = !!v.marks.title && !v.marks.play && seconds < BOUNCE_SECONDS
     withDay((day) => {
       day.seconds += seconds
@@ -401,11 +509,13 @@ export function metricsDeath(address: string) {
   if (!active) return
   withDay((day) => { day.deaths++ })
   metricsMark(address, 'death')
+  metricsHeroCount(address, 'deaths')
 }
 
 /** Experience awarded, and the levels it crossed. */
 export function metricsXp(address: string, amount: number, levelBefore: number, levelAfter: number) {
   if (!active) return
+  touchHero(address)
   withDay((day) => {
     day.xp += Math.max(0, Math.round(amount))
     if (levelAfter > levelBefore) day.levelUps += levelAfter - levelBefore

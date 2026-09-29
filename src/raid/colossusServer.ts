@@ -16,7 +16,7 @@ import { PIT_CENTER, inPitArena } from '../dungeon/pit'
 import { heroClassOf, weaponPoolFor } from '../heroClasses'
 import { heroDownFor, reviveHero, strikeHero } from '../heroVitals'
 import { heroBonusesFor } from '../heroXp'
-import { metricsMark, metricsRaid } from '../metrics'
+import { metricsHeroCount, metricsMark, metricsRaid } from '../metrics'
 import { allFighters, heroCharacters, heroWeapon, heroWeaponLevel, heroWeaponRank, NetFighter } from '../multiplayer'
 import { onNet, sendNet } from '../net'
 import { LEVELS, RAID_PARTY } from '../shared/levels'
@@ -614,6 +614,7 @@ function fall() {
     const xp = Math.round(XP_KILL * (0.5 + 0.5 * Math.max(XP_PARTICIPATION_MIN, Math.min(1, share * members.length))))
     cb.awardXp(id, xp)
     metricsMark(id, 'raid-clear')
+    metricsHeroCount(id, 'raidClears')
     const mine = heroCharacters((owner) => owner === id)
     const item = rollRaidDrop(mine.length ? weaponPoolFor(mine) : pool)
     const f = allFighters().find((x) => x.address === id)
