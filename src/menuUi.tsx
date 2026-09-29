@@ -14,6 +14,9 @@ export const menuColors = {
   gold: Color4.create(0.78, 0.65, 0.40, 1),
   goldHover: Color4.create(0.89, 0.78, 0.53, 1),
   cyan: Color4.create(0.40, 0.84, 0.83, 1),
+  green: Color4.create(0.36, 0.72, 0.40, 1),
+  greenHover: Color4.create(0.48, 0.82, 0.50, 1),
+  selectedGreen: Color4.create(0.07, 0.16, 0.09, 0.95),
   ink: Color4.create(0.025, 0.045, 0.07, 1),
   panel: Color4.create(0.025, 0.045, 0.07, 0.94),
   card: Color4.create(0.075, 0.105, 0.14, 0.90),
@@ -36,8 +39,8 @@ export type MenuActionProps = {
   primary?: boolean
   disabled?: boolean
   fontSize?: number
-  /** Active highlight. Gold matches the hall banners; cyan is the inventory accent. */
-  accent?: 'gold' | 'cyan'
+  /** Active highlight. Gold matches the hall banners; cyan is the inventory accent; green points somewhere aside. */
+  accent?: 'gold' | 'cyan' | 'green'
 }
 
 let hoveredAction = ''
@@ -46,15 +49,16 @@ let hoveredAction = ''
 export function MenuAction({ id, text, onClick, width, height = 42, scale: s,
   active, primary, disabled, fontSize = 16, accent = 'cyan' }: MenuActionProps) {
   const hover = hoveredAction === id && !disabled
-  const { white, muted, gold, goldHover, cyan, ink, panel, card, selectedCard, selectedGold, line } = menuColors
-  const mark = accent === 'gold' ? gold : cyan
-  const fill = accent === 'gold' ? selectedGold : selectedCard
+  const { white, muted, gold, goldHover, cyan, green, greenHover, ink, panel, card, selectedCard, selectedGold, selectedGreen, line } = menuColors
+  const mark = accent === 'gold' ? gold : accent === 'green' ? green : cyan
+  const fill = accent === 'gold' ? selectedGold : accent === 'green' ? selectedGreen : selectedCard
+  const lit = accent === 'green' ? (hover ? greenHover : green) : (hover ? goldHover : gold)
   return <UiEntity key={id}
     uiTransform={{ width: width * s, minWidth: width * s, height: height * s, flexShrink: 0,
-      borderRadius: 4 * s, borderWidth: s, borderColor: primary ? gold : active ? mark : hover ? gold : line,
+      borderRadius: 4 * s, borderWidth: s, borderColor: primary ? mark : active ? mark : hover ? mark : line,
       alignItems: 'center', justifyContent: 'center', opacity: disabled ? 0.42 : 1,
       pointerFilter: disabled ? 'none' : 'block' }}
-    uiBackground={{ color: primary ? (hover ? goldHover : gold) : active ? fill : hover ? card : panel }}
+    uiBackground={{ color: primary ? lit : active ? fill : hover ? card : panel }}
     onMouseEnter={disabled ? undefined : () => { hoveredAction = id }}
     onMouseLeave={() => { if (hoveredAction === id) hoveredAction = '' }}
     onMouseDown={disabled ? undefined : onClick}>

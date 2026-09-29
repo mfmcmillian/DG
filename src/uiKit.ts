@@ -11,7 +11,9 @@ export const UI_KIT = {
   flourish: 'images/ui/kit/flourish.png',
   bar: 'images/ui/kit/bar.png',
   crest: 'images/ui/kit/crest.png',
-  titleBg: 'images/ui/kit/title-bg.jpg'
+  titleBg: 'images/ui/kit/title-bg.jpg',
+  /** The game's crest, drawn for the title: the shield, the crossed swords and the name. */
+  titleEmblem: 'images/ui/kit/title-emblem.png'
 } as const
 
 export function kitTexture(src: string) {

@@ -1,4 +1,5 @@
 import ReactEcs, { Label, ReactEcsRenderer, UiEntity } from '@dcl/sdk/react-ecs'
+import { engine, UiCanvasInformation } from '@dcl/sdk/ecs'
 import { Color4 } from '@dcl/sdk/math'
 import { getInventoryState } from './inventory'
 import { InventoryUi } from './inventoryUi'
@@ -7,13 +8,14 @@ import { CombatUi } from './combatUi'
 import { WorldHudUi } from './worldHudUi'
 import { getMenuLayout } from './menuLayout'
 import { menuColors, MenuAction as Action } from './menuUi'
+import { PATCH_NOTES } from './patchNotes'
 import { kitTexture, UI_KIT } from './uiKit'
 import { isSettingsOpen } from './settings'
 import { SettingsUi } from './settingsUi'
 import { isUpgradePickerOpen, UpgradeUi } from './upgradeUi'
 import {
-  isPickerFromSave, isSavedHeroReady, isTitleChanging, isTitleLooking, isTitleOpen, isTitleReady, isTitleResuming,
-  pickerBackToTitle, titleAskChange, titleBegin, titleCancelChange, titleContinue, titleResumeSaved
+  isPickerFromSave, isSavedHeroReady, isTitleLooking, isTitleOpen, isTitleReady, isTitleResuming,
+  pickerBackToTitle, titleBegin, titleContinue, titleResumeSaved
 } from './titleScreen'
 import { getHeroSaveState, isHeroSaveUnreachable, savedHeroName } from './heroSave'
 import { getLobbyState } from './party'
@@ -33,6 +35,8 @@ import {
 
 const { white, muted, gold, card, selectedGold, line, goldLine, coral, ink } = menuColors
 const veil = Color4.create(0.01, 0.02, 0.03, 0.55)
+/** Over the title's backdrop: enough to lift the crest and the lettering off it, no more. */
+const titleVeil = Color4.create(0.01, 0.02, 0.03, 0.3)
 /** A first champion sees one screen (class, rolled face, Enter); the face and outfit editors sit behind Customise. */
 let customising = false
 const veilDeep = Color4.create(0.01, 0.02, 0.03, 0.72)
@@ -217,8 +221,27 @@ function PreviewControls({ scale: s }: { scale: number }) {
   </UiEntity>
 }
 
+/** The crest's drawn size in canvas pixels at scale 1: the plaque from the scene's own thumbnail (the sprite is 768x665). */
+const EMBLEM = { width: 460, height: 398 }
+/** The Updates panel is up over the title. */
+let updatesOpen = false
+
+/**
+ * The title fits the whole screen rather than the menu frame: the crest sits in the
+ * middle, the one thing to press under it, and the corners hold the rest.
+ */
+function titleLayout() {
+  const canvas = UiCanvasInformation.getOrNull(engine.RootEntity)
+  const screenWidth = canvas?.width || 1600
+  const screenHeight = canvas?.height || 900
+  const inset = canvas?.screenInsetArea
+  const edge = (value: number | undefined) => (value !== undefined && Number.isFinite(value) ? Math.max(0, value) : 0)
+  const s = Math.max(0.5, Math.min(1.15, screenWidth / 1280, screenHeight / 800))
+  return { s, screenWidth, screenHeight, left: edge(inset?.left), right: edge(inset?.right), top: edge(inset?.top), bottom: edge(inset?.bottom) }
+}
+
 function TitleScreen() {
-  const { scale: s, x, screenHeight } = getMenuLayout('picker')
+  const { s, screenWidth, screenHeight, left, right, top, bottom } = titleLayout()
   const created = getPickerState().hasCreatedCharacter
   const ready = isTitleReady()
   const saved = getHeroSaveState()
@@ -226,65 +249,92 @@ function TitleScreen() {
   const heroReady = isSavedHeroReady()
   const resuming = isTitleResuming()
   const looking = isTitleLooking()
-  const changing = isTitleChanging()
-  const top = Math.max(80, screenHeight * 0.18)
+  // The crest and what stands under it are one column, centred a little above the middle.
+  const column = EMBLEM.height * s + 20 * s + 130 * s
+  const columnTop = Math.max(top + 12 * s, (screenHeight - column) / 2 - 10 * s)
   return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}
     uiBackground={kitTexture(UI_KIT.titleBg)}>
-    <UiEntity uiTransform={{ positionType: 'absolute', position: { left: x, top }, width: 520 * s,
-      flexDirection: 'column', alignItems: 'flex-start', pointerFilter: 'none' }}>
-      <Label value="DUNGEONS OF ANTROM" color={gold} fontSize={14 * s} textAlign="middle-left" textWrap="nowrap"
-        uiTransform={{ width: 480 * s, height: 22 * s, flexShrink: 0, pointerFilter: 'none' }} />
-      <Label value={t('The Dungeon')} font="serif" color={white} fontSize={56 * s} textAlign="middle-left" textWrap="nowrap"
-        uiTransform={{ width: 520 * s, height: 70 * s, flexShrink: 0, pointerFilter: 'none' }} />
-      <UiEntity uiTransform={{ width: 200 * s, height: 28 * s, margin: { top: 4 * s, bottom: 36 * s }, flexShrink: 0, pointerFilter: 'none' }}
-        uiBackground={kitTexture(UI_KIT.flourish)} />
-      {ready && looking
-        // Nothing to press until the wallet has answered: a new champion made now would overwrite the saved one.
-        ? <Action id="title-looking" text={t('Looking for your champion…')} onClick={() => undefined} disabled
-          width={340} height={52} scale={s} fontSize={18} />
-        : ready
-        ? <UiEntity uiTransform={{ flexDirection: 'column', alignItems: 'flex-start', pointerFilter: 'none' }}>
-          {saved.found && !created && <UiEntity uiTransform={{ margin: { bottom: 12 * s }, pointerFilter: 'none' }}>
-            <Action id="title-resume"
-              text={resuming ? t('Entering the hall…') : heroReady ? t('Continue as {name}', { name: savedHeroName() }) : preloadCaption(getPreloadGroup(heroGroupId(saved.cid)), t('Preparing'))}
-              onClick={titleResumeSaved} disabled={resuming || !heroReady} primary
-              width={340} height={52} scale={s} fontSize={18} />
-          </UiEntity>}
-          {unreachable && !created && <UiEntity uiTransform={{ width: 480 * s, flexDirection: 'column', margin: { bottom: 12 * s }, pointerFilter: 'none' }}>
-            <Label value={t("Can't reach the server.")} color={coral} fontSize={16 * s} textAlign="middle-left" textWrap="nowrap"
-              uiTransform={{ width: 480 * s, height: 24 * s, flexShrink: 0, pointerFilter: 'none' }} />
-            <Label value={t('Your saved champion is safe there. Leave and come back in a moment, or play offline: nothing you do now is kept.')}
-              color={muted} fontSize={13 * s} textAlign="top-left"
-              uiTransform={{ width: 480 * s, height: 44 * s, flexShrink: 0, pointerFilter: 'none' }} />
-          </UiEntity>}
-          {saved.found && !created
-            // With a champion saved, another class is a change of champion, not a new game: coins, gear and levels stay. Asked twice.
-            ? changing
-              ? <UiEntity uiTransform={{ flexDirection: 'column', alignItems: 'flex-start', pointerFilter: 'none' }}>
-                <Label value={t('Change champion? Your coins, gear and levels stay.')} color={muted} fontSize={13 * s} textAlign="middle-left" textWrap="nowrap"
-                  uiTransform={{ width: 480 * s, height: 22 * s, margin: { bottom: 8 * s }, flexShrink: 0, pointerFilter: 'none' }} />
-                <UiEntity uiTransform={{ flexDirection: 'row', pointerFilter: 'none' }}>
-                  <UiEntity uiTransform={{ margin: { right: 10 * s }, pointerFilter: 'none' }}>
-                    <Action id="title-change-yes" text={t('Change')} onClick={titleBegin} disabled={resuming} accent="gold" width={165} height={40} scale={s} fontSize={14} />
-                  </UiEntity>
-                  <Action id="title-change-no" text={t('Back')} onClick={titleCancelChange} width={165} height={40} scale={s} fontSize={14} />
-                </UiEntity>
-              </UiEntity>
-              : <Action id="title-change" text={t('Change champion')} onClick={titleAskChange} disabled={resuming} accent="gold" width={200} height={36} scale={s} fontSize={13} />
-            : <Action id="title-enter" text={unreachable ? t('Play offline') : t('New game')} onClick={titleBegin} disabled={resuming}
-              primary={!unreachable} accent="gold" width={340} height={52} scale={s} fontSize={18} />}
-          {created && <UiEntity uiTransform={{ margin: { top: 12 * s }, pointerFilter: 'none' }}>
-            <Action id="title-continue" text={t('Continue')} onClick={titleContinue} primary
-              width={340} height={52} scale={s} fontSize={18} />
-          </UiEntity>}
-        </UiEntity>
-        : <TitleLoading scale={s} />}
-      <UiEntity uiTransform={{ margin: { top: 40 * s }, pointerFilter: 'none' }}>
-        <LanguageRow scale={s} />
+    <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}
+      uiBackground={{ color: titleVeil }} />
+    <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: columnTop }, width: '100%',
+      flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
+      <UiEntity uiTransform={{ width: EMBLEM.width * s, height: EMBLEM.height * s, flexShrink: 0, pointerFilter: 'none' }}
+        uiBackground={kitTexture(UI_KIT.titleEmblem)} />
+      <UiEntity uiTransform={{ width: 560 * s, margin: { top: 20 * s }, flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
+        {ready && looking
+          // Nothing to press until the wallet has answered: a new champion made now would overwrite the saved one.
+          ? <Action id="title-looking" text={t('Looking for your champion…')} onClick={() => undefined} disabled accent="gold"
+            width={360} height={60} scale={s} fontSize={18} />
+          : ready
+          ? <TitleActions created={created} saved={saved.found} unreachable={unreachable} heroReady={heroReady} resuming={resuming} scale={s} />
+          : <TitleLoading scale={s} />}
       </UiEntity>
     </UiEntity>
-    <Label value={`v${GAME_VERSION}`} color={gold} fontSize={12 * s} textAlign="middle-right" textWrap="nowrap"
-      uiTransform={{ positionType: 'absolute', position: { right: 16 * s, bottom: 12 * s }, width: 160 * s, height: 20 * s, pointerFilter: 'none' }} />
+    <UiEntity uiTransform={{ positionType: 'absolute', position: { left: left + 24 * s, bottom: bottom + 20 * s }, flexDirection: 'column', pointerFilter: 'none' }}>
+      <LanguageRow scale={s} />
+      <Label value={`v${GAME_VERSION}`} color={gold} fontSize={12 * s} textAlign="middle-left" textWrap="nowrap"
+        uiTransform={{ width: 160 * s, height: 20 * s, margin: { top: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+    </UiEntity>
+    <UiEntity uiTransform={{ positionType: 'absolute', position: { right: right + 28 * s, bottom: bottom + 28 * s }, pointerFilter: 'none' }}>
+      <Action id="title-updates" text={t('Updates')} onClick={() => { updatesOpen = !updatesOpen }} primary accent="green" width={170} height={54} scale={s} fontSize={20} />
+    </UiEntity>
+    {updatesOpen && <UpdatesPanel scale={s} screenWidth={screenWidth} screenHeight={screenHeight} />}
+  </UiEntity>
+}
+
+/** What stands under the crest once the hall is in: Play, and whatever the saved champion calls for around it. Another class is chosen in the hall, not here. */
+function TitleActions({ created, saved, unreachable, heroReady, resuming, scale: s }: {
+  created: boolean; saved: boolean; unreachable: boolean; heroReady: boolean; resuming: boolean; scale: number
+}) {
+  const savedOnly = saved && !created
+  const caption = savedOnly ? t('Continue as {name}', { name: savedHeroName() }) : ''
+  const preparing = savedOnly && !heroReady
+  const playText = resuming ? t('Entering the hall…')
+    : preparing ? preloadCaption(getPreloadGroup(heroGroupId(getHeroSaveState().cid)), t('Preparing'))
+    : unreachable && !created ? t('Play offline') : t('Play')
+  const play = savedOnly ? titleResumeSaved : created ? titleContinue : titleBegin
+  return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
+    {unreachable && !created && <UiEntity uiTransform={{ width: 520 * s, flexDirection: 'column', alignItems: 'center', margin: { bottom: 10 * s }, pointerFilter: 'none' }}>
+      <Label value={t("Can't reach the server.")} color={coral} fontSize={15 * s} textAlign="middle-center" textWrap="nowrap"
+        uiTransform={{ width: '100%', height: 22 * s, flexShrink: 0, pointerFilter: 'none' }} />
+      <Label value={t('Your saved champion is safe there. Leave and come back in a moment, or play offline: nothing you do now is kept.')}
+        color={muted} fontSize={12 * s} textAlign="top-center"
+        uiTransform={{ width: '100%', height: 36 * s, flexShrink: 0, pointerFilter: 'none' }} />
+    </UiEntity>}
+    {caption && <Label value={caption} color={white} fontSize={15 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 22 * s, margin: { bottom: 8 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
+    <Action id="title-play" text={playText} onClick={play} disabled={resuming || preparing} primary accent="gold"
+      width={preparing || resuming ? 360 : 220} height={64} scale={s} fontSize={preparing || resuming ? 17 : 26} />
+    {created && <UiEntity uiTransform={{ margin: { top: 14 * s }, pointerFilter: 'none' }}>
+      <Action id="title-enter" text={unreachable ? t('Play offline') : t('New game')} onClick={titleBegin} disabled={resuming} accent="gold" width={200} height={40} scale={s} fontSize={14} />
+    </UiEntity>}
+  </UiEntity>
+}
+
+/** The recent versions and what each changed, on the lobby's sheet over the title. */
+function UpdatesPanel({ scale: s, screenWidth, screenHeight }: { scale: number; screenWidth: number; screenHeight: number }) {
+  const width = 560
+  const height = Math.min(500, Math.max(300, screenHeight / s - 80))
+  const shown = PATCH_NOTES.slice(0, 6)
+  return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (screenWidth - width * s) / 2, top: (screenHeight - height * s) / 2 },
+    width: width * s, height: height * s, padding: { left: 32 * s, right: 32 * s, top: 22 * s, bottom: 22 * s },
+    borderRadius: 6 * s, borderWidth: s, borderColor: goldLine, flexDirection: 'column', pointerFilter: 'block' }}
+    uiBackground={{ color: sheet }}>
+    <UiEntity uiTransform={{ width: '100%', height: 38 * s, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+      <Label value={t("What's new")} font="serif" color={white} fontSize={26 * s} textAlign="middle-left" textWrap="nowrap"
+        uiTransform={{ width: 300 * s, height: '100%', pointerFilter: 'none' }} />
+      <Action id="updates-close" text="×" onClick={() => { updatesOpen = false }} width={38} height={38} scale={s} fontSize={26} accent="gold" />
+    </UiEntity>
+    <UiEntity uiTransform={{ width: 160 * s, height: 2 * s, margin: { top: 4 * s, bottom: 14 * s }, flexShrink: 0, pointerFilter: 'none' }}
+      uiBackground={{ color: gold }} />
+    <UiEntity uiTransform={{ width: '100%', flexGrow: 1, flexDirection: 'column', overflow: 'hidden', pointerFilter: 'none' }}>
+      {shown.map((entry) => <UiEntity key={`notes-${entry.version}`} uiTransform={{ width: '100%', flexDirection: 'column', margin: { bottom: 12 * s }, flexShrink: 0, pointerFilter: 'none' }}>
+        <Label value={`v${entry.version}`} color={gold} fontSize={12 * s} textAlign="middle-left" textWrap="nowrap"
+          uiTransform={{ width: '100%', height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
+        {entry.notes.map((note, i) => <Label key={`note-${entry.version}-${i}`} value={`·  ${t(note)}`} color={muted} fontSize={12.5 * s} textAlign="top-left"
+          uiTransform={{ width: '100%', height: 20 * s, flexShrink: 0, pointerFilter: 'none' }} />)}
+      </UiEntity>)}
+    </UiEntity>
   </UiEntity>
 }
 
@@ -303,8 +353,8 @@ function TitleLoading({ scale: s }: { scale: number }) {
   const pct = Math.round(fill * 100)
   const stalled = load?.stalledOn
   const slow = (load?.elapsed ?? 0) >= ENTER_ANYWAY_SECONDS
-  return <UiEntity uiTransform={{ width: width * s, flexDirection: 'column', alignItems: 'flex-start', pointerFilter: 'none' }}>
-    <Label value={preloadCaption(load)} color={muted} fontSize={14 * s} textAlign="middle-left" textWrap="nowrap"
+  return <UiEntity uiTransform={{ width: width * s, flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
+    <Label value={preloadCaption(load)} color={muted} fontSize={14 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: width * s, height: 22 * s, flexShrink: 0, pointerFilter: 'none' }} />
     <UiEntity uiTransform={{ width: width * s, height: 18 * s, margin: { top: 8 * s }, flexShrink: 0, pointerFilter: 'none',
       padding: 3 * s }}
