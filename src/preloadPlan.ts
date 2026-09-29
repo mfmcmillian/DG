@@ -2,6 +2,14 @@
 // waits only on the hall; a hero's outfit is fetched when we know which hero;
 // a realm's enemies are fetched before its run starts. The rest streams in
 // behind, in the order a new player is likely to meet it.
+//
+// Every model the renderer takes in costs it a frame or two to parse, so
+// start-up asks for two groups only: the hall and the first realm. Continue
+// waits a few seconds on the first realm (whenFirstRealmReady) rather than let
+// it land as a stutter in the hall's first steps; the other heroes' looks, the
+// later realms and the raid are asked for afterwards (scheduleLatePreload),
+// once the player is in and standing still, or at once when the picker is
+// about to show the heroes.
 
 import { CHARACTERS } from './characterPicker'
 import { fxSoundAssets, fxTextureAssets } from './combatFx'
@@ -16,7 +24,8 @@ import { enemyPreloadAssets } from './dungeonEnemies'
 import { EquipmentLoadout } from './equipmentCatalog'
 import { equipmentModelPaths } from './equipmentAvatar'
 import { getCommittedLoadout } from './equipmentState'
-import { isPreloadComplete, preloadGroup, PreloadGroup } from './preload'
+import { engine } from '@dcl/sdk/ecs'
+import { getPreloadGroup, isPreloadComplete, preloadGroup, PreloadGroup } from './preload'
 import { projectileAssets } from './projectiles'
 import { partSources } from './raid/colossusPose'
 import { LEVELS, RAID_LEVEL, RAID_OPEN, REALMS } from './shared/levels'
@@ -74,7 +83,24 @@ export function preloadCaption(group: Readonly<PreloadGroup> | undefined, verb =
   return `${verb} ${t(group.label)}\u2026${counts}`
 }
 
-/** Kick off the whole plan at start-up. Groups download two at a time in this order. */
+/** The realms' styles in the order a new player meets them. */
+function realmStyles(): StyleId[] {
+  const styles: StyleId[] = []
+  for (const level of LEVELS) if (!styles.includes(level.style)) styles.push(level.style)
+  return styles
+}
+
+let first: StyleId | undefined
+/** The first realm's style: the one Continue waits on. */
+export function firstRealmStyle(): StyleId {
+  return (first ??= realmStyles()[0])
+}
+
+export function firstRealmGroup(): Readonly<PreloadGroup> | undefined {
+  return getPreloadGroup(realmGroupId(firstRealmStyle()))
+}
+
+/** Kick off the plan at start-up: the hall, then the first realm. The rest waits for scheduleLatePreload. */
 export function planPreload() {
   // The hall is authored: its own furniture (some from the castle and forge
   // kits) rather than the style's generated prop lists.
@@ -87,12 +113,61 @@ export function planPreload() {
     ...AMBIENCE_ASSETS,
     ...fxTextureAssets()
   ])
-  // First realm a new player enters, then the other heroes' default looks
-  // (the picker shows them), then the later realms.
-  const styles: StyleId[] = []
-  for (const level of LEVELS) if (!styles.includes(level.style)) styles.push(level.style)
-  if (styles.length) requestRealmPreload(styles[0])
+  const first = firstRealmStyle()
+  if (first) requestRealmPreload(first)
+}
+
+/** Seconds until the late groups are asked for; -1 when nothing is scheduled. */
+let lateIn = -1
+let lateRequested = false
+/** Continues waiting on the first realm: resolve when it is in, or when their patience runs out. */
+const waiting: Array<{ left: number; resolve: () => void }> = []
+
+/**
+ * Ask for everything the start-up plan left out, `seconds` from now: the other
+ * heroes' default looks (the picker shows them), the later realms, the raid.
+ * A sooner call wins over a later one; once requested, further calls do nothing.
+ */
+export function scheduleLatePreload(seconds: number) {
+  if (lateRequested) return
+  lateIn = lateIn < 0 ? seconds : Math.min(lateIn, seconds)
+}
+
+function planLatePreload() {
+  if (lateRequested) return
+  lateRequested = true
+  lateIn = -1
   for (const c of CHARACTERS) requestHeroPreload(c.id, getCommittedLoadout(c.id))
-  for (const style of styles.slice(1)) requestRealmPreload(style)
+  for (const style of realmStyles().slice(1)) requestRealmPreload(style)
   if (RAID_OPEN) requestRealmPreload(RAID_LEVEL.style)
 }
+
+/**
+ * Resolves when the first realm's group is in, or after `capSeconds` if it is
+ * not: a slow connection gets the hall with the realm still streaming, as
+ * before, rather than a Continue that never lets go.
+ */
+export function whenFirstRealmReady(capSeconds: number): Promise<void> {
+  if (isRealmPreloaded(firstRealmStyle())) return Promise.resolve()
+  return new Promise((resolve) => waiting.push({ left: capSeconds, resolve }))
+}
+
+function tick(dt: number) {
+  const span = Number.isFinite(dt) && dt > 0 ? dt : 0
+  if (lateIn >= 0) {
+    lateIn -= span
+    if (lateIn <= 0) planLatePreload()
+  }
+  if (waiting.length) {
+    const ready = isRealmPreloaded(firstRealmStyle())
+    for (let i = waiting.length - 1; i >= 0; i--) {
+      const w = waiting[i]
+      w.left -= span
+      if (ready || w.left <= 0) {
+        waiting.splice(i, 1)
+        w.resolve()
+      }
+    }
+  }
+}
+engine.addSystem(tick)
