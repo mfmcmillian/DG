@@ -1,11 +1,11 @@
-// The settings sheet: language, camera choice and the developer panel switch. Same
+// The settings sheet: language, music, camera choice and the developer panel switch. Same
 // dark sheet, gold rule and flat buttons as the lobby.
 
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { Color4 } from '@dcl/sdk/math'
 import { uiViewport, wholeCanvas } from './uiScale'
 import { menuColors, MenuAction as Action } from './menuUi'
-import { CAMERA_OPTIONS, closeSettings, getSettings, setCameraPreference, setDevTools, setNativeAvatar } from './settings'
+import { CAMERA_OPTIONS, closeSettings, getSettings, MUSIC_OPTIONS, setCameraPreference, setDevTools, setMusicLevel, setNativeAvatar } from './settings'
 import { getUnlockedItems, relockAllWeapons, unlockAllWeapons } from './inventory'
 import { isDeveloper } from './devAccess'
 import { flushHeroSave } from './heroSave'
@@ -51,7 +51,7 @@ export function SettingsUi() {
   // jump and armoury rows only show with the panel switched on.
   const developer = isDeveloper()
   const dev = developer && settings.devTools
-  const { scale: s, width, height, x, y } = layout(80 + (developer ? (dev ? 150 : 0) : -80))
+  const { scale: s, width, height, x, y } = layout(158 + (developer ? (dev ? 150 : 0) : -80))
   const inner = FRAME.width - 80
   return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}>
     <UiEntity uiTransform={wholeCanvas()} uiBackground={{ color: veil }} />
@@ -74,6 +74,17 @@ export function SettingsUi() {
       <Heading title={t('LANGUAGE')} scale={s} />
       <UiEntity uiTransform={{ width: '100%', height: 36 * s, margin: { bottom: 16 * s }, flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
         <LanguageRow scale={s} />
+      </UiEntity>
+
+      <Heading title={t('MUSIC')} scale={s} />
+      <UiEntity uiTransform={{ width: '100%', height: 38 * s, margin: { bottom: 16 * s }, flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+        {MUSIC_OPTIONS.map((label, step) => <UiEntity key={`music-${step}`} uiTransform={{ margin: { right: 8 * s }, flexShrink: 0, pointerFilter: 'none' }}>
+          <Action id={`settings-music-${step}`} text={t(label)} onClick={() => {
+            setMusicLevel(step)
+            flushHeroSave()
+          }}
+            width={96} height={38} scale={s} fontSize={13} accent="gold" active={settings.music === step} />
+        </UiEntity>)}
       </UiEntity>
 
       <Heading title={t('CONTROLS')} scale={s} />
