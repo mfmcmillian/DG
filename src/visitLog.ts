@@ -16,6 +16,7 @@
 import { Storage } from '@dcl/sdk/server'
 import { metricsHello, metricsMark } from './metrics'
 import { onNet } from './net'
+import { seedLegacySave } from './saveMigration'
 
 export type Visit = {
   /** "desktop" | "mobile" | "vr" | "web", as the explorer reports itself; '' until the client says. */
@@ -93,6 +94,7 @@ async function load(address: string): Promise<Visit> {
     pending = (async () => {
       let stored: Visit | undefined
       try {
+        await seedLegacySave(id)
         stored = (await Storage.player.get<Visit>(id, KEY)) ?? undefined
       } catch (error) {
         console.log(`[Server] could not load ${KEY} for ${id}`, error)

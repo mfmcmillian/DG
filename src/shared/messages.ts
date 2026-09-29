@@ -195,6 +195,8 @@ export const Messages = {
   }),
   /** Client -> server: send me what you have saved for my wallet. */
   loadHero: Schemas.Map({ v: Schemas.Int }),
+  /** Developer -> server: write every wallet's saves into scene storage as `export:N` (src/saveMigration.ts). */
+  exportSaves: Schemas.Map({ v: Schemas.Int }),
   /** Server -> one client: the saved hero, or `found: false`. */
   savedHero: Schemas.Map({
     id: Schemas.String,

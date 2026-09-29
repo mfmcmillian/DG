@@ -1,12 +1,13 @@
 {
   "name": "dcl-project",
-  "version": "2.8.43",
+  "version": "2.8.44",
   "description": "SDK7 Template scene",
   "scripts": {
     "start": "sdk-commands start",
     "deploy": "sdk-commands deploy",
     "deploy:land": "sdk-commands deploy",
-    "deploy:world": "node tools/deploy-world.mjs",
+    "deploy:world": "node tools/world.mjs deploy",
+    "storage:world": "node tools/world.mjs storage",
     "build": "sdk-commands build",
     "upgrade-sdk": "npm install --save-dev @dcl/sdk@latest",
     "upgrade-sdk:next": "npm install --save-dev @dcl/sdk@next",

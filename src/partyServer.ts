@@ -17,6 +17,7 @@ import { createRunSim, destroyRunSim, runStatus } from './dungeonEnemies'
 import { healHero, heroHealth, heroMaxHealth, RAID_RECOVER_SECONDS, RECOVER_SECONDS, reviveHero, setRecoverPolicy } from './heroVitals'
 import { addXp, heroLevel, setXpRecord, xpRecordOf } from './heroXp'
 import { heroCharacters, isHeadless, onHostStart, setMultiplayerHandlers } from './multiplayer'
+import { initializeSaveMigration, seedLegacySave } from './saveMigration'
 import { HeroFacts, metricsHeroCount, metricsMark, metricsParty, metricsRaid, metricsRun, metricsXp, setMetricsHeroProbe, setMetricsLevelProbe } from './metrics'
 import { heroClassOf } from './heroClasses'
 import { onNet, sendNet } from './net'
@@ -116,6 +117,7 @@ function bind() {
     if (!context) return
     void answerLoad(context.from)
   })
+  initializeSaveMigration()
   setMultiplayerHandlers({ leave: leaveParty })
   engine.addSystem(update)
   if (RAID_OPEN) ensureRaid()
@@ -163,6 +165,7 @@ async function persist(id: string, key: string, value: unknown) {
 async function fetch<T>(id: string, key: string): Promise<T | undefined> {
   if (!isHeadless()) return undefined
   try {
+    await seedLegacySave(id)
     const value = await Storage.player.get<T>(id, key)
     return value ?? undefined
   } catch (error) {

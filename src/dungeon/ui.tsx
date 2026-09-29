@@ -9,6 +9,7 @@ import {
   toggleSpawnMarkers
 } from './index'
 import { nativeHeroOn, nativeNotes, nudgeWeaponTweak, weaponTweakLabel } from '../nativeHero'
+import { sendNet } from '../net'
 import { systemProfile } from '../sysProfile'
 
 const CAMERAS: Array<{ id: CameraChoice; label: string; hint: string; openOnly: boolean }> = [
@@ -137,6 +138,14 @@ function DevPanel() {
       />
       {nativeHeroOn() && <WeaponTweak />}
       <SystemsReadout />
+      {/* Server-side: writes every wallet's saves into scene storage (src/saveMigration.ts). Watch the server logs. */}
+      <Button
+        value="Export saves"
+        fontSize={12}
+        variant="secondary"
+        uiTransform={{ width: 96, height: 28, margin: { top: 8 } }}
+        onMouseDown={() => sendNet('exportSaves', { v: 1 })}
+      />
     </UiEntity>
   )
 }
