@@ -4,12 +4,12 @@
 // per champion, so each class climbs on its own.
 //
 // The curve is quadratic: the first levels fall in the first run, the last
-// ones take several clears of the hardest fortress. Bonuses are small and
+// ones take many clears of the hardest fortress. Bonuses are small and
 // flat per level so a weapon still matters more than a level.
 
 import { DifficultyDefinition, LevelDefinition } from './levels'
 
-export const MAX_LEVEL = 30
+export const MAX_LEVEL = 60
 
 /** Total experience needed to stand at `level` (level 1 needs none). */
 export function xpForLevel(level: number): number {

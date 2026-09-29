@@ -7,10 +7,10 @@ import {
   equipSelectedItem, unequipSelectedSlot, revertInventoryPreview,
   retryInventoryPreview, rotateInventoryPreview, closeInventory
 } from './inventory'
-import { armorSourceComingSoon, armorSourceLabel, EquipmentItem, EquipmentSlot, EQUIPMENT_SLOTS, getEquipmentItem, getUnequippedItem } from './equipmentCatalog'
+import { armorSourceComingSoon, armorSourceLabel, EquipmentItem, EquipmentLoadout, EquipmentSlot, EQUIPMENT_SLOTS, getEquipmentItem, getUnequippedItem } from './equipmentCatalog'
 import { getMenuLayout } from './menuLayout'
 import { menuColors, MenuAction as Action } from './menuUi'
-import { RARITIES, rarityOf, weaponStatLine, weaponSubtitle } from './weapons'
+import { RARITIES, Rarity, rarityOf, RARITY_ORDER, weaponStatLine, weaponSubtitle } from './weapons'
 import { armorSetLine, armorStatLine, armorSummaryLine } from './armor'
 import { t } from './i18n'
 import { isGearNew, newGearCount } from './newGear'
@@ -73,14 +73,17 @@ function EquipmentSocket({ slot, x, y, scale: s }: { key?: string, slot: Equipme
   const active = state.selectedSlot === slot
   const changed = loadout[slot] !== getCommittedLoadout(state.characterId)[slot]
   const id = `socket-${slot}`
+  // The piece's rarity frames the socket, as it does the backpack's cards, so the outfit's worth reads at a glance.
+  const rarity = item && !isEmptyItem(item) ? RARITIES[rarityOf(item.id)] : undefined
   return <UiEntity uiTransform={rect(x, y, 80, 112, s)}>
     <UiEntity uiTransform={{ width: 80 * s, height: 80 * s, flexShrink: 0,
-      borderRadius: 4 * s, borderWidth: (active ? 2 : 1) * s, borderColor: active ? gold : changed ? goldLine : line,
+      borderRadius: 4 * s, borderWidth: (active ? 2 : 1) * s, borderColor: active ? gold : changed ? goldLine : rarity && rarity.rank > 0 ? rarity.color : line,
       alignItems: 'center', justifyContent: 'center', pointerFilter: 'block' }}
       uiBackground={{ color: active ? selectedGold : hovered === id ? card : sheet }}
       onMouseEnter={() => { hovered = id }} onMouseLeave={() => { if (hovered === id) hovered = '' }}
       onMouseDown={() => selectInventorySlot(slot)}>
       <ItemIcon item={item} size={72} scale={s} />
+      {rarity && rarity.rank > 0 && <UiEntity uiTransform={rect(4, 4, 6, 6, s)} uiBackground={{ color: rarity.color }} />}
       {changed && <UiEntity uiTransform={{ ...rect(67, 7, 6, 6, s), borderRadius: 3 * s }} uiBackground={{ color: gold }} />}
     </UiEntity>
     <Label value={slotLabel(slot).toUpperCase()} color={active ? gold : muted} fontSize={10 * s} textWrap="nowrap"
@@ -126,6 +129,37 @@ function BackpackCard({ item, index, scale: s }: { key?: string, item?: Equipmen
 }
 
 const FILTER_NAMES = { all: 'All', weapon: 'Weapons', head: 'Head', chest: 'Chest', other: 'Other' } as const
+
+/** How many of the outfit's pieces (the weapon too, empty slots aside) are of each rarity, rarest first. */
+function rarityTally(loadout: EquipmentLoadout): Array<{ rarity: Rarity; count: number }> {
+  const counts = new Map<Rarity, number>()
+  for (const slot of EQUIPMENT_SLOTS) {
+    const item = getEquipmentItem(loadout[slot.id])
+    if (!item || isEmptyItem(item)) continue
+    const rarity = rarityOf(item.id)
+    counts.set(rarity, (counts.get(rarity) ?? 0) + 1)
+  }
+  return [...RARITY_ORDER].reverse().filter((rarity) => counts.has(rarity)).map((rarity) => ({ rarity, count: counts.get(rarity)! }))
+}
+
+/** The tally as a row of coloured labels: "2 Legendary · 3 Rare · 2 Common", each in its rarity's colour. */
+function RarityTally({ loadout, scale: s }: { loadout: EquipmentLoadout; scale: number }) {
+  const tally = rarityTally(loadout)
+  if (!tally.length) return null
+  const font = 10.5
+  return <UiEntity uiTransform={{ ...rect(60, 140, 510, 18, s), flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
+    {tally.map(({ rarity, count }, i) => {
+      const text = `${count} ${t(RARITIES[rarity].label)}`
+      return <UiEntity key={`tally-${rarity}`} uiTransform={{ flexDirection: 'row', alignItems: 'center', height: '100%', pointerFilter: 'none' }}>
+        {i > 0 && <Label value="·" color={muted} fontSize={font * s} textAlign="middle-center" textWrap="nowrap"
+          uiTransform={{ width: 14 * s, height: '100%', pointerFilter: 'none' }} />}
+        <UiEntity uiTransform={{ width: 6 * s, height: 6 * s, margin: { right: 5 * s }, flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: RARITIES[rarity].color }} />
+        <Label value={text} color={RARITIES[rarity].color} fontSize={font * s} textAlign="middle-left" textWrap="nowrap"
+          uiTransform={{ width: text.length * font * 0.58 * s, height: '100%', pointerFilter: 'none' }} />
+      </UiEntity>
+    })}
+  </UiEntity>
+}
 
 export function InventoryUi() {
   const { scale: s, x, y, width, height } = getMenuLayout('inventory')
@@ -184,6 +218,7 @@ export function InventoryUi() {
         uiTransform={rect(120, 86, 390, 36, s)} />
       {outfit && <Label value={outfit} color={gold} fontSize={10.5 * s} textAlign="middle-center" textWrap="nowrap"
         uiTransform={rect(60, 122, 510, 18, s)} />}
+      <RarityTally loadout={preview} scale={s} />
       {sockets.map((socket) => <EquipmentSocket key={socket.slot} {...socket} scale={s} />)}
       <UiEntity uiTransform={{ ...rect(230, 690, 170, 34, s), flexDirection: 'row', justifyContent: 'space-between' }}>
         <Action id="inventory-rotate-left" text="↶" onClick={() => rotateInventoryPreview(-45)} width={36} height={34} scale={s} fontSize={23} accent="gold" />
