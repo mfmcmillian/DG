@@ -1,6 +1,6 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
-import { engine, UiCanvasInformation } from '@dcl/sdk/ecs'
 import { Color4 } from '@dcl/sdk/math'
+import { uiViewport } from './uiScale'
 import { getEquippedCharacter, getPickerState, openPicker } from './characterPicker'
 import { openInventory } from './inventory'
 import { IconButton } from './hudButtons'
@@ -66,18 +66,20 @@ const gold = Color4.create(1, 0.84, 0.32, 1)
 const bossRed = Color4.create(0.75, 0.12, 0.2, 1)
 let hovered = ''
 
+/**
+ * Virtual pixels of the UI root (see uiScale.ts): the SDK scales them to the
+ * canvas and keeps the root inside the device's safe margins, so the layout
+ * holds one set of sizes and no scale of its own.
+ */
 function hudLayout() {
-  const canvas = UiCanvasInformation.getOrNull(engine.RootEntity)
-  const width = canvas?.width || 1600
-  const height = canvas?.height || 900
-  const scale = Math.max(0.8, Math.min(1.2, width / 1600, height / 900))
-  const inset = canvas?.screenInsetArea
-  const left = Math.max(0, inset?.left || 0) + 24 * scale
-  const right = Math.max(0, inset?.right || 0) + 28 * scale
-  const bottom = Math.max(0, inset?.bottom || 0) + 40 * scale
+  const { width, height } = uiViewport()
+  const scale = 1
+  const left = 24
+  const right = 28
+  const bottom = 40
   // Vitals sit on the right, clear of the Explorer's left sidebar and the chat
   // column, under the minimap / top-right controls.
-  const vitalsTop = Math.max(0, inset?.top || 0) + Math.max(150, height * 0.19)
+  const vitalsTop = Math.max(150, height * 0.19)
   return { width, height, scale, left, right, bottom, vitalsTop }
 }
 
@@ -207,8 +209,7 @@ function BossBar({ width, scale: s }: { width: number; scale: number }) {
   if (!state.visible || state.phase !== 'fighting' || !state.bossAlive || state.name !== 'Warlord') return null
   const barWidth = Math.min(420 * s, width * 0.5)
   const ratio = Math.max(0, Math.min(1, state.health / Math.max(1, state.maxHealth)))
-  const canvas = UiCanvasInformation.getOrNull(engine.RootEntity)
-  const top = Math.max(0, canvas?.screenInsetArea?.top || 0) + 26 * s
+  const top = 26 * s
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - barWidth) / 2, top },
     width: barWidth, height: 44 * s, flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
     <Label value={state.bossLabel ? `${t(state.name)}  ·  ${t(state.bossLabel)}` : t(state.name)} color={white} font="sans-serif" fontSize={15 * s} textAlign="middle-center" textWrap="nowrap"

@@ -1,6 +1,6 @@
 import ReactEcs, { Label, ReactEcsRenderer, UiEntity } from '@dcl/sdk/react-ecs'
-import { engine, UiCanvasInformation } from '@dcl/sdk/ecs'
 import { Color4 } from '@dcl/sdk/math'
+import { uiViewport, VIRTUAL_SCREEN } from './uiScale'
 import { getInventoryState } from './inventory'
 import { InventoryUi } from './inventoryUi'
 import { getCombatState } from './combat'
@@ -231,13 +231,11 @@ let updatesOpen = false
  * middle, the one thing to press under it, and the corners hold the rest.
  */
 function titleLayout() {
-  const canvas = UiCanvasInformation.getOrNull(engine.RootEntity)
-  const screenWidth = canvas?.width || 1600
-  const screenHeight = canvas?.height || 900
-  const inset = canvas?.screenInsetArea
-  const edge = (value: number | undefined) => (value !== undefined && Number.isFinite(value) ? Math.max(0, value) : 0)
-  const s = Math.max(0.5, Math.min(1.15, screenWidth / 1280, screenHeight / 800))
-  return { s, screenWidth, screenHeight, left: edge(inset?.left), right: edge(inset?.right), top: edge(inset?.top), bottom: edge(inset?.bottom) }
+  // Virtual pixels of the UI root (uiScale.ts); the corners keep clear of the explorer's own HUD.
+  const { width: screenWidth, height: screenHeight, reserved } = uiViewport()
+  // Drawn for the full virtual screen; a phone's shorter screen shrinks the crest and its column to fit.
+  const s = Math.max(0.5, Math.min(1, screenWidth / 1600, screenHeight / 900))
+  return { s, screenWidth, screenHeight, left: reserved.left, right: reserved.right, top: reserved.top, bottom: reserved.bottom }
 }
 
 function TitleScreen() {
@@ -440,8 +438,8 @@ export function setupCharacterPickerUi() {
     () => getCombatState().open ? <CombatUi /> : getInventoryState().open ? <InventoryUi />
       : isTitleOpen() ? <TitleScreen /> : getPickerState().open ? <Picker />
         : isSettingsOpen() ? <SettingsUi /> : getLobbyState().open ? <LobbyUi /> : isUpgradePickerOpen() ? <UpgradeUi /> : <WorldHudUi />,
-    // Every scene UI already uses canvas-pixel layouts. Disable the SDK's second
-    // virtual-screen scale and apply native/device insets once in those layouts.
-    { virtualWidth: 0, virtualHeight: 0, screenInset: 'none' }
+    // Every layout is drawn in virtual pixels of one screen (uiScale.ts); the SDK
+    // scales it to the canvas and keeps the root inside the device's safe margins.
+    { virtualWidth: VIRTUAL_SCREEN.width, virtualHeight: VIRTUAL_SCREEN.height, screenInset: 'device' }
   )
 }

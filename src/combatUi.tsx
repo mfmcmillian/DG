@@ -1,6 +1,6 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
-import { engine, UiCanvasInformation } from '@dcl/sdk/ecs'
 import { Color4 } from '@dcl/sdk/math'
+import { uiViewport } from './uiScale'
 import {
   getCombatState, closeCombat, rematchCombat, retryCombat,
   requestLightAttack, requestHeavyAttack, requestCombatJump
@@ -20,10 +20,9 @@ let hovered = ''
 
 type CombatState = ReturnType<typeof getCombatState>
 
+/** The arena is drawn for the full virtual screen (uiScale.ts) and letterboxed into whatever the root is. */
 function layout() {
-  const canvas = UiCanvasInformation.getOrNull(engine.RootEntity)
-  const width = canvas?.width || 1600
-  const height = canvas?.height || 900
+  const { width, height } = uiViewport()
   const scale = Math.min(width / 1600, height / 900)
   return { scale, x: (width - 1600 * scale) / 2, y: (height - 900 * scale) / 2 }
 }

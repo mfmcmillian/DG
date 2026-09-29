@@ -2,8 +2,8 @@
 // dark sheet, gold rule and flat buttons as the lobby.
 
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
-import { engine, UiCanvasInformation } from '@dcl/sdk/ecs'
 import { Color4 } from '@dcl/sdk/math'
+import { uiViewport } from './uiScale'
 import { menuColors, MenuAction as Action } from './menuUi'
 import { CAMERA_OPTIONS, closeSettings, getSettings, setCameraPreference, setDevTools, setNativeAvatar } from './settings'
 import { getUnlockedItems, relockAllWeapons, unlockAllWeapons } from './inventory'
@@ -26,17 +26,15 @@ const CONTROLS: Array<[string, string]> = [
 ]
 let hovered = ''
 
+/** In virtual pixels of the UI root (uiScale.ts): the sheet fits the room the screen has, and never grows past its drawn size. */
 function layout(extra = 0) {
-  const canvas = UiCanvasInformation.getOrNull(engine.RootEntity)
-  const screenWidth = canvas?.width || 1600
-  const screenHeight = canvas?.height || 900
-  const inset = canvas?.screenInsetArea
-  const left = Math.max(0, inset?.left || 0) + 24
-  const right = Math.max(0, inset?.right || 0) + 24
-  const top = Math.max(0, inset?.top || 0) + 48
-  const bottom = Math.max(0, inset?.bottom || 0) + 24
+  const { width: screenWidth, height: screenHeight } = uiViewport()
+  const left = 24
+  const right = 24
+  const top = 48
+  const bottom = 24
   const frameHeight = FRAME.height + extra
-  const scale = Math.min((screenWidth - left - right) / FRAME.width, (screenHeight - top - bottom) / frameHeight, 1.1)
+  const scale = Math.min((screenWidth - left - right) / FRAME.width, (screenHeight - top - bottom) / frameHeight, 1)
   const width = FRAME.width * scale
   const height = frameHeight * scale
   return { scale, width, height, x: left + (screenWidth - left - right - width) / 2, y: top + (screenHeight - top - bottom - height) / 2 }

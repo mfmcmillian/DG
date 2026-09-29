@@ -7,7 +7,7 @@
 // the fire when the sheet closes.
 
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
-import { engine, InputModifier, PointerLock, UiCanvasInformation } from '@dcl/sdk/ecs'
+import { engine, InputModifier, PointerLock } from '@dcl/sdk/ecs'
 import { Color4 } from '@dcl/sdk/math'
 import { onDungeonLoaded } from './dungeon'
 import { getEquipmentItemOrNull } from './equipmentCatalog'
@@ -18,6 +18,7 @@ import { startPitCinematic } from './pitCinematic'
 import { attemptUpgrade, LEVEL_FLAT_DAMAGE, LEVEL_PERCENT, UpgradeOffer, upgradeOffers } from './upgrades'
 import { MAX_LEVEL } from './shared/upgradeRanks'
 import { RARITIES } from './weapons'
+import { uiViewport } from './uiScale'
 
 const { white, muted, gold, ink, panel, card, line, goldLine, coral } = menuColors
 const veil = Color4.create(0.01, 0.02, 0.03, 0.62)
@@ -76,16 +77,14 @@ function turnPage(step: number, offers: UpgradeOffer[], pages: number) {
   if (!shown.some((o) => o.id === selectedId)) selectedId = (shown.find((o) => !!o.to && o.affordable) ?? shown[0])?.id ?? selectedId
 }
 
+/** In virtual pixels of the UI root (uiScale.ts): the sheet fits the room the screen has, and never grows past its drawn size. */
 function layout() {
-  const canvas = UiCanvasInformation.getOrNull(engine.RootEntity)
-  const screenWidth = canvas?.width || 1600
-  const screenHeight = canvas?.height || 900
-  const inset = canvas?.screenInsetArea
-  const left = Math.max(0, inset?.left || 0) + 24
-  const right = Math.max(0, inset?.right || 0) + 24
-  const top = Math.max(0, inset?.top || 0) + 48
-  const bottom = Math.max(0, inset?.bottom || 0) + 24
-  const scale = Math.min((screenWidth - left - right) / FRAME.width, (screenHeight - top - bottom) / FRAME.height, 1.1)
+  const { width: screenWidth, height: screenHeight } = uiViewport()
+  const left = 24
+  const right = 24
+  const top = 48
+  const bottom = 24
+  const scale = Math.min((screenWidth - left - right) / FRAME.width, (screenHeight - top - bottom) / FRAME.height, 1)
   const width = FRAME.width * scale
   const height = FRAME.height * scale
   return { scale, width, height, x: left + (screenWidth - left - right - width) / 2, y: top + (screenHeight - top - bottom - height) / 2 }

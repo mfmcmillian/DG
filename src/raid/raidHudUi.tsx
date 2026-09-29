@@ -4,7 +4,6 @@
 // raise them, with the raise's progress as an ally stands by.
 
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
-import { engine, UiCanvasInformation } from '@dcl/sdk/ecs'
 import { Color4 } from '@dcl/sdk/math'
 import { getWorldRivalState } from '../dungeonEnemies'
 import { heroLabel } from '../lobbyUi'
@@ -62,8 +61,7 @@ export function ColossusBar({ width, scale: s }: { width: number; scale: number 
   const v = raidView()
   if (!v.active) return null
   const barWidth = Math.min(520 * s, width * 0.55)
-  const canvas = UiCanvasInformation.getOrNull(engine.RootEntity)
-  const top = Math.max(0, canvas?.screenInsetArea?.top || 0) + 26 * s
+  const top = 26 * s
   let title = t('THE CHAINED COLOSSUS')
   let sub = ''
   let ratio = v.hp / Math.max(1, v.max)

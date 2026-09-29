@@ -6,8 +6,8 @@
 // host's `parties` broadcast is what every row here reflects.
 
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
-import { engine, UiCanvasInformation } from '@dcl/sdk/ecs'
 import { Color4 } from '@dcl/sdk/math'
+import { uiViewport } from './uiScale'
 import { playerDisplayName } from './heroNameTag'
 import { isClientSynced, localAddress } from './multiplayer'
 import { menuColors, MenuAction as Action } from './menuUi'
@@ -53,16 +53,14 @@ const LEFT = 500
 const RIGHT = 420
 let hovered = ''
 
+/** In virtual pixels of the UI root (uiScale.ts): the sheet fits the room the screen has, and never grows past its drawn size. */
 function layout() {
-  const canvas = UiCanvasInformation.getOrNull(engine.RootEntity)
-  const screenWidth = canvas?.width || 1600
-  const screenHeight = canvas?.height || 900
-  const inset = canvas?.screenInsetArea
-  const left = Math.max(0, inset?.left || 0) + 24
-  const right = Math.max(0, inset?.right || 0) + 24
-  const top = Math.max(0, inset?.top || 0) + 48
-  const bottom = Math.max(0, inset?.bottom || 0) + 24
-  const scale = Math.min((screenWidth - left - right) / FRAME.width, (screenHeight - top - bottom) / FRAME.height, 1.1)
+  const { width: screenWidth, height: screenHeight } = uiViewport()
+  const left = 24
+  const right = 24
+  const top = 48
+  const bottom = 24
+  const scale = Math.min((screenWidth - left - right) / FRAME.width, (screenHeight - top - bottom) / FRAME.height, 1)
   const width = FRAME.width * scale
   const height = FRAME.height * scale
   return { scale, width, height, screenWidth, screenHeight, x: left + (screenWidth - left - right - width) / 2, y: top + (screenHeight - top - bottom - height) / 2 }
