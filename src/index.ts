@@ -25,6 +25,7 @@ import { initializeTouchControls } from './touchControls'
 import { initializePitFire } from './pitFire'
 import { initializeBackdrop } from './backdrop'
 import { initializePitCinematic } from './pitCinematic'
+import { initializeCinematics } from './cinematics'
 import { initializeUpgradePicker } from './upgradeUi'
 import { initializeSellSheet } from './sellUi'
 import { initializeHints } from './hints'
@@ -110,6 +111,7 @@ function initClient() {
   initializePitFire()
   initializeBackdrop()
   initializePitCinematic()
+  initializeCinematics()
   initializeUpgradePicker()
   initializeSellSheet()
   initializeHints()

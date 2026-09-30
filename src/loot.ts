@@ -8,8 +8,10 @@
 
 import { Billboard, engine, Entity, GltfContainer, Material, MeshRenderer, Transform } from '@dcl/sdk/ecs'
 import { Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
+import { playLegendaryReveal } from './cinematics'
 import { fxGlitter, fxLootBeam, fxNumber, fxSound } from './combatFx'
 import { isInCourtyard } from './courtyard'
+import { liveEnemyNear } from './dungeonEnemies'
 import { EquipmentItem, getEquipmentItemOrNull, WEAPON_DROP_OFFSET, WEAPON_DROP_OFFSET_LEFT } from './equipmentCatalog'
 import { isUsableByHero } from './inventory'
 import { markGearNew } from './newGear'
@@ -305,6 +307,8 @@ function award(id: string, at: Vector3, up = 0, uid = ''): boolean {
   fxNumber(Vector3.add(at, Vector3.create(0, 0.9, 0)), item.name, 'note')
   run.found.push(`${item.id}@${row.rank}@${row.affix}`)
   toast(item, 0, tier, false, false, row.affix)
+  // A legendary gets its moment, unless something is still on its feet nearby.
+  if (tier === 'legendary' && !liveEnemyNear(12)) playLegendaryReveal(item.id)
   return true
 }
 

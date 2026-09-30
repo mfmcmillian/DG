@@ -63,6 +63,7 @@ import {
   createDecal, Decal, destroyDecal, fxDeathPuff, fxExplosion, fxGlitter, fxImpact, fxMagicBurst, fxNumber, fxSlam, fxSlash, fxSound, FxSound, fxWoodHit, updateDecal
 } from './combatFx'
 import { kickCrawlerCamera } from './dungeon/crawlerCamera'
+import { playBossIntro } from './cinematics'
 import { clearLoot, grantLootDirect, lootKindOf, spawnLoot } from './loot'
 import { rollArmorDrop, rollArmorRank, rollWeaponLoot, weaponStats } from './weapons'
 import { newGearUid } from './shared/gearBag'
@@ -675,6 +676,8 @@ function wake(e: Enemy) {
   fxMagicBurst(Vector3.create(e.position.x, e.position.y + 0.9, e.position.z), Color4.create(0.85, 0.2, 0.1, 1), e.boss ? 1.1 : 0.55)
   if (e.boss || e.archetype.role === 'elite') fxSound('roar', 0.5)
   if (e.boss) showNotice(`${e.archetype.name}!`, 2)
+  // The boss takes the room: a few seconds on him as he rises, then back to the party.
+  if (e.boss) playBossIntro(e.position, e.facing)
   else if (e.archetype.role === 'elite' && e.stage >= 0 && sim?.gauntlet?.stages[e.stage]?.kind === 'warden') showNotice(`${e.archetype.name}!`, 2)
 }
 
@@ -1770,6 +1773,14 @@ function enemyWithin(range: number): boolean {
   if (!attacker || !clientSim || clientSim.paused || defeated) return false
   sim = clientSim
   return !!pickHeroTarget(attacker, range, LOCK_COS)
+}
+
+/** Something living and awake stands within `range` of the hero, any direction: no moment for a shot (src/cinematics.ts). */
+export function liveEnemyNear(range: number): boolean {
+  const p = Transform.getOrNull(engine.PlayerEntity)?.position
+  const s = clientSim
+  if (!p || !s) return false
+  return s.enemies.some((e) => !e.dead && !e.asleep && (e.position.x - p.x) ** 2 + (e.position.z - p.z) ** 2 <= range * range)
 }
 
 /** The enemies a projectile can reach right now, as bodies. */

@@ -47,6 +47,11 @@ export function openSceneCamera(
   return activeSession
 }
 
+/** A menu has the camera (the shots in src/cinematics.ts wait). */
+export function isSceneCameraOpen(): boolean {
+  return activeSession !== undefined
+}
+
 /** Prepare spawn and aim together while the creator still owns the preview. */
 export function prepareSceneCameraReturn(session: SceneCameraSession | undefined, firstCreation = false): Promise<void> {
   if (!session || session !== activeSession) return Promise.reject(new Error('Camera session is no longer active'))

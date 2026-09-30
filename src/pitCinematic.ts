@@ -8,12 +8,14 @@
 // written. The hero's own body stays in the shot, so this does not go through
 // src/sceneCamera.ts, which hides it for the menus.
 
-import { Billboard, engine, Entity, GltfContainer, InputModifier, LightSource, MainCamera, Material, MeshRenderer, Transform, VirtualCamera } from '@dcl/sdk/ecs'
+import { engine, Entity, InputModifier, LightSource, MainCamera, Transform, VirtualCamera } from '@dcl/sdk/ecs'
 import { Color3, Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
 import { movePlayerTo } from '~system/RestrictedActions'
 import { fxDeathPuff, fxGlitter, fxLootBeam, fxMagicBurst, fxNumber, fxSound } from './combatFx'
 import { onDungeonLoaded, resumeDungeonCamera, suspendDungeonCamera } from './dungeon'
-import { getEquipmentItemOrNull, WEAPON_DROP_OFFSET, WEAPON_DROP_OFFSET_LEFT } from './equipmentCatalog'
+import { presentRemoteLegend } from './cinematics'
+import { getEquipmentItemOrNull } from './equipmentCatalog'
+import { showGear } from './gearShow'
 import { flushHeroSave } from './heroSave'
 import { t } from './i18n'
 import { PitEventNet, publishPitEvent, setPitEventHandler } from './multiplayer'
@@ -102,6 +104,11 @@ export function initializePitCinematic() {
 
 /** Another hero's offering: the fire and the reveal play for us too, from the pit, without the camera. */
 function onRemotePitEvent(msg: PitEventNet) {
+  // A legendary taken in a run rides the same channel: the beam at that hero, wherever they are.
+  if (msg.beat === 'legend') {
+    presentRemoteLegend(msg.id)
+    return
+  }
   const fire = pitFirePosition()
   if (!fire) return
   const mouth = Vector3.create(fire.x, fire.y + PIT_FLAME_HEIGHT, fire.z)
@@ -256,34 +263,8 @@ function release() {
 
 function showItem(id: string, at: Vector3): Entity {
   removeItem()
-  const root = engine.addEntity()
-  Transform.create(root, { position: Vector3.clone(at) })
-  const weapon = getEquipmentItemOrNull(id)
-  if (weapon && !weapon.weapon) {
-    // Armor is a skinned body part, nothing to stand on its own: it flies as its wardrobe icon, the way it lies on the floor as loot.
-    const card = engine.addEntity()
-    Transform.create(card, { parent: root, position: Vector3.create(0, 0.31, 0), scale: Vector3.create(0.62, 0.62, 1) })
-    MeshRenderer.setPlane(card)
-    Material.setPbrMaterial(card, {
-      texture: Material.Texture.Common({ src: weapon.icon }),
-      emissiveTexture: Material.Texture.Common({ src: weapon.icon }),
-      emissiveColor: Color4.create(0.6, 0.6, 0.6, 1), emissiveIntensity: 1,
-      transparencyMode: 2, alphaTest: 0.5, castShadows: false
-    })
-    Billboard.create(card)
-  } else if (weapon?.models[0]) {
-    // The weapon GLB is authored in the hero's hand; a child carries the offset that stands it up (as loot does).
-    const model = engine.addEntity()
-    const offset = weapon.weapon?.hand === 'l' ? WEAPON_DROP_OFFSET_LEFT : WEAPON_DROP_OFFSET
-    Transform.create(model, {
-      parent: root,
-      position: Vector3.create(offset.position[0], offset.position[1], offset.position[2]),
-      rotation: Quaternion.create(offset.rotation[0], offset.rotation[1], offset.rotation[2], offset.rotation[3])
-    })
-    GltfContainer.create(model, { src: weapon.models[0], visibleMeshesCollisionMask: 0, invisibleMeshesCollisionMask: 0 })
-  }
-  item = root
-  return root
+  item = showGear(id, at)
+  return item
 }
 
 function removeItem() {

@@ -573,8 +573,8 @@ export function publishSkillCast(skill: string, x: number, z: number, yaw: numbe
   sendNet('skillCast', { id, skill, x, z, yaw })
 }
 
-/** Our hero's offering at the pit: the room plays the fire and the reveal too. */
-export function publishPitEvent(beat: 'throw' | 'result', item: string, rarity: string, success: boolean) {
+/** Our hero's offering at the pit: the room plays the fire and the reveal too. `legend` is a legendary taken in a run (src/cinematics.ts): the party sees the beam. */
+export function publishPitEvent(beat: 'throw' | 'result' | 'legend', item: string, rarity: string, success: boolean) {
   const id = localAddress()
   if (!clientReady() || !id) return
   sendNet('pitEvent', { id, beat, item, rarity, success })

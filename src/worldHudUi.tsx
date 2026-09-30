@@ -39,6 +39,7 @@ import { fxSound } from './combatFx'
 import { t, tn } from './i18n'
 import { InviteToast } from './inviteUi'
 import { pitCinematicPlaying } from './pitCinematic'
+import { cinematicPlaying, cinematicSkippable } from './cinematics'
 import { partyVitals } from './allyVitals'
 
 /** Still shaking hands with the party server (solo play never waits). */
@@ -735,8 +736,13 @@ function LeaveConfirm({ width, height, scale: s }: { width: number; height: numb
 
 export function WorldHudUi() {
   const { width, height, scale: s, right, bottom, vitalsTop } = hudLayout()
-  // The pit's shot has the screen to itself.
-  if (pitCinematicPlaying()) return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width, height, pointerFilter: 'none' }} />
+  // A shot has the screen to itself; one that can be skipped says so in the corner.
+  if (pitCinematicPlaying() || cinematicPlaying()) {
+    return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width, height, pointerFilter: 'none' }}>
+      {cinematicSkippable() && <Label value={t('Press E, click or tap to skip')} color={Color4.create(0.85, 0.85, 0.9, 0.75)} font="sans-serif" fontSize={11 * s} textAlign="middle-right" textWrap="nowrap"
+        uiTransform={{ positionType: 'absolute', position: { right: 18 * s, bottom: 14 * s }, width: 320 * s, height: 20 * s }} />}
+    </UiEntity>
+  }
   const created = getPickerState().hasCreatedCharacter
   const player = getPlayerCharacterState()
   const ready = created && player.active && player.loading === 'ready'

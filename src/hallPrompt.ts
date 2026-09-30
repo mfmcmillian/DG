@@ -26,6 +26,7 @@ import { pitCinematicPlaying, pitHoverItem, pitResultHovering, takePitResult } f
 import { isUpgradePickerOpen, openUpgradePicker } from './upgradeUi'
 import { isSellOpen } from './sellUi'
 import { getEquipmentItemOrNull } from './equipmentCatalog'
+import { cinematicPlaying } from './cinematics'
 
 /** How long E is held for the ring to close. */
 const HOLD_SECONDS = 0.65
@@ -63,8 +64,8 @@ let systemAdded = false
 function targetNow(): Target | undefined {
   const talk = getTalkState()
   if (talk.open) return undefined
-  // The pit's shot and its sheet own the screen.
-  if (pitCinematicPlaying() || isUpgradePickerOpen() || isSellOpen()) return undefined
+  // The pit's shot (or any other) and its sheet own the screen.
+  if (pitCinematicPlaying() || cinematicPlaying() || isUpgradePickerOpen() || isSellOpen()) return undefined
   const pit = pitTarget()
   const who = talk.near
   if (who) {

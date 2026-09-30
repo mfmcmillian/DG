@@ -316,6 +316,11 @@ function desiredPosition(player: Vector3, lead: Vector3): Vector3 {
   return Vector3.create(player.x + lead.x + offset.x, player.y + offset.y, player.z + lead.z + offset.z)
 }
 
+/** Where the overhead camera sits for a hero standing at `player`, at rest; a shot ends here so the hand-back is a short blend (src/cinematics.ts). */
+export function crawlerCameraPose(player: Vector3): Vector3 {
+  return desiredPosition(player, Vector3.Zero())
+}
+
 /**
  * The orientation the camera has when it sits at the offset and looks at the
  * aim: heading `yaw`, pitched down onto a point `aimHeight` above the feet. On

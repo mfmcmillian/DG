@@ -2,6 +2,7 @@ import {
   CameraMode, CameraType, engine, Entity, InputAction, InputModifier, inputSystem, MainCamera, PointerLock, PrimaryPointerInfo, Transform
 } from '@dcl/sdk/ecs'
 import { hallPromptActive } from './hallPrompt'
+import { cinematicPlaying } from './cinematics'
 import { Quaternion, Vector3 } from '@dcl/sdk/math'
 import { movePlayerTo } from '~system/RestrictedActions'
 import { COURTYARD, isInCourtyard } from './courtyard'
@@ -667,8 +668,8 @@ function updatePlayerCharacter(dt: number) {
   if (!equipmentReady || suspended) resetRoamingCombat(roamingCombat)
   const actionMotion = equipmentReady && !suspended
     ? updateRoamingCombat(roamingCombat, characterRoot, player.position, dt,
-      // Beside one of the hall's folk or the upgrade pit, E is the hall's key (hold, or turn the page), not a swing.
-      !!requestedLoadout?.weapon && requestedLoadout.weapon !== 'none-weapon' && !hallPromptActive(), locomotion !== 'idle', combatHooks)
+      // Beside one of the hall's folk or the upgrade pit, E is the hall's key (hold, or turn the page), not a swing; nor is the press that skips a shot.
+      !!requestedLoadout?.weapon && requestedLoadout.weapon !== 'none-weapon' && !hallPromptActive() && !cinematicPlaying(), locomotion !== 'idle', combatHooks)
     : undefined
   // Rooting follows the combat state every tick, so it is up before a roll's or
   // swing's timed move starts (those are issued a beat after the pose) and a
