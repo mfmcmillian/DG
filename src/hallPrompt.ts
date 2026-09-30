@@ -2,7 +2,9 @@
 // E in it appears at their shoulder; hold E and the ring fills clockwise, and
 // when it closes the conversation opens (src/hallTalk.ts). The upgrade pit has
 // the same ring. Let go early and the ring empties again. A click on the ring
-// does the same at once, for a mouse; on touch the ring is the button. While a
+// does the same at once, for a mouse; on touch the ring is the button (a box
+// the ring's width behind it takes the tap, from as far off as the overhead
+// camera stands). While a
 // conversation is open a press of E turns the page. One prompt serves the
 // whole hall: it moves to whatever is nearest. Nothing floats over anyone's
 // head, and while the prompt is up a press of E is theirs, not a swing
@@ -40,6 +42,9 @@ const AT = Vector3.create(0.78, 1.3, 0)
 const AT_PIT = Vector3.create(1.5, 2.3, 0)
 /** ...and beside the weapon hovering over it. */
 const AT_HOVER = Vector3.create(1.3, 3.5, 0)
+/** The tap target's width (metres) and how far off the camera may stand and still reach it. */
+const TAP_SIZE = 0.95
+const TAP_REACH = 40
 
 const GOLD = Color4.create(1, 0.84, 0.4, 1)
 const GOLD_GLOW = Color3.create(1, 0.74, 0.22)
@@ -134,9 +139,14 @@ function build(): Prompt {
   Transform.create(widget, { parent: root, position: Vector3.clone(AT) })
   // The faint full ring behind the fill, and a dark disc under the key.
   plane(widget, Vector3.create(0, 0, 0.01), 0.82, 'images/fx/ring_02.png', DIM)
-  const disc = plane(widget, Vector3.create(0, 0, 0.005), 0.5, 'images/fx/circle_01.png', INK)
-  MeshCollider.setPlane(disc, ColliderLayer.CL_POINTER)
-  pointerEventsSystem.onPointerDown({ entity: disc, opts: { button: InputAction.IA_POINTER, showFeedback: false } }, () => {
+  plane(widget, Vector3.create(0, 0, 0.005), 0.5, 'images/fx/circle_01.png', INK)
+  // The tap target: an unseen box the width of the whole ring, since a thumb
+  // is not a cursor, and reachable from the overhead camera, which stands some
+  // thirteen metres off (the pointer's default reach is ten).
+  const hit = engine.addEntity()
+  Transform.create(hit, { parent: widget, position: Vector3.create(0, 0, 0.02), scale: Vector3.create(TAP_SIZE, TAP_SIZE, 0.05) })
+  MeshCollider.setBox(hit, ColliderLayer.CL_POINTER)
+  pointerEventsSystem.onPointerDown({ entity: hit, opts: { button: InputAction.IA_POINTER, showFeedback: false, maxDistance: TAP_REACH } }, () => {
     if (prompt?.visible && current) current.run()
   })
   const key = text(widget, Vector3.create(0, 0, -0.01), 3.4, WHITE)

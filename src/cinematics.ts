@@ -1,8 +1,8 @@
 // The short shots: a few seconds where the camera leaves the hero's shoulder
-// for a rig of its own, and comes back. Three of them so far: the boss taking
-// the room as he wakes, a legendary coming up out of the bag as it is picked
-// up, and the drop into a fortress as a run begins. All three ride one runner,
-// so the freeze, the skip and the hand-back are written once.
+// for a rig of its own, and comes back. Two of them so far: the boss taking
+// the room as he wakes, and a legendary coming up out of the bag as it is
+// picked up. Both ride one runner, so the freeze, the skip and the hand-back
+// are written once.
 //
 // A shot is a list of keys (seconds, where the camera stands, what it looks
 // at). On desktop one rig eases between the keys every tick and looks at a
@@ -23,9 +23,7 @@
 import { engine, Entity, InputAction, InputModifier, inputSystem, MainCamera, PointerEventType, Transform, VirtualCamera } from '@dcl/sdk/ecs'
 import { Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
 import { fxGlitter, fxLootBeam, fxMagicBurst, fxNumber, fxSound } from './combatFx'
-import { courtyardSpawnPosition } from './courtyard'
-import { getDungeonState, isDungeonFloor, resumeDungeonCamera, suspendDungeonCamera } from './dungeon'
-import { crawlerCameraPose } from './dungeon/crawlerCamera'
+import { isDungeonFloor, resumeDungeonCamera, suspendDungeonCamera } from './dungeon'
 import { isGodotClient } from './explorerAgent'
 import { showGear } from './gearShow'
 import { t } from './i18n'
@@ -143,7 +141,6 @@ function release() {
 
 function update(dt: number) {
   const step = Number.isFinite(dt) && dt > 0 ? Math.min(dt, 0.1) : 0
-  tickDescentArm(step)
   if (!shot) return
   elapsed += step
   const keys = shot.keys
@@ -289,50 +286,4 @@ function ring(center: Vector3, radius: number, count: number, color: Color4) {
     const a = (i / count) * Math.PI * 2
     fxGlitter(Vector3.create(center.x + Math.sin(a) * radius, center.y, center.z + Math.cos(a) * radius), color)
   }
-}
-
-// --- into the fortress ---------------------------------------------------------------------
-
-const DESCENT_SECONDS = 2.2
-/** How near the spawn the hero must stand for the shot to begin, and how long it waits for the move to land. */
-const DESCENT_REACH = 3
-const DESCENT_WAIT = 4
-let descentWait = 0
-
-/**
- * A run begins (src/party.ts enterRun). The hero is being moved to the
- * entrance; once they stand there, the camera looks back at them from down the
- * first corridor, high, and pulls up and back into the overhead camera's own
- * spot, so the hand-back is a short blend. Every run, not skippable at two seconds.
- */
-export function armDescent() {
-  if (isHeadless()) return
-  descentWait = DESCENT_WAIT
-}
-
-function tickDescentArm(dt: number) {
-  if (descentWait <= 0) return
-  descentWait -= dt
-  // The first tick after arming is the hall's last; the move has not been asked for yet.
-  if (descentWait > DESCENT_WAIT - 0.3) return
-  const player = Transform.getOrNull(engine.PlayerEntity)?.position
-  const spawn = courtyardSpawnPosition()
-  if (!player || !getDungeonState().dungeon) return
-  if (Vector3.distance(Vector3.create(player.x, 0, player.z), Vector3.create(spawn.x, 0, spawn.z)) > DESCENT_REACH) return
-  descentWait = 0
-  playDescent(Vector3.create(player.x, spawn.y, player.z))
-}
-
-function playDescent(at: Vector3) {
-  if (!canStart()) return
-  // The overhead camera looks toward -Z: into the dungeon from its entrance.
-  const far = onFloor(Vector3.create(at.x, at.y + 5.5, at.z - 10), at)
-  const home = crawlerCameraPose(at)
-  start({
-    keys: [
-      { at: 0, position: far, focus: Vector3.create(at.x, at.y + 1.2, at.z) },
-      { at: DESCENT_SECONDS, position: home, focus: Vector3.create(at.x, at.y + 1.0, at.z) }
-    ],
-    skippable: false
-  })
 }

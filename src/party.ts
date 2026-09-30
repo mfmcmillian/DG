@@ -20,7 +20,6 @@ import { getPickerState } from './characterPicker'
 import { getPlayerCharacterState } from './playerCharacter'
 import { COMING_SOON, DIFFICULTIES, difficultyById, HUB_LEVEL, levelById, LEVELS, MAX_PARTY, RAID_PARTY, RealmDefinition } from './shared/levels'
 import { fxSound } from './combatFx'
-import { armDescent } from './cinematics'
 
 /** What the player has picked in the lobby before they have a party of their own. */
 let pickLevel = 0
@@ -499,8 +498,6 @@ function enterRun(party: PartyInfo) {
   applyCameraSetting()
   loadDungeon(level.seed, level.style)
   movePlayerToSpawn()
-  // Once the hero stands at the entrance, the camera looks back at them from down the corridor and pulls up into place.
-  armDescent()
   markMilestone(`dungeon:${level.id}`)
   console.log(`[DG] entering ${level.name} (${difficultyById(party.diff).name}) with party ${party.id}, run ${party.run}`)
 }

@@ -6,9 +6,11 @@
 export type PatchNote = { version: string; notes: string[] }
 
 export const PATCH_NOTES: PatchNote[] = [
+  { version: '2.8.51', notes: [
+    'The ring beside the upgrade pit and the folk takes a tap on a phone now.'
+  ] },
   { version: '2.8.50', notes: [
-    'The camera has its moments: it drops in on the boss as he takes the room, follows a legendary up out of your hands, and looks back at you from down the corridor as a run begins. E, a click or a tap skips the first two.',
-    'On a phone the E button is back in the hall, so the folk and the upgrade pit can be held.'
+    'The camera has its moments: it drops in on the boss as he takes the room, and follows a legendary up out of your hands. E, a click or a tap skips either.'
   ] },
   { version: '2.8.49', notes: [
     'The title moves: the castle at dusk with its banners, wheel and fires going behind the crest.',
