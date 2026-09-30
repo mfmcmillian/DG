@@ -1,9 +1,9 @@
 /**
- * Where the game lives now. The same build goes to the LAND at -17,123 and to
- * the World; the World copy carries a worldConfiguration in its scene.json
- * (tools/world.mjs adds it), the LAND copy does not. A LAND copy that is not a
- * local preview is the old home: its title shows one button that sends the
- * player to the World, and nothing else.
+ * Where the game lives now: the World, whose scene.json carries a
+ * worldConfiguration. The LAND at -17,123 still runs the last build deployed
+ * there, without one. A copy without it that is not a local preview is the
+ * old home: its title shows one button that sends the player to the World,
+ * and nothing else.
  */
 
 import { executeTask } from '@dcl/sdk/ecs'

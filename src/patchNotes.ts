@@ -6,6 +6,10 @@
 export type PatchNote = { version: string; notes: string[] }
 
 export const PATCH_NOTES: PatchNote[] = [
+  { version: '2.8.49', notes: [
+    'The title moves: the castle at dusk with its banners, wheel and fires going behind the crest.',
+    'New skill pictures on the bar, drawn low-poly to match the hall.'
+  ] },
   { version: '2.8.48', notes: [
     'No two weapons swing alike now: each has a temper, every armor set leans its own way, and rare or better finds carry a named affix such as Keen or Vital.',
     'The equipment sheet shows the damage your own hits will do with a piece in hand, green or red against what you wear.',

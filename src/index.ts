@@ -46,6 +46,7 @@ import { initializeHeroSave } from './heroSave'
 import { initializeHeroXp } from './heroXp'
 import { initializeClientInfo } from './clientInfo'
 import { initializeHome } from './home'
+import { initializeTitleVideo } from './titleVideo'
 import { initializeHeroSkills } from './heroSkills'
 import { initializePartyServer } from './partyServer'
 import { HUB_LEVEL } from './shared/levels'
@@ -91,6 +92,7 @@ function initClient() {
   initializeMultiplayer(false)
   initializeClientInfo()
   initializeHome()
+  initializeTitleVideo()
   initializeAvatarHiding()
   initializeRemotePlayers()
 

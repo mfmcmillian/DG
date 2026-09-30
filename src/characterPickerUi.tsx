@@ -23,6 +23,7 @@ import { getLobbyState } from './party'
 import { LobbyUi } from './lobbyUi'
 import { GAME_VERSION } from './version'
 import { goToNewHome, hasMoved } from './home'
+import { isTitleVideoShowing } from './titleVideo'
 import { getPreloadGroup, releasePreload } from './preload'
 import { t } from './i18n'
 import { LanguageRow } from './languageUi'
@@ -317,7 +318,8 @@ function TitleScreen() {
   const column = EMBLEM.height * s + 20 * s + 130 * s
   const columnTop = Math.max(top + 12 * s, (screenHeight - column) / 2 - 10 * s)
   return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}>
-    <UiEntity uiTransform={wholeCanvas()} uiBackground={kitTexture(UI_KIT.titleBg)} />
+    {/* The still stands in until the video behind the UI is really playing (titleVideo.ts), and comes back if it stops. */}
+    {!isTitleVideoShowing() && <UiEntity uiTransform={wholeCanvas()} uiBackground={kitTexture(UI_KIT.titleBg)} />}
     <UiEntity uiTransform={wholeCanvas()} uiBackground={{ color: titleVeil }} />
     <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: columnTop }, width: '100%',
       flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>

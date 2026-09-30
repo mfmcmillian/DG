@@ -15,8 +15,9 @@ headless host owns enemies, loot and hero health; each hero is a synced
 `HeroBody` entity, and every client builds the other players' custom bodies
 from it (native avatars are hidden scene-wide).
 
-**Play it:** [Genesis City, -17,123](https://play.decentraland.org/?NETWORK=mainnet&position=-17,123)
-(6×6 parcels).
+**Play it:** [dungeons.dcl.eth](https://decentraland.org/jump/?realm=dungeons.dcl.eth)
+(a World, 10×10 parcels). The old LAND at -17,123 now shows only a "New location"
+button that sends the player there.
 
 **Design:** the Game Design Document for Decentraland's Creator Success
 programme is at [`design/gdd.md`](design/gdd.md); `design/` also holds the
@@ -53,15 +54,17 @@ npm run start
 
 ## Deploy
 
-`scene.json` targets LAND: the 6x6 block at `-17,123` in Genesis City.
-`npm run deploy:land` deploys it as committed. `npm run deploy:world` deploys
-to the World (`spacematt.dcl.eth`) by temporarily rewriting `scene.json` to a
-`0,0` base with a `worldConfiguration` block and restoring it afterwards.
-The deploy is ~186 MB after `.dclignore`, which fits in a single pass.
+`scene.json` is the World scene: a `0,0` base, 10x10 parcels, and a
+`worldConfiguration` block naming `dungeons.dcl.eth` (listed in Places on
+purpose: the storage service finds a World's scene through the Places API).
+`npm run deploy` sends it to the Worlds content server; sign at
+`localhost:8000` within five minutes. The Worlds server rejects a single upload
+over ~200 MB, but skips hashes it already holds, so a first deploy is staged
+by holding files back in `.dclignore` and redeploying.
 
-```
-npm run deploy -- --target-content https://worlds-content-server.decentraland.org
-```
+`npm run storage -- env set METRICS_KEY --value ...` and friends run the
+storage CLI against the World's drawer; `npm run server-logs -- --world
+dungeons.dcl.eth` streams the live server's log.
 
 ## Layout
 
