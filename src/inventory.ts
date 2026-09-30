@@ -52,7 +52,7 @@ export type InventoryFilter = 'all' | 'other' | EquipmentSlot
  * One card in the backpack: a copy the hero owns, or the free copy of a
  * starter piece (`virtual`, not in the bag, shown until a real one is found).
  */
-export type InventoryEntry = { uid: string; item: EquipmentItem; rank: number; level: number; virtual: boolean }
+export type InventoryEntry = { uid: string; item: EquipmentItem; rank: number; level: number; affix: number; virtual: boolean }
 
 export interface InventoryState {
   open: boolean
@@ -203,8 +203,8 @@ export function ownedArmorIds(): string[] {
 function entriesFor(item: EquipmentItem): InventoryEntry[] {
   const rows = bagRowsOf(item.id)
   const out: InventoryEntry[] = []
-  if (!GATED.has(item.id) && !rows.length) out.push({ uid: FREE_COPY + item.id, item, rank: 0, level: 1, virtual: true })
-  for (const row of rows) out.push({ uid: row.uid, item, rank: row.rank, level: row.level, virtual: false })
+  if (!GATED.has(item.id) && !rows.length) out.push({ uid: FREE_COPY + item.id, item, rank: 0, level: 1, affix: 0, virtual: true })
+  for (const row of rows) out.push({ uid: row.uid, item, rank: row.rank, level: row.level, affix: row.affix, virtual: false })
   return out
 }
 
@@ -212,11 +212,11 @@ function entriesFor(item: EquipmentItem): InventoryEntry[] {
 export function inventoryEntry(uid: string): InventoryEntry | undefined {
   if (uid.startsWith(FREE_COPY)) {
     const item = getEquipmentItemOrNull(uid.slice(FREE_COPY.length))
-    return item && !GATED.has(item.id) ? { uid, item, rank: 0, level: 1, virtual: true } : undefined
+    return item && !GATED.has(item.id) ? { uid, item, rank: 0, level: 1, affix: 0, virtual: true } : undefined
   }
   const row = bagRow(uid)
   const item = row ? getEquipmentItemOrNull(row.item) : undefined
-  return row && item ? { uid, item, rank: row.rank, level: row.level, virtual: false } : undefined
+  return row && item ? { uid, item, rank: row.rank, level: row.level, affix: row.affix, virtual: false } : undefined
 }
 
 /** The backpack: every copy the hero owns that its class can use, under the current filter. */
@@ -239,9 +239,10 @@ export function getInventoryFoundCount(): number {
   return filtered(wardrobe()).filter((item) => !isInventoryItemLocked(item.id)).length
 }
 
+/** The class's gear, the empty slots left out: taking a piece off is the detail panel's Unequip, not a card. */
 function wardrobe(): EquipmentItem[] {
   const characterId = getInventoryCharacter().id
-  return EQUIPMENT_ITEMS.filter((item) => usableByHero(item, characterId))
+  return EQUIPMENT_ITEMS.filter((item) => usableByHero(item, characterId) && item.id !== getUnequippedItem(item.slot).id)
 }
 
 function filtered(items: EquipmentItem[]): EquipmentItem[] {

@@ -6,6 +6,13 @@
 export type PatchNote = { version: string; notes: string[] }
 
 export const PATCH_NOTES: PatchNote[] = [
+  { version: '2.8.48', notes: [
+    'No two weapons swing alike now: each has a temper, every armor set leans its own way, and rare or better finds carry a named affix such as Keen or Vital.',
+    'The equipment sheet shows the damage your own hits will do with a piece in hand, green or red against what you wear.',
+    'The champion card lists a class\'s health, stamina, hits, reach and weapons in numbers.',
+    'In a run the HUD steps back: a smaller card, the clock top centre, one door out, and the how-to strip across the top.',
+    'Putting on armor that adds health fills the bar by as much.'
+  ] },
   { version: '2.8.42', notes: [
     'The background downloads wait a few seconds after your hero arrives, so the first steps in the hall are smoother.'
   ] },

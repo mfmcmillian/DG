@@ -8,7 +8,8 @@
 import { Color4 } from '@dcl/sdk/math'
 import { ArmorRealm, EQUIPMENT_ITEMS, EQUIPMENT_SLOTS, EquipmentItem, EquipmentLoadout, getEquipmentItemOrNull } from './equipmentCatalog'
 import { t } from './i18n'
-import { levelFlatBonus, levelMultiplier, upgradeLevelOf, upgradeRankOf } from './shared/upgradeRanks'
+import { affixOf } from './shared/affixes'
+import { levelFlatBonus, levelMultiplier, upgradeAffixOf, upgradeLevelOf, upgradeRankOf } from './shared/upgradeRanks'
 
 export type WeaponClass = 'sword' | 'dagger' | 'axe' | 'mace' | 'hammer' | 'club' | 'great' | 'bow' | 'staff' | 'sceptre'
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
@@ -36,6 +37,32 @@ export const WEAPON_CLASSES: Record<WeaponClass, { label: string; blurb: string 
   bow: { label: 'Bow', blurb: 'Arrows from range. Light shafts reel less; a volley makes up for it.', damage: 1, stagger: 0.8, knockback: 0.7 },
   staff: { label: 'Staff', blurb: 'Bolts and bursts. Hits stagger more than they shove.', damage: 1, stagger: 1.2, knockback: 0.8 },
   sceptre: { label: 'Sceptre', blurb: 'A short casting focus. Sharper bolts, less weight behind the stagger.', damage: 1.1, stagger: 0.9, knockback: 0.7 }
+}
+
+export type WeaponTemper = NonNullable<NonNullable<EquipmentItem['weapon']>['temper']>
+
+/**
+ * How one weapon leans within its class: small, fixed, and the same for every
+ * copy, so a Freebooter's Cutlass is not a Corsair's Cutlass. Multiplied onto
+ * the class's numbers. A weapon the manifest gives no temper takes one from its
+ * id, so the spread across a class is even and never changes between builds.
+ */
+export const WEAPON_TEMPERS: Record<WeaponTemper, { label: string; blurb: string } & Omit<WeaponStats, 'bonus'>> = {
+  balanced: { label: 'Balanced', blurb: 'True to its class.', damage: 1, stagger: 1, knockback: 1 },
+  keen: { label: 'Keen', blurb: 'Bites deeper, shoves less.', damage: 1.06, stagger: 0.92, knockback: 0.9 },
+  weighted: { label: 'Weighted', blurb: 'Slower to bite, longer to reel.', damage: 0.95, stagger: 1.2, knockback: 1.1 },
+  brutal: { label: 'Brutal', blurb: 'Throws them back.', damage: 0.97, stagger: 0.95, knockback: 1.35 },
+  fine: { label: 'Fine', blurb: 'A little better at everything but the shove.', damage: 1.03, stagger: 1.06, knockback: 0.85 }
+}
+const TEMPER_ORDER: WeaponTemper[] = ['balanced', 'keen', 'weighted', 'brutal', 'fine']
+
+/** The temper of a weapon id: the manifest's, or a stable draw from the id. */
+export function weaponTemper(id: string): WeaponTemper {
+  const info = weaponInfo(id)
+  if (info?.temper) return info.temper
+  let h = 5381
+  for (let i = 0; i < id.length; i++) h = (Math.imul(h, 33) ^ id.charCodeAt(i)) >>> 0
+  return TEMPER_ORDER[h % TEMPER_ORDER.length]
 }
 
 export const RARITIES: Record<Rarity, { label: string; rank: number; bonus: number; color: Color4; coins: number }> = {
@@ -67,19 +94,24 @@ export function weaponInfo(id: string): EquipmentItem['weapon'] | undefined {
  * How this weapon id fights. Unknown or missing weapons fight like a plain sword.
  * The rarity bonus counts the steps the drop fell with and the damage the pit's
  * level: this hero's by default, or `rank` and `level` when the host scores a
- * blow with what the striker's HeroBody declares.
+ * blow with what the striker's HeroBody declares. The weapon's own temper and
+ * the copy's affix (`affix`, likewise this hero's by default) sit on top.
  */
-export function weaponStats(id: string | undefined, withBonus = true, rank?: number, level?: number): WeaponStats {
+export function weaponStats(id: string | undefined, withBonus = true, rank?: number, level?: number, affix?: number): WeaponStats {
   const info = id ? weaponInfo(id) : undefined
   if (!info) return SWORD_STATS
   const cls = WEAPON_CLASSES[info.class]
+  const temper = WEAPON_TEMPERS[weaponTemper(id!)]
+  const mark = affixOf(affix ?? upgradeAffixOf(id))
   const rarity = rarityOf(id!, rank ?? upgradeRankOf(id))
   const pride = info.pride ? PRIDE.damage : 1
   const at = level ?? upgradeLevelOf(id)
   const forged = levelMultiplier(at)
   return {
-    damage: cls.damage * pride * forged, stagger: cls.stagger, knockback: cls.knockback,
-    bonus: withBonus ? RARITIES[rarity].bonus + (info.pride ? PRIDE.bonus : 0) + levelFlatBonus(at) : 0
+    damage: cls.damage * temper.damage * (mark?.damage ?? 1) * pride * forged,
+    stagger: cls.stagger * temper.stagger * (mark?.stagger ?? 1),
+    knockback: cls.knockback * temper.knockback * (mark?.knockback ?? 1),
+    bonus: withBonus ? RARITIES[rarity].bonus + (info.pride ? PRIDE.bonus : 0) + levelFlatBonus(at) + (mark?.bonus ?? 0) : 0
   }
 }
 
@@ -187,24 +219,32 @@ export function rarityColor(id: string): Color4 {
   return RARITIES[rarityOf(id)].color
 }
 
-/** "Epic · Level 4 · Sword · Dark Fortress", for this hero's copy in use or the copy given by `rank` and `level`. */
+/** "Keen Broadsword": the copy's affix before the name, when it has one. */
+export function gearDisplayName(item: EquipmentItem, affix: number = upgradeAffixOf(item.id)): string {
+  const mark = affixOf(affix)
+  return mark ? `${t(mark.name)} ${item.name}` : item.name
+}
+
+/** "Epic · Level 4 · Weighted · Sword · Dark Fortress", for this hero's copy in use or the copy given by `rank` and `level`; the affix is in the name. */
 export function weaponSubtitle(item: EquipmentItem, rank: number = upgradeRankOf(item.id), level: number = upgradeLevelOf(item.id)): string {
   if (!item.weapon) return ''
   const rarity = t(RARITIES[rarityOf(item.id, rank)].label)
   const forged = level > 1 ? ` · ${t('Level {n}', { n: level })}` : ''
   const pride = item.weapon.pride ? `${t('Pride')} · ` : ''
-  return `${pride}${rarity}${forged} · ${t(WEAPON_CLASSES[item.weapon.class].label)} · ${item.weapon.pack}`
+  const temper = weaponTemper(item.id)
+  const lean = temper === 'balanced' ? '' : ` · ${t(WEAPON_TEMPERS[temper].label)}`
+  return `${pride}${rarity}${forged}${lean} · ${t(WEAPON_CLASSES[item.weapon.class].label)} · ${item.weapon.pack}`
 }
 
 /** "+20% damage · +40% stagger · +4 flat damage · Level 6: +25% damage, +5 flat" for the inventory. */
-export function weaponStatLine(item: EquipmentItem, rank: number = upgradeRankOf(item.id), level: number = upgradeLevelOf(item.id)): string {
+export function weaponStatLine(item: EquipmentItem, rank: number = upgradeRankOf(item.id), level: number = upgradeLevelOf(item.id), affix: number = upgradeAffixOf(item.id)): string {
   if (!item.weapon) return ''
-  const s = weaponStats(item.id, true, rank, level)
+  const s = weaponStats(item.id, true, rank, level, affix)
   const parts: string[] = []
   const pct = (v: number) => `${v >= 0 ? '+' : ''}${Math.round(v * 100)}%`
-  if (s.damage !== 1) parts.push(t('{pct} damage', { pct: pct(s.damage - 1) }))
-  if (s.stagger !== 1) parts.push(t('{pct} stagger', { pct: pct(s.stagger - 1) }))
-  if (s.knockback !== 1) parts.push(t('{pct} knockback', { pct: pct(s.knockback - 1) }))
+  if (Math.round(s.damage * 100) !== 100) parts.push(t('{pct} damage', { pct: pct(s.damage - 1) }))
+  if (Math.round(s.stagger * 100) !== 100) parts.push(t('{pct} stagger', { pct: pct(s.stagger - 1) }))
+  if (Math.round(s.knockback * 100) !== 100) parts.push(t('{pct} knockback', { pct: pct(s.knockback - 1) }))
   if (s.bonus) parts.push(t('+{n} flat damage', { n: s.bonus }))
   if (level > 1) parts.push(t('Level {n}: {pct} damage, +{flat} flat', { n: level, pct: pct(levelMultiplier(level) - 1), flat: levelFlatBonus(level) }))
   return parts.length ? parts.join(' · ') : t('Balanced')

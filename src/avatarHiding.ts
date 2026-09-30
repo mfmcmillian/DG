@@ -1,5 +1,6 @@
 import { AvatarModifierArea, AvatarModifierType, CameraMode, engine, Entity, MainCamera, Transform } from '@dcl/sdk/ecs'
 import { Vector3 } from '@dcl/sdk/math'
+import { isGodotClient } from './explorerAgent'
 
 /**
  * One AvatarModifierArea over the whole scene hides every native Decentraland
@@ -101,8 +102,14 @@ function watchCamera() {
   const mode = CameraMode.getOrNull(engine.CameraEntity)?.mode
   if (virtualCamera !== lastVirtualCamera || mode !== lastCameraMode) {
     const first = lastVirtualCamera === undefined && lastCameraMode === undefined
+    const cameraSwapOnly = mode === lastCameraMode
     lastVirtualCamera = virtualCamera
     lastCameraMode = mode
-    if (!first) rearmAvatarHiding()
+    // Godot re-checks the area whenever it shows an avatar (its camera controller's
+    // set_hidden(false) ends in check_areas), so a virtual camera swap never unhides
+    // one there. Its dungeon camera also swaps virtual cameras every tick while the
+    // player moves (crawlerCamera.ts, the relay); rearming on each would keep the
+    // area out of the world, and the native avatar shown, for the whole run.
+    if (!first && !(cameraSwapOnly && isGodotClient())) rearmAvatarHiding()
   }
 }

@@ -3,7 +3,7 @@
 // of the game (the smith on armor, the guards on parties, the squire on the
 // yard, the ranger on skills and levels, the witch on stamina), with a first line that changes for who is asking and how often they
 // have asked. Most of them also do something: the last line carries a button
-// that opens the wardrobe, the war table, or points the way. Local only: the
+// that opens the wardrobe, the lobby, or points the way. Local only: the
 // conversation is between the player and their own client.
 
 import { engine, Transform } from '@dcl/sdk/ecs'
@@ -103,7 +103,7 @@ function actionFor(title: string): TalkAction | undefined {
     case 'Sellsword':
       return { label: t('Show me the weapons'), run: () => { closeTalk(); if (openInventory()) setInventoryFilter('weapon') } }
     case 'Hall Guard':
-      return { label: t('Open the war table'), run: () => { closeTalk(); openLobby() } }
+      return { label: t('Take me to the fortresses'), run: () => { closeTalk(); openLobby() } }
     case 'Squire':
       return { label: t('Show me the yard'), run: () => { closeTalk(); showGuide('yard') } }
     default:
@@ -154,7 +154,7 @@ function linesFor(title: string, visit: number): string[] {
     case 'Hall Guard':
       return [
         visit === 0 ? t('Steady. The hall is for the living; save the steel for the fortresses.') : t('You again. Still standing, I see. Good.'),
-        t('The war table in the centre of the hall: press Go and your doors stand open a few breaths. Anyone in the hall may step in before they close, and whoever pressed it leads.'),
+        t('Press Play and choose: lead a party of your own, or step in with one that is going. A leader picks the fortress and how hard; their doors stand open a few breaths, and anyone in the hall may step in before they close.'),
         t('A party is up to {n}. Going alone is allowed, if you are that sort. Harder settings pay better, in experience and in what drops.', { n: MAX_PARTY }),
         t('When the fight is done the leader chooses: descend deeper, fight it again, or return to the hall. Anyone who has had enough can leave for the hall on their own.')
       ]

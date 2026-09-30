@@ -14,9 +14,11 @@ import { EquipmentItem, getEquipmentItemOrNull, WEAPON_DROP_OFFSET, WEAPON_DROP_
 import { isUsableByHero } from './inventory'
 import { markGearNew } from './newGear'
 import { publishPickup } from './multiplayer'
+import { isGodotClient } from './explorerAgent'
 import { getPlayerCombatPose, getPlayerVitals } from './playerCharacter'
 import { Rarity, RARITIES, rarityOf } from './weapons'
-import { addGear, bagFull, gearKindOf, ownsGear } from './shared/gearBag'
+import { addGear, bagFull, gearKindOf, newGearUid, ownsGear } from './shared/gearBag'
+import { rollAffix } from './shared/affixes'
 
 export type LootKind = 'coin' | 'heart' | 'weapon' | 'armor'
 
@@ -45,6 +47,8 @@ type Drop = {
   phase: number
   /** Seconds until the beam fires again (boss drops). */
   beamIn: number
+  /** Godot: the drop has been laid to rest and is no longer written each tick. */
+  settled?: boolean
 }
 
 /** An item pickup as the HUD shows it: a card that slides in and fades. */
@@ -58,6 +62,8 @@ export type LootToast = {
   rarity: Rarity
   /** The bag had no room: the piece lies where it fell. */
   full?: boolean
+  /** The affix the copy fell with (shared/affixes.ts index), 0 for none. */
+  affix?: number
   age: number
 }
 
@@ -198,9 +204,9 @@ function update(dt: number) {
   for (let i = drops.length - 1; i >= 0; i--) {
     const d = drops[i]
     d.age += dt
-    const t = Transform.getMutable(d.entity)
     const pop = d.boss ? BOSS_POP : POP
     if (d.age < pop) {
+      const t = Transform.getMutable(d.entity)
       const k = d.age / pop
       const arc = Math.sin(k * Math.PI) * (d.boss ? 1.6 : 0.8)
       t.position = Vector3.create(
@@ -212,15 +218,25 @@ function update(dt: number) {
       continue
     }
     if (d.refusedFor > 0) d.refusedFor -= dt
-    const wobble = d.age + d.phase
-    t.position = Vector3.create(d.to.x, d.to.y + (d.kind === 'weapon' ? 0.28 : d.kind === 'armor' ? 0.22 : 0.18) + Math.sin(wobble * 3) * 0.06, d.to.z)
-    // The coin is authored flat; stand it up and spin it. The heart is authored
-    // upright. A weapon stands on its pommel, leaning a little, and turns slowly.
-    t.rotation = d.kind === 'coin'
-      ? Quaternion.multiply(Quaternion.fromEulerDegrees(0, wobble * 160, 0), Quaternion.fromEulerDegrees(90, 0, 0))
-      : d.kind === 'weapon'
-        ? Quaternion.multiply(Quaternion.fromEulerDegrees(0, wobble * 60, 0), Quaternion.fromEulerDegrees(0, 0, 28))
-        : Quaternion.fromEulerDegrees(0, wobble * 90, 0)
+    // On Godot a transform the scene writes every tick moves in tick-sized,
+    // uneven steps (the phone's ticks run 7-78 ms), and a drop bobbing at the
+    // hero's feet is the one thing near them doing so: it judders while the
+    // world around it glides. There the drop comes to rest once, and lies still.
+    const still = isGodotClient()
+    if (!still || !d.settled) {
+      const t = Transform.getMutable(d.entity)
+      const wobble = still ? d.phase : d.age + d.phase
+      const bob = still ? 0 : Math.sin(wobble * 3) * 0.06
+      t.position = Vector3.create(d.to.x, d.to.y + (d.kind === 'weapon' ? 0.28 : d.kind === 'armor' ? 0.22 : 0.18) + bob, d.to.z)
+      // The coin is authored flat; stand it up and spin it. The heart is authored
+      // upright. A weapon stands on its pommel, leaning a little, and turns slowly.
+      t.rotation = d.kind === 'coin'
+        ? Quaternion.multiply(Quaternion.fromEulerDegrees(0, wobble * 160, 0), Quaternion.fromEulerDegrees(90, 0, 0))
+        : d.kind === 'weapon'
+          ? Quaternion.multiply(Quaternion.fromEulerDegrees(0, wobble * 60, 0), Quaternion.fromEulerDegrees(0, 0, 28))
+          : Quaternion.fromEulerDegrees(0, wobble * 90, 0)
+      d.settled = true
+    }
     if (d.boss && d.item) {
       d.beamIn -= dt
       if (d.beamIn <= 0) {
@@ -244,9 +260,9 @@ function update(dt: number) {
   }
 }
 
-function toast(item: EquipmentItem, salvaged: number, rarity: Rarity, wrongClass = false, full = false) {
+function toast(item: EquipmentItem, salvaged: number, rarity: Rarity, wrongClass = false, full = false, affix = 0) {
   if (toasts.length >= MAX_TOASTS) toasts.shift()
-  toasts.push({ item, salvaged, rarity, wrongClass, full, age: 0 })
+  toasts.push({ item, salvaged, rarity, wrongClass, full, affix, age: 0 })
 }
 
 /**
@@ -278,15 +294,17 @@ function award(id: string, at: Vector3, up = 0, uid = ''): boolean {
     toast(item, 0, tier, false, true)
     return false
   }
-  const row = uid ? addGear(item.id, up, 1, uid) : addGear(item.id, up, 1)
+  // A Rare or better drop carries an affix, drawn from its uid so every client agrees with the host.
+  const id36 = uid || newGearUid()
+  const row = addGear(item.id, up, 1, id36, false, rollAffix(gearKindOf(item.id), up, id36))
   if (!row) return false
   fxGlitter(at, rarity.color)
   fxGlitter(Vector3.add(at, Vector3.create(0, 0.6, 0)), rarity.color)
   markGearNew(row.uid)
   fxSound('heal', 0.9)
   fxNumber(Vector3.add(at, Vector3.create(0, 0.9, 0)), item.name, 'note')
-  run.found.push(`${item.id}@${row.rank}`)
-  toast(item, 0, tier)
+  run.found.push(`${item.id}@${row.rank}@${row.affix}`)
+  toast(item, 0, tier, false, false, row.affix)
   return true
 }
 

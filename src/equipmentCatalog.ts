@@ -16,6 +16,8 @@ export type WeaponInfo = {
   hand?: 'l' | 'r'
   /** A Pride weapon: the tier above legendary (src/weapons.ts PRIDE), never in the common loot pool. */
   pride?: boolean
+  /** How this particular weapon leans (src/weapons.ts WEAPON_TEMPERS); unset, it takes a stable one from its id. */
+  temper?: 'balanced' | 'keen' | 'weighted' | 'brutal' | 'fine'
 }
 
 /** Where a set's pieces are found: a realm's dungeons, the Pit, or nowhere because it is the class's starter. */

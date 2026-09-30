@@ -1,5 +1,6 @@
 import { CreatedBy, engine, Entity, EntityState, PlayerIdentityData, RealmInfo, Transform } from '@dcl/sdk/ecs'
 import { clampLevel } from './shared/upgradeRanks'
+import { clampAffix } from './shared/affixes'
 import { Vector3 } from '@dcl/sdk/math'
 import { isStateSyncronized, syncEntity } from '@dcl/sdk/network'
 import { CombatPose, isMeleeSwing, MAX_COMBAT_HEALTH } from './combatActions'
@@ -301,14 +302,22 @@ export function heroWeaponLevel(id: string): number {
   return 1
 }
 
-/** `HeroBody.weaponUp`: the rarity steps (0..9) plus ten times the level. */
-export function packWeaponUp(rank: number, level: number): number {
-  return Math.max(0, Math.min(9, Math.floor(rank))) + 10 * clampLevel(level)
+/** The affix that weapon fell with (shared/affixes.ts index), as the hero's synced look declares. */
+export function heroWeaponAffix(id: string): number {
+  for (const [entity, hero] of heroes()) {
+    if (heroOwner(entity, hero) === id) return unpackWeaponUp(hero.weaponUp).affix
+  }
+  return 0
 }
 
-function unpackWeaponUp(packed: number | undefined): { rank: number; level: number } {
+/** `HeroBody.weaponUp`: the rarity steps (0..9), ten times the level (1..10), and a thousand times the affix. */
+export function packWeaponUp(rank: number, level: number, affix = 0): number {
+  return Math.max(0, Math.min(9, Math.floor(rank))) + 10 * clampLevel(level) + 1000 * clampAffix(affix)
+}
+
+function unpackWeaponUp(packed: number | undefined): { rank: number; level: number; affix: number } {
   const v = Math.max(0, Math.floor(packed || 0))
-  return { rank: v % 10, level: clampLevel(Math.floor(v / 10)) }
+  return { rank: v % 10, level: clampLevel(Math.floor(v / 10) % 100), affix: clampAffix(Math.floor(v / 1000)) }
 }
 
 /**
@@ -333,16 +342,44 @@ export function heroArmorLevelOf(id: string): (itemId: string) => number {
   return () => 1
 }
 
-/** Pack a loadout's armor ranks and levels the way `HeroBody.armorUp` carries them: six rank digits, then six base-36 level digits. */
-export function packArmorRanks(loadout: EquipmentLoadout, rankOf: (itemId: string) => number, levelOf: (itemId: string) => number = () => 1): string {
+/** The affix each worn armor piece fell with, as the synced look declares: a lookup by item id like heroArmorRankOf. */
+export function heroArmorAffixOf(id: string): (itemId: string) => number {
+  for (const [entity, hero] of heroes()) {
+    if (heroOwner(entity, hero) !== id) continue
+    return armorAffixLookup(fullLoadout(hero), hero.armorUp)
+  }
+  return () => 0
+}
+
+/**
+ * Pack a loadout's armor ranks, levels and affixes the way `HeroBody.armorUp`
+ * carries them: six rank digits, six base-36 level digits, six affix digits
+ * (the last six absent on looks from before affixes, read as none).
+ */
+export function packArmorRanks(
+  loadout: EquipmentLoadout, rankOf: (itemId: string) => number, levelOf: (itemId: string) => number = () => 1, affixOf: (itemId: string) => number = () => 0
+): string {
   let ranks = ''
   let levels = ''
+  let affixes = ''
   for (const slot of EQUIPMENT_SLOTS) {
     if (slot.id === 'weapon') continue
     ranks += String(Math.max(0, Math.min(9, rankOf(loadout[slot.id]))))
     levels += clampLevel(levelOf(loadout[slot.id])).toString(36)
+    affixes += String(Math.min(9, clampAffix(affixOf(loadout[slot.id]))))
   }
-  return ranks + levels
+  return ranks + levels + affixes
+}
+
+function armorAffixLookup(loadout: EquipmentLoadout, packed: string | undefined): (itemId: string) => number {
+  const affixes = new Map<string, number>()
+  let i = 12
+  for (const slot of EQUIPMENT_SLOTS) {
+    if (slot.id === 'weapon') continue
+    const n = Number(packed?.[i++] ?? 0)
+    if (Number.isFinite(n) && n > 0) affixes.set(loadout[slot.id], clampAffix(n))
+  }
+  return (itemId) => affixes.get(itemId) ?? 0
 }
 
 function armorLevelLookup(loadout: EquipmentLoadout, packed: string | undefined): (itemId: string) => number {

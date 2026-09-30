@@ -1,26 +1,26 @@
 // The hall's one key: E. Walk up to one of the folk and a small ring with an
 // E in it appears at their shoulder; hold E and the ring fills clockwise, and
-// when it closes the conversation opens (src/hallTalk.ts). The war table has
-// the same ring, and closing it opens the table. Let go early and the ring
-// empties again. A click on the ring does the same at once, for a mouse; on
-// touch the ring is the button. While a conversation is open a press of E
-// turns the page. One prompt serves the whole hall: it moves to whatever is
-// nearest, the folk before the table. Nothing floats over anyone's head, and
-// while the prompt is up a press of E is theirs, not a swing
-// (src/playerCharacter.ts asks hallPromptActive()).
+// when it closes the conversation opens (src/hallTalk.ts). The upgrade pit has
+// the same ring. Let go early and the ring empties again. A click on the ring
+// does the same at once, for a mouse; on touch the ring is the button. While a
+// conversation is open a press of E turns the page. One prompt serves the
+// whole hall: it moves to whatever is nearest. Nothing floats over anyone's
+// head, and while the prompt is up a press of E is theirs, not a swing
+// (src/playerCharacter.ts asks hallPromptActive()). The dungeons are reached
+// from the HUD's Play button, not from anything in the room.
 
 import {
   Billboard, BillboardMode, ColliderLayer, engine, Entity, InputAction, inputSystem, Material, MaterialTransparencyMode,
   MeshCollider, MeshRenderer, PointerEventType, pointerEventsSystem, TextAlignMode, TextShape, Transform, VisibilityComponent
 } from '@dcl/sdk/ecs'
 import { Color3, Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
-import { UPGRADE_PIT_REACH, UPGRADE_PIT_TAG, WAR_TABLE_TAG } from './dungeon/hub'
+import { UPGRADE_PIT_REACH, UPGRADE_PIT_TAG } from './dungeon/hub'
 import { getDungeonState } from './dungeon'
 import { getTalkState, nextLine, openTalk } from './hallTalk'
 import { billboardTarget } from './heroNameTag'
 import { t } from './i18n'
 import { isHeadless } from './multiplayer'
-import { atWarTable, getLobbyState, myPhase, openLobby } from './party'
+import { getLobbyState, myPhase } from './party'
 import { HUB } from './partyLookup'
 import { pitCinematicPlaying, pitHoverItem, pitResultHovering, takePitResult } from './pitCinematic'
 import { isUpgradePickerOpen, openUpgradePicker } from './upgradeUi'
@@ -35,8 +35,6 @@ const SEGMENTS = 24
 const RADIUS = 0.3
 /** Where the prompt sits beside one of the folk: at their shoulder, off to their side as the camera sees them. */
 const AT = Vector3.create(0.78, 1.3, 0)
-/** ...and over the war table: centred, a little above the map. */
-const AT_TABLE = Vector3.create(0, 1.45, 0)
 /** ...and at the upgrade pit: beside the fire, clear of the flames. */
 const AT_PIT = Vector3.create(1.5, 2.3, 0)
 /** ...and beside the weapon hovering over it. */
@@ -75,12 +73,7 @@ function targetNow(): Target | undefined {
     const folkNearer = !pit || !p || (who.x - p.x) ** 2 + (who.z - p.z) ** 2 <= (pit.x - p.x) ** 2 + (pit.z - p.z) ** 2
     if (folkNearer) return { key: 'folk:' + who.title, x: who.x, z: who.z, at: AT, title: t(who.title), hint: t('hold to talk'), run: openTalk }
   }
-  if (pit) return pit
-  if (getLobbyState().open || !atWarTable()) return undefined
-  const table = getDungeonState().instance?.tagged[WAR_TABLE_TAG]
-  const tr = table !== undefined ? Transform.getOrNull(table) : undefined
-  if (!tr) return undefined
-  return { key: 'table', x: tr.position.x, z: tr.position.z, at: AT_TABLE, title: t('War table'), hint: t('hold to open'), run: openLobby }
+  return pit
 }
 
 function pitTarget(): Target | undefined {

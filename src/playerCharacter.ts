@@ -8,7 +8,7 @@ import { COURTYARD, isInCourtyard } from './courtyard'
 import { EquipmentLoadout } from './equipmentCatalog'
 import {
   AttackContext, createRoamingCombat, healRoamingCharacter, hitRoamingCharacter, isRoamingBlocking, isRoamingInvulnerable, isRoamingSwinging,
-  isRoamingRooted, maxHealth, maxStamina, resetRoamingCombat, restoreRoamingHealth, RoamingCombatHooks, setGearHealth, setGearStamina, setRoamingClass, setRoamingHealth, updateRoamingCombat
+  isRoamingRooted, maxHealth, maxStamina, resetRoamingCombat, restoreRoamingHealth, RoamingCombatHooks, setGearHealth, setGearStamina, setRoamingClass, setRoamingHealth, trackLocalCombat, updateRoamingCombat
 } from './roamingCombat'
 import { CombatPose, HeroAttackMotion, isHeavyMotion, isRangedAttack, isSlashMotion, WeaponMotion } from './combatActions'
 import { getCommittedAppearance } from './appearance'
@@ -24,9 +24,9 @@ import { setLegendaryAura } from './legendaryAura'
 import { legendaryPieces } from './weapons'
 import { localAddress, packArmorRanks, packWeaponUp, playerAddressAsReported, publishHero, withdrawHero } from './multiplayer'
 import { flushNativeMotion, mirrorLocalMotion, nativeHeroOn, nativeNote, setLocalNativeShown, stopNativeMotion, syncNativeWeapon } from './nativeHero'
-import { CRAWLER_CAMERA, isCrawlerCameraOn, kickCrawlerCamera } from './dungeon/crawlerCamera'
+import { CRAWLER_CAMERA, isCrawlerCameraOn, kickCrawlerCamera, noteScriptedMove } from './dungeon/crawlerCamera'
 import { SkillDef } from './shared/skills'
-import { upgradeLevelOf, upgradeRankOf } from './shared/upgradeRanks'
+import { upgradeAffixOf, upgradeLevelOf, upgradeRankOf } from './shared/upgradeRanks'
 
 type Locomotion = 'idle' | 'walk' | 'run'
 export type PlayerCharacterState = {
@@ -67,6 +67,7 @@ let strideRate = 1
 let walkBandSeconds = 0
 let poseAge = 0
 const roamingCombat = createRoamingCombat()
+trackLocalCombat(roamingCombat)
 let attackContactHandler: ((motion: HeroAttackMotion, context: AttackContext) => void) | undefined
 let attackStartHandler: ((motion: HeroAttackMotion, context: AttackContext) => void) | undefined
 /** Whether an enemy stands within reach in front (the world answers); a ranged class strikes instead of shooting. */
@@ -229,6 +230,7 @@ function glidePlayer(direction: Vector3, distance: number, seconds: number) {
   }
   if (reach < 0.05) return
   const to = Vector3.create(from.x + direction.x * reach, from.y, from.z + direction.z * reach)
+  noteScriptedMove(Vector3.subtract(to, from))
   // Keep the travel's speed when a wall shortens it.
   movePlayerTo({ newRelativePosition: to, duration: seconds * (reach / distance) })
     .catch((error: unknown) => console.log('glide failed', error))
@@ -665,7 +667,7 @@ function updatePlayerCharacter(dt: number) {
   if (!equipmentReady || suspended) resetRoamingCombat(roamingCombat)
   const actionMotion = equipmentReady && !suspended
     ? updateRoamingCombat(roamingCombat, characterRoot, player.position, dt,
-      // Beside one of the hall's folk or the war table, E is the hall's key (hold, or turn the page), not a swing.
+      // Beside one of the hall's folk or the upgrade pit, E is the hall's key (hold, or turn the page), not a swing.
       !!requestedLoadout?.weapon && requestedLoadout.weapon !== 'none-weapon' && !hallPromptActive(), locomotion !== 'idle', combatHooks)
     : undefined
   // Rooting follows the combat state every tick, so it is up before a roll's or
@@ -774,8 +776,8 @@ function publishLocalPlayer(player: { position: Vector3; rotation: Quaternion },
     hc: appearance.hairColor,
     skin: appearance.skinTone,
     loadout: { ...requestedLoadout },
-    weaponUp: packWeaponUp(upgradeRankOf(requestedLoadout.weapon), upgradeLevelOf(requestedLoadout.weapon)),
-    armorUp: packArmorRanks(requestedLoadout, upgradeRankOf, upgradeLevelOf),
+    weaponUp: packWeaponUp(upgradeRankOf(requestedLoadout.weapon), upgradeLevelOf(requestedLoadout.weapon), upgradeAffixOf(requestedLoadout.weapon)),
+    armorUp: packArmorRanks(requestedLoadout, upgradeRankOf, upgradeLevelOf, upgradeAffixOf),
     native: nativeHeroOn(),
     block: roamingCombat.blocking,
     // The host reads `dodge` as "blows pass through right now": the roll's

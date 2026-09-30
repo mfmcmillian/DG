@@ -9,7 +9,7 @@ import { MAX_COMBAT_HEALTH } from './combatActions'
 import { armorBonuses } from './armor'
 import { heroBonusesFor } from './heroXp'
 import { metricsDeath } from './metrics'
-import { heroArmorLevelOf, heroArmorRankOf, heroCharacters, heroLoadout, heroPosition } from './multiplayer'
+import { heroArmorAffixOf, heroArmorLevelOf, heroArmorRankOf, heroCharacters, heroLoadout, heroPosition } from './multiplayer'
 import { onNet, sendNet } from './net'
 
 /** Seconds a downed hero lies before the host stands them back up at the entrance. */
@@ -35,7 +35,8 @@ const HEART_REPORT_SLACK = 2.5
 /** How far the hero's own (server) position may be from the drop. */
 const HEART_REACH = 4
 
-type Vitals = { health: number; deadFor: number }
+/** `max` is the bar's size when it was last looked at, so a bar that grows can fill by the difference. */
+type Vitals = { health: number; max: number; deadFor: number }
 type HeartDrop = { x: number; z: number; hearts: number; age: number; taken: Map<string, number> }
 
 const vitals = new Map<string, Vitals>()
@@ -110,8 +111,19 @@ export function initializeHeroVitals() {
 function record(id: string): Vitals {
   let v = vitals.get(id)
   if (!v) {
-    v = { health: heroMaxHealth(id), deadFor: 0 }
+    const max = heroMaxHealth(id)
+    v = { health: max, max, deadFor: 0 }
     vitals.set(id, v)
+  }
+  return resized(id, v)
+}
+
+/** Catch up with a bar that changed size (new armor, a level): a bigger one fills by the difference, a smaller one only clamps. */
+function resized(id: string, v: Vitals): Vitals {
+  const max = heroMaxHealth(id)
+  if (max !== v.max) {
+    if (v.health > 0) v.health = Math.min(max, v.health + Math.max(0, max - v.max))
+    v.max = max
   }
   return v
 }
@@ -123,17 +135,19 @@ function record(id: string): Vitals {
  */
 export function heroMaxHealth(id: string): number {
   const cid = heroCharacters((owner) => owner === id)[0] ?? ''
-  return MAX_COMBAT_HEALTH + heroBonusesFor(id, cid).health + armorBonuses(heroLoadout(id), heroArmorRankOf(id), heroArmorLevelOf(id)).health
+  return MAX_COMBAT_HEALTH + heroBonusesFor(id, cid).health + armorBonuses(heroLoadout(id), heroArmorRankOf(id), heroArmorLevelOf(id), heroArmorAffixOf(id)).health
 }
 
 /** Authoritative health; a hero the host has not met yet is at full. */
 export function heroHealth(id: string): number {
-  return vitals.get(id)?.health ?? heroMaxHealth(id)
+  const v = vitals.get(id)
+  return v ? resized(id, v).health : heroMaxHealth(id)
 }
 
 /** A fresh hero (first sight, character change, return from the title) starts full. */
 export function resetHero(id: string) {
-  vitals.set(id, { health: heroMaxHealth(id), deadFor: 0 })
+  const max = heroMaxHealth(id)
+  vitals.set(id, { health: max, max, deadFor: 0 })
 }
 
 export function dropHero(id: string) {
@@ -154,7 +168,7 @@ export function strikeHero(
   const dodged = !blocked && !!opts.dodged
   // The hero's level takes some of the sting out of the blow, more so for a vanguard; so does the armor their body wears.
   const cid = heroCharacters((owner) => owner === id)[0] ?? ''
-  const toughness = heroBonusesFor(id, cid).toughness * buffToughness(id) * armorBonuses(heroLoadout(id), heroArmorRankOf(id), heroArmorLevelOf(id)).toughness
+  const toughness = heroBonusesFor(id, cid).toughness * buffToughness(id) * armorBonuses(heroLoadout(id), heroArmorRankOf(id), heroArmorLevelOf(id), heroArmorAffixOf(id)).toughness
   const dealt = blocked || dodged ? 0 : Math.max(0, Math.round(damage * toughness))
   v.health = Math.max(0, v.health - dealt)
   if (v.health === 0) {

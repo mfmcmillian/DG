@@ -15,21 +15,38 @@ let staminaBonus = 0
 /** Stamina the hero's boots add (src/playerCharacter.ts keeps it current with what is worn). */
 let gearStamina = 0
 
-export function setStaminaBonus(amount: number) {
-  staminaBonus = Math.max(0, Math.round(amount))
-}
-
 let levelHealth = 0
 let gearHealth = 0
 
+/** The local hero's combat, so a bar that grows (new armor, a level) fills by the difference the moment it does. */
+let local: RoamingCombat | undefined
+
+export function trackLocalCombat(combat: RoamingCombat) {
+  local = combat
+}
+
+/** Run a change to the bars' size. A bigger bar fills by the difference so a full hero stays full; a smaller one only clamps. */
+function resize(change: () => void) {
+  const healthBefore = maxHealth()
+  const staminaBefore = maxStamina()
+  change()
+  if (!local) return
+  if (local.health > 0) local.health = Math.min(maxHealth(), local.health + Math.max(0, maxHealth() - healthBefore))
+  local.stamina = Math.min(maxStamina(), local.stamina + Math.max(0, maxStamina() - staminaBefore))
+}
+
+export function setStaminaBonus(amount: number) {
+  resize(() => { staminaBonus = Math.max(0, Math.round(amount)) })
+}
+
 /** Health the hero's level adds (src/heroXp.ts keeps it current). */
 export function setHealthBonus(amount: number) {
-  levelHealth = Math.max(0, Math.round(amount))
+  resize(() => { levelHealth = Math.max(0, Math.round(amount)) })
 }
 
 /** Health the armor on the body adds (src/playerCharacter.ts sets it with the loadout). */
 export function setGearHealth(amount: number) {
-  gearHealth = Math.max(0, Math.round(amount))
+  resize(() => { gearHealth = Math.max(0, Math.round(amount)) })
 }
 
 /** The local hero's health bar: the base, the level's share and the armor's. The host computes the same in src/heroVitals.ts. */
@@ -38,7 +55,7 @@ export function maxHealth(): number {
 }
 
 export function setGearStamina(amount: number) {
-  gearStamina = Math.max(0, Math.round(amount))
+  resize(() => { gearStamina = Math.max(0, Math.round(amount)) })
 }
 
 export function maxStamina(): number {

@@ -5,6 +5,12 @@ export type CombatControlAction = 'light' | 'heavy' | 'jump' | 'skill'
 /** Keys 1–4: the skill bar. */
 const SKILL_KEYS = [InputAction.IA_ACTION_3, InputAction.IA_ACTION_4, InputAction.IA_ACTION_5, InputAction.IA_ACTION_6] as const
 
+/** A skill slot tapped on the HUD bar (the phone's pad has no 1-4); cast on the next read, as the key would. */
+let tappedSlot: number | undefined
+export function tapSkillSlot(slot: number) {
+  tappedSlot = slot
+}
+
 export type CombatControls = {
   armed: boolean
   delay: number
@@ -59,11 +65,19 @@ export function readCombatControls(controls: CombatControls, dt: number): {
   const jumpPressed = inputSystem.isTriggered(InputAction.IA_JUMP, PointerEventType.PET_DOWN)
   const blockHeld = acceptsKeys && inputSystem.isPressed(InputAction.IA_JUMP)
   const dodgePressed = acceptsKeys && inputSystem.isTriggered(InputAction.IA_WALK, PointerEventType.PET_DOWN)
-  if (!acceptsKeys) return { acceptsKeys, jumpPressed, blockHeld, dodgePressed }
+  if (!acceptsKeys) {
+    tappedSlot = undefined
+    return { acceptsKeys, jumpPressed, blockHeld, dodgePressed }
+  }
   if (jumpPressed) return { acceptsKeys, jumpPressed, blockHeld, dodgePressed, action: 'jump' }
   // A skill key is a tap, never a hold: one press, one cast.
   for (let slot = 0; slot < SKILL_KEYS.length; slot++) {
     if (inputSystem.isTriggered(SKILL_KEYS[slot], PointerEventType.PET_DOWN)) return { acceptsKeys, jumpPressed, blockHeld, dodgePressed, action: 'skill', slot }
+  }
+  if (tappedSlot !== undefined) {
+    const slot = tappedSlot
+    tappedSlot = undefined
+    return { acceptsKeys, jumpPressed, blockHeld, dodgePressed, action: 'skill', slot }
   }
   // Holding an attack key keeps requesting the attack; the fighter only accepts
   // it once the current swing and its recovery are over, so a held key chains

@@ -28,6 +28,10 @@ import { t } from './i18n'
 import { LanguageRow } from './languageUi'
 import { heroGroupId, preloadCaption, PRELOAD_HUB } from './preloadPlan'
 import { BODY_TYPES, HAIR_STYLES, HAIR_COLORS, SKIN_TONES } from './appearance'
+import { attackRange, HeroAttackMotion, MAX_COMBAT_HEALTH, resolveCombatHit, STAMINA } from './combatActions'
+import { classOfCharacter, heroClassOf } from './heroClasses'
+import { SKILLS } from './shared/skills'
+import { WEAPON_CLASSES, weaponStats } from './weapons'
 import {
   CHARACTERS, getPickerState, getSelectedCharacter,
   getCreatorAppearance, setCreatorAppearance,
@@ -179,21 +183,61 @@ function OutfitPresets({ scale: s }: { scale: number }) {
   </Sheet>
 }
 
-/** The right-hand sheet for a first champion: who this is, and the door to the editors. */
+/**
+ * The class in numbers, with the starter weapon in hand: what the hero starts with, what each
+ * blow of the light string does, the heavy, how far it reaches, and what it can pick up.
+ */
+function classSheet(characterId: string): Array<{ label: string; value: string }> {
+  const cls = heroClassOf(characterId)
+  const weapon = weaponStats(cls.starterWeapon)
+  const hit = (motion: HeroAttackMotion, finisher: boolean) => resolveCombatHit(motion, false, finisher, weapon).damage
+  const lights = cls.light.map((motion, i) => hit(motion, i === cls.light.length - 1))
+  const shots = cls.ranged[cls.heavy]?.count ?? 1
+  const heavy = hit(cls.heavy, false)
+  const heavyText = shots > 1 ? `${shots} × ${heavy}` : `${heavy}`
+  const reach = Math.max(...cls.light.map(attackRange), attackRange(cls.heavy))
+  return [
+    { label: t('Health'), value: `${MAX_COMBAT_HEALTH}` },
+    { label: t('Stamina'), value: `${STAMINA.max}` },
+    { label: t('Light hits'), value: lights.join(' · ') },
+    { label: t('Heavy hit'), value: `${heavyText}  ·  ${t('{n} stamina', { n: STAMINA.heavyCost })}` },
+    { label: t('Reach'), value: t('{n} m', { n: reach }) },
+    { label: t('Weapons'), value: cls.weaponClasses.map((id) => t(WEAPON_CLASSES[id].label)).join(' · ') }
+  ]
+}
+
+/** One line of the class sheet: the name on the left, the number on the right, a hairline under. */
+function StatRow({ label, value, scale: s }: { key?: string; label: string; value: string; scale: number }) {
+  return <UiEntity uiTransform={{ width: '100%', height: 30 * s, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    borderWidth: { bottom: s }, borderColor: line, flexShrink: 0, pointerFilter: 'none' }}>
+    <Label value={label} color={muted} fontSize={15 * s} textAlign="middle-left" textWrap="nowrap"
+      uiTransform={{ width: 120 * s, height: '100%', pointerFilter: 'none' }} />
+    <Label value={value} color={white} fontSize={17 * s} textAlign="middle-right" textWrap="nowrap"
+      uiTransform={{ width: 310 * s, height: '100%', pointerFilter: 'none' }} />
+  </UiEntity>
+}
+
+/** The right-hand sheet for a first champion: who this is, in numbers, and the door to the editors. */
 function ChampionCard({ scale: s }: { scale: number }) {
   const selected = getSelectedCharacter()
   const disabled = getPickerState().confirming
+  const skills = Object.values(SKILLS).filter((skill) => skill.cls === classOfCharacter(selected.id)).sort((a, b) => a.slot - b.slot)
   return <Sheet left={794} top={100} width={486} height={538} padding={24} scale={s}>
     <Heading title={t('YOUR CHAMPION')} scale={s} />
     <Label value={selected.name} font="serif" color={white} fontSize={30 * s} textAlign="middle-left" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 40 * s, flexShrink: 0, pointerFilter: 'none' }} />
-    <Label value={t(selected.role).toUpperCase()} color={gold} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
-      uiTransform={{ width: '100%', height: 18 * s, margin: { bottom: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />
-    <Label value={t(selected.description)} color={muted} fontSize={14 * s} textAlign="top-left" textWrap="wrap"
-      uiTransform={{ width: '100%', height: 90 * s, flexShrink: 0, pointerFilter: 'none' }} />
+    <Label value={t(selected.role).toUpperCase()} color={gold} fontSize={13 * s} textAlign="middle-left" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 20 * s, margin: { bottom: 8 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+    {classSheet(selected.id).map((row) => <StatRow key={row.label} label={row.label} value={row.value} scale={s} />)}
+    <Label value={t('SKILLS')} color={gold} fontSize={13 * s} textAlign="middle-left" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 20 * s, margin: { top: 14 * s, bottom: 2 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+    {skills.map((skill) => <UiEntity key={skill.id} uiTransform={{ width: '100%', height: 26 * s, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
+      <Label value={t(skill.name)} color={white} fontSize={16 * s} textAlign="middle-left" textWrap="nowrap"
+        uiTransform={{ width: 240 * s, height: '100%', pointerFilter: 'none' }} />
+      <Label value={t('Level {n}', { n: skill.level })} color={muted} fontSize={14 * s} textAlign="middle-right" textWrap="nowrap"
+        uiTransform={{ width: 160 * s, height: '100%', pointerFilter: 'none' }} />
+    </UiEntity>)}
     <UiEntity uiTransform={{ width: '100%', flexGrow: 1, pointerFilter: 'none' }} />
-    <Label value={t('Your face is already picked. Change it if you like, or just go.')} color={muted} fontSize={12 * s} textAlign="middle-left" textWrap="wrap"
-      uiTransform={{ width: '100%', height: 36 * s, margin: { bottom: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />
     <Action id="customise" text={t('Customise your look')} onClick={() => { customising = true }} width={438} height={44} scale={s} fontSize={15} accent="gold" disabled={disabled} />
   </Sheet>
 }

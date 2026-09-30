@@ -1,6 +1,7 @@
 import { AvatarAnchorPointType, AvatarAttach, engine, Entity, PlayerIdentityData, Transform } from '@dcl/sdk/ecs'
 import { Quaternion, Vector3 } from '@dcl/sdk/math'
 import { rearmAvatarHiding } from './avatarHiding'
+import { crawlerTickNote } from './dungeon/crawlerCamera'
 import { isGodotClient } from './explorerAgent'
 import { HeroAttackMotion, isRangedAttack, WeaponMotion } from './combatActions'
 import { shotProfile, shotProfileForMotion, skillShotProfile } from './heroClasses'
@@ -353,7 +354,8 @@ function updateRemotePlayers(dt: number) {
     diagAge = 0
     let identities = 0
     for (const _ of engine.getEntitiesWith(PlayerIdentityData)) identities++
-    const note = `${netStatus()}; players seen by renderer: ${identities}; bodies: ${replicas.size} (${ready} loaded, ${attached} attached)`
+    const camera = crawlerTickNote()
+    const note = `${netStatus()}; players seen by renderer: ${identities}; bodies: ${replicas.size} (${ready} loaded, ${attached} attached)${camera ? `; ${camera}` : ''}`
     console.log(`[DG] ${note}`)
     publishDiag(note)
   }

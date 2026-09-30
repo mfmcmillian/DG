@@ -472,6 +472,9 @@ def write_catalog(manifest):
             info['hand'] = w['hand']
         if w.get('pride'):
             info['pride'] = True
+        # An authored temper (src/weapons.ts WEAPON_TEMPERS); unset weapons take a stable one from their id.
+        if w.get('temper'):
+            info['temper'] = w['temper']
         items.append({
             'id': w['id'], 'name': w['name'], 'slot': 'weapon', 'description': w['description'],
             'icon': f"images/weapons/{w['id']}.png", 'models': [f"models/roaming/weapons/{w['id']}.glb"],

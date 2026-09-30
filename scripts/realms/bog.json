@@ -5,8 +5,7 @@
     "atlas": "Textures/Alts/PolygonGoblinWarCamp_Texture_01_A.png",
     "emissive": "Textures/Emissive/PolygonGoblinWarCamp_Emissive_01_A.png",
     "tiling": "Textures/Env/Mud_Texture_01.png",
-    "floor": "Textures/Env/Mud_Texture_01.png",
-    "extra": { "grass": "Textures/Env/Grass_Texture_01.png", "water": "Textures/Env/Swamp_Water_Layer.png" }
+    "floor": "Textures/Env/Mud_Texture_01.png"
   },
   "tilingSlots": "^(Mud|lambert1)",
   "tilingWorldSize": 5,
@@ -14,7 +13,7 @@
     { "id": "bog_wall_a", "parts": [{ "fbx": "SM_Bld_Log_Wall_01", "offset": [-2.27, 0, 0] }, { "fbx": "SM_Bld_Log_Wall_02", "offset": [2.27, 0, 0] }], "scale": [1.1, 1.5, 1.2] },
     { "id": "bog_wall_b", "parts": [{ "fbx": "SM_Bld_Log_Wall_03", "offset": [-1.87, 0, 0] }, { "fbx": "SM_Bld_Log_Wall_04", "offset": [1.87, 0, 0] }], "scale": [1.34, 1.3, 1.5] },
     { "id": "bog_wall_c", "parts": [{ "fbx": "SM_Bld_Log_Wall_06", "offset": [-2.32, 0, 0] }, { "fbx": "SM_Bld_Log_Wall_07", "offset": [2.32, 0, 0] }], "scale": [1.08, 1.35, 1.2] },
-    { "id": "bog_wall_d", "parts": [{ "fbx": "SM_Bld_Log_Wall_05_Alt", "offset": [-2.35, 0, 0] }, { "fbx": "SM_Bld_Log_Wall_01_Alt", "offset": [2.35, 0, 0] }], "scale": [0.97, 1.4, 1.0] },
+    { "id": "bog_wall_d", "parts": [{ "fbx": "SM_Bld_Log_Wall_05_Alt", "offset": [-2.35, 0, 0] }, { "fbx": "SM_Bld_Log_Wall_01_Alt", "offset": [2.35, 0, 0] }], "scale": [1.06, 1.4, 1.0] },
     { "id": "bog_wall_e", "parts": [{ "fbx": "SM_Bld_Log_Wall_02_Alt", "offset": [-2.27, 0, 0] }, { "fbx": "SM_Bld_Log_Wall_06_Alt", "offset": [2.27, 0, 0] }], "scale": [1.1, 1.45, 1.2] },
     { "id": "bog_fence", "fbx": "SM_Prop_Barrier_Long_01", "scale": [2.67, 1.0, 1.0] },
     { "id": "bog_gate", "fbx": "SM_Bld_Gate_01", "exclude": "Door", "scale": [0.98, 0.58, 1.0] },
@@ -36,8 +35,6 @@
     { "id": "bog_bone_skull", "fbx": "SM_Bld_Part_Bone_Skull_01", "scale": 1.6 },
     { "id": "bog_bone_rib", "fbx": "SM_Bld_Part_Bone_Rib_01", "scale": 1.4, "collide": false },
 
-    { "id": "bog_hill", "fbx": "SM_Env_Hill_03", "scale": 0.5 },
-    { "id": "bog_mountain", "fbx": "SM_Env_Mountain_01", "scale": 0.3 },
     { "id": "bog_cliff_a", "fbx": "SM_Env_Mud_Cliff_01", "scale": 0.8 },
     { "id": "bog_cliff_b", "fbx": "SM_Env_Mud_Cliff_02", "scale": 0.8 },
     { "id": "bog_cliff_c", "fbx": "SM_Env_Mud_Cliff_03" },

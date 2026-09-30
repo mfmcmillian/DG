@@ -5,5 +5,5 @@
 // `upgradeLevelOf(id)` answer for the copy of `id` the hero has in use.
 
 export {
-  clampLevel, LEVEL_FLAT, LEVEL_STEP, levelFlatBonus, levelMultiplier, MAX_LEVEL, upgradeLevelOf, upgradeRankOf
+  clampLevel, LEVEL_FLAT, LEVEL_STEP, levelFlatBonus, levelMultiplier, MAX_LEVEL, upgradeAffixOf, upgradeLevelOf, upgradeRankOf
 } from './gearBag'

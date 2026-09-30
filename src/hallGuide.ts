@@ -1,24 +1,22 @@
 // Bright arrows in the hall for whoever needs pointing: a stack of gold
 // chevrons bobbing over a place, and a trail of flat chevrons on the floor
-// leading to it. A hero who has never cleared a fortress gets them over the
-// war table from the moment they arrive, until they open it or clear a run;
-// the folk hand them out on request ("Show me the yard"). Local only, and nothing here has a collider, so they never get
-// in anyone's way.
+// leading to it. The folk hand them out on request ("Show me the yard");
+// the fortresses themselves are reached from the HUD's Play button, so
+// nothing in the room needs pointing at for that. Local only, and nothing
+// here has a collider, so they never get in anyone's way.
 
 import { engine, Entity, Material, MeshRenderer, Transform, VisibilityComponent } from '@dcl/sdk/ecs'
 import { Color3, Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
 import { COURTYARD } from './courtyard'
 import { getDungeonState, onDungeonLoaded } from './dungeon'
-import { PIT_GATE_TAG, WAR_TABLE_TAG } from './dungeon/hub'
+import { PIT_GATE_TAG } from './dungeon/hub'
 import { isHeadless } from './multiplayer'
-import { getLobbyState, myParty, myPhase } from './party'
+import { getLobbyState, myPhase } from './party'
 import { HUB } from './partyLookup'
 
-export type GuideTarget = 'table' | 'pit' | 'yard'
+export type GuideTarget = 'pit' | 'yard'
 
 const FLOOR_Y = COURTYARD.characterFloorY
-/** Where the trail for a first-timer starts: the vestibule spawn (src/dungeon/hub.ts). */
-const SPAWN: [number, number] = [45.5, 66]
 /** The training yard's dummies, for the squire's pointer (the yard runs x 58..68 along z 47). */
 const YARD: [number, number] = [62.5, 47.5]
 /** How high the marker floats over the floor, and how far the floor trail's chevrons sit apart. */
@@ -37,10 +35,8 @@ type Chevron = { root: Entity; arms: Entity[] }
 let marker: { root: Entity; chevrons: Chevron[] } | undefined
 let trail: Chevron[] = []
 let target: GuideTarget | undefined
-/** Seconds left on a requested pointer; Infinity for the first-timer's. */
+/** Seconds left on a requested pointer. */
 let remaining = 0
-/** Once the newcomer has opened the war table this session, the arrows have done their job. */
-let tableOpened = false
 let clock = 0
 let systemAdded = false
 
@@ -89,7 +85,7 @@ function build() {
 function placeOf(which: GuideTarget): Vector3 | undefined {
   const tagged = getDungeonState().instance?.tagged
   if (which === 'yard') return Vector3.create(YARD[0], FLOOR_Y, YARD[1])
-  const entity = tagged?.[which === 'table' ? WAR_TABLE_TAG : PIT_GATE_TAG]
+  const entity = tagged?.[PIT_GATE_TAG]
   const t = entity !== undefined ? Transform.getOrNull(entity) : undefined
   return t ? Vector3.create(t.position.x, FLOOR_Y, t.position.z) : undefined
 }
@@ -136,35 +132,19 @@ export function showGuide(which: GuideTarget) {
   remaining = REQUEST_SECONDS
 }
 
-/** A hero who has never cleared anything, and has not yet opened the war table this session. */
-function needsTheWay(): boolean {
-  if (tableOpened || myParty()) return false
-  const progress = getLobbyState().progress
-  return progress.every((n) => n === 0)
-}
-
 function update(dt: number) {
   const span = Number.isFinite(dt) && dt > 0 ? Math.min(dt, 0.1) : 0
   clock += span
   const lobby = getLobbyState()
   const inHall = myPhase() === HUB
-  if (inHall && lobby.open) tableOpened = true
   if (!inHall || lobby.open) {
     if (target) hide()
     return
   }
-  const auto: GuideTarget | undefined = needsTheWay() ? 'table' : undefined
-  if (target && remaining !== Infinity) {
+  if (target) {
     // A requested pointer runs its course.
     remaining -= span
     if (remaining <= 0) hide()
-  } else if (auto) {
-    if (target !== auto) {
-      show(auto, auto === 'table' ? SPAWN : undefined)
-      remaining = Infinity
-    }
-  } else if (target) {
-    hide()
   }
   if (!target || !marker) return
   // Bob and turn the marker; ripple the trail toward the place.

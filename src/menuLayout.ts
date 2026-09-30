@@ -2,10 +2,13 @@ import { uiViewport } from './uiScale'
 
 export type MenuView = 'picker' | 'inventory'
 
-const FRAME = { width: 1280, height: 760 }
+const FRAMES = {
+  picker: { width: 1280, height: 760 },
+  inventory: { width: 1280, height: 820 }
+}
 const PREVIEW = {
   picker: { left: 254, top: 114, width: 476, height: 540 },
-  inventory: { left: 120, top: 130, width: 390, height: 540 }
+  inventory: { left: 120, top: 190, width: 380, height: 560 }
 }
 
 /**
@@ -23,13 +26,15 @@ export function getMenuLayout(view: MenuView) {
   // even when closed, so opening chat never shifts or covers menu controls.
   const left = Math.max(screenWidth * 0.25, reserved.left) + padding
   const right = reserved.right + padding
-  const top = Math.max(screenHeight * 0.15, 144, reserved.top) + padding
+  // Only the explorer's top strip is kept clear; the frame sits high rather than in the middle of the screen.
+  const top = Math.max(screenHeight * 0.08, 72, reserved.top) + padding
   const bottom = reserved.bottom + padding
   const availableWidth = Math.max(1, screenWidth - left - right)
   const availableHeight = Math.max(1, screenHeight - top - bottom)
-  const scale = Math.min(availableWidth / FRAME.width, availableHeight / FRAME.height)
-  const width = FRAME.width * scale
-  const height = FRAME.height * scale
+  const frame = FRAMES[view]
+  const scale = Math.min(availableWidth / frame.width, availableHeight / frame.height)
+  const width = frame.width * scale
+  const height = frame.height * scale
   const x = left + (availableWidth - width) / 2
   const y = top + (availableHeight - height) / 2
   const hero = PREVIEW[view]

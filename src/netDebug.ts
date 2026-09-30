@@ -7,6 +7,7 @@
 import { engine, RealmInfo } from '@dcl/sdk/ecs'
 import { binaryMessageBus, isStateSyncronized, myProfile } from '@dcl/sdk/network'
 import { CommsMessage } from '@dcl/sdk/network/binary-message-bus'
+import { clientKnown, isGodotClient } from './explorerAgent'
 
 const MAX_LINES = 14
 const NUDGE_SECONDS = 3
@@ -34,6 +35,14 @@ export function installNetDebug() {
   console.log = (...args: unknown[]) => { record('', args); log(...args) }
   console.error = (...args: unknown[]) => { record('ERR ', args); error(...args) }
   engine.addSystem(nudgeStateRequest)
+  engine.addSystem(quietOnGodot)
+}
+
+/** The SDK reads the flag per message, so it can be turned back off once the explorer says it is the mobile app. */
+function quietOnGodot() {
+  if (!clientKnown()) return
+  if (isGodotClient()) (globalThis as { DEBUG_NETWORK_MESSAGES?: boolean }).DEBUG_NETWORK_MESSAGES = false
+  engine.removeSystem(quietOnGodot)
 }
 
 /** Ask the server for its state ourselves while the SDK has not got it. */

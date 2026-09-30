@@ -3,18 +3,18 @@ import { Color4 } from '@dcl/sdk/math'
 import { uiViewport } from './uiScale'
 import { getEquippedCharacter, getPickerState, openPicker } from './characterPicker'
 import { openInventory } from './inventory'
-import { IconButton } from './hudButtons'
+import { IconButton, StackButton } from './hudButtons'
 import { getPlayerCharacterState, getPlayerVitals, retryPlayerCharacter } from './playerCharacter'
-import { gauntletProgress, getWorldRivalState, retryWorldRival } from './dungeonEnemies'
+import { getWorldRivalState, retryWorldRival } from './dungeonEnemies'
 import { getLootState, getLootToasts, TOAST_SECONDS } from './loot'
 import { getEquipmentItemOrNull } from './equipmentCatalog'
-import { RARITIES, rarityOf, WEAPON_CLASSES } from './weapons'
+import { gearDisplayName, RARITIES, rarityOf, WEAPON_CLASSES } from './weapons'
 import { armorStatLine } from './armor'
 import { isClientSynced, isSoloMode, localAddress, netStatus } from './multiplayer'
 import { netDebugSummary, recentLogs } from './netDebug'
 import { MenuAction } from './menuUi'
 import {
-  atPitGate, atWarTable, doorsWait, getLobbyState, inRaid, inRun, joinParty, leaveParty, myParty, myPhase, openLobby, openParties,
+  atPitGate, doorsWait, getLobbyState, incomingInvites, inRaid, inRun, joinParty, leaveParty, myParty, myPhase, openLobby, openParties,
   resultsWait, retryRun, returnToHall
 } from './party'
 import { ColossusBar, RaidPrompt } from './raid/raidHudUi'
@@ -65,6 +65,9 @@ const stamina = Color4.create(0.35, 0.72, 0.95, 1)
 const staminaLow = Color4.create(0.95, 0.62, 0.2, 1)
 const gold = Color4.create(1, 0.84, 0.32, 1)
 const bossRed = Color4.create(0.75, 0.12, 0.2, 1)
+/** The hall's bottom-right stack: Character and Inventory (40 each), Play (48), two 8 px gaps. */
+const STACK_WIDTH = 190
+const STACK_HEIGHT = 50 + 10 + 50 + 10 + 50 + 10 + 66
 let hovered = ''
 
 /**
@@ -80,7 +83,7 @@ function hudLayout() {
   const bottom = 40
   // Vitals sit on the right, clear of the Explorer's left sidebar and the chat
   // column, under the minimap / top-right controls.
-  const vitalsTop = Math.max(150, height * 0.19)
+  const vitalsTop = Math.max(110, height * 0.12)
   return { width, height, scale, left, right, bottom, vitalsTop }
 }
 
@@ -90,17 +93,14 @@ function fit(text: string, max: number): string {
 }
 
 /** The gold bar under the name: experience into the level, and the step to the next. */
-function XpBar({ scale: s }: { scale: number }) {
+function XpBar({ numbers, scale: s }: { numbers: boolean; scale: number }) {
   const x = localXp()
   const capped = x.span <= 0
   const ratio = capped ? 1 : Math.max(0, Math.min(1, x.into / x.span))
   return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', flexShrink: 0, margin: { top: 2 * s }, pointerFilter: 'none' }}>
-    <UiEntity uiTransform={{ width: '100%', height: 14 * s, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
-      <Label value={t('LEVEL {n}', { n: x.level })} color={gold} font="sans-serif" fontSize={9 * s} textAlign="middle-left" textWrap="nowrap"
-        uiTransform={{ width: 90 * s, height: 14 * s, flexShrink: 0, pointerFilter: 'none' }} />
-      <Label value={capped ? t('MAX') : t('{into} / {span} XP', { into: x.into, span: x.span })} color={muted} font="sans-serif" fontSize={9 * s} textAlign="middle-right" textWrap="nowrap"
-        uiTransform={{ width: 120 * s, height: 14 * s, flexShrink: 0, pointerFilter: 'none' }} />
-    </UiEntity>
+    {/* The level is on the line above; only the progress needs saying, and in a run the bar alone says it. */}
+    {numbers && <Label value={capped ? t('MAX') : t('{into} / {span} XP', { into: x.into, span: x.span })} color={muted} font="sans-serif" fontSize={9 * s} textAlign="middle-right" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 14 * s, flexShrink: 0, pointerFilter: 'none' }} />}
     <UiEntity uiTransform={{ width: '100%', height: 4 * s, borderRadius: 2 * s, flexShrink: 0, flexDirection: 'row', margin: { top: 1 * s }, pointerFilter: 'none' }} uiBackground={{ color: track }}>
       <UiEntity uiTransform={{ width: `${ratio * 100}%`, height: '100%', borderRadius: 2 * s, pointerFilter: 'none' }} uiBackground={{ color: gold }} />
     </UiEntity>
@@ -121,27 +121,24 @@ function Rule({ scale: s }: { scale: number }) {
  */
 function HallRoster({ scale: s }: { scale: number }) {
   const list = presence()
-  const inHall = list.filter((p) => p.inHall).length
-  const shown = list.slice(0, ROSTER_ROWS)
+  // The hero's own row says nothing the card above it does not.
+  const others = list.filter((p) => !p.me)
+  const shown = others.slice(0, ROSTER_ROWS)
   const rowHeight = 22 * s
   return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', flexShrink: 0, pointerFilter: 'none' }}>
     <Rule scale={s} />
-    <UiEntity uiTransform={{ width: '100%', height: 14 * s, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, margin: { bottom: 3 * s }, pointerFilter: 'none' }}>
-      <Label value={`${t('ONLINE')}  ${list.length}`} color={gold} font="sans-serif" fontSize={9 * s} textAlign="middle-left" textWrap="nowrap"
-        uiTransform={{ width: 100 * s, height: 14 * s, flexShrink: 0, pointerFilter: 'none' }} />
-      <Label value={`${t('IN THE HALL')}  ${inHall}`} color={muted} font="sans-serif" fontSize={9 * s} textAlign="middle-right" textWrap="nowrap"
-        uiTransform={{ width: 120 * s, height: 14 * s, flexShrink: 0, pointerFilter: 'none' }} />
-    </UiEntity>
+    <Label value={`${t('ONLINE')}  ${list.length}`} color={gold} font="sans-serif" fontSize={9 * s} textAlign="middle-left" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 14 * s, flexShrink: 0, margin: { bottom: shown.length ? 3 * s : 0 }, pointerFilter: 'none' }} />
     {shown.map((p) => <UiEntity key={p.id} uiTransform={{ width: '100%', height: rowHeight, flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
       <UiEntity uiTransform={{ width: 6 * s, height: 6 * s, margin: { right: 8 * s }, borderRadius: 3 * s, flexShrink: 0, pointerFilter: 'none' }}
         uiBackground={{ color: p.inHall ? stamina : p.short === 'Gate' ? muted : gold }} />
-      <Label value={fit(p.name, 14)} color={p.me ? gold : white} font="sans-serif" fontSize={12 * s} textAlign="middle-left" textWrap="nowrap"
+      <Label value={fit(p.name, 14)} color={white} font="sans-serif" fontSize={12 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={{ width: 104 * s, height: rowHeight, flexShrink: 0, pointerFilter: 'none' }} />
       <Label value={p.cls ? `${fit(p.cls, 12)}  <color=#8d9aa8>·</color>  ${fit(t(p.short), 12)}` : fit(t(p.short), 12)} color={muted} font="sans-serif" fontSize={10 * s}
         textAlign="middle-right" textWrap="nowrap"
         uiTransform={{ width: 118 * s, height: rowHeight, flexShrink: 0, pointerFilter: 'none' }} />
     </UiEntity>)}
-    {list.length > shown.length && <Label value={t('+{n} more', { n: list.length - shown.length })} color={muted} font="sans-serif" fontSize={10 * s}
+    {others.length > shown.length && <Label value={t('+{n} more', { n: others.length - shown.length })} color={muted} font="sans-serif" fontSize={10 * s}
       textAlign="middle-right" textWrap="nowrap" uiTransform={{ width: '100%', height: 16 * s, flexShrink: 0, pointerFilter: 'none' }} />}
   </UiEntity>
 }
@@ -189,6 +186,18 @@ function PartyVitals({ inner, scale: s }: { inner: number; scale: number }) {
   </UiEntity>
 }
 
+/** The card folded down to its header (and the health bar in a run); the chevron on the header toggles it. */
+let vitalsCollapsed = false
+
+/**
+ * The card is drawn large in the hall, where it is the thing to read; in the
+ * dungeons it steps down to leave the fight the screen. On a narrow screen it
+ * is held to a quarter of the width.
+ */
+function cardScale(width: number, s: number, hall: boolean): number {
+  return Math.min(hall ? 1.5 : 1.05, (width * 0.26) / CARD_WIDTH) * s
+}
+
 function PlayerVitals({ right, top, scale: s }: { right: number; top: number; scale: number }) {
   const state = getWorldRivalState()
   if (!state.visible) return null
@@ -198,48 +207,63 @@ function PlayerVitals({ right, top, scale: s }: { right: number; top: number; sc
   const staminaRatio = Math.max(0, Math.min(1, vitals.stamina / vitals.maxStamina))
   const coins = getLootState().coins
   const hall = myPhase() === HUB
-  const name = playerDisplayName(localAddress()) || t('You')
+  // The hall card is about who you are; the run card drops the name and class (you know) and leads with the level.
+  const name = hall ? playerDisplayName(localAddress()) || t('You') : t('Level {n}', { n: localXp().level })
   const cls = `${getEquippedCharacter().name}  ·  ${t('Level {n}', { n: localXp().level })}`
   const inner = (CARD_WIDTH - CARD_PAD * 2) * s
+  const folded = vitalsCollapsed
+  const toggle = 22 * s
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { right, top },
     width: CARD_WIDTH * s, flexDirection: 'column', padding: CARD_PAD * s, borderRadius: 10 * s, pointerFilter: 'none' }}
     uiBackground={{ color: panel }}>
     <UiEntity uiTransform={{ width: '100%', height: 22 * s, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
       <Label value={fit(name, 16)} color={white} font="sans-serif" fontSize={15 * s} textAlign="middle-left" textWrap="nowrap"
-        uiTransform={{ width: inner - 70 * s, height: 22 * s, flexShrink: 0, pointerFilter: 'none' }} />
+        uiTransform={{ width: inner - 70 * s - toggle - 6 * s, height: 22 * s, flexShrink: 0, pointerFilter: 'none' }} />
       <Label value={state.party > 1 && !hall ? `◆ ${coins}  ·  ${state.party}` : `◆ ${coins}`} color={gold} font="sans-serif" fontSize={13 * s}
         textAlign="middle-right" textWrap="nowrap"
         uiTransform={{ width: 70 * s, height: 22 * s, flexShrink: 0, pointerFilter: 'none' }} />
-    </UiEntity>
-    <Label value={cls} color={muted} font="sans-serif" fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
-      uiTransform={{ width: '100%', height: 16 * s, flexShrink: 0, pointerFilter: 'none' }} />
-    <XpBar scale={s} />
-    {hall ? <HallRoster scale={s} /> : <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', flexShrink: 0, pointerFilter: 'none' }}>
-    <Rule scale={s} />
-    <UiEntity uiTransform={{ width: '100%', height: 18 * s, flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
-      <UiEntity uiTransform={{ width: 17 * s, height: 17 * s, margin: { right: 9 * s }, flexShrink: 0, pointerFilter: 'none' }}
-        uiBackground={{ textureMode: 'stretch', texture: { src: 'images/hud/heart.png' } }} />
-      <UiEntity uiTransform={{ width: inner - 26 * s, height: 9 * s, padding: s, borderRadius: 3 * s, flexShrink: 0, flexDirection: 'row', pointerFilter: 'none' }} uiBackground={{ color: track }}>
-        <UiEntity uiTransform={{ width: `${health / maximum * 100}%`, height: '100%', borderRadius: 2 * s, pointerFilter: 'none' }} uiBackground={{ color: red }} />
+      {/* Fold / unfold. */}
+      <UiEntity uiTransform={{ width: toggle, height: toggle, margin: { left: 6 * s }, borderRadius: 4 * s, flexShrink: 0, justifyContent: 'center', alignItems: 'center', pointerFilter: 'block' }}
+        uiBackground={{ color: hovered === 'vitals-fold' ? hoverPanel : track }}
+        onMouseEnter={() => { hovered = 'vitals-fold' }} onMouseLeave={() => { if (hovered === 'vitals-fold') hovered = '' }}
+        onMouseDown={() => { vitalsCollapsed = !vitalsCollapsed }}>
+        <Label value={folded ? '▸' : '▾'} color={white} font="sans-serif" fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
+          uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} />
       </UiEntity>
     </UiEntity>
-    <UiEntity uiTransform={{ width: '100%', height: 12 * s, flexDirection: 'row', alignItems: 'center', flexShrink: 0, margin: { top: 5 * s }, pointerFilter: 'none' }}>
+    {!folded && hall && <UiEntity uiTransform={{ width: '100%', height: 16 * s, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
+      <Label value={cls} color={muted} font="sans-serif" fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
+        uiTransform={{ width: inner - 80 * s, height: 16 * s, flexShrink: 0, pointerFilter: 'none' }} />
+      {/* In the hall the bar is not drawn (nothing hits the hero here), so the number says what the armor adds up to. */}
+      {hall && <UiEntity uiTransform={{ width: 80 * s, height: 16 * s, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', flexShrink: 0, pointerFilter: 'none' }}>
+        <UiEntity uiTransform={{ width: 12 * s, height: 12 * s, margin: { right: 5 * s }, flexShrink: 0, pointerFilter: 'none' }}
+          uiBackground={{ textureMode: 'stretch', texture: { src: 'images/hud/heart.png' } }} />
+        <Label value={`${Math.ceil(health)} / ${maximum}`} color={white} font="sans-serif" fontSize={11 * s} textAlign="middle-right" textWrap="nowrap"
+          uiTransform={{ height: 16 * s, flexShrink: 0, pointerFilter: 'none' }} />
+      </UiEntity>}
+    </UiEntity>}
+    {!folded && <XpBar numbers={hall} scale={s} />}
+    {!folded && hall && <HallRoster scale={s} />}
+    {!hall && <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', flexShrink: 0, pointerFilter: 'none' }}>
+    {!folded && <Rule scale={s} />}
+    <UiEntity uiTransform={{ width: '100%', height: 18 * s, flexDirection: 'row', alignItems: 'center', flexShrink: 0, margin: { top: folded ? 8 * s : 0 }, pointerFilter: 'none' }}>
+      <UiEntity uiTransform={{ width: 17 * s, height: 17 * s, margin: { right: 9 * s }, flexShrink: 0, pointerFilter: 'none' }}
+        uiBackground={{ textureMode: 'stretch', texture: { src: 'images/hud/heart.png' } }} />
+      <UiEntity uiTransform={{ width: inner - 26 * s - 66 * s, height: 9 * s, padding: s, borderRadius: 3 * s, flexShrink: 0, flexDirection: 'row', pointerFilter: 'none' }} uiBackground={{ color: track }}>
+        <UiEntity uiTransform={{ width: `${health / maximum * 100}%`, height: '100%', borderRadius: 2 * s, pointerFilter: 'none' }} uiBackground={{ color: red }} />
+      </UiEntity>
+      <Label value={`${Math.ceil(health)} / ${maximum}`} color={white} font="sans-serif" fontSize={11 * s}
+        textAlign="middle-right" textWrap="nowrap"
+        uiTransform={{ width: 66 * s, height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
+    </UiEntity>
+    {!folded && <UiEntity uiTransform={{ width: '100%', height: 12 * s, flexDirection: 'row', alignItems: 'center', flexShrink: 0, margin: { top: 5 * s }, pointerFilter: 'none' }}>
       <UiEntity uiTransform={{ width: 17 * s, height: 12 * s, margin: { right: 9 * s }, flexShrink: 0, pointerFilter: 'none' }} />
       <UiEntity uiTransform={{ width: inner - 26 * s, height: 5 * s, padding: s, borderRadius: 2 * s, flexShrink: 0, flexDirection: 'row', pointerFilter: 'none' }} uiBackground={{ color: track }}>
         <UiEntity uiTransform={{ width: `${staminaRatio * 100}%`, height: '100%', pointerFilter: 'none' }}
           uiBackground={{ color: vitals.exhausted || staminaRatio < 0.3 ? staminaLow : stamina }} />
       </UiEntity>
-    </UiEntity>
-    <UiEntity uiTransform={{ width: '100%', height: 20 * s, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, margin: { top: 4 * s }, pointerFilter: 'none' }}>
-      <UiEntity uiTransform={{ width: 60 * s, height: 20 * s, flexDirection: 'row', alignItems: 'center', margin: { left: 26 * s }, pointerFilter: 'none' }}>
-        {[0, 1, 2].map((i) => <UiEntity key={`combo-${i}`} uiTransform={{ width: 9 * s, height: 9 * s, margin: { right: 4 * s }, borderRadius: 5 * s, pointerFilter: 'none' }}
-          uiBackground={{ color: i < vitals.comboStep ? gold : track }} />)}
-      </UiEntity>
-      <Label value={`${Math.ceil(health)} / ${maximum}`} color={muted} font="sans-serif" fontSize={12 * s}
-        textAlign="middle-right" textWrap="nowrap"
-        uiTransform={{ width: 120 * s, height: 20 * s, flexShrink: 0, pointerFilter: 'none' }} />
-    </UiEntity>
-    <PartyVitals inner={inner} scale={s} />
+    </UiEntity>}
+    {!folded && <PartyVitals inner={inner} scale={s} />}
     </UiEntity>}
   </UiEntity>
 }
@@ -250,7 +274,8 @@ function BossBar({ width, scale: s }: { width: number; scale: number }) {
   if (!state.visible || state.phase !== 'fighting' || !state.bossAlive || state.name !== 'Warlord') return null
   const barWidth = Math.min(420 * s, width * 0.5)
   const ratio = Math.max(0, Math.min(1, state.health / Math.max(1, state.maxHealth)))
-  const top = 26 * s
+  // Under the run clock.
+  const top = 58 * s
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - barWidth) / 2, top },
     width: barWidth, height: 44 * s, flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
     <Label value={state.bossLabel ? `${t(state.name)}  ·  ${t(state.bossLabel)}` : t(state.name)} color={white} font="sans-serif" fontSize={15 * s} textAlign="middle-center" textWrap="nowrap"
@@ -329,14 +354,14 @@ function LootToasts({ right, bottom, scale: s }: { right: number; bottom: number
         ? `${toast.wrongClass ? t('Cut for another class') : t('Already carried')}  ·  ${t('salvaged for {n} coins', { n: toast.salvaged })}`
         : toast.full ? `${t(rarity.label)}  ·  ${t('Bag full · the Quartermaster buys extras')}`
         : toast.item.weapon ? `${t(rarity.label)}  ·  ${t(WEAPON_CLASSES[toast.item.weapon.class].label)}  ·  ${t('now in your inventory')}`
-        : `${t(rarity.label)}  ·  ${t('{set} set', { set: toast.item.setLabel ?? '' })}  ·  ${armorStatLine(toast.item, RARITIES[toast.rarity].rank, 1) || t('now in your wardrobe')}`
+        : `${t(rarity.label)}  ·  ${t('{set} set', { set: toast.item.setLabel ?? '' })}  ·  ${armorStatLine(toast.item, RARITIES[toast.rarity].rank, 1, toast.affix ?? 0) || t('now in your wardrobe')}`
       return <UiEntity key={`${toast.item.id}-${i}`} uiTransform={{ width: cardWidth, height: cardHeight, margin: { top: 6 * s },
         padding: 7 * s, borderRadius: 8 * s, borderWidth: s, borderColor: withAlpha(toast.salvaged > 0 ? line : toast.full ? staminaLow : rarityColor, fade * 0.9),
         flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: withAlpha(panel, fade) }}>
         <UiEntity uiTransform={{ width: 40 * s, height: 40 * s, borderRadius: 6 * s, flexShrink: 0, pointerFilter: 'none' }}
           uiBackground={{ color: withAlpha(track, fade), textureMode: 'stretch', texture: { src: toast.item.icon } }} />
         <UiEntity uiTransform={{ width: cardWidth - 62 * s, height: 40 * s, margin: { left: 8 * s }, flexDirection: 'column', justifyContent: 'center', pointerFilter: 'none' }}>
-          <Label value={toast.item.name} color={withAlpha(toast.salvaged > 0 ? muted : rarityColor, fade)} font="sans-serif" fontSize={13.5 * s}
+          <Label value={gearDisplayName(toast.item, toast.affix ?? 0)} color={withAlpha(toast.salvaged > 0 ? muted : rarityColor, fade)} font="sans-serif" fontSize={13.5 * s}
             textAlign="middle-left" textWrap="nowrap" uiTransform={{ width: '100%', height: 20 * s, flexShrink: 0, pointerFilter: 'none' }} />
           <Label value={subtitle} color={withAlpha(muted, fade)} font="sans-serif" fontSize={11 * s}
             textAlign="middle-left" textWrap="nowrap" uiTransform={{ width: '100%', height: 17 * s, flexShrink: 0, pointerFilter: 'none' }} />
@@ -367,11 +392,11 @@ function LootCards({ found, salvaged, width, scale: s, resultKey }: { found: str
     revealedShown = 0
   }
   const age = (Date.now() - revealStart) / 1000
-  // Each find is "item@rank": the copy's own rarity, not whatever the hero has in use.
+  // Each find is "item@rank@affix": the copy's own rarity and affix, not whatever the hero has in use.
   const items = found.map((entry) => {
-    const [id, rank] = entry.split('@')
+    const [id, rank, affix] = entry.split('@')
     const item = getEquipmentItemOrNull(id)
-    return item ? { ...item, rank: Number(rank) || 0 } : undefined
+    return item ? { ...item, rank: Number(rank) || 0, affix: Number(affix) || 0 } : undefined
   }).filter((item) => !!item)
   const perRow = Math.max(1, Math.min(items.length || 1, Math.floor((width + CARD.gap * s) / ((CARD.w + CARD.gap) * s)), 5))
   const shown = items.slice(0, perRow * 2)
@@ -409,7 +434,7 @@ function LootCards({ found, salvaged, width, scale: s, resultKey }: { found: str
             uiBackground={{ color: Color4.create(0, 0, 0, 0.35) }}>
             <UiEntity uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} uiBackground={{ textureMode: 'stretch', texture: { src: item.icon } }} />
           </UiEntity>}
-          {up && <Label value={item.name} color={white} font="sans-serif" fontSize={12.5 * s} textAlign="middle-center" textWrap="wrap"
+          {up && <Label value={gearDisplayName(item, item.affix)} color={white} font="sans-serif" fontSize={12.5 * s} textAlign="middle-center" textWrap="wrap"
             uiTransform={{ width: '92%', height: 40 * s, margin: { top: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
           {up && <Label value={t(rarity.label).toUpperCase()} color={rarity.color} font="sans-serif" fontSize={11 * s} textAlign="middle-center" textWrap="nowrap"
             uiTransform={{ width: '100%', height: 18 * s, margin: { top: 4 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
@@ -432,34 +457,26 @@ function Payout({ value, label, color, scale: s }: { value: string; label: strin
   </UiEntity>
 }
 
-/** Under the vitals during a run: the fortress, the tally and who is in with us. */
-function RunPanel({ right, top, scale: s }: { right: number; top: number; scale: number }) {
+/**
+ * The run's clock, top centre where dungeon crawlers keep it: the time left
+ * (red inside the last minute), or the time taken where there is no limit.
+ * The fortress, room and kill tally are not repeated on screen; the results
+ * card tells that story at the end.
+ */
+function RunClock({ width, scale: s }: { width: number; scale: number }) {
   const party = myParty()
-  if (!party || party.state !== 'running') return null
+  if (!party || party.state !== 'running' || inRaid()) return null
   const level = LEVELS[party.level]
-  const diff = DIFFICULTIES[party.diff]
   const elapsed = party.time + getLobbyState().silence
   const limit = level?.seconds ?? 0
   const left = limit > 0 ? Math.max(0, limit - elapsed) : 0
   const urgent = limit > 0 && left < 60
-  const g = gauntletProgress()
-  const where = g
-    ? g.kind === 'combat'
-      ? `${t('Room {n} of {total}', { n: g.stage + 1, total: g.stages })}${g.wave > 0 ? `  ·  ${t('Wave {n} of {total}', { n: g.wave, total: g.waves })}` : ''}`
-      : `${t('Room {n} of {total}', { n: g.stage + 1, total: g.stages })}  ·  ${t(g.name)}`
-    : ''
-  return <UiEntity uiTransform={{ positionType: 'absolute', position: { right, top }, width: (CARD_WIDTH - CARD_PAD * 2) * s, flexDirection: 'column', pointerFilter: 'none' }}>
-    <Label value={`${level?.name ?? ''}  ·  ${t(diff?.name ?? '')}`} color={gold} font="sans-serif" fontSize={12 * s} textAlign="middle-right" textWrap="nowrap"
-      uiTransform={{ width: '100%', height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
-    <Label value={limit > 0 ? formatTime(left) : formatTime(elapsed)} color={urgent ? red : white} font="serif" fontSize={(urgent ? 30 : 26) * s} textAlign="middle-right" textWrap="nowrap"
-      uiTransform={{ width: '100%', height: 34 * s, flexShrink: 0, pointerFilter: 'none' }} />
-    {where !== '' && <Label value={where} color={white} font="sans-serif" fontSize={12 * s} textAlign="middle-right" textWrap="nowrap"
-      uiTransform={{ width: '100%', height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />}
-    <Label value={t('Slain {n} / {total}', { n: party.slain, total: party.total })} color={muted} font="sans-serif" fontSize={11 * s} textAlign="middle-right" textWrap="nowrap"
-      uiTransform={{ width: '100%', height: 16 * s, flexShrink: 0, pointerFilter: 'none' }} />
-    {party.members.length > 1 && party.members.map((m) => <Label key={m} value={`${heroLabel(m)}${m === party.leader ? ' ♛' : ''}`}
-      color={white} font="sans-serif" fontSize={12 * s} textAlign="middle-right" textWrap="nowrap"
-      uiTransform={{ width: '100%', height: 17 * s, flexShrink: 0, pointerFilter: 'none' }} />)}
+  const clockWidth = 132 * s
+  return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - clockWidth) / 2, top: 12 * s },
+    width: clockWidth, height: 38 * s, borderRadius: 8 * s, justifyContent: 'center', alignItems: 'center', pointerFilter: 'none' }}
+    uiBackground={{ color: panel }}>
+    <Label value={limit > 0 ? formatTime(left) : formatTime(elapsed)} color={urgent ? red : white} font="serif" fontSize={(urgent ? 28 : 24) * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} />
   </UiEntity>
 }
 
@@ -518,36 +535,29 @@ function ResultsOverlay({ width, height, scale: s }: { width: number; height: nu
 }
 
 /**
- * In the hall: where the party stands, and, at the war table, the way to the
- * dungeons. Away from the table the hall is just a place to be; the HUD's
- * Dungeons button is always there.
+ * In the hall: where the party stands, and whoever is about to go. The way to
+ * the dungeons is the HUD's Play button; the hall itself is just a place to be.
  */
 function HubPrompt({ width, bottom, scale: s }: { width: number; bottom: number; scale: number }) {
   if (myPhase() !== HUB || getLobbyState().open) return null
   const talk = getTalkState()
   if (talk.open) return <TalkPanel width={width} bottom={bottom} scale={s} open={talk.open} />
   const party = myParty()
-  const near = atWarTable()
   // Someone in the hall is about to go (doors counting down): the offer to step in follows you around the hall.
   const going = party ? undefined : openParties().find((p) => p.members.length < MAX_PARTY && doorsWait(p) > 0)
-  // Beside one of the folk the world prompt (hold E) does the asking; nothing doubles it down here.
-  if (!party && !near && !going) return null
-  if (!party && !going && atPitGate()) return null
+  if (!party && !going) return null
+  if (!party && atPitGate()) return null
   const wait = party ? doorsWait(party) : going ? doorsWait(going) : 0
   const caption = party
     ? `${partyTitle(party)}  ·  ${party.members.length}/${MAX_PARTY}  ·  ${LEVELS[party.level]?.name ?? ''}${wait > 0 ? `  ·  ${t('Doors close in {n}s', { n: Math.ceil(wait) })}` : ''}`
-    : going
-      ? `${t('{name} is going to {level}', { name: heroLabel(going.leader), level: LEVELS[going.level]?.name ?? '' })}${wait > 0 ? `  ·  ${t('Doors close in {n}s', { n: Math.ceil(wait) })}` : ''}`
-      : t('The war table: pick how hard and press Go.')
+    : `${t('{name} is going to {level}', { name: heroLabel(going!.leader), level: LEVELS[going!.level]?.name ?? '' })}${wait > 0 ? `  ·  ${t('Doors close in {n}s', { n: Math.ceil(wait) })}` : ''}`
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - 460 * s) / 2, bottom },
     width: 460 * s, flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
-    <Label value={caption} color={party || going ? gold : muted} font="sans-serif" fontSize={12 * s} textWrap="nowrap"
+    <Label value={caption} color={gold} font="sans-serif" fontSize={12 * s} textWrap="nowrap"
       uiTransform={{ width: '100%', height: 24 * s, margin: { bottom: 6 * s }, pointerFilter: 'none' }} />
     <UiEntity uiTransform={{ flexDirection: 'row', justifyContent: 'center', pointerFilter: 'none' }}>
-      {going && <UiEntity uiTransform={{ margin: { right: near ? 8 * s : 0 }, pointerFilter: 'none' }}>
-        <MenuAction id="join-going" text={t('Join {name}', { name: heroLabel(going.leader) })} onClick={() => joinParty(going.id)} width={200} height={34} scale={s} fontSize={13} primary />
-      </UiEntity>}
-      {(near || party) && <TextAction id="open-lobby" text={party ? t('Party') : t('Dungeons')} onClick={openLobby} scale={s} width={going ? 140 : 200} />}
+      {going && <MenuAction id="join-going" text={t('Join {name}', { name: heroLabel(going.leader) })} onClick={() => joinParty(going.id)} width={200} height={34} scale={s} fontSize={13} primary />}
+      {party && <TextAction id="open-lobby" text={t('Party')} onClick={() => openLobby()} scale={s} width={200} />}
     </UiEntity>
   </UiEntity>
 }
@@ -674,13 +684,15 @@ function busyWithNotices(): boolean {
   return (player.active && player.loading !== 'ready') || (rival.visible && (rival.phase === 'error' || rival.phase === 'defeat')) || joining()
 }
 
-/** The how-to-play strip (src/hints.ts): key caps and a line, faded in and out, over the foot of the screen. */
-function HintStrip({ width, bottom, scale: s }: { width: number; bottom: number; scale: number }) {
+/** The how-to-play strip (src/hints.ts): key caps and a line, faded in and out, across the top of the screen where the eye is not on the fight. */
+function HintStrip({ width, top, scale: s }: { width: number; top: number; scale: number }) {
   const hint = getHint()
   if (!hint || busyWithNotices()) return null
   const alpha = Math.min(1, hint.age / 0.35, Math.max(0, hint.remaining / 0.6))
   const stripWidth = Math.min(640 * s, width * 0.8)
-  return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - stripWidth) / 2, bottom },
+  // The hall's tally and invite toast take the same spot; the strip steps under them.
+  const crowded = myPhase() === HUB && (trainingActive() || incomingInvites().length > 0)
+  return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - stripWidth) / 2, top: top + (crowded ? 84 * s : 0) },
     width: stripWidth, flexDirection: 'column', alignItems: 'center', padding: { top: 8 * s, bottom: 8 * s }, borderRadius: 8 * s, pointerFilter: 'none' }}
     uiBackground={{ color: withAlpha(panel, alpha) }}>
     {hint.chips.length > 0 && <UiEntity uiTransform={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', height: 30 * s, pointerFilter: 'none' }}>
@@ -730,26 +742,24 @@ export function WorldHudUi() {
   const ready = created && player.active && player.loading === 'ready'
   const inHub = myPhase() === HUB && !getLobbyState().open
   const canLeave = ready && inRun() && !inRaid()
-  // Inventory and Settings always; Dungeons and Edit character in the hall; Leave in a run.
-  const hudButtons = 2 + (inHub ? 2 : 0) + (canLeave ? 1 : 0)
   // The skill bar sits at the foot of the screen; the prompts that used to stand there move up over it.
   const showBar = ready && !getLobbyState().open
   const lift = showBar ? SKILL_BAR_HEIGHT * s + 6 * s : 0
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width, height, pointerFilter: 'none' }}>
     {showBar && <SkillBar width={width} bottom={bottom} scale={s} />}
-    {ready && <PlayerVitals right={right} top={vitalsTop} scale={s} />}
-    {ready && inRun() && !inRaid() && <RunPanel right={right + CARD_PAD * s} top={vitalsTop + 168 * s} scale={s} />}
+    {ready && <PlayerVitals right={right} top={vitalsTop} scale={cardScale(width, s, myPhase() === HUB)} />}
     {ready && <ResultsOverlay width={width} height={height} scale={s} />}
     {ready && <HubPrompt width={width} bottom={bottom + lift} scale={s} />}
     {ready && <HubNotice width={width} top={vitalsTop - 60 * s} scale={s} />}
     {ready && <InviteToast width={width} top={vitalsTop} scale={s} />}
     {ready && <TrainingTally width={width} top={vitalsTop - 8 * s} scale={s} />}
     {ready && <LevelUpNotice width={width} top={vitalsTop + 60 * s} scale={s} />}
-    {ready && <HintStrip width={width} bottom={bottom + lift + 128 * s} scale={s} />}
+    {ready && <HintStrip width={width} top={vitalsTop - 8 * s} scale={s} />}
+    {ready && <RunClock width={width} scale={s} />}
     {ready && <BossBar width={width} scale={s} />}
     {ready && <ColossusBar width={width} scale={s} />}
     {ready && <RaidPrompt width={width} bottom={bottom + lift} scale={s} />}
-    {ready && <LootToasts right={right} bottom={bottom} scale={s} />}
+    {ready && <LootToasts right={right} bottom={inHub ? bottom + STACK_HEIGHT * s : bottom} scale={s} />}
     {ready && devToolsOn() && <DungeonDevPanel />}
     {created && <StatusNotice width={width} bottom={bottom + lift} scale={s} />}
     {created && devToolsOn() && <Label value={`${netStatus()} | ${netDebugSummary()}`} color={muted} font="sans-serif" fontSize={10 * s} textAlign="bottom-left" textWrap="nowrap"
@@ -759,15 +769,22 @@ export function WorldHudUi() {
       {recentLogs().map((line, i) => <Label key={i} value={line} color={white} font="sans-serif" fontSize={9 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={{ width: '100%', height: 12 * s, pointerFilter: 'none' }} />)}
     </UiEntity>}
-    {created && <UiEntity uiTransform={{ positionType: 'absolute', position: { right, bottom },
-      width: (48 * hudButtons - 12) * s, height: 48 * s, flexDirection: 'row', justifyContent: 'space-between', pointerFilter: 'none' }}>
-      {inHub && <IconButton id="dungeons" label={myParty() ? t('Party') : t('Dungeons')} icon="images/hud/dungeons.png" scale={s} disabled={!ready} onClick={openLobby} />}
-      {canLeave && <IconButton id="leave-run" label={t('Leave the fortress')} icon="images/hud/leave.png" scale={s} onClick={() => { leaveAsked = true }} />}
-      <IconButton id="inventory" label={t('Inventory')} icon="images/hud/inventory.png" scale={s} disabled={!ready} onClick={openInventory}
-        glow={newGearCount() > 0 || (inHub && newGearWaiting())} badge={t('NEW')} />
-      {/* Class and look are chosen in the hall; a champion in the fortress is committed to it. */}
-      {inHub && <IconButton id="character" label={t('Edit character')} icon="images/hud/character.png" scale={s} onClick={openPicker} />}
-      <IconButton id="settings" label={t('Settings')} icon="images/hud/settings.png" scale={s} onClick={openSettings} />
+    {/* The hall: Settings, Character, Inventory and Play stacked bottom-right. Class and look are chosen here; a champion in the fortress is committed to it. */}
+    {created && inHub && <UiEntity uiTransform={{ positionType: 'absolute', position: { right, bottom },
+      width: STACK_WIDTH * s, flexDirection: 'column', alignItems: 'flex-end', pointerFilter: 'none' }}>
+      <StackButton id="settings" label={t('Settings')} icon="images/hud/settings.png" scale={s} onClick={openSettings} />
+      <UiEntity uiTransform={{ height: 10 * s, pointerFilter: 'none' }} />
+      <StackButton id="character" label={t('Character')} icon="images/hud/character.png" scale={s} onClick={openPicker} />
+      <UiEntity uiTransform={{ height: 10 * s, pointerFilter: 'none' }} />
+      <StackButton id="inventory" label={t('Inventory')} icon="images/hud/inventory.png" scale={s} tone="gold" disabled={!ready} onClick={openInventory}
+        glow={newGearCount() > 0 || newGearWaiting()} badge={t('NEW')} />
+      <UiEntity uiTransform={{ height: 10 * s, pointerFilter: 'none' }} />
+      <StackButton id="play" label={myParty() ? t('Party') : t('Play')} scale={s} tone="green" height={66} fontSize={28} disabled={!ready} onClick={() => openLobby()} />
+    </UiEntity>}
+    {/* A run: one big door above the vitals card's left edge (over the level). Inventory and Settings wait for the hall; nothing else competes with the fight. */}
+    {canLeave && <UiEntity uiTransform={{ positionType: 'absolute', position: { right: right + CARD_WIDTH * cardScale(width, s, false) - 64 * s, top: vitalsTop - 76 * s },
+      width: 64 * s, height: 64 * s, pointerFilter: 'none' }}>
+      <IconButton id="leave-run" label={t('Leave the fortress')} icon="images/hud/leave.png" scale={s} size={64} tooltip="below" onClick={() => { leaveAsked = true }} />
     </UiEntity>}
     {canLeave && <LeaveConfirm width={width} height={height} scale={s} />}
     {!created && <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - 250 * s) / 2, bottom },

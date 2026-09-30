@@ -69,7 +69,7 @@ import { newGearUid } from './shared/gearBag'
 import { AttackContext, maxHealth } from './roamingCombat'
 import { noteAllyHealth } from './allyVitals'
 import {
-  allFighters, EnemyFxNet, EnemySnap, heroArmorLevelOf, heroArmorRankOf, heroCharacters, HeroHit, heroMembers, heroLoadout, heroPosition, heroWeapon, heroWeaponLevel, heroWeaponRank, ImpactNet, isHeadless, isHost, localAddress, NetFighter, publishEnemies,
+  allFighters, EnemyFxNet, EnemySnap, heroArmorAffixOf, heroArmorLevelOf, heroArmorRankOf, heroCharacters, HeroHit, heroMembers, heroLoadout, heroPosition, heroWeapon, heroWeaponAffix, heroWeaponLevel, heroWeaponRank, ImpactNet, isHeadless, isHost, localAddress, NetFighter, publishEnemies,
   publishEnemyFx, publishHitEnemy, publishHitSkill, publishImpact, publishLoot, publishRespawn, publishShot, publishSkillCast, setMultiplayerHandlers
 } from './multiplayer'
 
@@ -1935,7 +1935,7 @@ function applyRemoteHit(id: string, index: number, motion: string, finisher: boo
   const cid = heroCharacters((owner) => owner === id)[0]
   if (!heroClassMotionAllowed(cid, attack)) return
   // The weapon is read off the hero's synced body: the client never states its own damage.
-  const hit = { finisher, weapon: weaponStats(heroWeapon(id), true, heroWeaponRank(id), heroWeaponLevel(id)), might: hostMight(id, cid) }
+  const hit = { finisher, weapon: weaponStats(heroWeapon(id), true, heroWeaponRank(id), heroWeaponLevel(id), heroWeaponAffix(id)), might: hostMight(id, cid) }
   applyPlayerHit(attacker, e, attack, hit)
   const wide = isHeavyMotion(attack) || finisher
   for (const other of cleaveFrom(attacker, e, attack, wide)) {
@@ -1945,7 +1945,7 @@ function applyRemoteHit(id: string, index: number, motion: string, finisher: boo
 
 /** A hero's multiplier on damage dealt as the host applies it: their level, any buff on them, and the armor their body wears. */
 function hostMight(id: string, cid: string | undefined): number {
-  return heroBonusesFor(id, cid ?? '').might * buffMight(id) * armorBonuses(heroLoadout(id), heroArmorRankOf(id), heroArmorLevelOf(id)).might
+  return heroBonusesFor(id, cid ?? '').might * buffMight(id) * armorBonuses(heroLoadout(id), heroArmorRankOf(id), heroArmorLevelOf(id), heroArmorAffixOf(id)).might
 }
 
 /** The local hero's weapon, for the numbers it shows and the hits it hosts. */
@@ -1956,7 +1956,7 @@ function localWeapon(): WeaponModifiers {
 /** The local hero's bonus on damage dealt: their level (src/heroXp.ts), buffs, and their armor (src/armor.ts). */
 function localMight(): number {
   const me = localAddress()
-  return heroBonusesFor(me, getPlayerCharacterState().characterId ?? '').might * buffMight(me) * armorBonuses(heroLoadout(me), heroArmorRankOf(me), heroArmorLevelOf(me)).might
+  return heroBonusesFor(me, getPlayerCharacterState().characterId ?? '').might * buffMight(me) * armorBonuses(heroLoadout(me), heroArmorRankOf(me), heroArmorLevelOf(me), heroArmorAffixOf(me)).might
 }
 
 /** A blow's damage after the hero's level; a blow that landed never rounds to nothing. */
@@ -2332,7 +2332,7 @@ function applyRemoteSkillHit(id: string, index: number, skill: string) {
   if (reach === 0 || combatDistance(attacker, e) > reach) return
   if (Math.abs(attacker.position.y - e.position.y) > COMBAT_RULES.maximumVerticalReach + (eff.kind === 'shot' ? 2 : 0.5)) return
   if (!claimSkillHit(id, def)) return
-  applySkillHit(poseToward(attacker.position, e.position), e, def, { weapon: weaponStats(heroWeapon(id), true, heroWeaponRank(id), heroWeaponLevel(id)), might: hostMight(id, cid) })
+  applySkillHit(poseToward(attacker.position, e.position), e, def, { weapon: weaponStats(heroWeapon(id), true, heroWeaponRank(id), heroWeaponLevel(id), heroWeaponAffix(id)), might: hostMight(id, cid) })
 }
 
 /** Host: a blow belongs to a cast the hero made recently, and that cast has blows left to give. */
@@ -2371,7 +2371,7 @@ function hostSkillCast(id: string, def: SkillDef, x: number, z: number, _yaw: nu
       def, x, z, ticksLeft: e.ticks, interval: e.ticks > 1 ? e.seconds / (e.ticks - 1) : 0,
       // An aimed circle is a telegraph first; a slam lands with the blow.
       timer: e.at === 'aim' ? ZONE_TELEGRAPH : 0,
-      caster: id, weapon: weaponStats(heroWeapon(id), true, heroWeaponRank(id), heroWeaponLevel(id)), might: hostMight(id, cid)
+      caster: id, weapon: weaponStats(heroWeapon(id), true, heroWeaponRank(id), heroWeaponLevel(id), heroWeaponAffix(id)), might: hostMight(id, cid)
     })
   }
 }

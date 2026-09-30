@@ -6,7 +6,7 @@
 import { engine, InputModifier, PointerLock, Transform } from '@dcl/sdk/ecs'
 import { markMilestone } from './clientInfo'
 import { getDungeonState, loadDungeon } from './dungeon'
-import { PIT_GATE_REACH, PIT_GATE_TAG, WAR_TABLE_TAG } from './dungeon/hub'
+import { PIT_GATE_REACH, PIT_GATE_TAG } from './dungeon/hub'
 import { setClientRun } from './dungeonEnemies'
 import { getLootState, getRunLoot, resetRunLoot } from './loot'
 import { isClientSynced, localAddress } from './multiplayer'
@@ -95,10 +95,15 @@ export type RunResult = {
   salvaged: number
 }
 
+/** The lobby's pages before a party exists: the one question, the parties to step into, or a party of your own to set up. */
+export type LobbyPage = 'choose' | 'join' | 'create'
+
 type LobbyState = {
   parties: PartyInfo[]
   /** The lobby panel is up (hub only). */
   open: boolean
+  /** Which page is showing while we have no party (with one, the party card shows regardless). */
+  page: LobbyPage
   /** Seconds since the last `parties` broadcast; large means the host is not talking. */
   silence: number
   /** Our level progress: one number per level, 0 = never cleared, n = cleared up to difficulty n-1. */
@@ -114,7 +119,7 @@ type LobbyState = {
   noticeFor: number
 }
 
-const state: LobbyState = { parties: [], open: false, silence: 0, progress: [], result: undefined, levelId: HUB_LEVEL.id, banner: '', notice: '', noticeFor: 0 }
+const state: LobbyState = { parties: [], open: false, page: 'choose', silence: 0, progress: [], result: undefined, levelId: HUB_LEVEL.id, banner: '', notice: '', noticeFor: 0 }
 /** The phase the built dungeon is for, and the party's run counter it was built for. */
 let appliedPhase = HUB
 let appliedRun = -1
@@ -256,16 +261,23 @@ export function openParties(): PartyInfo[] {
 
 // --- lobby panel ------------------------------------------------------------------
 
-export function openLobby() {
+/** Play. Opens on the one question (create or join); with a party already, the party card shows whatever the page. */
+export function openLobby(page: LobbyPage = 'choose') {
   if (state.open || !getPickerState().hasCreatedCharacter || myPhase() !== HUB) return
   state.open = true
+  state.page = page
   InputModifier.createOrReplace(engine.PlayerEntity, { mode: InputModifier.Mode.Standard({ disableAll: true }) })
   PointerLock.createOrReplace(engine.CameraEntity, { isPointerLocked: false })
+}
+
+export function setLobbyPage(page: LobbyPage) {
+  state.page = page
 }
 
 export function closeLobby() {
   if (!state.open) return
   state.open = false
+  state.page = 'choose'
   state.banner = ''
   InputModifier.deleteFrom(engine.PlayerEntity)
 }
@@ -369,24 +381,6 @@ export function resultsWait(): number {
 // --- the hall ---------------------------------------------------------------------------
 
 /**
- * Standing at the war table (within reach of the hall's centrepiece), which is
- * where the in-world prompt to choose a dungeon appears. The HUD's Dungeons
- * button works from anywhere in the hall.
- */
-export function atWarTable(): boolean {
-  if (myPhase() !== HUB) return false
-  const table = getDungeonState().instance?.tagged[WAR_TABLE_TAG]
-  if (table === undefined) return false
-  const t = Transform.getOrNull(table)
-  const p = Transform.getOrNull(engine.PlayerEntity)
-  if (!t || !p) return false
-  const dx = p.position.x - t.position.x
-  const dz = p.position.z - t.position.z
-  return dx * dx + dz * dz <= WAR_TABLE_REACH * WAR_TABLE_REACH
-}
-const WAR_TABLE_REACH = 4.5
-
-/**
  * Standing on the summoning circle: in the hall it leads down to the Pit, in
  * the arena's gate room it leads home. Both layouts tag the piece the same.
  */
@@ -437,7 +431,7 @@ function update(dt: number) {
     standingFor = getPlayerCharacterState().visible ? standingFor + span : 0
     if (standingFor >= GREET_AFTER_SECONDS) {
       greeted = true
-      notice(t('Welcome to the Hall of Antrom. The war table, or the Dungeons button, leads to the fortresses.'))
+      notice(t('Welcome to the Hall of Antrom. Press Play to head for the fortresses.'))
     }
   }
   if (leaving > 0) leaving = phase === HUB ? 0 : leaving - span

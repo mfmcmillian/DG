@@ -10,13 +10,16 @@
 
 import { EQUIPMENT_ITEMS, EQUIPMENT_SLOTS, EquipmentItem, EquipmentLoadout, EquipmentSlot, getEquipmentItemOrNull } from './equipmentCatalog'
 import { t } from './i18n'
-import { levelMultiplier, upgradeLevelOf, upgradeRankOf } from './shared/upgradeRanks'
+import { affixOf } from './shared/affixes'
+import { levelMultiplier, upgradeAffixOf, upgradeLevelOf, upgradeRankOf } from './shared/upgradeRanks'
 import { Rarity, RARITIES, rarityOf } from './weapons'
 
 /** How rare a hero's copy of an item is, by id: this hero's own ranks by default, a synced body's on the host. */
 export type RankOf = (itemId: string) => number
 /** The level the pit has forged a hero's copy of an item to, by id: likewise this hero's own by default. */
 export type LevelOf = (itemId: string) => number
+/** The affix a hero's copy of an item fell with (shared/affixes.ts index), by id: likewise this hero's own by default. */
+export type AffixOf = (itemId: string) => number
 
 /** Percent points one piece is worth at each rarity. */
 const TIER: Record<Rarity, number> = { common: 1, uncommon: 1.5, rare: 2, epic: 3, legendary: 4 }
@@ -26,6 +29,48 @@ const STAMINA_TIER: Record<Rarity, number> = { common: 2, uncommon: 3, rare: 4, 
 const HEALTH_TIER: Record<Rarity, number> = { common: 2, uncommon: 3, rare: 4, epic: 6, legendary: 8 }
 /** Pieces of one set that earn its bonus; wearing the whole set (five or six pieces, some sets have no helm) doubles it. */
 export const SET_PIECES = 4
+
+/**
+ * What a set leans to: every piece of it carries a little of that stat on top
+ * of its slot's, so a Knight's glove is not a Sorcerer's glove. Plate leans to
+ * toughness, hunters and rogues to stamina, casters to might, the hardy folk
+ * of the north and the bog to health. A set not listed leans by its id.
+ */
+export type ArmorLean = 'toughness' | 'might' | 'stamina' | 'health'
+export const SET_LEANS: Record<string, ArmorLean> = {
+  // Starters and the fortress
+  knight: 'toughness', scout: 'stamina', striker: 'might', brute: 'health',
+  trapper: 'stamina', herbalist: 'might', herder: 'health', hearth: 'might', smith: 'toughness',
+  // Thornwood
+  elf: 'stamina', sentinel: 'toughness', dusk: 'stamina', sunleaf: 'might', thorn: 'stamina', stag: 'health',
+  // The crypt
+  sorc: 'might', hexer: 'might', druid: 'health', witch: 'stamina', spectral: 'might', sage: 'toughness',
+  barrow: 'stamina', lich: 'might', gravebound: 'toughness', deathless: 'toughness', gravelord: 'health',
+  // The castle
+  paladin: 'toughness', blackguard: 'might', crusader: 'toughness', sovereign: 'might', ironclad: 'toughness', chevalier: 'stamina',
+  // The pass
+  viking: 'health', jarl: 'toughness', raider: 'stamina', karl: 'health', huskarl: 'toughness', ulfhednar: 'might',
+  // The bog
+  hexroot: 'might', warboss: 'health', bonegnaw: 'health', kingsown: 'toughness', stalker: 'stamina',
+  // Jade
+  ronin: 'stamina', shrine: 'might', crimson: 'toughness', shogun: 'might', oni: 'health',
+  // The coast
+  freebooter: 'stamina', buccaneer: 'health', corsair: 'might', seadog: 'health', admiral: 'toughness'
+}
+const LEAN_ORDER: ArmorLean[] = ['toughness', 'might', 'stamina', 'health']
+
+export function setLean(set: string): ArmorLean {
+  const listed = SET_LEANS[set]
+  if (listed) return listed
+  let h = 5381
+  for (let i = 0; i < set.length; i++) h = (Math.imul(h, 33) ^ set.charCodeAt(i)) >>> 0
+  return LEAN_ORDER[h % LEAN_ORDER.length]
+}
+
+/** The lean, in words, for the card. */
+export function leanLabel(lean: ArmorLean): string {
+  return lean === 'toughness' ? t('Toughness') : lean === 'might' ? t('Might') : lean === 'stamina' ? t('Stamina') : t('Health')
+}
 
 const setSizes = new Map<string, number>()
 /** How many pieces a set has: most six, a few five. */
@@ -51,14 +96,11 @@ function isArmor(item: EquipmentItem | undefined): item is EquipmentItem {
   return !!item && !item.weapon && item.slot !== 'weapon' && !!item.set
 }
 
-/** What one piece is worth on its own. Empty slots and weapons are worth nothing here. */
-export function armorPieceStats(item: EquipmentItem | undefined, rankOf: RankOf = upgradeRankOf, levelOf: LevelOf = upgradeLevelOf): ArmorStats {
-  if (!isArmor(item)) return NOTHING
-  const rarity = rarityOf(item.id, rankOf(item.id))
-  const forged = levelMultiplier(levelOf(item.id))
+/** What the slot alone is worth at this rarity and forge level. */
+function slotStats(slot: EquipmentSlot, rarity: Rarity, forged: number): ArmorStats {
   const tier = TIER[rarity] * forged
   const health = HEALTH_TIER[rarity] * forged
-  switch (item.slot as EquipmentSlot) {
+  switch (slot) {
     case 'chest': return { might: 0, toughness: tier * 2, stamina: 0, health: health * 2 }
     case 'shoulders':
     case 'legs': return { might: 0, toughness: tier, stamina: 0, health }
@@ -67,6 +109,32 @@ export function armorPieceStats(item: EquipmentItem | undefined, rankOf: RankOf 
     case 'boots': return { might: 0, toughness: 0, stamina: STAMINA_TIER[rarity] * forged, health: 0 }
     default: return NOTHING
   }
+}
+
+/** What the set's lean adds to each of its pieces: half a tier of the leaned stat. */
+function leanStats(lean: ArmorLean, rarity: Rarity, forged: number): ArmorStats {
+  const half = 0.5 * forged
+  switch (lean) {
+    case 'toughness': return { might: 0, toughness: TIER[rarity] * half, stamina: 0, health: 0 }
+    case 'might': return { might: TIER[rarity] * half, toughness: 0, stamina: 0, health: 0 }
+    case 'stamina': return { might: 0, toughness: 0, stamina: STAMINA_TIER[rarity] * half, health: 0 }
+    case 'health': return { might: 0, toughness: 0, stamina: 0, health: HEALTH_TIER[rarity] * half }
+  }
+}
+
+/** What the copy's affix adds, forged along with the rest. */
+function affixStats(affix: number, forged: number): ArmorStats {
+  const mark = affixOf(affix)
+  if (!mark || mark.kind !== 'armor') return NOTHING
+  return { might: (mark.might ?? 0) * forged, toughness: (mark.toughness ?? 0) * forged, stamina: (mark.stamina ?? 0) * forged, health: (mark.health ?? 0) * forged }
+}
+
+/** What one piece is worth on its own: its slot, its set's lean, and the copy's affix. Empty slots and weapons are worth nothing here. */
+export function armorPieceStats(item: EquipmentItem | undefined, rankOf: RankOf = upgradeRankOf, levelOf: LevelOf = upgradeLevelOf, affixOfItem: AffixOf = upgradeAffixOf): ArmorStats {
+  if (!isArmor(item)) return NOTHING
+  const rarity = rarityOf(item.id, rankOf(item.id))
+  const forged = levelMultiplier(levelOf(item.id))
+  return add(add(slotStats(item.slot as EquipmentSlot, rarity, forged), leanStats(setLean(item.set!), rarity, forged)), affixStats(affixOfItem(item.id), forged))
 }
 
 /** The set bonus for `worn` pieces of a set of this rarity and size: might, toughness and health, doubled when the set is complete. */
@@ -107,11 +175,11 @@ function setsWorn(loadout: EquipmentLoadout, rankOf: RankOf): Array<{ id: string
 }
 
 /** Everything a loadout's armor is worth, pieces and set bonus together. */
-export function armorBonuses(loadout: EquipmentLoadout | undefined, rankOf: RankOf = upgradeRankOf, levelOf: LevelOf = upgradeLevelOf): ArmorBonuses {
+export function armorBonuses(loadout: EquipmentLoadout | undefined, rankOf: RankOf = upgradeRankOf, levelOf: LevelOf = upgradeLevelOf, affixOfItem: AffixOf = upgradeAffixOf): ArmorBonuses {
   if (!loadout) return { might: 1, toughness: 1, stamina: 0, health: 0 }
   let total = NOTHING
   for (const slot of EQUIPMENT_SLOTS) {
-    if (slot.id !== 'weapon') total = add(total, armorPieceStats(getEquipmentItemOrNull(loadout[slot.id]), rankOf, levelOf))
+    if (slot.id !== 'weapon') total = add(total, armorPieceStats(getEquipmentItemOrNull(loadout[slot.id]), rankOf, levelOf, affixOfItem))
   }
   const set = setsWorn(loadout, rankOf)[0]
   if (set) total = add(total, armorSetStats(set.rarity, set.worn, setSize(set.id)))
@@ -125,17 +193,18 @@ export function armorBonuses(loadout: EquipmentLoadout | undefined, rankOf: Rank
 }
 
 function pct(v: number): string {
-  return Number.isInteger(v) ? `${v}` : v.toFixed(1)
+  const r = Math.round(v * 10) / 10
+  return Number.isInteger(r) ? `${r}` : r.toFixed(1)
 }
 
 /** What a piece is worth, in words: "-3% damage taken", "+2% damage dealt", "+6 stamina". */
-export function armorStatLine(item: EquipmentItem | undefined, rank?: number, level?: number): string {
-  const s = armorPieceStats(item, rank === undefined ? undefined : () => rank, level === undefined ? undefined : () => level as number)
+export function armorStatLine(item: EquipmentItem | undefined, rank?: number, level?: number, affix?: number): string {
+  const s = armorPieceStats(item, rank === undefined ? undefined : () => rank, level === undefined ? undefined : () => level as number, affix === undefined ? undefined : () => affix as number)
   const parts: string[] = []
   if (s.toughness) parts.push(t('-{pct}% damage taken', { pct: pct(s.toughness) }))
   if (s.might) parts.push(t('+{pct}% damage dealt', { pct: pct(s.might) }))
-  if (s.stamina) parts.push(t('+{n} stamina', { n: s.stamina }))
-  if (s.health) parts.push(t('+{n} health', { n: s.health }))
+  if (s.stamina) parts.push(t('+{n} stamina', { n: pct(s.stamina) }))
+  if (s.health) parts.push(t('+{n} health', { n: pct(s.health) }))
   if (level === undefined) level = item ? upgradeLevelOf(item.id) : 1
   if (level > 1) parts.push(t('Level {n}: +{pct}% to all of it', { n: level, pct: pct((levelMultiplier(level) - 1) * 100) }))
   return parts.join(' · ')

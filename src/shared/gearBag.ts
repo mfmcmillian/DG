@@ -9,8 +9,12 @@
 //
 // Pure state, no catalog import: who is a weapon and what is worn are told to
 // it once at start-up (setGearProbes), so the server can load the module too.
-// The saved hero carries the bag as "uid|item|rank|level|a" strings
-// (src/heroSave.ts), `a` marking the copy the hero uses for that item.
+// The saved hero carries the bag as "uid|item|rank|level|a|affix" strings
+// (src/heroSave.ts), `a` marking the copy the hero uses for that item and the
+// last field the affix a Rare or better drop fell with (affixes.ts; absent or 0
+// for none, and absent on saves from before affixes).
+
+import { clampAffix } from './affixes'
 
 export type GearInstance = {
   /** This copy's id, minted where it fell (the host's loot roll) or when a save was converted. */
@@ -21,6 +25,8 @@ export type GearInstance = {
   rank: number
   /** The pit's level, 1 when never offered. */
   level: number
+  /** The bonus the drop fell with (affixes.ts index), 0 for none. Set where it fell; never changes. */
+  affix: number
 }
 
 export type BagKind = 'weapon' | 'armor'
@@ -130,6 +136,11 @@ export function upgradeLevelOf(id: string | undefined): number {
   return activeGear(id)?.level ?? 1
 }
 
+/** The affix `id`'s copy in use carries (affixes.ts index): 0 when none, or when the hero owns none. */
+export function upgradeAffixOf(id: string | undefined): number {
+  return activeGear(id)?.affix ?? 0
+}
+
 /** A copy is worn when it is the one in use for an item a hero has on. */
 export function isGearWorn(row: GearInstance): boolean {
   return wornProbe(row.item) && activeGear(row.item)?.uid === row.uid
@@ -157,10 +168,10 @@ export function gearKindOf(item: string): BagKind {
  * save being read back or the developer's grant-all are never refused). A
  * first copy of an item becomes the one in use.
  */
-export function addGear(item: string, rank: number, level = 1, uid = newGearUid(), force = false): GearInstance | undefined {
+export function addGear(item: string, rank: number, level = 1, uid = newGearUid(), force = false, affix = 0): GearInstance | undefined {
   if (bag.has(uid)) return bag.get(uid)
   if (!force && bagFull(kindOf(item))) return undefined
-  const row: GearInstance = { uid, item, rank: clampRank(rank), level: clampLevel(level) }
+  const row: GearInstance = { uid, item, rank: clampRank(rank), level: clampLevel(level), affix: clampAffix(affix) }
   bag.set(uid, row)
   copies.set(item, (copies.get(item) ?? 0) + 1)
   if (!active.has(item)) active.set(item, uid)
@@ -211,11 +222,13 @@ export function clearBag() {
 
 // --- the save ----------------------------------------------------------------------------
 
-/** "uid|item|rank|level|a" per copy, sorted, for the save and its fingerprint. */
+/** "uid|item|rank|level|a|affix" per copy (the last two only when set), sorted, for the save and its fingerprint. */
 export function serializeBag(): string[] {
   const out: string[] = []
   for (const row of bag.values()) {
-    out.push(`${row.uid}|${row.item}|${row.rank}|${row.level}${active.get(row.item) === row.uid ? '|a' : ''}`)
+    const flag = active.get(row.item) === row.uid ? 'a' : ''
+    const tail = row.affix ? `|${flag}|${row.affix}` : flag ? `|${flag}` : ''
+    out.push(`${row.uid}|${row.item}|${row.rank}|${row.level}${tail}`)
   }
   return out.sort()
 }
@@ -224,9 +237,9 @@ export function serializeBag(): string[] {
 export function loadBag(entries: readonly string[] | undefined) {
   clearBag()
   for (const entry of entries ?? []) {
-    const [uid, item, rankText, levelText, flag] = entry.split('|')
+    const [uid, item, rankText, levelText, flag, affixText] = entry.split('|')
     if (!uid || !item) continue
-    const row: GearInstance = { uid, item, rank: clampRank(Number(rankText)), level: clampLevel(Number(levelText)) }
+    const row: GearInstance = { uid, item, rank: clampRank(Number(rankText)), level: clampLevel(Number(levelText)), affix: clampAffix(Number(affixText)) }
     bag.set(uid, row)
     copies.set(item, (copies.get(item) ?? 0) + 1)
     if (flag === 'a' || !active.has(item)) active.set(item, uid)

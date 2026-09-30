@@ -101,7 +101,7 @@ const FURNITURE: Furniture[] = [
   { id: 'brazier', ...m(49.3, 39.6) },
   { id: 'banner', x: 3, y: 4, side: 'n' },
   { id: 'banner', x: 7, y: 4, side: 'n' },
-  // The war table, centre of the hall, lit by two braziers: click it to choose a dungeon.
+  // The war table, centre of the hall, lit by two braziers. Furniture now: the dungeons are chosen from the HUD's Play.
   { id: 'castle_table', ...m(45.5, 50.5), yaw: 0, tag: WAR_TABLE_TAG },
   { id: 'chair', ...m(44.7, 49.1), yaw: 0 },
   { id: 'chair', ...m(46.3, 49.1), yaw: 0 },

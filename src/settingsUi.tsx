@@ -22,7 +22,7 @@ const FRAME = { width: 520, height: 640 }
 
 /** The keys, for anyone who missed them in the yard. */
 const CONTROLS: Array<[string, string]> = [
-  ['E', 'Light blow'], ['F', 'Heavy blow'], ['Space', 'Guard'], ['Ctrl', 'Roll'], ['1-4', 'Skills'], ['E', 'Hold, near folk or the war table']
+  ['E', 'Light blow'], ['F', 'Heavy blow'], ['Space', 'Guard'], ['Ctrl', 'Roll'], ['1-4', 'Skills'], ['E', 'Hold, near folk or the upgrade pit']
 ]
 let hovered = ''
 
