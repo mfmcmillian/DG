@@ -9,6 +9,29 @@ import { initializeJoinNotify } from './joinNotify'
 import { initializeVisitLog } from './visitLog'
 import { initializeMetrics } from './metrics'
 import { HUB_LEVEL } from './shared/levels'
+import { EnvVar } from '@dcl/sdk/server'
+import { GAME_VERSION } from './version'
+
+/**
+ * The server environment variables the host reads, reported at boot as set or
+ * unset (never their values): the metrics secret and the Rewards dispenser
+ * keys of the Gravewatch event, `npx sdk-commands storage env set NAME --value …`.
+ */
+const ENV_KEYS = ['METRICS_KEY', 'REWARDS_KEY_TEST', 'REWARDS_KEY_W1', 'REWARDS_KEY_W2', 'REWARDS_KEY_W3']
+
+async function reportEnv() {
+  const found: string[] = []
+  for (const key of ENV_KEYS) {
+    let value: string | undefined
+    try {
+      value = await EnvVar.get(key)
+    } catch {
+      value = undefined
+    }
+    found.push(`${key}=${value ? 'set' : 'unset'}`)
+  }
+  console.log(`[Server] v${GAME_VERSION} env: ${found.join(' ')}`)
+}
 
 /**
  * Headless host: party registry, one enemy simulation per running party, hero
@@ -27,4 +50,5 @@ export function initServer() {
   initializeVisitLog()
   initializeMetrics()
   initializeJoinNotify()
+  void reportEnv()
 }
