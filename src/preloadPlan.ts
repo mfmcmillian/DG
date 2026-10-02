@@ -10,6 +10,8 @@ import { kitSrcsForStyle, StyleId, styleTexturesFor, STYLES } from './dungeon/co
 import { CRYPT_TEXTURES, KIT } from './dungeon/kit'
 import { bogFurnitureIds } from './dungeon/bogmaw'
 import { cryptFurnitureIds } from './dungeon/crypt'
+import { yardFurnitureIds } from './dungeon/barrowYard'
+import { isCryptKit } from './dungeon/layouts'
 import { hubFurnitureIds } from './dungeon/hub'
 import { passFurnitureIds } from './dungeon/pass'
 import { pitFurnitureIds } from './dungeon/pit'
@@ -20,7 +22,7 @@ import { getCommittedLoadout } from './equipmentState'
 import { isPreloadComplete, preloadGroup, PreloadGroup } from './preload'
 import { projectileAssets } from './projectiles'
 import { partSources } from './raid/colossusPose'
-import { LEVELS, RAID_LEVEL, RAID_OPEN, REALMS } from './shared/levels'
+import { BARROW_YARD, LEVELS, RAID_LEVEL, RAID_OPEN, REALMS } from './shared/levels'
 import { t } from './i18n'
 
 /** The hall the title looks out on, plus the small FX set every run uses. */
@@ -35,6 +37,7 @@ export function realmGroupId(style: StyleId) {
 }
 
 function realmLabel(style: StyleId) {
+  if (style === BARROW_YARD.style) return BARROW_YARD.name
   return LEVELS.find((l) => l.style === style)?.name ?? REALMS.find((r) => r.style === style)?.name ?? t('the dungeon')
 }
 
@@ -55,10 +58,10 @@ export function requestRealmPreload(style: StyleId, urgent = false) {
     return
   }
   // The pass is drawn by hand: its lake, camp and bone field are furniture on top of the style's props.
-  const furniture = style === 'pass' ? passFurnitureIds() : style === 'bog' ? bogFurnitureIds() : style === 'crypt' ? cryptFurnitureIds() : []
+  const furniture = style === 'pass' ? passFurnitureIds() : style === 'bog' ? bogFurnitureIds() : style === 'crypt' ? cryptFurnitureIds() : style === 'yard' ? yardFurnitureIds() : []
   const furnitureSrcs = furniture.map((id) => KIT[id].src)
   // The Crypt's night (src/cryptFx.ts): its bats, its moon, the ground beyond the walls, the wind.
-  const air = style === 'crypt' ? [CRYPT_TEXTURES.bat, CRYPT_TEXTURES.moon, CRYPT_TEXTURES.dirt, 'sounds/crypt_loop.wav'] : []
+  const air = isCryptKit(style) ? [CRYPT_TEXTURES.bat, CRYPT_TEXTURES.moon, CRYPT_TEXTURES.dirt, 'sounds/crypt_loop.wav'] : []
   preloadGroup(realmGroupId(style), realmLabel(style), [
     ...kitSrcsForStyle(STYLES[style]),
     ...furnitureSrcs,

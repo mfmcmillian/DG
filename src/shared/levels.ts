@@ -167,6 +167,21 @@ export const RAID_LEVEL: LevelDefinition = {
 export const RAID_PARTY = 'raid'
 export const MAX_RAID = 8
 
+/**
+ * The Barrow Yard: Gravewatch's graveyard (src/dungeon/barrowYard.ts), drawn
+ * with the Crypt's kit on its own `yard` style. Outside the ladder and open to
+ * everyone: a four-minute two-stage run for the daily Rounds (any party may
+ * pick it), and on Saturday nights the Rising's arena, where the whole server
+ * fights the Demon in one party (RISING_PARTY, src/raid/risingServer.ts).
+ */
+export const BARROW_YARD: LevelDefinition = {
+  id: -3, realm: 'crypt', name: 'The Barrow Yard', seed: 3131, style: 'yard',
+  blurb: 'The graveyard under the hill. Two stages, four minutes: the dead claw out of the graves at the Lychgate, and the Barrow Warden holds the barrow with two witches raising.',
+  health: 1.6, damage: 1.5, coins: 2.2, seconds: 240
+}
+
+export const RISING_PARTY = 'rising'
+
 export function realmById(id: RealmId): RealmDefinition {
   return REALMS.find((r) => r.id === id) ?? REALMS[0]
 }
@@ -212,6 +227,7 @@ export const MAX_PARTY = 4
 export function levelById(id: number): LevelDefinition {
   if (id === RAID_LEVEL.id) return RAID_LEVEL
   if (id === HUB_LEVEL.id) return HUB_LEVEL
+  if (id === BARROW_YARD.id) return BARROW_YARD
   return LEVELS[Math.max(0, Math.min(LEVELS.length - 1, Math.floor(id)))]
 }
 

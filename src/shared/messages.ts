@@ -35,7 +35,9 @@ const PartySnap = Schemas.Map({
   run: Schemas.Int,
   /** While `done`: seconds left before the host sends the party back to the hall on its own.
    *  While `open`: seconds until the doors close and the run starts on its own (0: held open). */
-  wait: Schemas.Number
+  wait: Schemas.Number,
+  /** The Rising only: the crowd its waves were sized for, so every client builds the same enemies. */
+  crowd: Schemas.Int
 })
 
 export const Messages = {
@@ -263,7 +265,63 @@ export const Messages = {
    * Server -> all (or one): something the raid HUD announces. `kind` is wake,
    * phase, stagger, fall, kill (to one hero: their reward, `n` the XP) or leave.
    */
-  raidEvent: Schemas.Map({ kind: Schemas.String, text: Schemas.String, n: Schemas.Int })
+  raidEvent: Schemas.Map({ kind: Schemas.String, text: Schemas.String, n: Schemas.Int }),
+
+  // --- Gravewatch (src/shared/gravewatch.ts, src/gravewatchServer.ts) ------------------------
+  /**
+   * Client -> server: an event action. `what` is state (send me my sheet),
+   * rounds (join an open Rounds party or make one), signup / unsign (the next
+   * Rising), join (step into the Rising's arena now), leave (walk out of it),
+   * curse:<address> (hand the wheel's pumpkin curse to that party member).
+   */
+  gwAct: Schemas.Map({ what: Schemas.String }),
+  /** Server -> some clients: a line across the screen from the Rising (the wipe, the kill, a raise). */
+  gwNote: Schemas.Map({ text: Schemas.String }),
+  /** Client -> server: spin the Wheel of Bones (the free spin if it stands, else a paid one). */
+  gwSpin: Schemas.Map({ v: Schemas.Int }),
+  /** Client -> server: a Knucklebones roll for `wager` embers. */
+  gwRoll: Schemas.Map({ wager: Schemas.Int }),
+  /** Client -> server: buy a wearable in the Reliquary (`item` is w1, w2 or w3). */
+  gwRedeem: Schemas.Map({ item: Schemas.String }),
+  /**
+   * Server -> one client: their Gravewatch sheet. `now` is the server clock
+   * (every countdown is drawn from it); `redeemed` lists "item:state" per
+   * wearable touched (pending, granted, failed); `spin` is the segment the last
+   * spin landed on (-1 none) and `roll` the last dice [mine, mine, house, house,
+   * wager, won]; `seq` counts up with every answer so a client can tell a new
+   * roll from an echo; `note` is a short reason when something was refused.
+   */
+  gwState: Schemas.Map({
+    now: Schemas.Number,
+    over: Schemas.Boolean,
+    guest: Schemas.Boolean,
+    embers: Schemas.Int,
+    rounds: Schemas.Int,
+    clears: Schemas.Int,
+    spins: Schemas.Int,
+    rolls: Schemas.Int,
+    /** The ember multiplier runs until this server time (0: none). */
+    mult: Schemas.Number,
+    /** The pumpkin curse on this hero runs until this server time (0: none); `held` when the wheel gave one to hand out. */
+    curse: Schemas.Number,
+    held: Schemas.Boolean,
+    /** Wearables live in the Reliquary, those the Risings have won, those sold out, those with a key in env. */
+    live: Schemas.Array(Schemas.String),
+    won: Schemas.Array(Schemas.String),
+    sold: Schemas.Array(Schemas.String),
+    keyed: Schemas.Array(Schemas.String),
+    redeemed: Schemas.Array(Schemas.String),
+    /** The next Rising's start (server time), where its clock stands, the sign-up count, whether this hero is on the list, and heroes in the arena now. */
+    rising: Schemas.Number,
+    phase: Schemas.String,
+    signed: Schemas.Int,
+    signedUp: Schemas.Boolean,
+    arena: Schemas.Int,
+    spin: Schemas.Int,
+    roll: Schemas.Array(Schemas.Int),
+    seq: Schemas.Int,
+    note: Schemas.String
+  })
 }
 
 /** Register before `main()` so both the headless server and every client share one room. */

@@ -23,8 +23,8 @@ import { heroClassOf } from './heroClasses'
 import { onNet, sendNet } from './net'
 import { HUB, setPartyLookup } from './partyLookup'
 import {
-  DIFFICULTIES, difficultyAllowed, difficultyById, LevelDefinition, LEVELS, levelUnlocked, MAX_PARTY, MAX_RAID, nextLevel, previousLevel, RAID_LEVEL,
-  RAID_OPEN, RAID_PARTY
+  BARROW_YARD, DIFFICULTIES, difficultyAllowed, difficultyById, levelById, LevelDefinition, LEVELS, levelUnlocked, MAX_PARTY, MAX_RAID, nextLevel,
+  previousLevel, RAID_LEVEL, RAID_OPEN, RAID_PARTY, RISING_PARTY
 } from './shared/levels'
 import { initializeColossusServer } from './raid/colossusServer'
 import { clearXp, killXp, levelForXp, XpRecord } from './shared/progression'
@@ -48,6 +48,8 @@ type Party = {
   won: boolean
   /** Runs this party has started; clients key their dungeon rebuild on it. */
   run: number
+  /** The Rising only: the crowd its waves were sized for (src/dungeon/barrowYard.ts risingStages). */
+  crowd?: number
   /** `elapsed` at which an open party's doors close and the run starts on its own; 0 while held open. */
   doors: number
 }
@@ -65,6 +67,8 @@ type SavedHero = {
 const DECISION_SECONDS = 120
 /** "Go" opens the doors for this long so others in the hall can step in; a joiner is given at least this much. */
 const DOOR_SECONDS = 15
+/** Gravewatch's Rounds hold the doors a little longer: the button joins whoever is going. */
+const ROUNDS_DOOR_SECONDS = 20
 const JOIN_GRACE_SECONDS = 8
 /** Doors on a timer wait at least this long after an invite goes out, so the answer can arrive. */
 const INVITE_HOLD_SECONDS = 30
@@ -82,6 +86,12 @@ let elapsed = 0
 let broadcastAge = 0
 let counter = 0
 let initialized = false
+/** Gravewatch listens for verdicts (src/gravewatchServer.ts): embers for Rounds and dungeon clears. */
+const finishListeners: Array<(party: { id: string; level: number; diff: number; members: string[] }, won: boolean) => void> = []
+
+export function onRunFinished(listener: (party: { id: string; level: number; diff: number; members: string[] }, won: boolean) => void) {
+  finishListeners.push(listener)
+}
 
 export function initializePartyServer() {
   if (initialized) return
@@ -121,8 +131,8 @@ function bind() {
   setMultiplayerHandlers({ leave: leaveParty })
   engine.addSystem(update)
   if (RAID_OPEN) ensureRaid()
-  // A hero who falls in the Pit waits for an ally; elsewhere the entrance takes them quickly.
-  setRecoverPolicy((id) => (parties.get(RAID_PARTY)?.members.includes(id) ? RAID_RECOVER_SECONDS : RECOVER_SECONDS))
+  // A hero who falls in the Pit (or the Rising's arena) waits for an ally; elsewhere the entrance takes them quickly.
+  setRecoverPolicy((id) => (parties.get(RAID_PARTY)?.members.includes(id) || parties.get(RISING_PARTY)?.members.includes(id) ? RAID_RECOVER_SECONDS : RECOVER_SECONDS))
   initializeColossusServer({
     members: () => parties.get(RAID_PARTY)?.members ?? [],
     wipe: () => {
@@ -149,6 +159,93 @@ function ensureRaid() {
   }
   parties.set(RAID_PARTY, party)
   createRunSim(RAID_PARTY, RAID_LEVEL.id, 0)
+}
+
+/**
+ * The Rising's party (src/raid/risingServer.ts): like the raid's, one for the
+ * whole server, always `running` on the Barrow Yard, no leader, no cap, no
+ * verdict of its own here (the Rising server reads the run and decides).
+ * `crowd` sizes the Demon's waves (src/dungeon/barrowYard.ts risingStages).
+ */
+export function ensureRising(crowd: number): string[] {
+  let party = parties.get(RISING_PARTY)
+  if (!party) {
+    party = {
+      id: RISING_PARTY, leader: '', level: BARROW_YARD.id, diff: 0, state: 'running',
+      members: [], ready: new Set(), started: elapsed, ended: 0, slain: 0, total: 0, won: false, run: 1, doors: 0, crowd
+    }
+    parties.set(RISING_PARTY, party)
+    createRunSim(RISING_PARTY, BARROW_YARD.id, 0, crowd)
+    party.total = runStatus(RISING_PARTY)?.total ?? 0
+    console.log(`[Server] the Rising's arena is open (crowd ${crowd})`)
+    broadcast()
+  }
+  return party.members
+}
+
+/** Put a hero in the Rising's arena (the arena must be open); whatever party they were in, they leave. */
+export function risingAdd(id: string): boolean {
+  const rising = parties.get(RISING_PARTY)
+  if (!rising || rising.members.includes(id)) return false
+  leaveParty(id, false)
+  rising.members.push(id)
+  restoreHero(id)
+  metricsMark(id, 'rising')
+  broadcast()
+  return true
+}
+
+/** Walk out of the Rising's arena to the hall. */
+export function risingLeave(id: string) {
+  if (parties.get(RISING_PARTY)?.members.includes(id)) leaveParty(id)
+}
+
+export function risingMembers(): string[] {
+  return [...(parties.get(RISING_PARTY)?.members ?? [])]
+}
+
+/** A hero is in a run that is not the Rising (the mass move skips them; they join from the hall when it ends). */
+export function inOtherRun(id: string): boolean {
+  const party = partyOfMember(id)
+  return !!party && party.id !== RISING_PARTY && party.state !== 'open'
+}
+
+/** Everyone out of the arena and the arena closed; the next `ensureRising` makes a fresh Demon. */
+export function risingDisband() {
+  const rising = parties.get(RISING_PARTY)
+  if (!rising) return
+  for (const id of [...rising.members]) {
+    rising.members = rising.members.filter((m) => m !== id)
+    restoreHero(id)
+  }
+  destroyRunSim(RISING_PARTY)
+  parties.delete(RISING_PARTY)
+  console.log('[Server] the Rising\'s arena is closed')
+  broadcast()
+}
+
+/** Gravewatch's Rounds: step into an open party bound for the Barrow Yard, or set off in one of your own with the doors held a while. */
+export function joinRounds(id: string) {
+  const mine = partyOfMember(id)
+  if (mine && mine.state !== 'open') return
+  for (const party of parties.values()) {
+    if (party.state !== 'open' || party.level !== BARROW_YARD.id || party.members.length >= MAX_PARTY || party === mine) continue
+    handleAction(id, 'join', party.id, 0, 0)
+    return
+  }
+  if (mine && mine.level === BARROW_YARD.id) return
+  handleAction(id, 'go', '', BARROW_YARD.id, 0)
+  const party = partyOfMember(id)
+  if (party) {
+    party.doors = elapsed + ROUNDS_DOOR_SECONDS
+    broadcast()
+  }
+}
+
+/** Experience to a wallet's champion, for the Rising's rewards. */
+export function awardXpTo(id: string, amount: number) {
+  awardXp(id, amount, 'clear')
+  saveDirtyXp()
 }
 
 // --- saved heroes ------------------------------------------------------------------
@@ -305,12 +402,20 @@ function phaseOf(id: string): string {
   return party && party.state !== 'open' ? party.id : HUB
 }
 
+/** Whether two heroes stand in one party (the hub's loose crowd does not count). */
+export function sameParty(a: string, b: string): boolean {
+  const party = partyOfMember(a)
+  return !!party && party.members.includes(b)
+}
+
 function partyOfMember(id: string): Party | undefined {
   for (const party of parties.values()) if (party.members.includes(id)) return party
   return undefined
 }
 
 function clampLevel(id: string, level: number): number {
+  // The Barrow Yard is outside the ladder and open to everyone.
+  if (level === BARROW_YARD.id) return BARROW_YARD.id
   const wanted = Math.max(0, Math.min(LEVELS.length - 1, Math.floor(level) || 0))
   const prefs = heroes.get(id)?.prefs
   // Developer tools (or the older open-all switch) skip the progress gate; they do not write fake clears.
@@ -474,7 +579,7 @@ function beginRun(party: Party) {
     metricsMark(m, `dungeon:${party.level}`)
     metricsHeroCount(m, 'runs')
   }
-  console.log(`[Server] party ${party.id} started level ${party.level + 1} (${DIFFICULTIES[party.diff].name}) with ${party.members.length} hero(es), run ${party.run}`)
+  console.log(`[Server] party ${party.id} started ${levelById(party.level).name} (${DIFFICULTIES[party.diff].name}) with ${party.members.length} hero(es), run ${party.run}`)
 }
 
 /** Back to the hall as an open party, with the next level picked if this one was cleared. */
@@ -502,9 +607,9 @@ function leaveParty(id: string, announce = true) {
   party.ready.delete(id)
   // Walking out of a fight (or its results) lands in the hall on your feet.
   if (party.state !== 'open') restoreHero(id)
-  if (party.state === 'running' && party.id !== RAID_PARTY) metricsRun('leave', party.level)
-  if (party.id === RAID_PARTY) {
-    // The arena stays; the Colossus notices on its own.
+  if (party.state === 'running' && party.id !== RAID_PARTY && party.id !== RISING_PARTY) metricsRun('leave', party.level)
+  if (party.id === RAID_PARTY || party.id === RISING_PARTY) {
+    // The arena stays; the Colossus (or the Rising server) notices on its own.
   } else if (party.members.length === 0) {
     destroyRunSim(party.id)
     parties.delete(party.id)
@@ -521,23 +626,26 @@ function finishRun(party: Party, won: boolean) {
   party.won = won
   // Going deeper is a fresh pick for every member; the leader's click counts as theirs.
   party.ready = new Set()
-  console.log(`[Server] party ${party.id} ${won ? 'cleared' : 'fell in'} level ${party.level + 1} after ${(elapsed - party.started).toFixed(0)}s`)
+  console.log(`[Server] party ${party.id} ${won ? 'cleared' : 'fell in'} ${levelById(party.level).name} after ${(elapsed - party.started).toFixed(0)}s`)
   metricsRun(won ? 'clear' : 'wipe', party.level, { seconds: elapsed - party.started })
   if (won) for (const member of party.members) {
     metricsMark(member, 'clear')
     metricsHeroCount(member, 'clears')
   }
   if (won) {
-    const level = LEVELS[party.level]
+    // The ladder's levels write clears; the Barrow Yard pays experience alone.
+    const ladder = party.level >= 0 && party.level < LEVELS.length
+    const level = levelById(party.level)
     const diff = difficultyById(party.diff)
     for (const member of party.members) {
       // A first clear at this difficulty pays double; the clear itself is recorded after.
-      const first = (progress.get(member)?.[party.level] ?? 0) < party.diff + 1
-      if (level) awardXp(member, clearXp(level, diff, first), 'clear')
-      void recordClear(member, party.level, party.diff)
+      const first = ladder && (progress.get(member)?.[party.level] ?? 0) < party.diff + 1
+      awardXp(member, clearXp(level, diff, first), 'clear')
+      if (ladder) void recordClear(member, party.level, party.diff)
     }
   }
   saveDirtyXp()
+  for (const listener of finishListeners) listener({ id: party.id, level: party.level, diff: party.diff, members: [...party.members] }, won)
   broadcast()
 }
 
@@ -557,9 +665,9 @@ function update(deltaTime: number) {
       if (!status) continue
       if (status.slain !== party.slain || status.total !== party.total) {
         // Every member earns each kill, whoever landed it: tanks and archers alike.
-        const level = LEVELS[party.level]
+        const level = levelById(party.level)
         const fresh = status.slain - party.slain
-        if (level && fresh > 0) {
+        if (fresh > 0) {
           const each = killXp(level, difficultyById(party.diff)) * fresh
           for (const member of party.members) awardXp(member, each, 'kill')
         }
@@ -567,7 +675,9 @@ function update(deltaTime: number) {
         party.total = status.total
         changed = true
       }
-      const limit = LEVELS[party.level]?.seconds ?? 0
+      // The Rising's verdicts are the Rising server's (src/raid/risingServer.ts).
+      if (party.id === RISING_PARTY) continue
+      const limit = levelById(party.level).seconds
       if (status.won) finishRun(party, true)
       else if (status.lost) finishRun(party, false)
       else if (limit > 0 && elapsed - party.started >= limit) {
@@ -604,7 +714,8 @@ function broadcast() {
       time: p.state === 'open' ? 0 : (p.state === 'done' ? p.ended : elapsed) - p.started,
       slain: p.slain, total: p.total, won: p.won, run: p.run,
       wait: p.state === 'done' ? Math.max(0, DECISION_SECONDS - (elapsed - p.ended))
-        : p.state === 'open' && p.doors > 0 ? Math.max(0, p.doors - elapsed) : 0
+        : p.state === 'open' && p.doors > 0 ? Math.max(0, p.doors - elapsed) : 0,
+      crowd: p.crowd ?? 0
     }))
   })
 }

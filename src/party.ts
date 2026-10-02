@@ -79,6 +79,8 @@ export type PartyInfo = {
   run: number
   /** Seconds left on the results before the host sends the party to the hall; while open, seconds until the doors close (0: held). */
   wait: number
+  /** The Rising only: the crowd its waves were sized for. */
+  crowd: number
 }
 
 export type RunResult = {
@@ -140,7 +142,7 @@ export function initializeParty() {
       id: p.id, leader: p.leader.toLowerCase(), level: p.level, diff: p.diff,
       state: (p.state === 'running' || p.state === 'done' ? p.state : 'open'),
       members: p.members.map((m) => m.toLowerCase()), ready: p.ready.map((m) => m.toLowerCase()),
-      time: p.time, slain: p.slain, total: p.total, won: p.won, run: p.run, wait: p.wait
+      time: p.time, slain: p.slain, total: p.total, won: p.won, run: p.run, wait: p.wait, crowd: p.crowd
     }))
     // A party we were not in a moment ago: the pages start where it is going.
     const mine = myParty()
@@ -494,7 +496,7 @@ function enterRun(party: PartyInfo) {
   const level = levelById(party.level)
   state.levelId = level.id
   closeLobby()
-  setClientRun({ party: party.id, level: party.level, diff: party.diff })
+  setClientRun({ party: party.id, level: party.level, diff: party.diff, crowd: party.crowd })
   applyCameraSetting()
   loadDungeon(level.seed, level.style)
   movePlayerToSpawn()
@@ -524,7 +526,7 @@ function enterHub() {
 /** The line under the lobby title after a run. */
 function bannerFor(result: RunResult | undefined): string {
   if (!result) return ''
-  const level = LEVELS[result.level]
+  const level = levelById(result.level)
   const outOfTime = (level?.seconds ?? 0) > 0 && result.time >= (level?.seconds ?? 0)
   if (!result.won) return outOfTime ? t('Time ran out in {level}. Go again.', { level: level?.name ?? t('the fortress') }) : t('The party fell in {level}. Go again.', { level: level?.name ?? t('the fortress') })
   const diff = difficultyById(result.diff)
@@ -532,5 +534,5 @@ function bannerFor(result: RunResult | undefined): string {
 }
 
 export function levelName(id: number): string {
-  return LEVELS[id]?.name ?? 'Unknown'
+  return levelById(id).name
 }

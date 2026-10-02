@@ -11,6 +11,7 @@ import {
 import { Quaternion, Vector3 } from '@dcl/sdk/math'
 import alpine from './backdrop/alpine.json'
 import { onDungeonLoaded } from './dungeon'
+import { YARD_ROOM_BOXES } from './dungeon/barrowYard'
 import { SCENE_SIZE } from './dungeon/config'
 import { BOG_TEXTURES, CRYPT_TEXTURES, KIT, KitId } from './dungeon/kit'
 
@@ -402,7 +403,14 @@ export function initializeBackdrop() {
     else if (state.style.id === 'pass') build(PASS_LAYOUT, 'pass')
     else if (state.style.id === 'bog') build(BOG_LAYOUT, 'bog', KIT, BOG_TEXTURES.grass, MARSH_METRES_PER_TILE)
     else if (state.style.id === 'crypt') build(CRYPT_LAYOUT, 'crypt', KIT, CRYPT_TEXTURES.dirt, GRAVE_METRES_PER_TILE)
+    // The Barrow Yard shares the Crypt's hill; whatever stood where its rooms now are stays out.
+    else if (state.style.id === 'yard') build(CRYPT_LAYOUT.filter((p) => !insideYard(p.x, p.z)), 'yard', KIT, CRYPT_TEXTURES.dirt, GRAVE_METRES_PER_TILE)
   })
+}
+
+const YARD_MARGIN = 6
+function insideYard(x: number, z: number): boolean {
+  return YARD_ROOM_BOXES.some((b) => x > b.x - YARD_MARGIN && x < b.x + b.w + YARD_MARGIN && z > b.z - YARD_MARGIN && z < b.z + b.d + YARD_MARGIN)
 }
 
 function build<Id extends string>(

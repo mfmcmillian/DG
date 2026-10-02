@@ -30,6 +30,7 @@ import { initializeUpgradePicker } from './upgradeUi'
 import { initializeSellSheet } from './sellUi'
 import { initializeHints } from './hints'
 import { initializeColossusClient } from './raid/colossusClient'
+import { initializeGravewatch } from './gravewatch'
 import { initializeCombatFx } from './combatFx'
 import { initializeProjectiles } from './projectiles'
 import { initializeLoot } from './loot'
@@ -116,6 +117,7 @@ function initClient() {
   initializeSellSheet()
   initializeHints()
   initializeColossusClient()
+  initializeGravewatch()
   // Lobby mirror and saved hero ride on the room; a client that goes solo also
   // hosts the party registry itself (see partyServer's onHostStart binding).
   initializeParty()

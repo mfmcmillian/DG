@@ -22,6 +22,8 @@ import { createHeroNameTag, destroyHeroNameTag, updateHeroNameTag } from './hero
 import { heroLevel } from './heroXp'
 import { syncNativeExclusions, syncNativeWeapon } from './nativeHero'
 import { partyOf } from './partyLookup'
+import { GW_REMOTE_BODY_CAP } from './shared/gravewatch'
+import { RISING_PARTY } from './shared/levels'
 import { HeroView } from './shared/heroBody'
 
 /**
@@ -238,12 +240,30 @@ function heroCidOf(replica: Replica): string | undefined {
   return replica.look.split('|')[0] || undefined
 }
 
+/** The `cap` heroes of `phase` closest to us, by their published position. */
+function nearestHeroes(phase: string, cap: number): Set<string> {
+  const me = Transform.getOrNull(engine.PlayerEntity)?.position
+  const ranked: Array<[string, number]> = []
+  for (const [entity, hero] of remoteHeroes()) {
+    const id = heroOwner(entity, hero)
+    if (partyOf(id) !== phase) continue
+    const dx = me ? hero.x - me.x : 0
+    const dz = me ? hero.z - me.z : 0
+    ranked.push([id, dx * dx + dz * dz])
+  }
+  ranked.sort((a, b) => a[1] - b[1])
+  return new Set(ranked.slice(0, cap).map(([id]) => id))
+}
+
 function updateRemotePlayers(dt: number) {
   const live = new Set<Entity>()
   let attached = 0
   let ready = 0
   const natives: string[] = []
   const myPhase = partyOf(localAddress())
+  // The Rising puts everyone in one yard: a phone cannot draw forty bodies, so
+  // only the nearest few are drawn in full and the rest are name tags.
+  const near = myPhase === RISING_PARTY ? nearestHeroes(myPhase, GW_REMOTE_BODY_CAP) : undefined
   for (const [entity, hero] of remoteHeroes()) {
     live.add(entity)
     const id = heroOwner(entity, hero)
@@ -330,7 +350,7 @@ function updateRemotePlayers(dt: number) {
     const speaking = replicaByAddress(id) === replica
     const native = hero.native && !!reported && speaking && partyOf(id) === myPhase
     if (native && reported) natives.push(reported)
-    setEquipmentVisible(replica.root, shown && !native)
+    setEquipmentVisible(replica.root, shown && !native && (!near || near.has(id)))
     updateHeroNameTag(replica.nameTag, id, shown && !native, heroLevel(id, hero.cid))
     if (speaking) syncNativeWeapon(id, native ? reported : undefined, hero.loadout.weapon, replica.weaponLegendary)
     // The anchor turns with the native avatar, which the renderer interpolates

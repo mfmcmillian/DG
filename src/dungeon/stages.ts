@@ -31,6 +31,8 @@ export type Stage = {
   entry: Side
   /** The doorway out, sealed until the stage is cleared: the cell in this room and the cell beyond. The boss room has none. */
   gate?: [[number, number], [number, number]]
+  /** Where the boss stands instead of the wave line (fractional cell): the Rising's Demon on the yard's circle. */
+  bossAt?: [number, number]
 }
 
 /** Seconds between a wave falling and the next arriving. */

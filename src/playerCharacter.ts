@@ -57,6 +57,34 @@ let hasReadyCharacter = false
 let visible = false
 let characterId: string | undefined
 let requestedLoadout: EquipmentLoadout | undefined
+/** Gravewatch's pumpkin curse: until this local time the hero wears the grinning mask over whatever helm they chose (cosmetic; the bonuses stay the chosen helm's). */
+let curseUntil = 0
+const CURSE_HEAD = 'brute-head'
+
+/** Put the pumpkin on (or take it off: 0) and show it at once, here and to everyone else through the published look. */
+export function setPumpkinCurse(untilLocal: number) {
+  const was = cursed()
+  curseUntil = untilLocal
+  if (was !== cursed()) refreshWorn()
+}
+
+function cursed(): boolean {
+  return curseUntil > Date.now()
+}
+
+/** What the hero actually wears: the committed loadout, the pumpkin over its head while cursed. */
+function wornLoadout(): EquipmentLoadout | undefined {
+  if (!requestedLoadout) return undefined
+  return cursed() ? { ...requestedLoadout, head: CURSE_HEAD } : requestedLoadout
+}
+
+function refreshWorn() {
+  const worn = wornLoadout()
+  if (!characterId || !worn || characterRoot === undefined || !active) return
+  setEquipmentAvatar(characterRoot, characterId, worn, false, requestedOptions)
+  setEquipmentVisible(characterRoot, visible)
+  setEquipmentMotion(characterRoot, locomotion)
+}
 let requestedOptions: EquipmentAvatarOptions = {}
 let samplePosition: Vector3 | undefined
 let sampleElapsed = 0
@@ -539,7 +567,7 @@ export function setPlayerCharacter(
   setGearStamina(armorBonuses(requestedLoadout).stamina)
   setGearHealth(armorBonuses(requestedLoadout).health)
   active = true
-  setEquipmentAvatar(root, nextCharacterId, requestedLoadout, false, requestedOptions)
+  setEquipmentAvatar(root, nextCharacterId, wornLoadout() ?? requestedLoadout, false, requestedOptions)
   localAura(root)
   // The equipment adapter retains the previous ready assembly during replacement.
   // Keep its visibility and native-avatar suppression while the new outfit loads.
@@ -659,6 +687,11 @@ function updatePlayerCharacter(dt: number) {
   }
 
   const equipmentReady = getEquipmentLoading(characterRoot) === 'ready'
+  // The curse wears off on its own.
+  if (curseUntil > 0 && !cursed()) {
+    curseUntil = 0
+    refreshWorn()
+  }
   if (equipmentReady && !hasReadyCharacter) {
     hasReadyCharacter = true
     // Our body is up: make sure the native avatar under it is hidden, whatever reset it meanwhile.
@@ -776,7 +809,7 @@ function publishLocalPlayer(player: { position: Vector3; rotation: Quaternion },
     hair: appearance.hairStyle,
     hc: appearance.hairColor,
     skin: appearance.skinTone,
-    loadout: { ...requestedLoadout },
+    loadout: { ...(wornLoadout() ?? requestedLoadout) },
     weaponUp: packWeaponUp(upgradeRankOf(requestedLoadout.weapon), upgradeLevelOf(requestedLoadout.weapon), upgradeAffixOf(requestedLoadout.weapon)),
     armorUp: packArmorRanks(requestedLoadout, upgradeRankOf, upgradeLevelOf, upgradeAffixOf),
     native: nativeHeroOn(),

@@ -6,6 +6,11 @@
 export type PatchNote = { version: string; notes: string[] }
 
 export const PATCH_NOTES: PatchNote[] = [
+  { version: '2.10.0', notes: [
+    'Gravewatch, until Nov 7: a new button in the hall. Daily Rounds in the Barrow Yard outside the Crypt and dungeon clears pay embers; embers buy the season\'s three wearables in the Reliquary, minted to your wallet.',
+    'The Wheel of Bones, one free spin a day, and Knucklebones against the house, ten rolls a day.',
+    'The Rising, Saturdays at 9:15 PM ET: sign up a day ahead and everyone walks into the yard together to fight the Demon, who grows with the crowd. A win unlocks the week\'s wearable for the whole server.'
+  ] },
   { version: '2.9.0', notes: [
     'The Crypt opens, the fourth rung of the ladder: a graveyard under the moon, the ossuary and its Bone Warden, the witches\' catacombs, the Gargoyle\'s chapel, and Morvane the Lich in his vault, who raises the dead as you cut him down.',
     'Skeletons, ghouls, bone knights, grave witches and their bone wards; Skeleton Rangers shoot from the back, so close on them first.',

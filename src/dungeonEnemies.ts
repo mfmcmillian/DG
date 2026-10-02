@@ -26,6 +26,8 @@ import { SkillDef, skillById } from './shared/skills'
 import { clearProjectiles, launchShot, ProjectileTarget, setProjectileTargets, SHOT_HEIGHT } from './projectiles'
 import { BOG_GONG } from './dungeon/bogmaw'
 import { CRYPT_CIRCLE, LICH_NAME } from './dungeon/crypt'
+import { risingStages, YARD_CIRCLE } from './dungeon/barrowYard'
+import { risingAddsPerRaise } from './shared/gravewatch'
 import { BogTrapHost, buildBogTraps, clearBogTraps, createBogTrapHost, presentBogTrapFx, tickBogTraps, tickBogTrapsHost } from './bogTraps'
 import { buildBogFx, clearBogFx, syncTotemAura, tickBogFx } from './bogFx'
 import { buildCryptFx, clearCryptFx, tickCryptFx } from './cryptFx'
@@ -51,12 +53,12 @@ import { DungeonState, onDungeonLoaded } from './dungeon'
 import { cellCenter, DungeonStyle, gridOrigin, StyleId, STYLES, styleGeneratorOptions } from './dungeon/config'
 import { DOOR_OPENINGS } from './dungeon/kit'
 import { edgeMidpoint, sideInward, sideYaw } from './dungeon/layout'
-import { Archetype, Roster, rosterFor } from './dungeon/rosters'
+import { Archetype, risingRoster, Roster, rosterFor } from './dungeon/rosters'
 import { Dungeon, generateDungeon, RoomKind, Side } from './dungeon/generator'
-import { authoredLayout, stagesFor } from './dungeon/layouts'
+import { authoredLayout, isCryptKit, stagesFor } from './dungeon/layouts'
 import { Stage, stageAtCell, WAVE_GAP_SECONDS, wavePlaces, WaveUnit } from './dungeon/stages'
 import {
-  ARMOR_DROP_REALMS, DifficultyDefinition, difficultyById, HUB_LEVEL, LevelDefinition, levelById, RAID_PARTY
+  ARMOR_DROP_REALMS, DifficultyDefinition, difficultyById, HUB_LEVEL, LevelDefinition, levelById, RAID_PARTY, RISING_PARTY
 } from './shared/levels'
 import { HUB, partyOf } from './partyLookup'
 import { armorBonuses } from './armor'
@@ -156,6 +158,8 @@ export function enemyPreloadAssets(styleId: StyleId = 'open'): string[] {
   const roster = rosterFor(styleId)
   const archetypes = [roster.striker, roster.scout, roster.guard, roster.boss]
   for (const extra of [roster.posted, roster.archer, roster.bomber, roster.shaman, roster.totem, roster.beast]) if (extra) archetypes.push(extra)
+  // The yard is the Rising's arena too: its Demon downloads with it.
+  if (styleId === 'yard') archetypes.push(risingRoster().boss)
   const paths: string[] = []
   for (const archetype of archetypes) {
     paths.push(...equipmentModelPaths(archetype.characterId, archetypeLoadout(archetype), archetype.role === 'boss' ? BOSS_APPEARANCE : undefined))
@@ -218,7 +222,7 @@ type Sim = {
   /** Host-owned skill zones (a slam's ring, burning ground, falling arrows) still delivering blows. */
   zones: Zone[]
   /** The staged fights' bookkeeping when the level is hand-drawn (src/dungeon/stages.ts): its stages, the wave clock, the sealed doors. */
-  gauntlet?: { stages: readonly Stage[]; waveTimer: number; gates: Gate[] }
+  gauntlet?: { stages: readonly Stage[]; waveTimer: number; gates: Gate[]; hold?: number }
 }
 
 /** A zone skill the host is resolving: the ground it covers and the blows it has left. */
@@ -250,7 +254,7 @@ let sim: Sim | undefined
 /** Client: the one simulation, for our party (or the hub). */
 let clientSim: Sim | undefined
 /** Client: the run our party is in; the next dungeon load populates for it (none = hub, no enemies). */
-let clientRun: { party: string; level: number; diff: number } | undefined
+let clientRun: { party: string; level: number; diff: number; crowd?: number } | undefined
 /** Headless server: one simulation per running party. */
 const sims = new Map<string, Sim>()
 let elapsed = 0
@@ -361,13 +365,13 @@ export function retryWorldRival() {
  * level's seed, the same way every member's client builds it. A client hosting
  * its own fight (solo fallback) simulates through its one client sim instead.
  */
-export function createRunSim(party: string, levelId: number, diffId: number) {
+export function createRunSim(party: string, levelId: number, diffId: number, crowd = 0) {
   if (!isHeadless()) return
   destroyRunSim(party)
   const level = levelById(levelId)
   const style = STYLES[level.style]
   const dungeon = authoredLayout(style) ?? generateDungeon(level.seed, styleGeneratorOptions(style))
-  const s = createSim(party, level, difficultyById(diffId), dungeon, style, true)
+  const s = createSim(party, level, difficultyById(diffId), dungeon, style, true, crowd)
   sims.set(party, s)
   console.log(`[Server] run ${party}: level ${level.id + 1} "${level.name}" (${s.diff.name}), ${s.enemies.length} enemies`)
 }
@@ -381,6 +385,37 @@ export function destroyRunSim(party: string) {
   if (sim === s) sim = undefined
 }
 
+/**
+ * Host: retune a run's boss to the crowd (the Rising's Demon grows as heroes
+ * arrive): a new ceiling, keeping the share of health he has left, and a
+ * multiplier on every blow the run's enemies land.
+ */
+export function tuneRunBoss(party: string, maxHealth: number, damageMul: number) {
+  const s = simFor(party)
+  if (!s) return
+  s.damageScale = s.level.damage * s.diff.damage * damageMul
+  for (const e of s.enemies) {
+    if (!e.boss || e.dead) continue
+    const share = e.maxHealth > 0 ? e.health / e.maxHealth : 1
+    e.maxHealth = Math.max(1, Math.round(maxHealth))
+    e.health = Math.max(1, Math.round(e.maxHealth * share))
+  }
+}
+
+/** Host: hold a run's first wave back this long after a hero steps in (the Rising's Demon wakes a moment after the move). */
+export function holdRun(party: string, seconds: number) {
+  const s = simFor(party)
+  if (s?.gauntlet) s.gauntlet.hold = Math.max(0, seconds)
+}
+
+/** Host: the run's boss, for the raid HUD and the logs. */
+export function runBoss(party: string): { name: string; health: number; max: number; awake: boolean; dead: boolean } | undefined {
+  const s = simFor(party)
+  const boss = s?.enemies.find((e) => e.boss)
+  if (!boss) return undefined
+  return { name: boss.archetype.name, health: boss.health, max: boss.maxHealth, awake: !boss.asleep, dead: boss.dead }
+}
+
 /** Where a party's run stands; undefined when nothing is simulated for it here. */
 export function runStatus(party: string): RunStatus | undefined {
   const s = sims.get(party) ?? (clientSim?.party === party ? clientSim : undefined)
@@ -389,7 +424,7 @@ export function runStatus(party: string): RunStatus | undefined {
 }
 
 /** Client: the run the next dungeon load is for. Undefined means the hub: the layout, no enemies. */
-export function setClientRun(run: { party: string; level: number; diff: number } | undefined) {
+export function setClientRun(run: { party: string; level: number; diff: number; crowd?: number } | undefined) {
   clientRun = run
 }
 
@@ -444,7 +479,7 @@ function populate(dungeon: Readonly<DungeonState>) {
   if (!dungeon.dungeon) return
   const run = clientRun
   clientSim = run
-    ? createSim(run.party, levelById(run.level), difficultyById(run.diff), dungeon.dungeon, dungeon.style, true)
+    ? createSim(run.party, levelById(run.level), difficultyById(run.diff), dungeon.dungeon, dungeon.style, true, run.crowd ?? 0)
     : createSim(HUB, HUB_LEVEL, difficultyById(0), dungeon.dungeon, dungeon.style, false)
   sim = clientSim
   state.total = sim.enemies.length
@@ -454,11 +489,11 @@ function populate(dungeon: Readonly<DungeonState>) {
     buildBogTraps()
     buildBogFx()
   }
-  if (run && dungeon.style.id === 'crypt') buildCryptFx()
+  if (run && isCryptKit(dungeon.style.id)) buildCryptFx(dungeon.style.id === 'yard' ? 'yard' : 'crypt')
 }
 
 function createSim(
-  party: string, level: LevelDefinition, diff: DifficultyDefinition, dungeon: Dungeon, style: DungeonStyle, withEnemies: boolean
+  party: string, level: LevelDefinition, diff: DifficultyDefinition, dungeon: Dungeon, style: DungeonStyle, withEnemies: boolean, crowd = 0
 ): Sim {
   const s: Sim = {
     party, level, diff, dungeon, style, enemies: [],
@@ -473,8 +508,10 @@ function createSim(
   const previous = sim
   sim = s
   const healthScale = level.health * diff.health
-  const roster = rosterFor(style.id)
-  const stages = stagesFor(style.id)
+  // The Rising is the yard with the Demon in it: his own cast and one stage sized to the crowd (src/dungeon/barrowYard.ts).
+  const rising = party === RISING_PARTY
+  const roster = rising ? risingRoster() : rosterFor(style.id)
+  const stages = rising ? risingStages(risingAddsPerRaise(crowd)) : stagesFor(style.id)
   if (stages) {
     spawnGauntlet(s, stages, roster, healthScale, diff.extra)
     sim = previous ?? s
@@ -556,8 +593,9 @@ function spawnGauntlet(s: Sim, stages: readonly Stage[], roster: Roster, healthS
       if (stage.kind === 'combat') for (let i = 0; i < extra; i++) units.push(i % 2 === 0 ? 'striker' : 'scout')
       const places = wavePlaces(stage, units.length)
       units.forEach((unit, k) => {
-        const archetype = { ...unitArchetype(unit, roster, stage), leash: GAUNTLET_LEASH }
-        const c = cellCenter(s.style, places[k][0], places[k][1])
+        const archetype = { ...unitArchetype(unit, roster, stage), leash: Math.max(GAUNTLET_LEASH, roster.boss.leash) }
+        const at = unit === 'boss' && stage.bossAt ? stage.bossAt : places[k]
+        const c = cellCenter(s.style, at[0], at[1])
         // Face the door the party comes in by (facing 0 looks along +Z, south; PI/2 along +X).
         const entryYaw = stage.entry === 's' ? 0 : stage.entry === 'n' ? Math.PI : stage.entry === 'w' ? -Math.PI / 2 : Math.PI / 2
         const home: CombatPose = { position: Vector3.create(c.x, COURTYARD.characterFloorY, c.z), facing: entryYaw }
@@ -593,7 +631,7 @@ function buildGate(s: Sim, stage: number, gate: [[number, number], [number, numb
     ? { albedoColor: Color4.create(0.62, 0.8, 0.95, 0.82), emissiveColor: Color3.create(0.25, 0.45, 0.7), emissiveIntensity: 0.9, metallic: 0.1, roughness: 0.15, transparencyMode: MaterialTransparencyMode.MTM_ALPHA_BLEND }
     : s.style.id === 'bog'
       ? { albedoColor: Color4.create(0.3, 0.22, 0.12, 1), emissiveColor: Color3.create(0.25, 0.6, 0.12), emissiveIntensity: 0.8, metallic: 0.05, roughness: 0.9 }
-      : s.style.id === 'crypt'
+      : isCryptKit(s.style.id)
         ? { albedoColor: Color4.create(0.3, 0.75, 0.5, 0.55), emissiveColor: Color3.create(0.2, 0.9, 0.45), emissiveIntensity: 1.1, metallic: 0.0, roughness: 0.3, transparencyMode: MaterialTransparencyMode.MTM_ALPHA_BLEND }
         : { albedoColor: Color4.create(0.16, 0.14, 0.15, 1), emissiveColor: Color3.create(0.6, 0.08, 0.03), emissiveIntensity: 1.4, metallic: 0.7, roughness: 0.55 })
   return { stage, entity, open: false }
@@ -606,9 +644,10 @@ function openGate(g: Gate) {
   const t = Transform.get(g.entity)
   const from = { ...t.position }
   // Iron lifts; ice and the crypt's ward drop into the ground.
-  const sinks = sim?.style.id === 'pass' || sim?.style.id === 'crypt'
+  const crypt = !!sim && isCryptKit(sim.style.id)
+  const sinks = sim?.style.id === 'pass' || crypt
   Tween.setMove(g.entity, from, Vector3.create(from.x, from.y + (sinks ? -(t.scale.y + 0.2) : 4.8), from.z), 1400, EasingFunction.EF_EASEINQUAD)
-  fxSound(sim?.style.id === 'pass' ? 'hit_heavy' : sim?.style.id === 'crypt' ? 'heal' : 'thunk_wood', 0.7)
+  fxSound(sim?.style.id === 'pass' ? 'hit_heavy' : crypt ? 'heal' : 'thunk_wood', 0.7)
 }
 
 function destroyGates(s: Sim) {
@@ -638,7 +677,11 @@ function tickGauntlet(s: Sim, dt: number, fighters: NetFighter[]) {
   const mine = s.enemies.filter((e) => e.stage === si)
   const awake = mine.filter((e) => !e.asleep)
   if (awake.length === 0) {
-    // Nobody called yet: the first wave arrives when a living hero stands in the room.
+    // Nobody called yet: the first wave arrives when a living hero stands in the room (after any hold the host asked for).
+    if (g.hold && g.hold > 0) {
+      g.hold -= dt
+      return
+    }
     const inside = fighters.some((f) => f.health > 0 && stageAtCell(g.stages, simCell(f.position.x, f.position.z).cx, simCell(f.position.x, f.position.z).cy) === si)
     if (inside) {
       wakeWave(s, si, 0)
@@ -647,7 +690,7 @@ function tickGauntlet(s: Sim, dt: number, fighters: NetFighter[]) {
     return
   }
   // Bogmaw's King calls his later waves himself, by the gong, as he is worn down; the Lich raises his.
-  if ((s.style.id === 'bog' || s.style.id === 'crypt') && g.stages[si].kind === 'boss') {
+  if ((s.style.id === 'bog' || isCryptKit(s.style.id)) && g.stages[si].kind === 'boss') {
     tickGong(s, si, mine, awake)
     return
   }
@@ -695,7 +738,7 @@ function tickGates(s: Sim) {
   for (const gate of g.gates) {
     if (gate.open || !stageCleared(s, gate.stage)) continue
     openGate(gate)
-    showNotice(`${g.stages[gate.stage].name} cleared. ${s.style.id === 'pass' ? 'The ice breaks.' : s.style.id === 'bog' ? 'The gate is hauled up.' : s.style.id === 'crypt' ? 'The ward fades.' : 'The door opens.'}`, 2.5)
+    showNotice(`${g.stages[gate.stage].name} cleared. ${s.style.id === 'pass' ? 'The ice breaks.' : s.style.id === 'bog' ? 'The gate is hauled up.' : isCryptKit(s.style.id) ? 'The ward fades.' : 'The door opens.'}`, 2.5)
   }
 }
 
@@ -819,7 +862,7 @@ function stepSim(dt: number, fighters: NetFighter[], local: ReturnType<typeof ge
   }
   if (!isHeadless()) {
     tickCryptFx(dt)
-    if (sim.style.id === 'bog' || sim.style.id === 'crypt') {
+    if (sim.style.id === 'bog' || isCryptKit(sim.style.id)) {
       for (const e of enemies) if (e.archetype.kind === 'totem') syncTotemAura(e.root, e.loading === 'ready' && !e.dead && !e.asleep && e.visible)
     }
   }
@@ -985,7 +1028,8 @@ function stepSim(dt: number, fighters: NetFighter[], local: ReturnType<typeof ge
     // The verdict: the Warlord fell, or nobody in the party is left standing.
     if (!sim.won && !sim.lost && enemies.length > 0) {
       if (enemies.some((e) => e.boss && e.dead)) sim.won = true
-      else if (sim.party !== HUB && fighters.every((f) => f.health <= 0)) sim.lost = true
+      // An arena with nobody in it yet (the Rising's, before the move) is not a wipe.
+      else if (sim.party !== HUB && fighters.length > 0 && fighters.every((f) => f.health <= 0)) sim.lost = true
     }
   }
 
@@ -1341,7 +1385,7 @@ function enemyIndex(e: Enemy): number {
 
 /** A living, awake totem of this enemy's stage within reach, if any. */
 function nearestTotem(e: Enemy): Enemy | undefined {
-  if (!sim || (sim.style.id !== 'bog' && sim.style.id !== 'crypt')) return undefined
+  if (!sim || (sim.style.id !== 'bog' && !isCryptKit(sim.style.id))) return undefined
   let best: Enemy | undefined
   let bestD = TOTEM_REACH
   for (const t of sim.enemies) {
@@ -1561,9 +1605,11 @@ function tickGong(s: Sim, si: number, mine: Enemy[], awake: Enemy[]) {
     king.rollSeconds = 0
     playMotion(king, 'roar', true)
   }
-  if (s.style.id === 'crypt') {
-    showNotice(`${LICH_NAME} raises the dead!`, 2.5)
-    emitEnemyFx({ kind: 'raise', i: enemyIndex(king), j: -1, x: CRYPT_CIRCLE.x, y: COURTYARD.characterFloorY + 0.2, z: CRYPT_CIRCLE.z, tx: 0, ty: 0, tz: 0, r: 3 })
+  if (isCryptKit(s.style.id)) {
+    // The Lich raises from his circle in the Vault; the yard's wardens and the Demon from the circle in the barrow.
+    const circle = s.style.id === 'yard' ? YARD_CIRCLE : CRYPT_CIRCLE
+    showNotice(`${king.archetype.name} raises the dead!`, 2.5)
+    emitEnemyFx({ kind: 'raise', i: enemyIndex(king), j: -1, x: circle.x, y: COURTYARD.characterFloorY + 0.2, z: circle.z, tx: 0, ty: 0, tz: 0, r: 3 })
     return
   }
   showNotice('The Goblin King sounds the gong!', 2.5)
@@ -1624,7 +1670,7 @@ function presentEnemyFx(fx: EnemyFxNet) {
       fxGlitter(at, Color4.create(0.5, 1, 0.6, 1))
       fxSound('raise_dead', 1)
       if (sim) for (const e of sim.enemies) if (!e.asleep && !e.dead && !e.boss && e.stage >= 0 && sim.gauntlet?.stages[e.stage]?.kind === 'boss' && Vector3.distance(e.position, at) < 40) fxMagicBurst(Vector3.create(e.position.x, e.position.y + 0.6, e.position.z), Color4.create(0.3, 1, 0.5, 1), 0.6)
-      if (noticeSeconds === 0) showNotice(`${LICH_NAME} raises the dead!`, 2.5)
+      if (noticeSeconds === 0) showNotice(`${(fx.i >= 0 && sim?.enemies[fx.i]?.archetype.name) || LICH_NAME} raises the dead!`, 2.5)
       return
     }
     default:
@@ -2825,7 +2871,7 @@ function onLocalDefeated() {
   defeated = true
   respawnAsked = false
   state.phase = 'defeat'
-  state.respawnSeconds = clientSim?.party === RAID_PARTY ? RAID_RECOVER_SECONDS : RECOVER_SECONDS
+  state.respawnSeconds = clientSim?.party === RAID_PARTY || clientSim?.party === RISING_PARTY ? RAID_RECOVER_SECONDS : RECOVER_SECONDS
   state.telegraph = ''
   setPlayerFacingOverride(undefined)
 }

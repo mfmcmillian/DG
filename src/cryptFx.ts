@@ -12,6 +12,7 @@ import {
 import { Color3, Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
 import { COURTYARD } from './courtyard'
 import { CRYPT_CIRCLE, CRYPT_OPEN_BOXES, CRYPT_ROOM_BOXES, cryptFires } from './dungeon/crypt'
+import { YARD_CIRCLE, YARD_ROOM_BOXES, yardFires } from './dungeon/barrowYard'
 import { CRYPT_TEXTURES } from './dungeon/kit'
 
 // The protocol enums are const enums in the SDK typings: no runtime export.
@@ -185,23 +186,28 @@ function ritualConfig(radius: number, rate: number): PBParticleSystem {
 
 // --- build / clear ----------------------------------------------------------------
 
-/** Client: fill the crypt with its mist, its fires and its night. Call when the Crypt is built. */
-export function buildCryptFx() {
+/** Client: fill the crypt (or the Barrow Yard, built from its kit) with its mist, its fires and its night. Call when the map is built. */
+export function buildCryptFx(map: 'crypt' | 'yard' = 'crypt') {
   clearCryptFx()
   const root = engine.addEntity()
   Transform.create(root, { position: Vector3.Zero() })
+  const yard = map === 'yard'
+  const roomBoxes = yard ? YARD_ROOM_BOXES : CRYPT_ROOM_BOXES
+  const openBoxes = yard ? YARD_ROOM_BOXES : CRYPT_OPEN_BOXES
+  const fires = yard ? yardFires() : cryptFires()
+  const CIRCLE = yard ? YARD_CIRCLE : CRYPT_CIRCLE
 
-  for (const box of CRYPT_ROOM_BOXES) {
+  for (const box of roomBoxes) {
     const cx = box.x + box.w / 2
     const cz = box.z + box.d / 2
     emitter(root, Vector3.create(cx, FLOOR_Y + 0.5, cz), mistConfig(box.w + 4, box.d + 4))
     emitter(root, Vector3.create(cx, FLOOR_Y + 1.8, cz), motesConfig(box.w, box.d))
   }
-  for (const box of CRYPT_OPEN_BOXES) {
+  for (const box of openBoxes) {
     emitter(root, Vector3.create(box.x + box.w / 2, FLOOR_Y + 7, box.z + box.d / 2), batsConfig(box.w + 10, box.d + 10))
   }
 
-  for (const fire of cryptFires()) {
+  for (const fire of fires) {
     const at = Vector3.create(fire.x, FLOOR_Y + fire.y, fire.z)
     emitter(root, at, flameConfig(fire.size))
     if (fire.size >= 0.4) emitter(root, at, emberConfig(fire.size))
@@ -215,10 +221,10 @@ export function buildCryptFx() {
   }
 
   // The Lich's circle: the ring glows grave-green and breathes; the dead rise out of it.
-  const circle = ritualPlane(root, Vector3.create(CRYPT_CIRCLE.x, FLOOR_Y + 0.07, CRYPT_CIRCLE.z), 7, Color4.create(GRAVE_GREEN.r, GRAVE_GREEN.g, GRAVE_GREEN.b, 0.8))
-  emitter(root, Vector3.create(CRYPT_CIRCLE.x, FLOOR_Y + 0.2, CRYPT_CIRCLE.z), ritualConfig(3, 16))
+  const circle = ritualPlane(root, Vector3.create(CIRCLE.x, FLOOR_Y + 0.07, CIRCLE.z), 7, Color4.create(GRAVE_GREEN.r, GRAVE_GREEN.g, GRAVE_GREEN.b, 0.8))
+  emitter(root, Vector3.create(CIRCLE.x, FLOOR_Y + 0.2, CIRCLE.z), ritualConfig(3, 16))
   const circleLight = engine.addEntity()
-  Transform.create(circleLight, { parent: root, position: Vector3.create(CRYPT_CIRCLE.x, FLOOR_Y + 2.5, CRYPT_CIRCLE.z) })
+  Transform.create(circleLight, { parent: root, position: Vector3.create(CIRCLE.x, FLOOR_Y + 2.5, CIRCLE.z) })
   LightSource.create(circleLight, { type: LightSource.Type.Point({}), color: Color3.create(0.35, 1, 0.55), intensity: 9, range: 18, shadow: false, active: true })
 
   // The moon over the hill, north-east, a billboard just inside the plot's edge.

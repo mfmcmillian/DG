@@ -255,21 +255,54 @@ const CRYPT: Roster = {
   }
 }
 
+// The Barrow Yard (Gravewatch's Rounds, src/dungeon/barrowYard.ts): the Crypt's
+// dead, with the Barrow Warden, a bone knight grown, holding the barrow as the
+// run's "boss" so a four-minute run has an end.
+const YARD: Roster = {
+  ...CRYPT,
+  boss: {
+    name: 'Barrow Warden', characterId: 'dk-skeleton-heavy', weapon: 'dk-mace-01', health: 560, scale: 1.3, damageScale: 1.6,
+    aggro: 10, leash: 20, speed: 0.98,
+    profile: { blockChance: 0.25, pace: 0.9, pattern: ['attack_light', 'attack_heavy', 'slam', 'attack_light2'], slamRange: 3.6 },
+    role: 'boss'
+  }
+}
+
+/**
+ * The Rising (src/raid/risingServer.ts): the Dark Fantasy Demon from
+ * BigCharacters.fbx at giant scale on the boss brain, with the Crypt's dead as
+ * the waves he raises. His health and damage are retuned to the crowd when the
+ * fight is made (src/shared/gravewatch.ts risingBossHp); these are the floor.
+ */
+export const RISING_DEMON: Archetype = {
+  name: 'The Demon', characterId: 'dk-demon', weapon: 'dk-halberd-01', health: 4200, scale: 3.0, damageScale: 2.4,
+  aggro: 16, leash: 45, speed: 0.95,
+  profile: { blockChance: 0.05, pace: 0.85, pattern: ['attack_light', 'slam', 'attack_heavy', 'attack_light2', 'slam'], slamRange: 6 },
+  role: 'boss'
+}
+const RISING: Roster = { ...CRYPT, boss: RISING_DEMON }
+
 const BY_STYLE: Partial<Record<StyleId, Roster>> = {
   castle: CASTLE,
   forge: FORGE,
   pass: PASS,
   bog: BOG,
-  crypt: CRYPT
+  crypt: CRYPT,
+  yard: YARD
 }
 
 export function rosterFor(style: StyleId): Roster {
   return BY_STYLE[style] ?? FORTRESS
 }
 
+/** The Rising's cast: the yard's dead under the Demon. */
+export function risingRoster(): Roster {
+  return RISING
+}
+
 export function allRosterArchetypes(): Archetype[] {
   const seen = new Set<Archetype>()
-  for (const roster of [FORTRESS, CASTLE, FORGE, PASS, BOG, CRYPT]) {
+  for (const roster of [FORTRESS, CASTLE, FORGE, PASS, BOG, CRYPT, YARD, RISING]) {
     seen.add(roster.striker)
     seen.add(roster.scout)
     seen.add(roster.guard)

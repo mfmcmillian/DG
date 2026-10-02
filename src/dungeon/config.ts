@@ -16,7 +16,7 @@ export const LEGACY_SPAN = 96
  * are the Dark Fortress; every later realm (Synty pack exported through
  * scripts/realms/) is one more entry here.
  */
-export type StyleId = 'tight' | 'open' | 'gauntlet' | 'hall' | 'castle' | 'forge' | 'pit' | 'pass' | 'bog' | 'crypt'
+export type StyleId = 'tight' | 'open' | 'gauntlet' | 'hall' | 'castle' | 'forge' | 'pit' | 'pass' | 'bog' | 'crypt' | 'yard'
 
 export interface DungeonStyle {
   id: StyleId
@@ -80,6 +80,59 @@ export interface DungeonStyle {
    */
   camera?: { height: number; pitch: number }
 }
+
+/**
+ * The Crypt, drawn by hand in ./crypt.ts: barrows under the hill, Synty's
+ * Dark Fantasy pack (scripts/realms/crypt.json). Eight 2.5 m stone-block
+ * pieces are welded into each 10 m x 6 m wall (windows, a niche, a ruined
+ * top, a brick greeble); the doorway is a 4 m gothic arch between stacked
+ * pillars; a half wall is the cutaway the overhead camera sees over; candle
+ * sconces hang on every second wall. Open to the night like Bogmaw (the
+ * graveyard is the first stage), floor tiles underfoot, candlelight cold and
+ * sparse: the realm is meant to be dark.
+ */
+const CRYPT_STYLE: DungeonStyle = {
+  id: 'crypt',
+  label: 'The Crypt',
+  tile: 10,
+  size: 16,
+  span: SCENE_SIZE,
+  wallHeight: 6.0,
+  entranceSize: 2,
+  minLeaf: 3,
+  maxLeaf: 5,
+  minRoom: 2,
+  ceiling: false,
+  firstPerson: false,
+  walls: ['crypt_wall_a', 'crypt_wall_b', 'crypt_wall_c', 'crypt_wall_a', 'crypt_wall_d', 'crypt_wall_e', 'crypt_wall_a', 'crypt_wall_c'],
+  door: 'crypt_arch',
+  pillar: 'crypt_pillar',
+  torch: 'crypt_sconce',
+  torchHeight: 2.6,
+  torchInset: 0.28,
+  torchEvery: 3,
+  props: {
+    entrance: ['crypt_plant_a', 'crypt_fern', 'crypt_stone_d', 'crypt_grass'],
+    boss: ['crypt_candelabra', 'crypt_banner', 'crypt_statue', 'crypt_grunge_w', 'crypt_skull_pile', 'crypt_vine_b', 'crypt_ward', 'crypt_brazier'],
+    treasure: ['crypt_vine_drape', 'crypt_bone_pile', 'crypt_skull_pile', 'crypt_head', 'crypt_moss_c', 'crypt_boards'],
+    combat: ['crypt_stone_b', 'crypt_bone_pile', 'crypt_vine_b', 'crypt_skull_pile', 'crypt_banner', 'crypt_skeleton'],
+    quiet: ['crypt_candle_blob', 'crypt_skull', 'crypt_boards', 'crypt_rubble', 'crypt_moss_b']
+  },
+  cutawayWall: 'crypt_wall_low',
+  torchLightCount: 4,
+  torchLightIntensity: 420,
+  torchLightRange: 14,
+  torchLightColor: [1, 0.74, 0.42],
+  floorTexture: CRYPT_TEXTURES.floor,
+  floorMetres: 4
+}
+
+/**
+ * The Barrow Yard (src/dungeon/barrowYard.ts): the Crypt's kit and look on
+ * its own style id, so the layout tables can tell the two maps apart while
+ * everything keyed on the kit (the fog, the gates, the backdrop) treats them alike.
+ */
+const YARD_STYLE: DungeonStyle = { ...CRYPT_STYLE, id: 'yard', label: 'The Barrow Yard', torchEvery: 4 }
 
 export const STYLES: Record<StyleId, DungeonStyle> = {
   tight: {
@@ -451,51 +504,8 @@ export const STYLES: Record<StyleId, DungeonStyle> = {
     floorTexture: BOG_TEXTURES.floor,
     floorMetres: 5
   },
-  /**
-   * The Crypt, drawn by hand in ./crypt.ts: barrows under the hill, Synty's
-   * Dark Fantasy pack (scripts/realms/crypt.json). Eight 2.5 m stone-block
-   * pieces are welded into each 10 m x 6 m wall (windows, a niche, a ruined
-   * top, a brick greeble); the doorway is a 4 m gothic arch between stacked
-   * pillars; a half wall is the cutaway the overhead camera sees over; candle
-   * sconces hang on every second wall. Open to the night like Bogmaw (the
-   * graveyard is the first stage), floor tiles underfoot, candlelight cold and
-   * sparse: the realm is meant to be dark.
-   */
-  crypt: {
-    id: 'crypt',
-    label: 'The Crypt',
-    tile: 10,
-    size: 16,
-    span: SCENE_SIZE,
-    wallHeight: 6.0,
-    entranceSize: 2,
-    minLeaf: 3,
-    maxLeaf: 5,
-    minRoom: 2,
-    ceiling: false,
-    firstPerson: false,
-    walls: ['crypt_wall_a', 'crypt_wall_b', 'crypt_wall_c', 'crypt_wall_a', 'crypt_wall_d', 'crypt_wall_e', 'crypt_wall_a', 'crypt_wall_c'],
-    door: 'crypt_arch',
-    pillar: 'crypt_pillar',
-    torch: 'crypt_sconce',
-    torchHeight: 2.6,
-    torchInset: 0.28,
-    torchEvery: 3,
-    props: {
-      entrance: ['crypt_plant_a', 'crypt_fern', 'crypt_stone_d', 'crypt_grass'],
-      boss: ['crypt_candelabra', 'crypt_banner', 'crypt_statue', 'crypt_grunge_w', 'crypt_skull_pile', 'crypt_vine_b', 'crypt_ward', 'crypt_brazier'],
-      treasure: ['crypt_vine_drape', 'crypt_bone_pile', 'crypt_skull_pile', 'crypt_head', 'crypt_moss_c', 'crypt_boards'],
-      combat: ['crypt_stone_b', 'crypt_bone_pile', 'crypt_vine_b', 'crypt_skull_pile', 'crypt_banner', 'crypt_skeleton'],
-      quiet: ['crypt_candle_blob', 'crypt_skull', 'crypt_boards', 'crypt_rubble', 'crypt_moss_b']
-    },
-    cutawayWall: 'crypt_wall_low',
-    torchLightCount: 4,
-    torchLightIntensity: 420,
-    torchLightRange: 14,
-    torchLightColor: [1, 0.74, 0.42],
-    floorTexture: CRYPT_TEXTURES.floor,
-    floorMetres: 4
-  }
+  crypt: CRYPT_STYLE,
+  yard: YARD_STYLE
 }
 
 /** Options the generator needs from a style, including whether it plants traps. */

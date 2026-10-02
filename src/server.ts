@@ -6,6 +6,7 @@ import { initializeHeroVitals } from './heroVitals'
 import { initializeDungeonEnemies } from './dungeonEnemies'
 import { initializePartyServer } from './partyServer'
 import { initializeJoinNotify } from './joinNotify'
+import { initializeGravewatchServer } from './gravewatchServer'
 import { initializeVisitLog } from './visitLog'
 import { initializeMetrics } from './metrics'
 import { HUB_LEVEL } from './shared/levels'
@@ -50,5 +51,6 @@ export function initServer() {
   initializeVisitLog()
   initializeMetrics()
   initializeJoinNotify()
+  initializeGravewatchServer()
   void reportEnv()
 }

@@ -224,7 +224,7 @@ function OpenPartyRow({ scale: s, party: p, width }: { key?: string; scale: numb
     borderRadius: 4 * s, borderWidth: s, borderColor: line, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}
     uiBackground={{ color: panel }}>
     <UiEntity uiTransform={{ width: (width - 420) * s, height: '100%', flexDirection: 'column', justifyContent: 'center', pointerFilter: 'none' }}>
-      <Label value={`${partyTitle(p)}  ·  ${LEVELS[p.level]?.name ?? ''}`} color={white} fontSize={15 * s} textAlign="middle-left" textWrap="nowrap"
+      <Label value={`${partyTitle(p)}  ·  ${levelById(p.level).name}`} color={white} fontSize={15 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={{ width: '100%', height: 22 * s, flexShrink: 0, pointerFilter: 'none' }} />
       <Label value={tooHard ? `${t(diff?.name ?? '')}  ·  ${t('Level {n} needed', { n: diff?.level ?? 1 })}` : `${t(diff?.name ?? '')}  ·  ${describeDifficulty(p.diff)}`}
         color={tooHard ? coral : muted} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"

@@ -34,13 +34,15 @@ import { heroClassOf } from './heroClasses'
 import { skillsUnlockedBetween } from './shared/skills'
 import { SkillBar, SKILL_BAR_HEIGHT } from './skillBarUi'
 import { formatTime, heroLabel, partyTitle } from './lobbyUi'
-import { DIFFICULTIES, LEVELS, MAX_PARTY } from './shared/levels'
+import { DIFFICULTIES, levelById, MAX_PARTY, RISING_PARTY } from './shared/levels'
 import { fxSound } from './combatFx'
 import { t, tn } from './i18n'
 import { InviteToast } from './inviteUi'
 import { pitCinematicPlaying } from './pitCinematic'
 import { cinematicPlaying, cinematicSkippable } from './cinematics'
 import { partyVitals } from './allyVitals'
+import { GravewatchButton, GravewatchNotice } from './gravewatchUi'
+import { available as gravewatchAvailable } from './gravewatch'
 
 /** Still shaking hands with the party server (solo play never waits). */
 function joining() {
@@ -69,6 +71,8 @@ const bossRed = Color4.create(0.75, 0.12, 0.2, 1)
 /** The hall's bottom-right stack: Character and Inventory (40 each), Play (48), two 8 px gaps. */
 const STACK_WIDTH = 190
 const STACK_HEIGHT = 50 + 10 + 50 + 10 + 50 + 10 + 66
+/** The Gravewatch button and its line, while the event runs (gravewatchUi.tsx GravewatchButton). */
+const GW_STACK_EXTRA = 58 + 2 + 16 + 8
 let hovered = ''
 
 /**
@@ -466,8 +470,9 @@ function Payout({ value, label, color, scale: s }: { value: string; label: strin
  */
 function RunClock({ width, scale: s }: { width: number; scale: number }) {
   const party = myParty()
-  if (!party || party.state !== 'running' || inRaid()) return null
-  const level = LEVELS[party.level]
+  // The Rising has no clock: the gate shuts at ten, the sheet says when.
+  if (!party || party.state !== 'running' || inRaid() || party.id === RISING_PARTY) return null
+  const level = levelById(party.level)
   const elapsed = party.time + getLobbyState().silence
   const limit = level?.seconds ?? 0
   const left = limit > 0 ? Math.max(0, limit - elapsed) : 0
@@ -491,7 +496,7 @@ function ResultsOverlay({ width, height, scale: s }: { width: number; height: nu
   const party = myParty()
   const result = getLobbyState().result
   if (!party || party.state !== 'done' || !result) return null
-  const level = LEVELS[result.level]
+  const level = levelById(result.level)
   const diff = DIFFICULTIES[result.diff]
   const me = localAddress()
   const leader = party.leader === me
@@ -550,8 +555,8 @@ function HubPrompt({ width, bottom, scale: s }: { width: number; bottom: number;
   if (!party && atPitGate()) return null
   const wait = party ? doorsWait(party) : going ? doorsWait(going) : 0
   const caption = party
-    ? `${partyTitle(party)}  ·  ${party.members.length}/${MAX_PARTY}  ·  ${LEVELS[party.level]?.name ?? ''}${wait > 0 ? `  ·  ${t('Doors close in {n}s', { n: Math.ceil(wait) })}` : ''}`
-    : `${t('{name} is going to {level}', { name: heroLabel(going!.leader), level: LEVELS[going!.level]?.name ?? '' })}${wait > 0 ? `  ·  ${t('Doors close in {n}s', { n: Math.ceil(wait) })}` : ''}`
+    ? `${partyTitle(party)}  ·  ${party.members.length}/${MAX_PARTY}  ·  ${levelById(party.level).name}${wait > 0 ? `  ·  ${t('Doors close in {n}s', { n: Math.ceil(wait) })}` : ''}`
+    : `${t('{name} is going to {level}', { name: heroLabel(going!.leader), level: levelById(going!.level).name })}${wait > 0 ? `  ·  ${t('Doors close in {n}s', { n: Math.ceil(wait) })}` : ''}`
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - 460 * s) / 2, bottom },
     width: 460 * s, flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
     <Label value={caption} color={gold} font="sans-serif" fontSize={12 * s} textWrap="nowrap"
@@ -765,7 +770,8 @@ export function WorldHudUi() {
     {ready && <BossBar width={width} scale={s} />}
     {ready && <ColossusBar width={width} scale={s} />}
     {ready && <RaidPrompt width={width} bottom={bottom + lift} scale={s} />}
-    {ready && <LootToasts right={right} bottom={inHub ? bottom + STACK_HEIGHT * s : bottom} scale={s} />}
+    {ready && <LootToasts right={right} bottom={inHub ? bottom + (STACK_HEIGHT + (gravewatchAvailable() ? GW_STACK_EXTRA : 0)) * s : bottom} scale={s} />}
+    {ready && <GravewatchNotice width={width} top={vitalsTop + 110 * s} scale={s} />}
     {ready && devToolsOn() && <DungeonDevPanel />}
     {created && <StatusNotice width={width} bottom={bottom + lift} scale={s} />}
     {created && devToolsOn() && <Label value={`${netStatus()} | ${netDebugSummary()}`} color={muted} font="sans-serif" fontSize={10 * s} textAlign="bottom-left" textWrap="nowrap"
@@ -785,6 +791,7 @@ export function WorldHudUi() {
       <StackButton id="inventory" label={t('Inventory')} icon="images/hud/inventory.png" scale={s} tone="gold" disabled={!ready} onClick={openInventory}
         glow={newGearCount() > 0 || newGearWaiting()} badge={t('NEW')} />
       <UiEntity uiTransform={{ height: 10 * s, pointerFilter: 'none' }} />
+      <GravewatchButton scale={s} disabled={!ready} />
       <StackButton id="play" label={myParty() ? t('Party') : t('Play')} scale={s} tone="green" height={66} fontSize={28} disabled={!ready} onClick={() => openLobby()} />
     </UiEntity>}
     {/* A run: one big door above the vitals card's left edge (over the level). Inventory and Settings wait for the hall; nothing else competes with the fight. */}
