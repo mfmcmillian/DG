@@ -18,7 +18,7 @@ import {
 import { Color3, Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
 import { DungeonStyle, gridOrigin } from './config'
 import { Dungeon } from './generator'
-import { BRICK_TEXTURE, KIT, KitId } from './kit'
+import { BRICK_TEXTURE, KIT, KitId, KitPiece } from './kit'
 import { Layout, layoutDungeon, LayoutOptions, PieceMode, Placement, SpawnPoint } from './layout'
 
 export interface DungeonInstance {
@@ -149,10 +149,12 @@ export function buildDungeon(dungeon: Dungeon, style: DungeonStyle, options?: La
           scale: Vector3.create(grow, grow, grow), parent: root
         })
         const id = p.lowId && cutaway ? p.lowId : p.id
+        const piece: KitPiece = KIT[id]
         GltfContainer.create(e, {
-          src: KIT[id].src,
-          visibleMeshesCollisionMask: p.collide ? solid : ColliderLayer.CL_NONE,
-          invisibleMeshesCollisionMask: ColliderLayer.CL_NONE
+          src: piece.src,
+          // Clusters with *_collider boxes block only there; the rest collide on their visible mesh.
+          visibleMeshesCollisionMask: p.collide && !piece.colliders ? solid : ColliderLayer.CL_NONE,
+          invisibleMeshesCollisionMask: p.collide && piece.colliders ? solid : ColliderLayer.CL_NONE
         })
         if (p.lowId) swapWalls.push({ entity: e, full: p.id, low: p.lowId })
         if (p.only) modal.push({ entity: e, placement: p, only: p.only })

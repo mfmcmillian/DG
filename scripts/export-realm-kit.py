@@ -22,8 +22,12 @@ Manifest module fields:
   anchor    'base' (default) or 'top'
   rotate    degrees about the vertical axis applied before measuring, for
             pieces whose long side is authored along the wrong axis
+  pitch     degrees about X applied with it: 90 stands a flat floor decal up
+            as a wall decal, its face toward +Z
   wall      { height, inset }: wall-mounted prop; the layout hangs it at
             `height` metres, `inset` metres in from the wall edge
+  colliders regex over part names: each matching part gets an invisible box
+            node (*_collider) so a welded cluster blocks only at its big pieces
   collide   false to make the piece walk-through (bones, rugs, rubble)
   sealed    true for a wall variant with an opening in its mesh (breach,
             doorway); the layout backs it with an invisible full-tile collider
@@ -43,6 +47,8 @@ Manifest module fields:
             slot mixes leaf cards (UVs spanning the sheet) and bark faces (a
             small atlas patch); split into an alpha-masked leaf slot and the atlas
 
+Manifest `sheets` { name: { texture, slot?, tint?, opacity?, mode? } } are alpha sheets (vines, moss,
+grunge) picked by FBX slot-name regex or by a module's "sheet": name.
 Manifest texture fields: atlas, emissive, tiling (all pack members), and
 either `floor` (a pack member copied as the tiling floor texture) or
 `floorBake`: { fbx, size } to render a floor slab module top-down into
@@ -89,6 +95,24 @@ def extract(member):
             base = os.path.basename(member).lower()
             hit = next((n for n in names if n.lower().endswith('/' + base) or n.lower() == base), None)
         if hit is None:
+            # Some textures (the moss TGAs) ship only in the .unitypackage beside the zip.
+            upk = os.path.join(DOWNLOADS, PACK.replace('.zip', '.unitypackage'))
+            if os.path.exists(upk):
+                import tarfile
+                base = os.path.basename(member).lower()
+                with tarfile.open(upk) as t:
+                    assets = {}
+                    for m in t.getmembers():
+                        g = m.name.split('/')[0]
+                        if m.name.endswith('/pathname'):
+                            p = t.extractfile(m).read().decode('utf-8', 'ignore').split('\n')[0]
+                            if os.path.basename(p).lower() == base:
+                                assets[g] = p
+                    for g in assets:
+                        m = t.getmember(g + '/asset')
+                        with t.extractfile(m) as src, open(out, 'wb') as dst:
+                            shutil.copyfileobj(src, dst)
+                        return out
             raise FileNotFoundError(f'{member} not in {PACK}')
         with z.open(hit) as src, open(out, 'wb') as dst:
             shutil.copyfileobj(src, dst)
@@ -137,6 +161,55 @@ def make_mat(name, img, emissive=None):
 
 MAT_ATLAS = make_mat(f'{REALM}_mat', atlas, emis)
 MAT_TILING = make_mat(f'{REALM}_tiling_mat', tiling) if tiling else MAT_ATLAS
+
+
+def sheet_material(name, spec):
+    """Alpha sheet (vines, moss, grunge): a white-with-alpha texture times a tint, cut out or blended."""
+    img = bpy.data.images.load(extract(spec['texture']), check_existing=True)
+    img.name = f'{REALM}_sheet_{name}'
+    img.alpha_mode = 'STRAIGHT'
+    if img.size[0] > 1024:
+        img.scale(1024, 1024)
+    img.pack()
+    mat = bpy.data.materials.new(f'{REALM}_sheet_{name}')
+    mat.use_nodes = True
+    nodes = mat.node_tree.nodes
+    links = mat.node_tree.links
+    bsdf = next(n for n in nodes if n.type == 'BSDF_PRINCIPLED')
+    t = nodes.new('ShaderNodeTexImage')
+    t.image = img
+    tint = spec.get('tint')
+    if tint:
+        mix = nodes.new('ShaderNodeMix')
+        mix.data_type = 'RGBA'
+        mix.blend_type = 'MULTIPLY'
+        mix.inputs['Factor'].default_value = 1.0
+        mix.inputs[7].default_value = (*tint, 1.0)  # B colour
+        links.new(t.outputs['Color'], mix.inputs[6])
+        links.new(mix.outputs[2], bsdf.inputs['Base Color'])
+    else:
+        links.new(t.outputs['Color'], bsdf.inputs['Base Color'])
+    opacity = float(spec.get('opacity', 1.0))
+    if opacity < 1.0:
+        mul = nodes.new('ShaderNodeMath')
+        mul.operation = 'MULTIPLY'
+        mul.inputs[1].default_value = opacity
+        links.new(t.outputs['Alpha'], mul.inputs[0])
+        links.new(mul.outputs[0], bsdf.inputs['Alpha'])
+    else:
+        links.new(t.outputs['Alpha'], bsdf.inputs['Alpha'])
+    bsdf.inputs['Roughness'].default_value = 0.95
+    mat.use_backface_culling = False
+    return mat
+
+
+# Manifest `sheets`: { name: { texture, slot?: regex over FBX slot names, tint?: [r,g,b], opacity?, mode?: MASK|BLEND } }.
+# A module may also name one with "sheet": name to put every slot on it (grunge decals carry random lambert names).
+SHEETS = {}
+for _name, _spec in manifest.get('sheets', {}).items():
+    SHEETS[_name] = {'mat': sheet_material(_name, _spec), 'slot': re.compile(_spec['slot']) if _spec.get('slot') else None,
+                     'mode': _spec.get('mode', 'MASK')}
+SHEET_MODES = {f'{REALM}_sheet_{n}': s['mode'] for n, s in SHEETS.items()}
 BAKE_TOP = load_scaled(tex['bakeTop'], 512, f'{REALM}_bake_top') if tex.get('bakeTop') else None
 BAKE_SIDE = load_scaled(tex['bakeSide'], 512, f'{REALM}_bake_side') if tex.get('bakeSide') else None
 LEAF_MATS = {}
@@ -261,6 +334,7 @@ def import_parts(module):
     """Import the module's FBX (or parts) and return the new mesh objects, transforms applied."""
     parts = module.get('parts') or [{'fbx': module['fbx'], 'offset': [0, 0, 0]}]
     meshes = []
+    colliders = []
     for part in parts:
         before = set(bpy.data.objects)
         bpy.ops.import_scene.fbx(filepath=fbx_path(part['fbx']))
@@ -293,6 +367,21 @@ def import_parts(module):
                 mw = o.matrix_world.copy()
                 o.parent = None
                 o.matrix_world = mw
+        # A part lifted from a demo scene carries its own yaw (degrees about up, the
+        # realm's convention) and scale, applied about the FBX pivot before the offset,
+        # which is how the scene placed the prefab. Mirrored scales lose their sign.
+        if part.get('yaw') or part.get('scale'):
+            import math
+            ps = part.get('scale', 1)
+            ps = [abs(v) for v in ps] if isinstance(ps, list) else [abs(ps)] * 3
+            for o in part_meshes:
+                o.scale = (ps[0], ps[2], ps[1])
+                o.rotation_euler.z = math.radians(part.get('yaw', 0))
+            bpy.ops.object.select_all(action='DESELECT')
+            for o in part_meshes:
+                o.select_set(True)
+            bpy.context.view_layer.objects.active = part_meshes[0]
+            bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
         ox, oy, oz = part.get('offset', [0, 0, 0])  # glTF x, y(up), z -> Blender x, -z?, y
         # glTF (x, y up, z) maps to Blender (x, -z, y) only for handedness flips; the
         # kit export uses export_yup with Blender Y -> glTF -Z. Offsets are given in the
@@ -304,24 +393,37 @@ def import_parts(module):
         for o in [o for o in objs if o.type != 'MESH']:
             bpy.data.objects.remove(o)
         meshes.extend(part_meshes)
+        # `colliders`: a regex over part names; each match gets an invisible box
+        # (a node named *_collider, which the explorer takes as a collider and hides)
+        # so a welded cluster blocks at its pillars and tombs but not at its skulls.
+        if module.get('colliders') and re.search(module['colliders'], part['fbx']):
+            pmn, pmx = bounds(part_meshes)
+            bpy.ops.mesh.primitive_cube_add(size=1, location=((pmn.x + pmx.x) / 2, (pmn.y + pmx.y) / 2, (pmn.z + pmx.z) / 2))
+            cube = bpy.context.active_object
+            cube.scale = (max(0.2, (pmx.x - pmn.x) * 0.85), max(0.2, (pmx.y - pmn.y) * 0.85), max(0.2, pmx.z - pmn.z))
+            cube.name = f'{part["fbx"]}_{len(colliders)}_collider'
+            cube.data.name = cube.name
+            colliders.append(cube)
     bpy.ops.object.select_all(action='DESELECT')
-    for o in meshes:
+    for o in meshes + colliders:
         o.select_set(True)
     bpy.context.view_layer.objects.active = meshes[0]
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
-    if module.get('rotate'):
+    if module.get('rotate') or module.get('pitch'):
         import math
-        for o in meshes:
-            o.rotation_euler.z = math.radians(module['rotate'])
+        for o in meshes + colliders:
+            # pitch: a floor decal stood up against a wall (90 tips its +Y up along -Z, the face toward +Z).
+            o.rotation_euler.x = math.radians(module.get('pitch', 0))
+            o.rotation_euler.z = math.radians(module.get('rotate', 0))
         bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
     if module.get('scale'):
         s = module['scale']
         # glTF (x, y up, z) -> Blender (x, z, y).
         sc = (s[0], s[2], s[1]) if isinstance(s, list) else (s,) * 3
-        for o in meshes:
+        for o in meshes + colliders:
             o.scale = sc
         bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
-    return meshes
+    return meshes, colliders
 
 
 def bounds(meshes):
@@ -341,7 +443,7 @@ for module in manifest['modules']:
     if ONLY and out_name not in ONLY:
         continue
     anchor = module.get('anchor', 'base')
-    meshes = import_parts(module)
+    meshes, colliders = import_parts(module)
     mn, mx = bounds(meshes)
     uv_info = {}
     special = module.get('bake') or module.get('leaf')
@@ -356,6 +458,10 @@ for module in manifest['modules']:
                 if us:
                     rng = [round(min(u.x for u in us), 2), round(max(u.x for u in us), 2), round(min(u.y for u in us), 2), round(max(u.y for u in us), 2)]
                     uv_info[nm] = rng
+            sheet = SHEETS.get(module['sheet']) if module.get('sheet') else next((s for s in SHEETS.values() if s['slot'] and s['slot'].search(nm)), None)
+            if sheet:
+                slot.material = sheet['mat']
+                continue
             spread = rng is not None and (rng[1] - rng[0]) > 0.6
             # A slot parked outside 0..1 or collapsed to a point is a triplanar
             # (world-tiled) surface in Synty's shader; the atlas lookup would be junk.
@@ -391,15 +497,17 @@ for module in manifest['modules']:
     cx = (mn.x + mx.x) / 2
     cy = (mn.y + mx.y) / 2
     dz = -mn.z if anchor == 'base' else -mx.z
-    for o in meshes:
+    for o in meshes + colliders:
         o.location.x -= cx
         o.location.y -= cy
         o.location.z += dz
     bpy.ops.object.select_all(action='DESELECT')
-    for o in meshes:
+    for o in meshes + colliders:
         o.select_set(True)
     bpy.context.view_layer.objects.active = meshes[0]
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    for o in colliders:
+        o.select_set(False)
     if len(meshes) > 1:
         bpy.ops.object.join()
     obj = bpy.context.view_layer.objects.active
@@ -426,10 +534,14 @@ for module in manifest['modules']:
         entry['collide'] = False
     if module.get('sealed'):
         entry['sealed'] = True
+    if colliders:
+        entry['colliders'] = True
     report[out_name] = entry
     print(f'{out_name}: {entry["size"]} {entry["tris"]} tris uv={uv_info}')
     bpy.ops.object.select_all(action='DESELECT')
     obj.select_set(True)
+    for o in colliders:
+        o.select_set(True)
     bpy.ops.export_scene.gltf(
         filepath=os.path.join(OUT, out_name + '.gltf'),
         export_format='GLTF_SEPARATE',
@@ -447,19 +559,24 @@ for module in manifest['modules']:
         export_lights=False,
         export_cameras=False,
     )
-    if module.get('leaf'):
-        # Foliage cuts out; the exporter's alpha handling varies by version, so set it here.
+    if module.get('leaf') or any(s.material and s.material.name in SHEET_MODES for s in obj.material_slots):
+        # Foliage and sheets cut out or blend; the exporter's alpha handling varies by version, so set it here.
         gltf_path = os.path.join(OUT, out_name + '.gltf')
         with open(gltf_path, encoding='utf-8') as f:
             doc = json.load(f)
         for m in doc.get('materials', []):
-            if '_leaf_' in m.get('name', ''):
-                m['alphaMode'] = 'MASK'
-                m['alphaCutoff'] = 0.45
+            nm = m.get('name', '')
+            if '_leaf_' in nm or nm in SHEET_MODES:
+                mode = SHEET_MODES.get(nm, 'MASK')
+                m['alphaMode'] = mode
+                if mode == 'MASK':
+                    m['alphaCutoff'] = 0.45
                 m['doubleSided'] = True
         with open(gltf_path, 'w', encoding='utf-8') as f:
             json.dump(doc, f, separators=(',', ':'))
     bpy.data.objects.remove(obj)
+    for o in colliders:
+        bpy.data.objects.remove(o)
     for m in list(bpy.data.meshes):
         if m.users == 0:
             bpy.data.meshes.remove(m)
@@ -472,7 +589,7 @@ def bake_floor(spec):
     """Render a floor slab straight down (flat-lit, textured) into floor.png."""
     import math
     module = {'id': '_floor_bake', 'fbx': spec['fbx']}
-    meshes = import_parts(module)
+    meshes, _ = import_parts(module)
     for o in meshes:
         for slot in o.material_slots:
             slot.material = MAT_ATLAS

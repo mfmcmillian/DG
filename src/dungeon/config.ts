@@ -480,13 +480,13 @@ export const STYLES: Record<StyleId, DungeonStyle> = {
     torch: 'crypt_sconce',
     torchHeight: 2.6,
     torchInset: 0.28,
-    torchEvery: 2,
+    torchEvery: 3,
     props: {
-      entrance: ['crypt_stone_a', 'crypt_fern', 'crypt_stone_d', 'crypt_grass'],
-      boss: ['crypt_candelabra', 'crypt_banner', 'crypt_statue', 'crypt_candle_rack', 'crypt_skull_pile', 'crypt_banner', 'crypt_ward', 'crypt_brazier'],
-      treasure: ['crypt_candle_rack', 'crypt_bone_pile', 'crypt_skull_pile', 'crypt_head', 'crypt_candelabra', 'crypt_boards'],
-      combat: ['crypt_stone_b', 'crypt_bone_pile', 'crypt_candle_rack', 'crypt_skull_pile', 'crypt_banner', 'crypt_skeleton'],
-      quiet: ['crypt_candle_blob', 'crypt_skull', 'crypt_boards', 'crypt_rubble', 'crypt_candle_rack']
+      entrance: ['crypt_plant_a', 'crypt_fern', 'crypt_stone_d', 'crypt_grass'],
+      boss: ['crypt_candelabra', 'crypt_banner', 'crypt_statue', 'crypt_grunge_w', 'crypt_skull_pile', 'crypt_vine_b', 'crypt_ward', 'crypt_brazier'],
+      treasure: ['crypt_vine_drape', 'crypt_bone_pile', 'crypt_skull_pile', 'crypt_head', 'crypt_moss_c', 'crypt_boards'],
+      combat: ['crypt_stone_b', 'crypt_bone_pile', 'crypt_vine_b', 'crypt_skull_pile', 'crypt_banner', 'crypt_skeleton'],
+      quiet: ['crypt_candle_blob', 'crypt_skull', 'crypt_boards', 'crypt_rubble', 'crypt_moss_b']
     },
     cutawayWall: 'crypt_wall_low',
     torchLightCount: 4,

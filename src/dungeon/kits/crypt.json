@@ -892,6 +892,505 @@
       ],
       "tris": 602,
       "collide": false
+    },
+    "crypt_nave_bay": {
+      "src": "models/kits/crypt/crypt_nave_bay.gltf",
+      "size": [
+        10.754,
+        6.222,
+        11.678
+      ],
+      "tris": 54508,
+      "colliders": true
+    },
+    "crypt_nave_end": {
+      "src": "models/kits/crypt/crypt_nave_end.gltf",
+      "size": [
+        6.365,
+        6.271,
+        11.064
+      ],
+      "tris": 23361,
+      "colliders": true
+    },
+    "crypt_study": {
+      "src": "models/kits/crypt/crypt_study.gltf",
+      "size": [
+        3.798,
+        2.972,
+        9.736
+      ],
+      "tris": 31851,
+      "colliders": true
+    },
+    "crypt_cellar": {
+      "src": "models/kits/crypt/crypt_cellar.gltf",
+      "size": [
+        4.966,
+        1.832,
+        9.799
+      ],
+      "tris": 14957,
+      "colliders": true
+    },
+    "crypt_altar_end": {
+      "src": "models/kits/crypt/crypt_altar_end.gltf",
+      "size": [
+        6.836,
+        7.808,
+        10.087
+      ],
+      "tris": 36431,
+      "colliders": true
+    },
+    "crypt_skull_heap_a": {
+      "src": "models/kits/crypt/crypt_skull_heap_a.gltf",
+      "size": [
+        2.11,
+        1.119,
+        0.381
+      ],
+      "tris": 1680,
+      "collide": false
+    },
+    "crypt_skull_heap_b": {
+      "src": "models/kits/crypt/crypt_skull_heap_b.gltf",
+      "size": [
+        2.101,
+        1.118,
+        0.475
+      ],
+      "tris": 1680,
+      "collide": false
+    },
+    "crypt_candles_a": {
+      "src": "models/kits/crypt/crypt_candles_a.gltf",
+      "size": [
+        1.754,
+        0.558,
+        0.439
+      ],
+      "tris": 1182,
+      "collide": false
+    },
+    "crypt_candles_b": {
+      "src": "models/kits/crypt/crypt_candles_b.gltf",
+      "size": [
+        1.473,
+        0.541,
+        0.514
+      ],
+      "tris": 904,
+      "collide": false
+    },
+    "crypt_candles_c": {
+      "src": "models/kits/crypt/crypt_candles_c.gltf",
+      "size": [
+        1.663,
+        0.595,
+        0.43
+      ],
+      "tris": 1404,
+      "collide": false
+    },
+    "crypt_shelf": {
+      "src": "models/kits/crypt/crypt_shelf.gltf",
+      "size": [
+        1.387,
+        1.811,
+        2.141
+      ],
+      "tris": 14261
+    },
+    "crypt_graves_a": {
+      "src": "models/kits/crypt/crypt_graves_a.gltf",
+      "size": [
+        14.744,
+        5.546,
+        16.457
+      ],
+      "tris": 26463,
+      "collide": false
+    },
+    "crypt_graves_b": {
+      "src": "models/kits/crypt/crypt_graves_b.gltf",
+      "size": [
+        15.887,
+        3.07,
+        16.298
+      ],
+      "tris": 22224,
+      "collide": false
+    },
+    "crypt_graves_c": {
+      "src": "models/kits/crypt/crypt_graves_c.gltf",
+      "size": [
+        22.575,
+        4.615,
+        17.106
+      ],
+      "tris": 17902,
+      "collide": false
+    },
+    "crypt_vine_a": {
+      "src": "models/kits/crypt/crypt_vine_a.gltf",
+      "size": [
+        1.567,
+        1.633,
+        0.074
+      ],
+      "tris": 40,
+      "wall": {
+        "inset": 0.05,
+        "height": 3.0
+      },
+      "collide": false
+    },
+    "crypt_vine_b": {
+      "src": "models/kits/crypt/crypt_vine_b.gltf",
+      "size": [
+        3.054,
+        1.674,
+        0.079
+      ],
+      "tris": 94,
+      "wall": {
+        "inset": 0.05,
+        "height": 4.6
+      },
+      "collide": false
+    },
+    "crypt_vine_drape": {
+      "src": "models/kits/crypt/crypt_vine_drape.gltf",
+      "size": [
+        3.018,
+        1.493,
+        0.769
+      ],
+      "tris": 116,
+      "wall": {
+        "inset": 0.05,
+        "height": 5.6
+      },
+      "collide": false
+    },
+    "crypt_vine_pillar": {
+      "src": "models/kits/crypt/crypt_vine_pillar.gltf",
+      "size": [
+        0.664,
+        2.239,
+        0.63
+      ],
+      "tris": 119,
+      "collide": false
+    },
+    "crypt_moss_a": {
+      "src": "models/kits/crypt/crypt_moss_a.gltf",
+      "size": [
+        1.898,
+        0.0,
+        1.776
+      ],
+      "tris": 3,
+      "collide": false
+    },
+    "crypt_moss_b": {
+      "src": "models/kits/crypt/crypt_moss_b.gltf",
+      "size": [
+        1.342,
+        0.848,
+        0.0
+      ],
+      "tris": 2,
+      "wall": {
+        "inset": 0.02,
+        "height": 1.6
+      },
+      "collide": false
+    },
+    "crypt_moss_c": {
+      "src": "models/kits/crypt/crypt_moss_c.gltf",
+      "size": [
+        1.239,
+        0.89,
+        0.0
+      ],
+      "tris": 2,
+      "wall": {
+        "inset": 0.02,
+        "height": 2.4
+      },
+      "collide": false
+    },
+    "crypt_grunge_a": {
+      "src": "models/kits/crypt/crypt_grunge_a.gltf",
+      "size": [
+        2.209,
+        0.0,
+        2.229
+      ],
+      "tris": 8,
+      "collide": false
+    },
+    "crypt_grunge_b": {
+      "src": "models/kits/crypt/crypt_grunge_b.gltf",
+      "size": [
+        0.83,
+        0.0,
+        0.869
+      ],
+      "tris": 3,
+      "collide": false
+    },
+    "crypt_grunge_w": {
+      "src": "models/kits/crypt/crypt_grunge_w.gltf",
+      "size": [
+        1.947,
+        3.072,
+        0.0
+      ],
+      "tris": 15,
+      "wall": {
+        "inset": 0.02,
+        "height": 4.4
+      },
+      "collide": false
+    },
+    "crypt_rug_a": {
+      "src": "models/kits/crypt/crypt_rug_a.gltf",
+      "size": [
+        1.048,
+        0.062,
+        1.239
+      ],
+      "tris": 404,
+      "collide": false
+    },
+    "crypt_rug_b": {
+      "src": "models/kits/crypt/crypt_rug_b.gltf",
+      "size": [
+        1.426,
+        0.101,
+        3.643
+      ],
+      "tris": 596,
+      "collide": false
+    },
+    "crypt_rug_c": {
+      "src": "models/kits/crypt/crypt_rug_c.gltf",
+      "size": [
+        1.037,
+        0.054,
+        9.914
+      ],
+      "tris": 534,
+      "collide": false
+    },
+    "crypt_body_a": {
+      "src": "models/kits/crypt/crypt_body_a.gltf",
+      "size": [
+        0.974,
+        0.293,
+        1.865
+      ],
+      "tris": 3574,
+      "collide": false
+    },
+    "crypt_body_b": {
+      "src": "models/kits/crypt/crypt_body_b.gltf",
+      "size": [
+        0.936,
+        0.867,
+        1.086
+      ],
+      "tris": 3574,
+      "collide": false
+    },
+    "crypt_body_pile": {
+      "src": "models/kits/crypt/crypt_body_pile.gltf",
+      "size": [
+        2.345,
+        0.951,
+        2.605
+      ],
+      "tris": 5699,
+      "collide": false
+    },
+    "crypt_rubble_b": {
+      "src": "models/kits/crypt/crypt_rubble_b.gltf",
+      "size": [
+        2.225,
+        0.538,
+        2.196
+      ],
+      "tris": 355,
+      "collide": false
+    },
+    "crypt_landslide": {
+      "src": "models/kits/crypt/crypt_landslide.gltf",
+      "size": [
+        7.52,
+        4.654,
+        6.217
+      ],
+      "tris": 707
+    },
+    "crypt_flag_torn": {
+      "src": "models/kits/crypt/crypt_flag_torn.gltf",
+      "size": [
+        2.164,
+        1.739,
+        0.218
+      ],
+      "tris": 472,
+      "wall": {
+        "inset": 0.12,
+        "height": 5.9
+      },
+      "collide": false
+    },
+    "crypt_relief": {
+      "src": "models/kits/crypt/crypt_relief.gltf",
+      "size": [
+        2.026,
+        0.142,
+        2.026
+      ],
+      "tris": 1390,
+      "wall": {
+        "inset": 0.05,
+        "height": 2.3
+      },
+      "collide": false
+    },
+    "crypt_lamp_post": {
+      "src": "models/kits/crypt/crypt_lamp_post.gltf",
+      "size": [
+        0.545,
+        4.311,
+        1.632
+      ],
+      "tris": 870
+    },
+    "crypt_pillar_b": {
+      "src": "models/kits/crypt/crypt_pillar_b.gltf",
+      "size": [
+        1.082,
+        6.0,
+        1.082
+      ],
+      "tris": 2054
+    },
+    "crypt_rock_b": {
+      "src": "models/kits/crypt/crypt_rock_b.gltf",
+      "size": [
+        1.886,
+        1.153,
+        1.384
+      ],
+      "tris": 172
+    },
+    "crypt_pebbles": {
+      "src": "models/kits/crypt/crypt_pebbles.gltf",
+      "size": [
+        2.491,
+        0.281,
+        2.093
+      ],
+      "tris": 232,
+      "collide": false
+    },
+    "crypt_dirt_round": {
+      "src": "models/kits/crypt/crypt_dirt_round.gltf",
+      "size": [
+        7.797,
+        0.088,
+        7.525
+      ],
+      "tris": 319,
+      "collide": false
+    },
+    "crypt_dirt_flat": {
+      "src": "models/kits/crypt/crypt_dirt_flat.gltf",
+      "size": [
+        5.0,
+        0.125,
+        5.0
+      ],
+      "tris": 128,
+      "collide": false
+    },
+    "crypt_grass_patch": {
+      "src": "models/kits/crypt/crypt_grass_patch.gltf",
+      "size": [
+        9.379,
+        0.38,
+        9.5
+      ],
+      "tris": 236,
+      "collide": false
+    },
+    "crypt_plant_a": {
+      "src": "models/kits/crypt/crypt_plant_a.gltf",
+      "size": [
+        0.962,
+        0.696,
+        0.494
+      ],
+      "tris": 506,
+      "collide": false
+    },
+    "crypt_plant_b": {
+      "src": "models/kits/crypt/crypt_plant_b.gltf",
+      "size": [
+        1.114,
+        0.985,
+        1.292
+      ],
+      "tris": 238,
+      "collide": false
+    },
+    "crypt_boards_b": {
+      "src": "models/kits/crypt/crypt_boards_b.gltf",
+      "size": [
+        1.211,
+        1.225,
+        0.17
+      ],
+      "tris": 660,
+      "wall": {
+        "inset": 0.1,
+        "height": 2.8
+      },
+      "collide": false
+    },
+    "crypt_wall_ruin": {
+      "src": "models/kits/crypt/crypt_wall_ruin.gltf",
+      "size": [
+        2.576,
+        3.006,
+        0.605
+      ],
+      "tris": 326
+    },
+    "crypt_ruin_heap": {
+      "src": "models/kits/crypt/crypt_ruin_heap.gltf",
+      "size": [
+        4.184,
+        5.456,
+        1.895
+      ],
+      "tris": 816
+    },
+    "crypt_nave_bay_lite": {
+      "src": "models/kits/crypt/crypt_nave_bay_lite.gltf",
+      "size": [
+        10.657,
+        6.222,
+        11.553
+      ],
+      "tris": 31486,
+      "colliders": true
     }
   }
 }

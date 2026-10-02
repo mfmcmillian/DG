@@ -29,6 +29,11 @@ export interface KitPiece {
    * backs it with an invisible full-tile collider so the room stays closed.
    */
   sealed?: boolean
+  /**
+   * Welded cluster that carries invisible *_collider boxes at its pillars and
+   * tombs: those collide and the visible meshes (skulls, candles, dirt) do not.
+   */
+  colliders?: boolean
 }
 
 const DARK_FORTRESS = {

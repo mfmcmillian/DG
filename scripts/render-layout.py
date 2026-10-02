@@ -28,6 +28,9 @@ def template(kit_id, src=None):
     # Newer dumps carry the model path per placement (realm kits live under models/kits/<realm>/).
     path = os.path.join(SCENE, src.replace("/", os.sep)) if src else os.path.join(MODELS, kit_id + ".gltf")
     bpy.ops.import_scene.gltf(filepath=path)
+    # *_collider nodes are invisible in the explorer; drop them so they do not render as white boxes.
+    for o in [o for o in bpy.context.selected_objects if o.name.endswith("_collider") or "_collider." in o.name]:
+        bpy.data.objects.remove(o)
     roots = [o for o in bpy.context.selected_objects if o.parent is None]
     if len(roots) > 1:
         bpy.ops.object.join()

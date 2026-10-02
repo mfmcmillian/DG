@@ -1,0 +1,255 @@
+{
+  "dumps": {
+    "crypt": "$TEMP/synty-demo/demo-crypt.json",
+    "cathedral": "$TEMP/synty-demo/demo-cathedral.json"
+  },
+  "clusters": [
+    {
+      "id": "crypt_nave_bay",
+      "dump": "crypt",
+      "box": [
+        -0.3,
+        8.2,
+        -5.6,
+        5.6,
+        -0.5,
+        6.0
+      ],
+      "exclude": "^SM_Bld_(Base_Floor|Base_Wall|Ceiling|Trim|Railing|Wall_Brick_Greeble|Wall_Arch|Wall_Window)|^SM_Env_(Grunge|Moss)|Gargoyle|Body_Skeleton_02|^SM_Wep_",
+      "thin": {
+        "regex": "Skull_03",
+        "keep": 2
+      },
+      "flatten": "min",
+      "colliders": "^SM_Bld_Pillar_|Tomb_0|Statue|Bookshelf|Desk|Table|Chest|Barrel|Sarcoph|Crypt_0|Coffin|Candle_Rack_01$|Candelabra|Altar"
+    },
+    {
+      "id": "crypt_nave_bay_lite",
+      "dump": "crypt",
+      "box": [
+        -0.3,
+        8.2,
+        -5.6,
+        5.6,
+        -0.5,
+        6.0
+      ],
+      "exclude": "^SM_Bld_(Base_Floor|Base_Wall|Ceiling|Trim|Railing|Wall_Brick_Greeble|Wall_Arch|Wall_Window)|^SM_Env_(Grunge|Moss)|Gargoyle|Body_Skeleton_02|^SM_Wep_|Tomb_02|Bone_Pile|Body_Skeleton|Skull_Pile|Fern",
+      "thin": {
+        "regex": "Skull_03",
+        "keep": 3
+      },
+      "flatten": "min",
+      "colliders": "^SM_Bld_Pillar_|Tomb_0|Statue|Bookshelf|Desk|Table|Chest|Barrel|Sarcoph|Crypt_0|Coffin|Candle_Rack_01$|Candelabra|Altar"
+    },
+    {
+      "id": "crypt_nave_end",
+      "dump": "crypt",
+      "box": [
+        8.2,
+        12.9,
+        -5.6,
+        5.6,
+        -0.5,
+        4.0
+      ],
+      "exclude": "^SM_Bld_(Base_Floor|Base_Wall|Ceiling|Trim|Railing|Wall_Brick_Greeble|Arch|Wall_Door)|^SM_Env_(Grunge|Moss|Rock_Stairs)|Crypt_Door",
+      "flatten": "min",
+      "colliders": "^SM_Bld_Pillar_|Tomb_0|Statue|Bookshelf|Desk|Table|Chest|Barrel|Sarcoph|Crypt_0|Coffin|Candle_Rack_01$|Candelabra|Altar"
+    },
+    {
+      "id": "crypt_study",
+      "dump": "crypt",
+      "box": [
+        -13.6,
+        -9.4,
+        -5.2,
+        5.2,
+        3.5,
+        8.5
+      ],
+      "exclude": "^SM_Bld_|^SM_Env_(Grunge|Moss|Vine)|Torch_01",
+      "flatten": "min",
+      "colliders": "^SM_Bld_Pillar_|Tomb_0|Statue|Bookshelf|Desk|Table|Chest|Barrel|Sarcoph|Crypt_0|Coffin|Candle_Rack_01$|Candelabra|Altar"
+    },
+    {
+      "id": "crypt_cellar",
+      "dump": "crypt",
+      "box": [
+        -13.6,
+        -9.4,
+        -5.2,
+        5.2,
+        -0.5,
+        3.4
+      ],
+      "exclude": "^SM_Bld_|^SM_Env_(Grunge|Moss|Vine_0|Vine_1)|Torch_01|Decoration",
+      "flatten": "min",
+      "colliders": "^SM_Bld_Pillar_|Tomb_0|Statue|Bookshelf|Desk|Table|Chest|Barrel|Sarcoph|Crypt_0|Coffin|Candle_Rack_01$|Candelabra|Altar"
+    },
+    {
+      "id": "crypt_altar_end",
+      "dump": "crypt",
+      "box": [
+        -9.4,
+        -4.4,
+        -5.2,
+        5.2,
+        0.5,
+        4.6
+      ],
+      "exclude": "^SM_Bld_(?!Pillar)|^SM_Env_(Grunge|Moss|Rock_0|Landslide)|^SM_Env_Vine_(?!Pillar)|Flag_",
+      "flatten": "min",
+      "colliders": "^SM_Bld_Pillar_|Tomb_0|Statue|Bookshelf|Desk|Table|Chest|Barrel|Sarcoph|Crypt_0|Coffin|Candle_Rack_01$|Candelabra|Altar"
+    },
+    {
+      "id": "crypt_skull_heap_a",
+      "dump": "crypt",
+      "groups": [
+        "Props/Corpses/SM_Prop_Skull_Pile_03 (2)"
+      ],
+      "flatten": "min",
+      "collide": false
+    },
+    {
+      "id": "crypt_skull_heap_b",
+      "dump": "crypt",
+      "groups": [
+        "Props/Corpses/SM_Prop_Skull_Pile_03 (5)"
+      ],
+      "flatten": "min",
+      "collide": false
+    },
+    {
+      "id": "crypt_candles_a",
+      "dump": "crypt",
+      "box": [
+        -0.6,
+        1.3,
+        -5.2,
+        -4.5,
+        0.6,
+        1.0
+      ],
+      "groups": [
+        "Props/Lights"
+      ],
+      "flatten": "min",
+      "collide": false
+    },
+    {
+      "id": "crypt_candles_b",
+      "dump": "crypt",
+      "box": [
+        -1.0,
+        0.4,
+        -1.8,
+        -1.4,
+        0.0,
+        0.3
+      ],
+      "groups": [
+        "Props/Lights"
+      ],
+      "flatten": "min",
+      "collide": false
+    },
+    {
+      "id": "crypt_candles_c",
+      "dump": "crypt",
+      "box": [
+        -0.5,
+        1.2,
+        4.6,
+        5.2,
+        0.6,
+        1.0
+      ],
+      "groups": [
+        "Props/Lights"
+      ],
+      "flatten": "min",
+      "collide": false
+    },
+    {
+      "id": "crypt_shelf",
+      "dump": "crypt",
+      "groups": [
+        "Props/Furniture/SM_Prop_Bookshelf_Double_01 (1)"
+      ],
+      "flatten": "min"
+    },
+    {
+      "id": "crypt_graves_a",
+      "dump": "cathedral",
+      "box": [
+        -32,
+        -20,
+        -2,
+        10
+      ],
+      "groups": [
+        "Graveyard/",
+        "Environment/Ground",
+        "Environment/Foliage",
+        "Environment/Corpses",
+        "Environment/Rocks"
+      ],
+      "exclude": "Rock_Cliff|Tree_|Gallows|Gibbet|Noose|Rope|^SM_Env_Rock_0[13]|^SM_Prop_Tomb_01$|Body_Skeleton|Tomb_Stone_03|SM_Env_Rock_0|Statue_0",
+      "flatten": "each",
+      "collide": false,
+      "thin": {
+        "regex": "Plant_Grass|Plant_Fern|Ground_Grass_Small",
+        "keep": 2
+      }
+    },
+    {
+      "id": "crypt_graves_b",
+      "dump": "cathedral",
+      "box": [
+        -22,
+        -10,
+        8,
+        20
+      ],
+      "groups": [
+        "Graveyard/",
+        "Environment/Ground",
+        "Environment/Foliage",
+        "Environment/Corpses",
+        "Environment/Rocks"
+      ],
+      "exclude": "Rock_Cliff|Tree_|Gallows|Gibbet|Noose|Rope|Post_01|Lamp_|^SM_Env_Rock_0[13]|^SM_Prop_Tomb_01$|Body_Skeleton|Tomb_Stone_03|SM_Env_Rock_0|Statue_0",
+      "flatten": "each",
+      "collide": false,
+      "thin": {
+        "regex": "Plant_Grass|Plant_Fern|Ground_Grass_Small",
+        "keep": 2
+      }
+    },
+    {
+      "id": "crypt_graves_c",
+      "dump": "cathedral",
+      "box": [
+        8,
+        20,
+        8,
+        20
+      ],
+      "groups": [
+        "Graveyard/",
+        "Environment/Ground",
+        "Environment/Foliage",
+        "Environment/Corpses",
+        "Environment/Rocks"
+      ],
+      "exclude": "Rock_Cliff|Tree_|Gallows|Gibbet|Noose|Rope|^SM_Env_Rock_0[13]|^SM_Prop_Tomb_01$|Body_Skeleton|Tomb_Stone_03|Rock_Stairs|SM_Env_Rock_0|Statue_0",
+      "flatten": "each",
+      "collide": false,
+      "thin": {
+        "regex": "Plant_Grass|Plant_Fern|Ground_Grass_Small",
+        "keep": 2
+      }
+    }
+  ]
+}
