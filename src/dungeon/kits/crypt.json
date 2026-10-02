@@ -35,7 +35,8 @@
         6.245,
         0.523
       ],
-      "tris": 746
+      "tris": 746,
+      "sealed": true
     },
     "crypt_wall_d": {
       "src": "models/kits/crypt/crypt_wall_d.gltf",
@@ -1006,7 +1007,7 @@
       "src": "models/kits/crypt/crypt_graves_a.gltf",
       "size": [
         14.744,
-        5.546,
+        4.296,
         16.457
       ],
       "tris": 26463,
@@ -1016,7 +1017,7 @@
       "src": "models/kits/crypt/crypt_graves_b.gltf",
       "size": [
         15.887,
-        3.07,
+        1.82,
         16.298
       ],
       "tris": 22224,

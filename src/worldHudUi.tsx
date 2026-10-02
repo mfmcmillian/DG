@@ -41,7 +41,7 @@ import { InviteToast } from './inviteUi'
 import { pitCinematicPlaying } from './pitCinematic'
 import { cinematicPlaying, cinematicSkippable } from './cinematics'
 import { partyVitals } from './allyVitals'
-import { GravewatchButton, GravewatchNotice } from './gravewatchUi'
+import { emberPayout, EmberToasts, GravewatchButton, GravewatchNotice } from './gravewatchUi'
 import { available as gravewatchAvailable } from './gravewatch'
 
 /** Still shaking hands with the party server (solo play never waits). */
@@ -521,6 +521,7 @@ function ResultsOverlay({ width, height, scale: s }: { width: number; height: nu
     <UiEntity uiTransform={{ width: '100%', margin: { top: 16 * s }, flexDirection: 'row', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }}>
       <Payout value={`+${Math.max(0, result.coins)}`} label={t('coins')} color={gold} scale={s} />
       <Payout value={`+${localXp().runGain}`} label={t('experience')} color={cyanBright} scale={s} />
+      {emberPayout() > 0 && <Payout value={`+${emberPayout()}`} label={t('embers')} color={Color4.create(1, 0.55, 0.2, 1)} scale={s} />}
     </UiEntity>
     <UiEntity uiTransform={{ width: '100%', height: 44 * s, margin: { top: 14 * s }, flexDirection: 'row', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }}>
       {leader
@@ -772,6 +773,7 @@ export function WorldHudUi() {
     {ready && <RaidPrompt width={width} bottom={bottom + lift} scale={s} />}
     {ready && <LootToasts right={right} bottom={inHub ? bottom + (STACK_HEIGHT + (gravewatchAvailable() ? GW_STACK_EXTRA : 0)) * s : bottom} scale={s} />}
     {ready && <GravewatchNotice width={width} top={vitalsTop + 110 * s} scale={s} />}
+    {ready && <EmberToasts right={right} top={vitalsTop + 170 * s} scale={s} />}
     {ready && devToolsOn() && <DungeonDevPanel />}
     {created && <StatusNotice width={width} bottom={bottom + lift} scale={s} />}
     {created && devToolsOn() && <Label value={`${netStatus()} | ${netDebugSummary()}`} color={muted} font="sans-serif" fontSize={10 * s} textAlign="bottom-left" textWrap="nowrap"

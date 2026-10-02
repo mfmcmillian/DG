@@ -101,7 +101,7 @@ function bind() {
     for (const member of party.members) void creditClear(member, party.level)
   })
   initializeRisingServer({
-    credit: (id, amount, why) => void credit(id, amount, why),
+    credit: (id, amount, why) => void credit(id, amount, why).then(() => tell(id, '')),
     won: (item) => void markWon(item),
     isGuest,
     isDev,

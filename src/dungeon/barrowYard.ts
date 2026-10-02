@@ -64,9 +64,9 @@ export const YARD_CIRCLE = { x: 85, z: 90 }
  */
 export const YARD_STAGES: Stage[] = [
   { room: 2, rect: L, kind: 'combat', name: 'The Lychgate', entry: 'e', gate: [[8, 12], [8, 11]],
-    waves: [['scout', 'scout', 'scout', 'striker'], ['striker', 'scout', 'archer', 'scout', 'archer']] },
+    waves: [['scout', 'scout', 'scout', 'striker', 'scout'], ['striker', 'scout', 'archer', 'scout', 'archer', 'striker'], ['guard', 'archer', 'striker', 'scout', 'scout', 'archer']] },
   { room: 1, rect: B, kind: 'boss', name: 'The Barrow', entry: 's',
-    waves: [['boss', 'shaman', 'shaman'], ['scout', 'scout', 'striker', 'archer']] }
+    waves: [['boss', 'shaman', 'shaman', 'guard', 'guard'], ['scout', 'scout', 'striker', 'archer', 'scout', 'striker'], ['guard', 'shaman', 'striker', 'archer', 'scout', 'scout']] }
 ]
 
 /**

@@ -9,9 +9,9 @@ import { Color4 } from '@dcl/sdk/math'
 import { uiViewport, wholeCanvas } from './uiScale'
 import { menuColors, MenuAction as Action } from './menuUi'
 import {
-  available, closeGravewatch, diceState, getGravewatch, gravewatchBusy, gravewatchButtonLine, gravewatchConfirm, gravewatchCurse, gravewatchRedeem,
-  gravewatchRising, gravewatchRoll, gravewatchRounds, gravewatchScreenNote, gravewatchSpin, gravewatchTab, GW_TABS, GwTab, inRisingArena, isFlyer,
-  openGravewatch, risingClock, serverNow, setGravewatchTab, wheelState
+  available, closeGravewatch, DICE_STRIP, diceState, emberGains, GAIN_SECONDS, getGravewatch, gravewatchBusy, gravewatchButtonLine, gravewatchConfirm,
+  gravewatchCurse, gravewatchRedeem, gravewatchRising, gravewatchRoll, gravewatchRounds, gravewatchScreenNote, gravewatchSpin, gravewatchTab, GW_TABS, GwTab,
+  inRisingArena, isFlyer, openGravewatch, risingClock, runEmberGain, serverNow, setGravewatchTab, WHEEL_POINTER, WHEEL_SHEET, wheelState
 } from './gravewatch'
 import { heroLabel } from './lobbyUi'
 import { myParty } from './party'
@@ -142,7 +142,7 @@ function RoundsTab({ scale: s }: { scale: number }) {
   const can = !gw.guest && !gw.over && !myParty()
   return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', pointerFilter: 'none' }}>
     <Heading title={t('THE BARROW YARD')} scale={s} />
-    <Line text={t('A short fight through the graves outside the Crypt: the lychgate, then the Barrow Warden. Four minutes, any party.')} scale={s} />
+    <Line text={t('A short fight through the graves outside the Crypt: the lychgate, then the Barrow Warden. Five minutes, any party.')} scale={s} />
     <Line text={t('Three Rounds a day pay embers: {a}, then {b}, then {c}. Every day resets at midnight ET.', { a: GW_ROUNDS_EMBERS[0], b: GW_ROUNDS_EMBERS[1], c: GW_ROUNDS_EMBERS[2] })} scale={s} />
     <Gap h={10} scale={s} />
     <Progress label={t('Rounds today')} done={gw.rounds} pays={GW_ROUNDS_EMBERS} scale={s} />
@@ -181,22 +181,33 @@ function WheelTab({ scale: s, inner }: { scale: number; inner: number }) {
   const me = localAddress()
   const party = myParty()
   const others = party ? party.members.filter((m) => m !== me) : []
-  const cellWidth = (inner - 8) / 2
+  const wheelSize = 250
+  const frame = spin?.frame ?? 0
+  const legendWidth = inner - wheelSize - 24
   return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', pointerFilter: 'none' }}>
     <Heading title={t('ONE FREE SPIN A DAY; MORE FOR {n} EMBERS', { n: GW_SPIN_COST })} scale={s} />
-    <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
-      {GW_WHEEL.map((seg, i) => {
-        const lit = spin?.lit === i
-        const landed = !!spin?.done && spin.target === i
-        return <UiEntity key={`gw-seg-${i}`} uiTransform={{ width: cellWidth * s, height: 30 * s, margin: { bottom: 6 * s }, padding: { left: 10 * s },
-          borderRadius: 4 * s, borderWidth: s, borderColor: landed ? gold : lit ? ember : line, alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}
-          uiBackground={{ color: landed ? Color4.create(0.16, 0.12, 0.06, 0.96) : lit ? emberDark : panel }}>
-          <Label value={t(seg.label)} color={landed ? gold : lit ? ember : seg.kind === 'curse' ? coral : white} fontSize={12.5 * s} textAlign="middle-left" textWrap="nowrap"
-            uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} />
-        </UiEntity>
-      })}
+    <UiEntity uiTransform={{ width: '100%', height: (wheelSize + 20) * s, flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+      {/* The wheel: one frame of the sheet per angle, the pointer fixed over it. */}
+      <UiEntity uiTransform={{ width: wheelSize * s, height: (wheelSize + 20) * s, flexShrink: 0, pointerFilter: 'none' }}>
+        <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 20 * s }, width: wheelSize * s, height: wheelSize * s, pointerFilter: 'none' }}
+          uiBackground={{ textureMode: 'stretch', texture: { src: WHEEL_SHEET }, uvs: sheetUvs(frame % 10, Math.floor(frame / 10), 10, 10), color: Color4.White() }} />
+        <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (wheelSize / 2 - 18) * s, top: 4 * s }, width: 36 * s, height: 36 * s, pointerFilter: 'none' }}
+          uiBackground={{ textureMode: 'stretch', texture: { src: WHEEL_POINTER }, color: Color4.White() }} />
+      </UiEntity>
+      <UiEntity uiTransform={{ width: legendWidth * s, height: '100%', margin: { left: 24 * s }, flexDirection: 'column', justifyContent: 'center', pointerFilter: 'none' }}>
+        {GW_WHEEL.map((seg, i) => {
+          const lit = spin?.lit === i
+          const landed = !!spin?.done && spin.target === i
+          return <UiEntity key={`gw-seg-${i}`} uiTransform={{ width: '100%', height: 22 * s, margin: { bottom: 3 * s }, padding: { left: 8 * s },
+            borderRadius: 3 * s, borderWidth: s, borderColor: landed ? gold : lit ? ember : line, alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}
+            uiBackground={{ color: landed ? Color4.create(0.16, 0.12, 0.06, 0.96) : lit ? emberDark : panel }}>
+            <Label value={t(seg.label)} color={landed ? gold : lit ? ember : seg.kind === 'curse' ? coral : white} fontSize={11.5 * s} textAlign="middle-left" textWrap="nowrap"
+              uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} />
+          </UiEntity>
+        })}
+      </UiEntity>
     </UiEntity>
-    <Gap h={8} scale={s} />
+    <Gap h={6} scale={s} />
     <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
       <Action id="gw-spin" text={turning ? t('Spinning…') : free ? t('Spin (free today)') : t('Spin ({n} embers)', { n: GW_SPIN_COST })} onClick={gravewatchSpin}
         width={260} height={46} scale={s} fontSize={16} primary accent="gold" disabled={!can} />
@@ -226,9 +237,9 @@ function DiceTab({ scale: s, inner }: { scale: number; inner: number }) {
     <Line text={t('Higher total wins {x}× the wager; ties go to the house. {n} rolls a day.', { x: GW_DICE_PAYOUT, n: GW_DICE_DAILY_CAP })} scale={s} />
     <Line text={t('Rolls left today: {n}', { n: left })} scale={s} color={white} />
     <Gap h={16} scale={s} />
-    <UiEntity uiTransform={{ width: '100%', height: 90 * s, flexDirection: 'row', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
-      <DiceHand title={t('You')} dice={roll ? roll.mine : undefined} shown={!!roll} scale={s} width={(inner - 20) / 2} lit={!!roll?.revealed && roll.won} />
-      <DiceHand title={t('The house')} dice={roll && roll.revealed ? roll.house : undefined} shown={!!roll} scale={s} width={(inner - 20) / 2} lit={!!roll?.revealed && !roll.won} />
+    <UiEntity uiTransform={{ width: '100%', height: 120 * s, flexDirection: 'row', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
+      <DiceHand title={t('You')} faces={roll ? [roll.faces[0], roll.faces[1]] : undefined} revealed={!!roll?.revealed} scale={s} width={(inner - 20) / 2} lit={!!roll?.revealed && roll.won} />
+      <DiceHand title={t('The house')} faces={roll ? [roll.faces[2], roll.faces[3]] : undefined} revealed={!!roll?.revealed} scale={s} width={(inner - 20) / 2} lit={!!roll?.revealed && !roll.won} />
     </UiEntity>
     <Label value={roll && roll.revealed ? (roll.won ? t('You win {n} embers.', { n: Math.round(roll.wager * GW_DICE_PAYOUT) }) : t('The house takes {n} embers.', { n: roll.wager })) : rolling ? t('The bones tumble…') : ''}
       color={roll?.revealed ? (roll.won ? green : coral) : muted} font="serif" fontSize={16 * s} textAlign="middle-center" textWrap="nowrap"
@@ -242,20 +253,57 @@ function DiceTab({ scale: s, inner }: { scale: number; inner: number }) {
   </UiEntity>
 }
 
-function DiceHand({ title, dice, shown, scale: s, width, lit }: { title: string; dice?: [number, number]; shown: boolean; scale: number; width: number; lit: boolean }) {
-  const faces = dice ? [dice[0], dice[1]] : ['?', '?']
-  const total = dice ? dice[0] + dice[1] : undefined
+/** One corner of a sprite sheet as UI uvs (bottom-left, top-left, top-right, bottom-right; v runs up). */
+function sheetUvs(col: number, row: number, cols: number, rows: number): number[] {
+  const u0 = col / cols
+  const u1 = (col + 1) / cols
+  const v1 = 1 - row / rows
+  const v0 = 1 - (row + 1) / rows
+  return [u0, v0, u0, v1, u1, v1, u1, v0]
+}
+
+/** A die face from the strip (1..6). */
+function Die({ face, scale: s, size, dim }: { key?: string; face: number; scale: number; size: number; dim: boolean }) {
+  const f = Math.max(1, Math.min(6, face))
+  return <UiEntity uiTransform={{ width: size * s, height: size * s, margin: { left: 5 * s, right: 5 * s }, flexShrink: 0, pointerFilter: 'none', opacity: dim ? 0.55 : 1 }}
+    uiBackground={{ textureMode: 'stretch', texture: { src: DICE_STRIP }, uvs: sheetUvs(f - 1, 0, 6, 1), color: Color4.White() }} />
+}
+
+function DiceHand({ title, faces, revealed, scale: s, width, lit }: { title: string; faces?: [number, number]; revealed: boolean; scale: number; width: number; lit: boolean }) {
+  const total = faces && revealed ? faces[0] + faces[1] : undefined
   return <UiEntity uiTransform={{ width: width * s, height: '100%', borderRadius: 4 * s, borderWidth: s, borderColor: lit ? gold : line, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerFilter: 'none' }}
     uiBackground={{ color: lit ? Color4.create(0.16, 0.12, 0.06, 0.96) : panel }}>
-    <Label value={title} color={muted} fontSize={11 * s} textWrap="nowrap" uiTransform={{ height: 16 * s, pointerFilter: 'none' }} />
-    <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', pointerFilter: 'none' }}>
-      {faces.map((f, i) => <UiEntity key={`${title}-${i}`} uiTransform={{ width: 36 * s, height: 36 * s, margin: { left: 6 * s, right: 6 * s }, borderRadius: 6 * s, borderWidth: s, borderColor: shown ? white : line,
-        alignItems: 'center', justifyContent: 'center', pointerFilter: 'none' }} uiBackground={{ color: card }}>
-        <Label value={`${f}`} color={white} font="serif" fontSize={20 * s} textWrap="nowrap" uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} />
-      </UiEntity>)}
-      <Label value={total !== undefined ? `= ${total}` : ''} color={lit ? gold : white} font="serif" fontSize={18 * s} textWrap="nowrap" uiTransform={{ width: 44 * s, height: 36 * s, pointerFilter: 'none' }} />
+    <Label value={title} color={muted} fontSize={11 * s} textWrap="nowrap" uiTransform={{ height: 16 * s, flexShrink: 0, pointerFilter: 'none' }} />
+    <UiEntity uiTransform={{ height: 72 * s, flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+      {faces
+        ? faces.map((f, i) => <Die key={`${title}-${i}`} face={f} scale={s} size={64} dim={!revealed} />)
+        : [1, 2].map((i) => <UiEntity key={`${title}-blank-${i}`} uiTransform={{ width: 64 * s, height: 64 * s, margin: { left: 5 * s, right: 5 * s }, borderRadius: 10 * s, borderWidth: s, borderColor: line, flexShrink: 0, pointerFilter: 'none' }}
+          uiBackground={{ color: card }} />)}
+      <Label value={total !== undefined ? `= ${total}` : ''} color={lit ? gold : white} font="serif" fontSize={22 * s} textWrap="nowrap" uiTransform={{ width: 56 * s, height: 64 * s, flexShrink: 0, pointerFilter: 'none' }} />
     </UiEntity>
   </UiEntity>
+}
+
+/** "+n embers" over the hall and the yard, as the host credits them. */
+export function EmberToasts({ right, top, scale: s }: { right: number; top: number; scale: number }) {
+  const gains = emberGains()
+  if (!gains.length) return null
+  return <UiEntity uiTransform={{ positionType: 'absolute', position: { right, top }, width: 200 * s, flexDirection: 'column', alignItems: 'flex-end', pointerFilter: 'none' }}>
+    {gains.map((g, i) => {
+      const alpha = Math.min(1, (GAIN_SECONDS - g.age) / 0.6)
+      return <UiEntity key={`gw-gain-${i}`} uiTransform={{ height: 34 * s, padding: { left: 14 * s, right: 14 * s }, margin: { bottom: 6 * s }, borderRadius: 6 * s, borderWidth: s,
+        borderColor: Color4.create(1, 0.55, 0.2, alpha), alignItems: 'center', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }}
+        uiBackground={{ color: Color4.create(0.22, 0.09, 0.03, 0.94 * alpha) }}>
+        <Label value={`+${g.amount} ${t('embers')}`} color={Color4.create(1, 0.55, 0.2, alpha)} font="serif" fontSize={18 * s} textWrap="nowrap"
+          uiTransform={{ height: '100%', pointerFilter: 'none' }} />
+      </UiEntity>
+    })}
+  </UiEntity>
+}
+
+/** The results card's ember line: what this trip out of the hall earned. */
+export function emberPayout(): number {
+  return runEmberGain()
 }
 
 // --- the Rising -----------------------------------------------------------------------------------

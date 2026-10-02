@@ -176,8 +176,8 @@ export const MAX_RAID = 8
  */
 export const BARROW_YARD: LevelDefinition = {
   id: -3, realm: 'crypt', name: 'The Barrow Yard', seed: 3131, style: 'yard',
-  blurb: 'The graveyard under the hill. Two stages, four minutes: the dead claw out of the graves at the Lychgate, and the Barrow Warden holds the barrow with two witches raising.',
-  health: 1.6, damage: 1.5, coins: 2.2, seconds: 240
+  blurb: 'The graveyard under the hill. Two stages, five minutes: the dead claw out of the graves at the Lychgate, and the Barrow Warden holds the barrow with two witches raising.',
+  health: 1.6, damage: 1.5, coins: 2.2, seconds: 300
 }
 
 export const RISING_PARTY = 'rising'

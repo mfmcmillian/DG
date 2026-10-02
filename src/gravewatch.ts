@@ -49,6 +49,15 @@ export type GwSheet = {
 
 type Wheel = { target: number; t: number; seq: number; done: boolean }
 type Dice = { mine: [number, number]; house: [number, number]; wager: number; won: boolean; t: number }
+type Gain = { amount: number; age: number }
+
+/** The wheel sheet: 10 x 10 frames, frame k turned k * 3.6 degrees clockwise; segment 0 under the pointer at frame 0. */
+export const WHEEL_FRAMES = 100
+export const WHEEL_SHEET = 'images/gravewatch/wheel-sheet.png'
+export const WHEEL_POINTER = 'images/gravewatch/wheel-pointer.png'
+export const DICE_STRIP = 'images/gravewatch/dice.png'
+/** A "+n embers" toast stays this long. */
+export const GAIN_SECONDS = 3.5
 
 const WHEEL_SECONDS = 3.2
 const WHEEL_TURNS = 3
@@ -80,6 +89,10 @@ let confirmItem: GwItem | '' = ''
 let screenNote = ''
 let screenNoteFor = 0
 let initialized = false
+const gains: Gain[] = []
+/** Embers earned since the hero last left the hall (the results card shows it). */
+let runGain = 0
+let lastPhase = ''
 
 export function initializeGravewatch() {
   if (initialized) return
@@ -87,6 +100,7 @@ export function initializeGravewatch() {
   onNet('gwState', (msg) => {
     clockOffset = msg.now - Date.now()
     const before = sheet.embers
+    const known = sheet.known
     sheet.known = true
     sheet.over = msg.over
     sheet.guest = msg.guest
@@ -118,6 +132,14 @@ export function initializeGravewatch() {
     lastSeq = msg.seq
     if (fresh && msg.note) takeNote(msg.note, msg, before)
     if (busy && fresh) busy = ''
+    // Embers coming in (a Round, a clear, the Rising, the dice): say so on screen. The wheel tells its own result after it stops.
+    if (known && msg.embers > before && !msg.note.startsWith('spin:')) {
+      const gain = msg.embers - before
+      gains.push({ amount: gain, age: 0 })
+      if (gains.length > 3) gains.shift()
+      runGain += gain
+      fxSound('coin', 0.7)
+    }
   })
   onNet('gwNote', (msg) => {
     screenNote = msg.text
@@ -190,6 +212,14 @@ function update(dt: number) {
     }
   }
   if (dice && dice.t < DICE_SECONDS) dice.t += span
+  for (const g of gains) g.age += span
+  while (gains.length && gains[0].age >= GAIN_SECONDS) gains.shift()
+  const phase = myPhase()
+  if (phase !== lastPhase) {
+    // Out of the hall into a run: the run's tally starts at nothing.
+    if (lastPhase === HUB || !lastPhase) runGain = 0
+    lastPhase = phase
+  }
   if (!available()) return
   // The first sheet on arrival, and a fresh one every so often while it is open.
   const inHall = myPhase() === HUB && !isTitleOpen() && getPlayerCharacterState().visible
@@ -255,21 +285,46 @@ export function available(): boolean {
   return !isSoloMode() && serverNow() < GW_EVENT_END
 }
 
-/** The wheel as it turns: which segment is lit, and whether it has stopped. */
-export function wheelState(): { lit: number; done: boolean; target: number } | undefined {
+/**
+ * The wheel as it turns: the sheet frame to show (its angle), the segment
+ * under the pointer right now, and whether it has stopped. Turning clockwise
+ * by 36 * i degrees brings segment i under the pointer, so the landing angle
+ * is 360 - 36 * target plus the full turns.
+ */
+export function wheelState(): { frame: number; lit: number; done: boolean; target: number } | undefined {
   if (!wheel) return undefined
-  if (wheel.done) return { lit: wheel.target, done: true, target: wheel.target }
+  const landing = WHEEL_TURNS * 360 + ((360 - wheel.target * 36) % 360)
+  if (wheel.done) return { frame: frameAt(landing), lit: wheel.target, done: true, target: wheel.target }
   const k = Math.min(1, wheel.t / WHEEL_SECONDS)
   const eased = 1 - Math.pow(1 - k, 3)
-  const steps = WHEEL_TURNS * GW_WHEEL.length + wheel.target
-  const lit = Math.floor(eased * steps) % GW_WHEEL.length
-  return { lit, done: false, target: wheel.target }
+  const angle = eased * landing
+  const lit = ((GW_WHEEL.length - Math.round(angle / 36)) % GW_WHEEL.length + GW_WHEEL.length) % GW_WHEEL.length
+  return { frame: frameAt(angle), lit, done: false, target: wheel.target }
 }
 
-/** The last roll: the house's dice show after a beat. */
-export function diceState(): (Dice & { revealed: boolean }) | undefined {
+function frameAt(angle: number): number {
+  const step = 360 / WHEEL_FRAMES
+  return ((Math.round(angle / step) % WHEEL_FRAMES) + WHEEL_FRAMES) % WHEEL_FRAMES
+}
+
+/** The last roll: the dice tumble (random faces) for a beat, then the real ones show. */
+export function diceState(): (Dice & { revealed: boolean; faces: [number, number, number, number] }) | undefined {
   if (!dice) return undefined
-  return { ...dice, revealed: dice.t >= DICE_SECONDS }
+  const revealed = dice.t >= DICE_SECONDS
+  if (revealed) return { ...dice, revealed, faces: [dice.mine[0], dice.mine[1], dice.house[0], dice.house[1]] }
+  const tick = Math.floor(dice.t * 12)
+  const face = (salt: number) => 1 + ((tick * 7 + salt * 5) % 6)
+  return { ...dice, revealed, faces: [face(1), face(2), face(3), face(4)] }
+}
+
+/** The "+n embers" toasts, newest last, with how long each has shown. */
+export function emberGains(): readonly Gain[] {
+  return gains
+}
+
+/** Embers earned on this trip out of the hall. */
+export function runEmberGain(): number {
+  return runGain
 }
 
 /** The next Rising from the host's clock: start, phase and seconds to the start (or to the gate shutting). */
