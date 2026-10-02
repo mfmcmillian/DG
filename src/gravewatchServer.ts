@@ -272,6 +272,15 @@ async function act(id: string, what: string) {
       await tell(id, note)
       return
     }
+    case 'grant': {
+      // Developers only: a thousand test embers, never counted as earned.
+      if (!isDev(id)) return
+      const l = await ledgerOf(id)
+      l.embers += 1000
+      void save(id)
+      await tell(id, '')
+      return
+    }
     default:
       if (what.startsWith('curse:')) await curse(id, what.slice('curse:'.length).toLowerCase())
       return

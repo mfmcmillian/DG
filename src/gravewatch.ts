@@ -408,6 +408,11 @@ export function gravewatchRedeem(item: GwItem) {
   sendNet('gwRedeem', { item })
 }
 
+/** Developers only: test embers from the host. */
+export function gravewatchGrant() {
+  ask('grant')
+}
+
 export function gravewatchRising(what: 'signup' | 'unsign' | 'join' | 'leave') {
   ask(what)
   if (what === 'join' || what === 'leave') closeGravewatch()

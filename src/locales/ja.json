@@ -1309,5 +1309,14 @@
   "100 embers": "残り火100",
   "Embers x1.5 for a day": "残り火1.5倍（1日）",
   "400 coins": "400コイン",
-  "The Barrow Yard": "塚の墓地"
+  "The Barrow Yard": "塚の墓地",
+  "Five minutes through the graves, any party. Three Rounds a day pay embers.": "墓地を五分、どんなパーティーでも。一日三ラウンドで燠が手に入る。",
+  "Any fortress cleared pays too. The Crypt pays double.": "どの砦の攻略でも燠が出る。クリプトは二倍。",
+  "Resets at midnight ET.": "東部時間の真夜中にリセット。",
+  "BEAT THE HOUSE'S TOTAL, WIN {x}× YOUR WAGER": "胴元の合計を上回れば賭け金の{x}倍",
+  "{n} signed up. Stay in the hall; everyone walks in together.": "{n}人が登録。ホールで待て。全員一緒に入る。",
+  "Saturdays, 9:15 PM ET. Everyone fights the Demon in one yard.": "毎週土曜、東部時間午後9時15分。全員が一つの庭で悪魔と戦う。",
+  "Fighting pays {a} embers. A win pays {b} more and unlocks the week's wearable.": "参加で燠{a}。勝てばさらに{b}、今週のウェアラブルが解放される。",
+  "EMBERS BUY THE SEASON'S WEARABLES": "燠でシーズンのウェアラブルを買う",
+  "One of each per wallet, minted to it. A minute to show in your backpack.": "ウォレットごとに各一つ、直接ミント。バックパックに出るまで一分ほど。"
 }
