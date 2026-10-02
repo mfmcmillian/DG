@@ -279,17 +279,18 @@ export const Messages = {
   gwNote: Schemas.Map({ text: Schemas.String }),
   /** Client -> server: spin the Wheel of Bones (the free spin if it stands, else a paid one). */
   gwSpin: Schemas.Map({ v: Schemas.Int }),
-  /** Client -> server: a Knucklebones roll for `wager` embers. */
-  gwRoll: Schemas.Map({ wager: Schemas.Int }),
+  /** Client -> server: a Gravewalk roll, two dice when `double` (an ember fee). */
+  gwRoll: Schemas.Map({ double: Schemas.Boolean }),
   /** Client -> server: buy a wearable in the Reliquary (`item` is w1, w2 or w3). */
   gwRedeem: Schemas.Map({ item: Schemas.String }),
   /**
    * Server -> one client: their Gravewatch sheet. `now` is the server clock
    * (every countdown is drawn from it); `redeemed` lists "item:state" per
    * wearable touched (pending, granted, failed); `spin` is the segment the last
-   * spin landed on (-1 none) and `roll` the last dice [mine, mine, house, house,
-   * wager, won]; `seq` counts up with every answer so a client can tell a new
-   * roll from an echo; `note` is a short reason when something was refused.
+   * spin landed on (-1 none) and `roll` the last board roll [die, die (0 for
+   * one die), from, to, passed Start, embers paid]; `seq` counts up with every
+   * answer so a client can tell a new roll from an echo; `note` is a short
+   * reason when something was refused.
    */
   gwState: Schemas.Map({
     now: Schemas.Number,
@@ -317,6 +318,11 @@ export const Messages = {
     signed: Schemas.Int,
     signedUp: Schemas.Boolean,
     arena: Schemas.Int,
+    /** Gravewalk: the pawn's tile, each tile's level for this hero, season points, milestones paid, rolls today (`rolls`). */
+    pos: Schemas.Int,
+    tiles: Schemas.Array(Schemas.Int),
+    points: Schemas.Int,
+    miles: Schemas.Int,
     spin: Schemas.Int,
     roll: Schemas.Array(Schemas.Int),
     seq: Schemas.Int,

@@ -333,7 +333,8 @@ export function risingAct(id: string, what: string): string {
       return ''
     case 'join': {
       const dev = hooks.isDev(id)
-      if (at.phase !== 'fight' && !dev) return 'closed'
+      // Off-hours the arena is a dev's test arena; once one is open anybody may walk in to help test.
+      if (at.phase !== 'fight' && !dev && !(testing && arenaOpen())) return 'closed'
       if (at.phase === 'fight' && result === 'won') return 'won'
       if (inOtherRun(id)) return 'busy'
       if (!arenaOpen()) {

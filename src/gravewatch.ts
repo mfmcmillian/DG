@@ -1,5 +1,5 @@
 // Gravewatch on the client: the sheet's state, what the server last said, and
-// the small animations (the wheel's turn, the dice's reveal). Everything the
+// the small animations (the wheel's turn, the board's dice and pawn). Everything the
 // player can do is a message to the host; the answer is their whole sheet
 // (gwState), so this file never computes an ember itself. The server's clock
 // comes with every answer and every countdown is drawn from it.
@@ -11,13 +11,13 @@ import { getPlayerCharacterState, setPumpkinCurse } from './playerCharacter'
 import { myParty, myPhase } from './party'
 import { HUB } from './partyLookup'
 import { isTitleOpen } from './titleScreen'
-import { GW_EVENT_END, GW_WHEEL, GwItem, GwRisingPhase, risingAt } from './shared/gravewatch'
+import { GW_BOARD, GW_EVENT_END, GW_WHEEL, GwItem, GwRisingPhase, risingAt } from './shared/gravewatch'
 import { RISING_PARTY } from './shared/levels'
 import { fxSound } from './combatFx'
 import { t } from './i18n'
 
-export type GwTab = 'rounds' | 'wheel' | 'dice' | 'rising' | 'reliquary'
-export const GW_TABS: readonly GwTab[] = ['rounds', 'wheel', 'dice', 'rising', 'reliquary']
+export type GwTab = 'rounds' | 'wheel' | 'board' | 'rising' | 'reliquary'
+export const GW_TABS: readonly GwTab[] = ['rounds', 'wheel', 'board', 'rising', 'reliquary']
 
 export type GwSheet = {
   /** Something has arrived from the host at least once. */
@@ -28,7 +28,12 @@ export type GwSheet = {
   rounds: number
   clears: number
   spins: number
+  /** Gravewalk: rolls today, the pawn's tile, tile levels, season points, milestones paid. */
   rolls: number
+  pos: number
+  tiles: number[]
+  points: number
+  miles: number
   /** Server times (0: none). */
   mult: number
   curse: number
@@ -48,7 +53,7 @@ export type GwSheet = {
 }
 
 type Wheel = { target: number; t: number; seq: number; done: boolean }
-type Dice = { mine: [number, number]; house: [number, number]; wager: number; won: boolean; t: number }
+type Board = { dice: [number, number]; from: number; to: number; passed: boolean; paid: number; said: string; t: number }
 type Gain = { amount: number; age: number }
 
 /** The wheel sheet: 10 x 10 frames, frame k turned k * 3.6 degrees clockwise; segment 0 under the pointer at frame 0. */
@@ -61,14 +66,16 @@ export const GAIN_SECONDS = 3.5
 
 const WHEEL_SECONDS = 3.2
 const WHEEL_TURNS = 3
-const DICE_SECONDS = 1.1
+const DICE_SECONDS = 0.9
+/** The pawn takes this long per tile after the dice settle. */
+const STEP_SECONDS = 0.16
 const NOTE_SECONDS = 4
 const POLL_SECONDS = 10
 /** The flyer waits this long after the hero stands in the hall. */
 const FLYER_AFTER_SECONDS = 1.5
 
 const sheet: GwSheet = {
-  known: false, over: false, guest: false, embers: 0, rounds: 0, clears: 0, spins: 0, rolls: 0, mult: 0, curse: 0, held: false,
+  known: false, over: false, guest: false, embers: 0, rounds: 0, clears: 0, spins: 0, rolls: 0, pos: 0, tiles: GW_BOARD.map(() => 1), points: 0, miles: 0, mult: 0, curse: 0, held: false,
   live: ['w1'], won: [], sold: [], keyed: [], redeemed: {}, rising: 0, phase: 'idle', signed: 0, signedUp: false, arena: 0, note: '', noteFor: 0
 }
 let open = false
@@ -82,7 +89,7 @@ let askedOnce = false
 let clockOffset = 0
 let lastSeq = 0
 let wheel: Wheel | undefined
-let dice: Dice | undefined
+let board: Board | undefined
 /** Waiting on the host's answer to a spin, a roll or a redeem. */
 let busy = ''
 let confirmItem: GwItem | '' = ''
@@ -109,6 +116,10 @@ export function initializeGravewatch() {
     sheet.clears = msg.clears
     sheet.spins = msg.spins
     sheet.rolls = msg.rolls
+    sheet.pos = msg.pos
+    sheet.tiles = msg.tiles
+    sheet.points = msg.points
+    sheet.miles = msg.miles
     sheet.mult = msg.mult
     sheet.curse = msg.curse
     sheet.held = msg.held
@@ -132,8 +143,8 @@ export function initializeGravewatch() {
     lastSeq = msg.seq
     if (fresh && msg.note) takeNote(msg.note, msg, before)
     if (busy && fresh) busy = ''
-    // Embers coming in (a Round, a clear, the Rising, the dice): say so on screen. The wheel tells its own result after it stops.
-    if (known && msg.embers > before && !msg.note.startsWith('spin:')) {
+    // Embers coming in (a Round, a clear, the Rising): say so on screen. The wheel and the board tell their own result when they stop.
+    if (known && msg.embers > before && !msg.note.startsWith('spin:') && !msg.note.startsWith('board:')) {
       const gain = msg.embers - before
       gains.push({ amount: gain, age: 0 })
       if (gains.length > 3) gains.shift()
@@ -154,9 +165,10 @@ function takeNote(note: string, msg: { spin: number; roll: number[] }, embersBef
     fxSound('coin', 0.5)
     return
   }
-  if (note === 'roll:won' || note === 'roll:lost') {
+  if (note.startsWith('board:')) {
     const r = msg.roll
-    if (r.length >= 6) dice = { mine: [r[0], r[1]], house: [r[2], r[3]], wager: r[4], won: r[5] === 1, t: 0 }
+    if (r.length >= 6) board = { dice: [r[0], r[1]], from: r[2], to: r[3], passed: r[4] === 1, paid: r[5], said: note.slice('board:'.length), t: 0 }
+    fxSound('coin', 0.5)
     return
   }
   const text = noteText(note, embersBefore)
@@ -172,8 +184,7 @@ function noteText(note: string, embersBefore: number): string {
     case 'over': return t('Gravewatch has ended.')
     case 'guest': return t('Sign in with a wallet to take part in Gravewatch.')
     case 'poor': return t('Not enough embers.')
-    case 'capped': return t('Knucklebones is done for today. Come back tomorrow.')
-    case 'wager': return ''
+    case 'capped': return t('No rolls left today. Come back tomorrow.')
     case 'nokey': return t('Not yet available.')
     case 'locked': return t('Not unlocked yet.')
     case 'sold': return t('Sold out.')
@@ -211,7 +222,10 @@ function update(dt: number) {
       fxSound('coin', 0.9)
     }
   }
-  if (dice && dice.t < DICE_SECONDS) dice.t += span
+  if (board && board.t < boardSeconds(board)) {
+    board.t += span
+    if (board.t >= boardSeconds(board)) fxSound('coin', 0.9)
+  }
   for (const g of gains) g.age += span
   while (gains.length && gains[0].age >= GAIN_SECONDS) gains.shift()
   const phase = myPhase()
@@ -307,14 +321,33 @@ function frameAt(angle: number): number {
   return ((Math.round(angle / step) % WHEEL_FRAMES) + WHEEL_FRAMES) % WHEEL_FRAMES
 }
 
-/** The last roll: the dice tumble (random faces) for a beat, then the real ones show. */
-export function diceState(): (Dice & { revealed: boolean; faces: [number, number, number, number] }) | undefined {
-  if (!dice) return undefined
-  const revealed = dice.t >= DICE_SECONDS
-  if (revealed) return { ...dice, revealed, faces: [dice.mine[0], dice.mine[1], dice.house[0], dice.house[1]] }
-  const tick = Math.floor(dice.t * 12)
+function boardSteps(b: Board): number {
+  return ((b.to - b.from) + GW_BOARD.length) % GW_BOARD.length || (b.dice[0] + b.dice[1] > 0 ? GW_BOARD.length : 0)
+}
+
+function boardSeconds(b: Board): number {
+  return DICE_SECONDS + boardSteps(b) * STEP_SECONDS
+}
+
+/**
+ * The last roll as it plays: the dice tumble for a beat and settle, then the
+ * pawn hops tile by tile to where the host put it; `landed` once it is there.
+ * Without a roll in play the pawn stands where the sheet says.
+ */
+export function boardState(): { faces: [number, number]; settled: boolean; pawn: number; landed: boolean; roll?: Board } {
+  if (!board) return { faces: [0, 0], settled: true, pawn: sheet.pos, landed: true }
+  const settled = board.t >= DICE_SECONDS
+  const steps = boardSteps(board)
+  const walked = settled ? Math.min(steps, Math.floor((board.t - DICE_SECONDS) / STEP_SECONDS)) : 0
+  const pawn = (board.from + walked) % GW_BOARD.length
+  const tick = Math.floor(board.t * 12)
   const face = (salt: number) => 1 + ((tick * 7 + salt * 5) % 6)
-  return { ...dice, revealed, faces: [face(1), face(2), face(3), face(4)] }
+  const faces: [number, number] = settled ? board.dice : [face(1), board.dice[1] ? face(2) : 0]
+  return { faces, settled, pawn, landed: walked >= steps, roll: board }
+}
+
+export function boardRolling(): boolean {
+  return !!board && board.t < boardSeconds(board)
 }
 
 /** The "+n embers" toasts, newest last, with how long each has shown. */
@@ -389,11 +422,11 @@ export function gravewatchSpin() {
   sendNet('gwSpin', { v: 1 })
 }
 
-export function gravewatchRoll(wager: number) {
+export function gravewatchRoll(double: boolean) {
   if (busy) return
-  if (dice && dice.t < DICE_SECONDS) return
+  if (boardRolling()) return
   busy = 'roll'
-  sendNet('gwRoll', { wager })
+  sendNet('gwRoll', { double })
 }
 
 /** Two taps: the first asks, the second buys. */

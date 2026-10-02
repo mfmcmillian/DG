@@ -1,5 +1,5 @@
 // Gravewatch on the headless host: the ember ledger, the day roll, the Wheel
-// of Bones and Knucklebones, and the Reliquary's redeem. The server is the
+// of Bones and the Gravewalk board, and the Reliquary's redeem. The server is the
 // only clock and the only writer; a client can ask (gwAct, gwSpin, gwRoll,
 // gwRedeem) and is answered with its whole sheet (gwState), so a reconnect
 // never loses a roll. Guests earn nothing and buy nothing. The Rising itself
@@ -20,8 +20,9 @@ import { classAllowsArmor } from './heroClasses'
 import { DEVELOPERS } from './shared/developers'
 import { newGearUid } from './shared/gearBag'
 import {
-  etDayKey, GW_CLEAR_EMBERS, GW_CRYPT_CLEAR_MULT, GW_CURSE_MS, GW_DICE_DAILY_CAP, GW_DICE_PAYOUT, GW_EVENT_END, GW_ITEMS, GW_MULT, GW_MULT_MS, GW_PRICES,
-  GW_ROUNDS_EMBERS, GW_SPIN_COST, GW_WAGERS, GW_WHEEL, GwItem, itemLive
+  etDayKey, GW_BOARD, GW_BOARD_DOUBLE_COST, GW_BOARD_MILESTONES, GW_BOARD_PASS_EMBERS, GW_BOARD_TOKENS, GW_CLEAR_EMBERS, GW_CRYPT_CLEAR_MULT, GW_CURSE_MS,
+  GW_EVENT_END, GW_HAT_STEPS, GW_ITEMS, GW_MULT, GW_MULT_MS, GW_PRICES, GW_ROUNDS_EMBERS, GW_SPIN_COST, GW_TILE_MAX_LEVEL, GW_TILE_POINTS, GW_TILE_POINTS_BIG,
+  GW_WHEEL, GwItem, itemLive, tilePay
 } from './shared/gravewatch'
 import { BARROW_YARD, LEVELS, RISING_PARTY } from './shared/levels'
 import { HUB } from './partyLookup'
@@ -39,7 +40,13 @@ type Ledger = {
   rounds: number
   clears: number
   spins: number
+  /** Gravewalk rolls today. */
   rolls: number
+  /** Gravewalk: the pawn's tile, each tile's level (1..5), season points and milestones paid. */
+  pos?: number
+  tiles?: number[]
+  points?: number
+  miles?: number
   /** The x1.5 multiplier runs until this time (ms), when set. */
   mult?: number
   /** The pumpkin-head curse on this hero runs until this time, when set; `held` while the wheel's curse waits to be handed out. */
@@ -90,7 +97,7 @@ function bind() {
   })
   onNet('gwRoll', (msg, context) => {
     if (!context) return
-    void roll(context.from.toLowerCase(), msg.wager)
+    void roll(context.from.toLowerCase(), msg.double)
   })
   onNet('gwRedeem', (msg, context) => {
     if (!context) return
@@ -277,6 +284,8 @@ async function act(id: string, what: string) {
       if (!isDev(id)) return
       const l = await ledgerOf(id)
       l.embers += 1000
+      l.rolls = 0
+      l.spins = 0
       void save(id)
       await tell(id, '')
       return
@@ -335,6 +344,10 @@ async function tell(id: string, note: string) {
     signed: rising.signed,
     signedUp: rising.signedUp,
     arena: rising.arena,
+    pos: l.pos ?? 0,
+    tiles: GW_BOARD.map((_tile, i) => l.tiles?.[i] ?? 1),
+    points: l.points ?? 0,
+    miles: l.miles ?? 0,
     spin: lastSpin.get(id) ?? -1,
     roll: lastRoll.get(id) ?? [],
     seq,
@@ -401,28 +414,103 @@ function rewardGear(id: string, x: number, z: number, source: 'elite' | 'boss' =
   sendNet('loot', { party, x, z, coin: 0, heart: 0, item: armor, boss: true, up: rollArmorRank(source, 2), uid: newGearUid() }, { to: [id] })
 }
 
-// --- Knucklebones ----------------------------------------------------------------------------
+// --- Gravewalk, the board -------------------------------------------------------------------
 
-async function roll(id: string, wager: number) {
+/**
+ * One roll: a die (or two, for a fee), the pawn moves, the tile pays and
+ * levels, points and the daily meter climb and pay their milestones. The
+ * client gets the dice and both ends of the move to animate, and the pay in
+ * the note.
+ */
+async function roll(id: string, double: boolean) {
   if (over()) return tell(id, 'over')
   if (isGuest(id)) return tell(id, 'guest')
-  if (!(GW_WAGERS as readonly number[]).includes(wager)) return tell(id, 'wager')
   const l = await ledgerOf(id)
-  if (l.rolls >= GW_DICE_DAILY_CAP) return tell(id, 'capped')
-  if (l.embers < wager) return tell(id, 'poor')
+  if (l.rolls >= GW_BOARD_TOKENS) return tell(id, 'capped')
+  if (double) {
+    if (l.embers < GW_BOARD_DOUBLE_COST) return tell(id, 'poor')
+    l.embers -= GW_BOARD_DOUBLE_COST
+    l.spent += GW_BOARD_DOUBLE_COST
+  }
   const die = () => 1 + Math.floor(Math.random() * 6)
-  const mine = [die(), die()]
-  const house = [die(), die()]
-  // Ties go to the house: that, and the payout under 2x, is the edge.
-  const won = mine[0] + mine[1] > house[0] + house[1]
+  const d1 = die()
+  const d2 = double ? die() : 0
+  const from = l.pos ?? 0
+  const to = (from + d1 + d2) % GW_BOARD.length
+  const passed = from + d1 + d2 >= GW_BOARD.length
+  const tiles = l.tiles ?? GW_BOARD.map(() => 1)
+  const tile = GW_BOARD[to]
+  const level = tiles[to] ?? 1
+  const t = now()
+  let paid = 0
+  let said = tile.label
+  if (passed && to !== 0) paid += GW_BOARD_PASS_EMBERS
+  switch (tile.kind) {
+    case 'start':
+      paid += GW_BOARD_PASS_EMBERS * 2
+      break
+    case 'embers':
+      paid += tilePay(tile.amount, level)
+      break
+    case 'coins': {
+      const coins = tilePay(tile.amount, level)
+      sendNet('loot', { party: HUB, x: 0, z: 0, coin: coins, heart: 0, item: '', boss: true, up: 0, uid: '' }, { to: [id] })
+      said = `${coins} coins`
+      break
+    }
+    case 'chest': {
+      // Five to twenty-five, grown by the level.
+      const found = tilePay(5 + Math.floor(Math.random() * 21), level)
+      paid += found
+      said = `Chest: ${found} embers`
+      break
+    }
+    case 'gear':
+      rewardGear(id, 0, 0)
+      said = 'A piece of gear'
+      break
+    case 'curse':
+      l.held = true
+      said = 'A pumpkin curse to hand out'
+      break
+    case 'mystery': {
+      const pick = Math.random()
+      if (pick < 0.5) {
+        const found = tilePay(20, level)
+        paid += found
+        said = `${found} embers`
+      } else if (pick < 0.85) {
+        sendNet('loot', { party: HUB, x: 0, z: 0, coin: 200, heart: 0, item: '', boss: true, up: 0, uid: '' }, { to: [id] })
+        said = '200 coins'
+      } else {
+        l.mult = Math.max(l.mult ?? 0, t) + GW_MULT_MS
+        said = 'Embers x1.5 for a day'
+      }
+      break
+    }
+  }
+  if (tile.kind !== 'start' && level < GW_TILE_MAX_LEVEL) tiles[to] = level + 1
+  l.tiles = tiles
+  l.pos = to
   l.rolls++
-  l.embers -= wager
-  l.spent += wager
-  if (won) l.embers += Math.round(wager * GW_DICE_PAYOUT)
-  lastRoll.set(id, [mine[0], mine[1], house[0], house[1], wager, won ? 1 : 0])
+  l.embers += paid
+  // Points and the season chests.
+  l.points = (l.points ?? 0) + (tile.kind === 'chest' || tile.kind === 'gear' ? GW_TILE_POINTS_BIG : GW_TILE_POINTS)
+  let miles = l.miles ?? 0
+  while (miles < GW_BOARD_MILESTONES.length && l.points >= GW_BOARD_MILESTONES[miles].points) {
+    const m = GW_BOARD_MILESTONES[miles]
+    if (m.kind === 'embers') l.embers += m.amount
+    else rewardGear(id, 0, 0)
+    console.log(`[Gravewatch] ${id} reaches ${m.points} board points: ${m.label}`)
+    miles++
+  }
+  l.miles = miles
+  // The daily meter.
+  for (const step of GW_HAT_STEPS) if (step.rolls === l.rolls) l.embers += step.embers
+  lastRoll.set(id, [d1, d2, from, to, passed ? 1 : 0, paid])
   metricsMark(id, 'gw-roll')
   void save(id)
-  await tell(id, won ? 'roll:won' : 'roll:lost')
+  await tell(id, `board:${said}`)
 }
 
 // --- the Reliquary -----------------------------------------------------------------------------

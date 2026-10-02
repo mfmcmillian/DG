@@ -34,10 +34,64 @@ export const GW_RISING_FIGHT_EMBERS = 100
 export const GW_RISING_WIN_EMBERS = 300
 /** The Wheel: one free spin a day, more at this price. */
 export const GW_SPIN_COST = 50
-/** Knucklebones: the wagers, the payout on a win, and the daily cap on rolls. */
-export const GW_WAGERS = [20, 50, 100] as const
-export const GW_DICE_PAYOUT = 1.85
-export const GW_DICE_DAILY_CAP = 10
+/** Gravewalk, the board: free rolls a day, the ember fee for two dice, what passing Start pays, and how high a tile levels. */
+export const GW_BOARD_TOKENS = 10
+export const GW_BOARD_DOUBLE_COST = 10
+export const GW_BOARD_PASS_EMBERS = 20
+export const GW_TILE_MAX_LEVEL = 5
+/** Points per landing, and on the chest and gear tiles. */
+export const GW_TILE_POINTS = 5
+export const GW_TILE_POINTS_BIG = 10
+
+/**
+ * The twenty tiles clockwise from Start (top-left corner). Every landing pays
+ * something; `amount` is the base, grown by the tile's level for that player.
+ */
+export type GwTileKind = 'start' | 'embers' | 'coins' | 'chest' | 'gear' | 'curse' | 'mystery'
+export type GwTile = { kind: GwTileKind; amount: number; label: string }
+export const GW_BOARD: readonly GwTile[] = [
+  { kind: 'start', amount: GW_BOARD_PASS_EMBERS, label: 'Start' },
+  { kind: 'embers', amount: 3, label: '3 embers' },
+  { kind: 'coins', amount: 100, label: '100 coins' },
+  { kind: 'embers', amount: 5, label: '5 embers' },
+  { kind: 'chest', amount: 15, label: 'Chest' },
+  { kind: 'embers', amount: 3, label: '3 embers' },
+  { kind: 'curse', amount: 1, label: 'Pumpkin' },
+  { kind: 'embers', amount: 8, label: '8 embers' },
+  { kind: 'coins', amount: 150, label: '150 coins' },
+  { kind: 'embers', amount: 3, label: '3 embers' },
+  { kind: 'gear', amount: 1, label: 'Gear' },
+  { kind: 'embers', amount: 5, label: '5 embers' },
+  { kind: 'chest', amount: 15, label: 'Chest' },
+  { kind: 'embers', amount: 3, label: '3 embers' },
+  { kind: 'coins', amount: 100, label: '100 coins' },
+  { kind: 'embers', amount: 10, label: '10 embers' },
+  { kind: 'mystery', amount: 1, label: '?' },
+  { kind: 'embers', amount: 3, label: '3 embers' },
+  { kind: 'coins', amount: 150, label: '150 coins' },
+  { kind: 'embers', amount: 5, label: '5 embers' }
+]
+
+/** A tile's pay at a level: a quarter more per level, so level 5 pays double. */
+export function tilePay(base: number, level: number): number {
+  return Math.round(base * (1 + 0.25 * (Math.max(1, Math.min(GW_TILE_MAX_LEVEL, level)) - 1)))
+}
+
+/** Season milestones on board points, paid once each as they are crossed. */
+export type GwMilestone = { points: number; kind: 'embers' | 'gear'; amount: number; label: string }
+export const GW_BOARD_MILESTONES: readonly GwMilestone[] = [
+  { points: 250, kind: 'embers', amount: 50, label: '50 embers' },
+  { points: 600, kind: 'embers', amount: 100, label: '100 embers' },
+  { points: 1200, kind: 'gear', amount: 1, label: 'A piece of gear' },
+  { points: 2500, kind: 'embers', amount: 250, label: '250 embers' },
+  { points: 5000, kind: 'embers', amount: 500, label: '500 embers' }
+]
+/** The daily meter: rolls made today, paid once each day as they are reached. */
+export const GW_HAT_STEPS: readonly { rolls: number; embers: number }[] = [
+  { rolls: 3, embers: 10 },
+  { rolls: 6, embers: 15 },
+  { rolls: 10, embers: 25 }
+]
 /** The Wheel's ember multiplier prize: this much, for this long. */
 export const GW_MULT = 1.5
 export const GW_MULT_MS = 24 * 3600 * 1000
