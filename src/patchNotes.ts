@@ -6,6 +6,11 @@
 export type PatchNote = { version: string; notes: string[] }
 
 export const PATCH_NOTES: PatchNote[] = [
+  { version: '2.9.0', notes: [
+    'The Crypt opens, the fourth rung of the ladder: a graveyard under the moon, the ossuary and its Bone Warden, the witches\' catacombs, the Gargoyle\'s chapel, and Morvane the Lich in his vault, who raises the dead as you cut him down.',
+    'Skeletons, ghouls, bone knights, grave witches and their bone wards; Skeleton Rangers shoot from the back, so close on them first.',
+    'Mist on every floor, bats over the yard, candles and braziers that burn, and the wind under the hill.'
+  ] },
   { version: '2.8.51', notes: [
     'The ring beside the upgrade pit and the folk takes a tap on a phone now.'
   ] },

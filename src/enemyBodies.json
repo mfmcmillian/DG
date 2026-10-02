@@ -78,5 +78,45 @@
     "path": "models/enemies/bog/gb-king.gltf",
     "height": 1.791,
     "tris": 6999
+  },
+  "dk-skeleton": {
+    "path": "models/enemies/crypt/dk-skeleton.gltf",
+    "height": 1.795,
+    "tris": 4034
+  },
+  "dk-skeleton-flesh": {
+    "path": "models/enemies/crypt/dk-skeleton-flesh.gltf",
+    "height": 1.803,
+    "tris": 4704
+  },
+  "dk-skeleton-heavy": {
+    "path": "models/enemies/crypt/dk-skeleton-heavy.gltf",
+    "height": 1.795,
+    "tris": 8168
+  },
+  "dk-skeleton-ranger": {
+    "path": "models/enemies/crypt/dk-skeleton-ranger.gltf",
+    "height": 1.797,
+    "tris": 7884
+  },
+  "dk-witch": {
+    "path": "models/enemies/crypt/dk-witch.gltf",
+    "height": 1.792,
+    "tris": 4404
+  },
+  "dk-gargoyle": {
+    "path": "models/enemies/crypt/dk-gargoyle.gltf",
+    "height": 1.904,
+    "tris": 5100
+  },
+  "dk-darklord": {
+    "path": "models/enemies/crypt/dk-darklord.gltf",
+    "height": 1.843,
+    "tris": 7078
+  },
+  "dk-demon": {
+    "path": "models/enemies/crypt/dk-demon.gltf",
+    "height": 1.909,
+    "tris": 6050
   }
 }

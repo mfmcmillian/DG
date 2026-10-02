@@ -1,0 +1,164 @@
+{
+  "realm": "crypt",
+  "pack": "POLYGON_Dark_Fantasy_Unity_2022_3_v1_4_1.zip",
+  "textures": {
+    "atlas": "Assets/Synty/PolygonDarkFantasy/Textures/Alts/PolygonDarkFantasy_01_A.png",
+    "emissive": "Assets/Synty/PolygonDarkFantasy/Textures/Emissive/PolygonDarkFantasy_01_A_Emissive.png",
+    "tiling": "Assets/Synty/PolygonDarkFantasy/Textures/Misc/Brick_Large_01.png",
+    "floor": "Assets/Synty/PolygonDarkFantasy/Textures/Misc/Floor_Tiles_01.png",
+    "ceiling": "Assets/Synty/PolygonDarkFantasy/Textures/Misc/Floor_Tiles_03.png",
+    "extra": {
+      "bat": "Assets/Synty/PolygonDarkFantasy/Textures/FX/Bat_01.png",
+      "flame": "Assets/Synty/PolygonDarkFantasy/Textures/FX/Candle_Flame_01.png",
+      "ray": "Assets/Synty/PolygonDarkFantasy/Textures/FX/SunBeam_Soft_01.png",
+      "dirt": "Assets/Synty/PolygonGeneric/Textures/Generic_Dirt.png",
+      "moon": "Assets/Synty/PolygonDarkFantasy/Textures/FX/Moon_01.png"
+    }
+  },
+  "tilingSlots": "^$",
+  "atlasSlots": "^(GOTHIC_MAT14|Gothic|Glass_MAT)(\\.|$)",
+  "tilingWorldSize": 2.5,
+  "modules": [
+    { "id": "crypt_wall_a", "parts": [
+      { "fbx": "SM_Bld_Base_Wall_01", "offset": [0, 0, 0] }, { "fbx": "SM_Bld_Base_Wall_01", "offset": [2.5, 0, 0] }, { "fbx": "SM_Bld_Base_Wall_01", "offset": [5, 0, 0] }, { "fbx": "SM_Bld_Base_Wall_01", "offset": [7.5, 0, 0] },
+      { "fbx": "SM_Bld_Base_Wall_01", "offset": [0, 3.0, 0] }, { "fbx": "SM_Bld_Base_Wall_01", "offset": [2.5, 3.0, 0] }, { "fbx": "SM_Bld_Base_Wall_01", "offset": [5, 3.0, 0] }, { "fbx": "SM_Bld_Base_Wall_01", "offset": [7.5, 3.0, 0] },
+      { "fbx": "SM_Bld_Base_Wall_Trim_01", "offset": [0, 6.01, -0.13] }, { "fbx": "SM_Bld_Base_Wall_Trim_01", "offset": [2.5, 6.01, -0.13] }, { "fbx": "SM_Bld_Base_Wall_Trim_01", "offset": [5, 6.01, -0.13] }, { "fbx": "SM_Bld_Base_Wall_Trim_01", "offset": [7.5, 6.01, -0.13] }
+    ] },
+    { "id": "crypt_wall_b", "exclude": "Glass", "parts": [
+      { "fbx": "SM_Bld_Base_Wall_01", "offset": [0, 0, 0] }, { "fbx": "SM_Bld_Base_Wall_01", "offset": [2.5, 0, 0] }, { "fbx": "SM_Bld_Base_Wall_01", "offset": [5, 0, 0] }, { "fbx": "SM_Bld_Base_Wall_01", "offset": [7.5, 0, 0] },
+      { "fbx": "SM_Bld_Base_Wall_01", "offset": [0, 3.0, 0] }, { "fbx": "SM_Bld_Wall_Window_01", "offset": [2.5, 3.0, 0] }, { "fbx": "SM_Bld_Wall_Window_01", "offset": [5, 3.0, 0] }, { "fbx": "SM_Bld_Base_Wall_01", "offset": [7.5, 3.0, 0] },
+      { "fbx": "SM_Bld_Base_Wall_Trim_01", "offset": [0, 6.01, -0.13] }, { "fbx": "SM_Bld_Base_Wall_Trim_01", "offset": [2.5, 6.01, -0.13] }, { "fbx": "SM_Bld_Base_Wall_Trim_01", "offset": [5, 6.01, -0.13] }, { "fbx": "SM_Bld_Base_Wall_Trim_01", "offset": [7.5, 6.01, -0.13] }
+    ] },
+    { "id": "crypt_wall_c", "parts": [
+      { "fbx": "SM_Bld_Base_Wall_01", "offset": [0, 0, 0] }, { "fbx": "SM_Bld_Wall_Alcove_01", "offset": [2.5, 0, 0] }, { "fbx": "SM_Bld_Base_Wall_01", "offset": [7.5, 0, 0] },
+      { "fbx": "SM_Bld_Base_Wall_01", "offset": [0, 3.0, 0] }, { "fbx": "SM_Bld_Base_Wall_01", "offset": [2.5, 3.0, 0] }, { "fbx": "SM_Bld_Base_Wall_01", "offset": [5, 3.0, 0] }, { "fbx": "SM_Bld_Base_Wall_01", "offset": [7.5, 3.0, 0] },
+      { "fbx": "SM_Bld_Base_Wall_Trim_01", "offset": [0, 6.01, -0.13] }, { "fbx": "SM_Bld_Base_Wall_Trim_01", "offset": [2.5, 6.01, -0.13] }, { "fbx": "SM_Bld_Base_Wall_Trim_01", "offset": [5, 6.01, -0.13] }, { "fbx": "SM_Bld_Base_Wall_Trim_01", "offset": [7.5, 6.01, -0.13] }
+    ] },
+    { "id": "crypt_wall_d", "parts": [
+      { "fbx": "SM_Bld_Base_Wall_01", "offset": [0, 0, 0] }, { "fbx": "SM_Bld_Base_Wall_01", "offset": [2.5, 0, 0] }, { "fbx": "SM_Bld_Base_Wall_01", "offset": [5, 0, 0] }, { "fbx": "SM_Bld_Base_Wall_01", "offset": [7.5, 0, 0] },
+      { "fbx": "SM_Bld_Wall_Brick_Greeble_01", "offset": [0, 0, 0.05] }, { "fbx": "SM_Bld_Wall_Brick_Greeble_01", "offset": [5, 0, 0.05] },
+      { "fbx": "SM_Bld_Wall_Ruin_01", "offset": [0, 3.0, 0] }, { "fbx": "SM_Bld_Wall_Ruin_End_01", "offset": [2.5, 3.0, 0] }, { "fbx": "SM_Bld_Base_Wall_01", "offset": [7.5, 3.0, 0] },
+      { "fbx": "SM_Bld_Base_Wall_Trim_01", "offset": [7.5, 6.01, -0.13] }
+    ] },
+    { "id": "crypt_wall_e", "exclude": "Glass", "parts": [
+      { "fbx": "SM_Bld_Base_Wall_01", "offset": [0, 0, 0] }, { "fbx": "SM_Bld_Wall_Window_Tall_Double_01", "offset": [2.5, 0, 0] }, { "fbx": "SM_Bld_Wall_Window_Tall_Double_01", "offset": [5, 0, 0] }, { "fbx": "SM_Bld_Base_Wall_01", "offset": [7.5, 0, 0] },
+      { "fbx": "SM_Bld_Base_Wall_01", "offset": [0, 3.0, 0] }, { "fbx": "SM_Bld_Base_Wall_01", "offset": [2.5, 3.0, 0] }, { "fbx": "SM_Bld_Base_Wall_01", "offset": [5, 3.0, 0] }, { "fbx": "SM_Bld_Base_Wall_01", "offset": [7.5, 3.0, 0] },
+      { "fbx": "SM_Bld_Base_Wall_Trim_01", "offset": [0, 6.01, -0.13] }, { "fbx": "SM_Bld_Base_Wall_Trim_01", "offset": [2.5, 6.01, -0.13] }, { "fbx": "SM_Bld_Base_Wall_Trim_01", "offset": [5, 6.01, -0.13] }, { "fbx": "SM_Bld_Base_Wall_Trim_01", "offset": [7.5, 6.01, -0.13] }
+    ] },
+    { "id": "crypt_wall_low", "parts": [
+      { "fbx": "SM_Bld_Base_Wall_Half_01", "offset": [0, 0, 0] }, { "fbx": "SM_Bld_Base_Wall_Half_01", "offset": [2.5, 0, 0] }, { "fbx": "SM_Bld_Base_Wall_Half_01", "offset": [5, 0, 0] }, { "fbx": "SM_Bld_Base_Wall_Half_01", "offset": [7.5, 0, 0] },
+      { "fbx": "SM_Bld_Base_Wall_Trim_01", "offset": [0, 1.5, -0.13] }, { "fbx": "SM_Bld_Base_Wall_Trim_01", "offset": [2.5, 1.5, -0.13] }, { "fbx": "SM_Bld_Base_Wall_Trim_01", "offset": [5, 1.5, -0.13] }, { "fbx": "SM_Bld_Base_Wall_Trim_01", "offset": [7.5, 1.5, -0.13] }
+    ] },
+    { "id": "crypt_arch", "parts": [
+      { "fbx": "SM_Bld_Base_Wall_01", "offset": [0, 0, 0] }, { "fbx": "SM_Bld_Base_Wall_01", "offset": [0, 3.0, 0] },
+      { "fbx": "SM_Bld_Pillar_02", "offset": [2.5, 0, 0] }, { "fbx": "SM_Bld_Pillar_02", "offset": [2.5, 3.0, 0] },
+      { "fbx": "SM_Bld_Base_Wall_Half_01", "offset": [2.5, 4.5, 0] }, { "fbx": "SM_Bld_Base_Wall_Half_01", "offset": [5, 4.5, 0] },
+      { "fbx": "SM_Bld_Pillar_02", "offset": [7.5, 0, 0] }, { "fbx": "SM_Bld_Pillar_02", "offset": [7.5, 3.0, 0] },
+      { "fbx": "SM_Bld_Base_Wall_01", "offset": [7.5, 0, 0] }, { "fbx": "SM_Bld_Base_Wall_01", "offset": [7.5, 3.0, 0] },
+      { "fbx": "SM_Bld_Base_Wall_Trim_01", "offset": [0, 6.01, -0.13] }, { "fbx": "SM_Bld_Base_Wall_Trim_01", "offset": [2.5, 6.01, -0.13] }, { "fbx": "SM_Bld_Base_Wall_Trim_01", "offset": [5, 6.01, -0.13] }, { "fbx": "SM_Bld_Base_Wall_Trim_01", "offset": [7.5, 6.01, -0.13] }
+    ] },
+    { "id": "crypt_portal", "fbx": "SM_Bld_Wall_Door_Large_01", "exclude": "_Door_0" },
+    { "id": "crypt_pillar", "parts": [{ "fbx": "SM_Bld_Pillar_02", "offset": [0, 0, 0] }, { "fbx": "SM_Bld_Pillar_02", "offset": [0, 3.0, 0] }] },
+    { "id": "crypt_sconce", "fbx": "SM_Prop_Candle_Wall_01", "scale": 1.5 },
+    { "id": "crypt_torch", "fbx": "SM_Prop_Torch_01", "scale": 1.3 },
+    { "id": "crypt_buttress", "fbx": "SM_Bld_Buttress_Pillar_Cap_01" },
+    { "id": "crypt_spire", "fbx": "SM_Bld_Topper_01" },
+    { "id": "crypt_rose_window", "fbx": "SM_Bld_Wall_Window_Huge_01", "exclude": "Glass" },
+    { "id": "crypt_wall_round", "fbx": "SM_Bld_Base_Wall_Round_01", "scale": [1.0, 2.0, 1.0] },
+
+    { "id": "crypt_tomb_a", "fbx": "SM_Prop_Tomb_01" },
+    { "id": "crypt_tomb_b", "fbx": "SM_Prop_Tomb_02" },
+    { "id": "crypt_stone_a", "fbx": "SM_Prop_Tomb_Stone_01" },
+    { "id": "crypt_stone_b", "fbx": "SM_Prop_Tomb_Stone_03" },
+    { "id": "crypt_stone_c", "fbx": "SM_Prop_Tomb_Stone_05", "collide": false },
+    { "id": "crypt_stone_d", "fbx": "SM_Prop_Tomb_Stone_Basic_01" },
+    { "id": "crypt_crypt_door", "fbx": "SM_Prop_Crypt_Door_01" },
+    { "id": "crypt_crypt_door_chained", "fbx": "SM_Prop_Crypt_Door_Chained_01" },
+    { "id": "crypt_crypt_door_boarded", "fbx": "SM_Prop_Crypt_Door_Boarded_01" },
+    { "id": "crypt_mausoleum_a", "fbx": "SM_Prop_Crypt_01" },
+    { "id": "crypt_mausoleum_b", "fbx": "SM_Prop_Crypt_02" },
+
+    { "id": "crypt_candle_rack", "fbx": "SM_Prop_Candle_Rack_01" },
+    { "id": "crypt_candelabra", "fbx": "SM_Prop_Candelabra_01" },
+    { "id": "crypt_candelabra_s", "fbx": "SM_Prop_Candelabra_Small_01", "collide": false },
+    { "id": "crypt_chandelier", "fbx": "SM_Prop_Chandelier_01", "anchor": "top", "collide": false },
+    { "id": "crypt_brazier", "fbx": "SM_Prop_Brazier_01" },
+    { "id": "crypt_lantern", "fbx": "SM_Prop_Lantern_01", "collide": false },
+    { "id": "crypt_candle", "fbx": "SM_Prop_Candle_01", "collide": false },
+    { "id": "crypt_candle_blob", "fbx": "SM_Prop_Candle_Blob_01", "collide": false },
+
+    { "id": "crypt_gargoyle", "fbx": "SM_Prop_Gargoyle_Statue_01" },
+    { "id": "crypt_gargoyle_b", "fbx": "SM_Prop_Gargoyle_01" },
+    { "id": "crypt_statue", "fbx": "SM_Prop_Statue_01" },
+    { "id": "crypt_statue_b", "fbx": "SM_Prop_Statue_People_01" },
+    { "id": "crypt_altar", "fbx": "SM_Prop_Altar_Table_01" },
+    { "id": "crypt_tabernacle", "fbx": "SM_Prop_Tabernacle_01" },
+    { "id": "crypt_lectern", "fbx": "SM_Prop_Lecturn_01" },
+    { "id": "crypt_pew", "fbx": "SM_Prop_Pew_01" },
+    { "id": "crypt_pew_l", "fbx": "SM_Prop_Pew_Large_01" },
+    { "id": "crypt_organ", "fbx": "SM_Prop_Organ_01", "scale": 0.6 },
+    { "id": "crypt_bell", "fbx": "SM_Prop_Bell_Large_01", "anchor": "top", "collide": false },
+    { "id": "crypt_ward", "fbx": "SM_Prop_Demon_Ward_01" },
+    { "id": "crypt_ritual_circle", "fbx": "SM_Prop_Ritual_Circle_01", "collide": false },
+
+    { "id": "crypt_bookshelf", "fbx": "SM_Prop_Bookshelf_01" },
+    { "id": "crypt_bookshelf_d", "fbx": "SM_Prop_Bookshelf_Double_01" },
+    { "id": "crypt_desk", "fbx": "SM_Prop_Desk_Reading_01" },
+    { "id": "crypt_table", "fbx": "SM_Prop_Table_01" },
+    { "id": "crypt_chair", "fbx": "SM_Prop_Chair_01" },
+    { "id": "crypt_book", "fbx": "SM_Prop_Book_01", "collide": false },
+    { "id": "crypt_goblet", "fbx": "SM_Prop_Goblet_01", "collide": false },
+    { "id": "crypt_scroll", "fbx": "SM_Prop_Scroll_01", "collide": false },
+
+    { "id": "crypt_skull_pile", "fbx": "SM_Prop_Skull_Pile_01", "collide": false },
+    { "id": "crypt_bone_pile", "fbx": "SM_Prop_Bone_Pile_01", "collide": false },
+    { "id": "crypt_skeleton", "fbx": "SM_Prop_Body_Skeleton_01", "collide": false },
+    { "id": "crypt_skeleton_b", "fbx": "SM_Prop_Body_Skeleton_02", "collide": false },
+    { "id": "crypt_skull", "fbx": "SM_Prop_Skull_01", "collide": false },
+    { "id": "crypt_head", "fbx": "SM_Prop_Head_Mounted_01", "wall": { "inset": 0.2, "height": 2.2 } },
+    { "id": "crypt_cage", "fbx": "SM_Prop_Cage_Small_01", "anchor": "top", "collide": false },
+    { "id": "crypt_cage_l", "fbx": "SM_Prop_Cage_Large_01" },
+    { "id": "crypt_gibbet", "fbx": "SM_Prop_Gibbet_01" },
+    { "id": "crypt_gallows", "fbx": "SM_Prop_Gallows_01" },
+    { "id": "crypt_stocks", "fbx": "SM_Prop_Stock_01" },
+    { "id": "crypt_pyre", "fbx": "SM_Prop_Pyre_01" },
+    { "id": "crypt_noose", "fbx": "SM_Prop_Noose_01", "anchor": "top", "collide": false },
+
+    { "id": "crypt_well", "fbx": "SM_Prop_Well_01" },
+    { "id": "crypt_barrel", "fbx": "SM_Prop_Barrel_01" },
+    { "id": "crypt_crate", "fbx": "SM_Prop_Crate_01" },
+    { "id": "crypt_sack", "fbx": "SM_Prop_Sack_01", "collide": false },
+    { "id": "crypt_chest", "fbx": "SM_Prop_Chest_01" },
+    { "id": "crypt_rubble", "fbx": "SM_Prop_Rubble_Pile_Burnt_01", "collide": false },
+    { "id": "crypt_boards", "fbx": "SM_Prop_Boarded_Wood_01", "wall": { "inset": 0.1, "height": 1.6 } },
+    { "id": "crypt_barricade", "fbx": "SM_Prop_Barricade_01" },
+    { "id": "crypt_wagon", "fbx": "SM_Prop_Wagon_01_Damaged_01" },
+    { "id": "crypt_notice", "fbx": "SM_Prop_Notice_Board_01" },
+    { "id": "crypt_banner", "fbx": "SM_Prop_Flag_Witch_01", "anchor": "top", "wall": { "inset": 0.15, "height": 5.6 } },
+    { "id": "crypt_flag_pole", "fbx": "SM_Prop_Flag_Pole_01" },
+
+    { "id": "crypt_fence", "parts": [
+      { "fbx": "SM_Bld_Fence_Cemetary_01", "offset": [0, 0, 0] }, { "fbx": "SM_Bld_Fence_Cemetary_01", "offset": [2.5, 0, 0] }, { "fbx": "SM_Bld_Fence_Cemetary_01", "offset": [5, 0, 0] }, { "fbx": "SM_Bld_Fence_Cemetary_01", "offset": [7.5, 0, 0] }
+    ] },
+    { "id": "crypt_fence_short", "fbx": "SM_Bld_Fence_Cemetary_01" },
+    { "id": "crypt_fence_post", "fbx": "SM_Bld_Fence_Pillar_Cemetary_01" },
+    { "id": "crypt_yard_gate", "parts": [
+      { "fbx": "SM_Bld_Fence_Cemetary_01", "offset": [0, 0, 0] },
+      { "fbx": "SM_Bld_Fence_Pillar_Cemetary_01", "offset": [2.95, 0, 0] },
+      { "fbx": "SM_Bld_Gates_Cemetary_01", "offset": [3.81, 0, 0] },
+      { "fbx": "SM_Bld_Fence_Pillar_Cemetary_01", "offset": [7.4, 0, 0] },
+      { "fbx": "SM_Bld_Fence_Cemetary_01", "offset": [7.85, 0, 0] }
+    ] },
+
+    { "id": "crypt_tree_a", "fbx": "SM_Env_Tree_Dead_01" },
+    { "id": "crypt_tree_b", "fbx": "SM_Env_Tree_Dead_02" },
+    { "id": "crypt_tree_c", "fbx": "SM_Env_Tree_Dead_03" },
+    { "id": "crypt_hill", "fbx": "SM_Env_BackgroundHill_01", "collide": false },
+    { "id": "crypt_cliff", "fbx": "SM_Env_Rock_Cliff_01" },
+    { "id": "crypt_rock", "fbx": "SM_Env_Rock_01" },
+    { "id": "crypt_rocks", "fbx": "SM_Env_Rocks_Small_01", "collide": false },
+    { "id": "crypt_dirt", "fbx": "SM_Env_Ground_Dirt_01", "collide": false },
+    { "id": "crypt_fern", "fbx": "SM_Env_Plant_Fern_01", "collide": false },
+    { "id": "crypt_grass", "fbx": "SM_Env_Plant_Grass_Patch_01", "collide": false }
+  ]
+}

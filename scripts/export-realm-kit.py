@@ -69,6 +69,9 @@ KIT_JSON = os.path.join(ROOT, 'src', 'dungeon', 'kits', REALM + '.json')
 os.makedirs(OUT, exist_ok=True)
 os.makedirs(os.path.dirname(KIT_JSON), exist_ok=True)
 TILING_SLOTS = re.compile(manifest.get('tilingSlots', '^$'))
+# Slots to keep on the atlas even when their UVs look spread (Dark Fantasy's organ
+# pipes and reading desk sweep three quarters of the atlas; they are not triplanar).
+ATLAS_SLOTS = re.compile(manifest.get('atlasSlots', '^$'))
 TILING_WORLD = float(manifest.get('tilingWorldSize', 2.5))
 
 
@@ -282,6 +285,14 @@ def import_parts(module):
             o.select_set(True)
         bpy.context.view_layer.objects.active = part_meshes[0]
         bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+        # Child meshes (Dark Fantasy parents a window's glass to its frame) would
+        # ride the parent's offset and then get their own: flatten the hierarchy
+        # first, keeping world placement.
+        for o in part_meshes:
+            if o.parent is not None:
+                mw = o.matrix_world.copy()
+                o.parent = None
+                o.matrix_world = mw
         ox, oy, oz = part.get('offset', [0, 0, 0])  # glTF x, y(up), z -> Blender x, -z?, y
         # glTF (x, y up, z) maps to Blender (x, -z, y) only for handedness flips; the
         # kit export uses export_yup with Blender Y -> glTF -Z. Offsets are given in the
@@ -350,7 +361,7 @@ for module in manifest['modules']:
             # (world-tiled) surface in Synty's shader; the atlas lookup would be junk.
             parked = rng is not None and (rng[2] < -0.01 or rng[3] > 1.01 or rng[0] < -0.01)
             degenerate = rng is not None and (rng[1] - rng[0]) < 0.05 and (rng[3] - rng[2]) < 0.05
-            use_tiling = tiling is not None and (spread or parked or TILING_SLOTS.search(nm) is not None)
+            use_tiling = tiling is not None and ATLAS_SLOTS.search(nm) is None and (spread or parked or TILING_SLOTS.search(nm) is not None)
             slot.material = MAT_TILING if use_tiling else MAT_ATLAS
             if use_tiling and uvl and (degenerate or parked) and not spread:
                 project.append(i)

@@ -25,8 +25,10 @@ import { classAllowsArmor, classOfCharacter, heroClassOf, shotProfile, skillShot
 import { SkillDef, skillById } from './shared/skills'
 import { clearProjectiles, launchShot, ProjectileTarget, setProjectileTargets, SHOT_HEIGHT } from './projectiles'
 import { BOG_GONG } from './dungeon/bogmaw'
+import { CRYPT_CIRCLE, LICH_NAME } from './dungeon/crypt'
 import { BogTrapHost, buildBogTraps, clearBogTraps, createBogTrapHost, presentBogTrapFx, tickBogTraps, tickBogTrapsHost } from './bogTraps'
 import { buildBogFx, clearBogFx, syncTotemAura, tickBogFx } from './bogFx'
+import { buildCryptFx, clearCryptFx, tickCryptFx } from './cryptFx'
 import { createRivalBrain, resetRivalBrain, RivalBrain, updateRivalBrain } from './rivalBrain'
 import {
   BossAttack, BossBrain, bossPhaseLabel, createBossBrain, resetBossBrain, updateBossBrain
@@ -153,7 +155,7 @@ function archetypeLoadout(archetype: Archetype): EquipmentLoadout {
 export function enemyPreloadAssets(styleId: StyleId = 'open'): string[] {
   const roster = rosterFor(styleId)
   const archetypes = [roster.striker, roster.scout, roster.guard, roster.boss]
-  for (const extra of [roster.posted, roster.archer, roster.bomber, roster.shaman, roster.totem]) if (extra) archetypes.push(extra)
+  for (const extra of [roster.posted, roster.archer, roster.bomber, roster.shaman, roster.totem, roster.beast]) if (extra) archetypes.push(extra)
   const paths: string[] = []
   for (const archetype of archetypes) {
     paths.push(...equipmentModelPaths(archetype.characterId, archetypeLoadout(archetype), archetype.role === 'boss' ? BOSS_APPEARANCE : undefined))
@@ -435,6 +437,7 @@ function populate(dungeon: Readonly<DungeonState>) {
   clearZoneFx()
   clearBogTraps()
   clearBogFx()
+  clearCryptFx()
   defeated = false
   respawnAsked = false
   state.respawnSeconds = 0
@@ -451,6 +454,7 @@ function populate(dungeon: Readonly<DungeonState>) {
     buildBogTraps()
     buildBogFx()
   }
+  if (run && dungeon.style.id === 'crypt') buildCryptFx()
 }
 
 function createSim(
@@ -531,6 +535,7 @@ function unitArchetype(unit: WaveUnit, roster: Roster, stage: Stage): Archetype 
     case 'bomber': return roster.bomber ?? roster.scout
     case 'shaman': return roster.shaman ?? roster.striker
     case 'totem': return roster.totem ?? roster.scout
+    case 'beast': return roster.beast ?? wardenOf(roster, stage.name.replace(/^The /, ''))
     default: return roster.striker
   }
 }
@@ -583,12 +588,14 @@ function buildGate(s: Sim, stage: number, gate: [[number, number], [number, numb
   })
   MeshRenderer.setBox(entity)
   MeshCollider.setBox(entity, ColliderLayer.CL_PHYSICS | ColliderLayer.CL_POINTER)
-  // The fortress bars its doors with dark iron; the pass seals its arches with ice; the goblins drop a spiked log gate.
+  // The fortress bars its doors with dark iron; the pass seals its arches with ice; the goblins drop a spiked log gate; the crypt's are warded with grave-light.
   Material.setPbrMaterial(entity, s.style.id === 'pass'
     ? { albedoColor: Color4.create(0.62, 0.8, 0.95, 0.82), emissiveColor: Color3.create(0.25, 0.45, 0.7), emissiveIntensity: 0.9, metallic: 0.1, roughness: 0.15, transparencyMode: MaterialTransparencyMode.MTM_ALPHA_BLEND }
     : s.style.id === 'bog'
       ? { albedoColor: Color4.create(0.3, 0.22, 0.12, 1), emissiveColor: Color3.create(0.25, 0.6, 0.12), emissiveIntensity: 0.8, metallic: 0.05, roughness: 0.9 }
-      : { albedoColor: Color4.create(0.16, 0.14, 0.15, 1), emissiveColor: Color3.create(0.6, 0.08, 0.03), emissiveIntensity: 1.4, metallic: 0.7, roughness: 0.55 })
+      : s.style.id === 'crypt'
+        ? { albedoColor: Color4.create(0.3, 0.75, 0.5, 0.55), emissiveColor: Color3.create(0.2, 0.9, 0.45), emissiveIntensity: 1.1, metallic: 0.0, roughness: 0.3, transparencyMode: MaterialTransparencyMode.MTM_ALPHA_BLEND }
+        : { albedoColor: Color4.create(0.16, 0.14, 0.15, 1), emissiveColor: Color3.create(0.6, 0.08, 0.03), emissiveIntensity: 1.4, metallic: 0.7, roughness: 0.55 })
   return { stage, entity, open: false }
 }
 
@@ -598,10 +605,10 @@ function openGate(g: Gate) {
   MeshCollider.deleteFrom(g.entity)
   const t = Transform.get(g.entity)
   const from = { ...t.position }
-  // Iron lifts; ice drops into the ground.
-  const ice = sim?.style.id === 'pass'
-  Tween.setMove(g.entity, from, Vector3.create(from.x, from.y + (ice ? -(t.scale.y + 0.2) : 4.8), from.z), 1400, EasingFunction.EF_EASEINQUAD)
-  fxSound(ice ? 'hit_heavy' : 'thunk_wood', 0.7)
+  // Iron lifts; ice and the crypt's ward drop into the ground.
+  const sinks = sim?.style.id === 'pass' || sim?.style.id === 'crypt'
+  Tween.setMove(g.entity, from, Vector3.create(from.x, from.y + (sinks ? -(t.scale.y + 0.2) : 4.8), from.z), 1400, EasingFunction.EF_EASEINQUAD)
+  fxSound(sim?.style.id === 'pass' ? 'hit_heavy' : sim?.style.id === 'crypt' ? 'heal' : 'thunk_wood', 0.7)
 }
 
 function destroyGates(s: Sim) {
@@ -639,8 +646,8 @@ function tickGauntlet(s: Sim, dt: number, fighters: NetFighter[]) {
     }
     return
   }
-  // Bogmaw's King calls his later waves himself, by the gong, as he is worn down.
-  if (s.style.id === 'bog' && g.stages[si].kind === 'boss') {
+  // Bogmaw's King calls his later waves himself, by the gong, as he is worn down; the Lich raises his.
+  if ((s.style.id === 'bog' || s.style.id === 'crypt') && g.stages[si].kind === 'boss') {
     tickGong(s, si, mine, awake)
     return
   }
@@ -688,7 +695,7 @@ function tickGates(s: Sim) {
   for (const gate of g.gates) {
     if (gate.open || !stageCleared(s, gate.stage)) continue
     openGate(gate)
-    showNotice(`${g.stages[gate.stage].name} cleared. ${s.style.id === 'pass' ? 'The ice breaks.' : s.style.id === 'bog' ? 'The gate is hauled up.' : 'The door opens.'}`, 2.5)
+    showNotice(`${g.stages[gate.stage].name} cleared. ${s.style.id === 'pass' ? 'The ice breaks.' : s.style.id === 'bog' ? 'The gate is hauled up.' : s.style.id === 'crypt' ? 'The ward fades.' : 'The door opens.'}`, 2.5)
   }
 }
 
@@ -809,7 +816,12 @@ function stepSim(dt: number, fighters: NetFighter[], local: ReturnType<typeof ge
   if (!isHeadless() && sim.bogTraps) {
     tickBogTraps(dt)
     tickBogFx(dt)
-    for (const e of enemies) if (e.archetype.kind === 'totem') syncTotemAura(e.root, e.loading === 'ready' && !e.dead && !e.asleep && e.visible)
+  }
+  if (!isHeadless()) {
+    tickCryptFx(dt)
+    if (sim.style.id === 'bog' || sim.style.id === 'crypt') {
+      for (const e of enemies) if (e.archetype.kind === 'totem') syncTotemAura(e.root, e.loading === 'ready' && !e.dead && !e.asleep && e.visible)
+    }
   }
 
   if (defeated) {
@@ -1329,7 +1341,7 @@ function enemyIndex(e: Enemy): number {
 
 /** A living, awake totem of this enemy's stage within reach, if any. */
 function nearestTotem(e: Enemy): Enemy | undefined {
-  if (!sim || sim.style.id !== 'bog') return undefined
+  if (!sim || (sim.style.id !== 'bog' && sim.style.id !== 'crypt')) return undefined
   let best: Enemy | undefined
   let bestD = TOTEM_REACH
   for (const t of sim.enemies) {
@@ -1527,7 +1539,11 @@ function castSpell(e: Enemy, target: NetFighter) {
   }
 }
 
-/** Host: the Goblin King's later waves answer his gong, struck as his health falls past each wave's share. */
+/**
+ * Host: a boss's later waves answer him, called as his health falls past each
+ * wave's share: the Goblin King strikes his gong, the Lich raises the dead
+ * from his circle.
+ */
 function tickGong(s: Sim, si: number, mine: Enemy[], awake: Enemy[]) {
   const g = s.gauntlet
   if (!g) return
@@ -1544,6 +1560,11 @@ function tickGong(s: Sim, si: number, mine: Enemy[], awake: Enemy[]) {
     king.blocking = false
     king.rollSeconds = 0
     playMotion(king, 'roar', true)
+  }
+  if (s.style.id === 'crypt') {
+    showNotice(`${LICH_NAME} raises the dead!`, 2.5)
+    emitEnemyFx({ kind: 'raise', i: enemyIndex(king), j: -1, x: CRYPT_CIRCLE.x, y: COURTYARD.characterFloorY + 0.2, z: CRYPT_CIRCLE.z, tx: 0, ty: 0, tz: 0, r: 3 })
+    return
   }
   showNotice('The Goblin King sounds the gong!', 2.5)
   emitEnemyFx({ kind: 'gong', i: enemyIndex(king), j: -1, x: BOG_GONG.x, y: COURTYARD.characterFloorY + 1.6, z: BOG_GONG.z, tx: 0, ty: 0, tz: 0, r: 0 })
@@ -1597,6 +1618,15 @@ function presentEnemyFx(fx: EnemyFxNet) {
       fxSound('gong', 1)
       if (noticeSeconds === 0) showNotice('The Goblin King sounds the gong!', 2.5)
       return
+    case 'raise': {
+      // Grave-light out of the circle, and over every skeleton that just stood up.
+      fxMagicBurst(at, Color4.create(0.3, 1, 0.5, 1), 1.6)
+      fxGlitter(at, Color4.create(0.5, 1, 0.6, 1))
+      fxSound('raise_dead', 1)
+      if (sim) for (const e of sim.enemies) if (!e.asleep && !e.dead && !e.boss && e.stage >= 0 && sim.gauntlet?.stages[e.stage]?.kind === 'boss' && Vector3.distance(e.position, at) < 40) fxMagicBurst(Vector3.create(e.position.x, e.position.y + 0.6, e.position.z), Color4.create(0.3, 1, 0.5, 1), 0.6)
+      if (noticeSeconds === 0) showNotice(`${LICH_NAME} raises the dead!`, 2.5)
+      return
+    }
     default:
       presentBogTrapFx(fx)
       return

@@ -153,6 +153,13 @@ sb = splice.sb
 # ------------------------------------------------------------------ sources ---
 
 def extract(zip_name, member):
+    # Packs the weapons manifest names as a .unitypackage (Dark Fantasy) are read from
+    # the Unity .zip of the same release sitting next to it, which keeps the Assets/ paths.
+    if zip_name.endswith('.unitypackage'):
+        sibling = zip_name[:-len('.unitypackage')] + '.zip'
+        if not os.path.exists(os.path.join(DOWNLOADS, sibling)):
+            raise FileNotFoundError(f'{zip_name}: need {sibling} in Downloads')
+        zip_name = sibling
     out = os.path.join(WORK, zip_name.replace('.zip', ''), member.replace('/', os.sep))
     if os.path.exists(out):
         return out
@@ -641,10 +648,11 @@ def render_preview(glb, path):
 
 def build(body, packs, characters, weapons, clip_files):
     pack = packs[body['pack']]
-    weapon_spec = weapons[body['weapon']]
-    weapon_pack = packs[weapon_spec['pack']]
+    # `weapon` may be absent: a gargoyle or demon fights with its claws.
+    weapon_spec = weapons[body['weapon']] if body.get('weapon') else None
+    weapon_pack = packs[weapon_spec['pack']] if weapon_spec else None
     chr_fbx = extract(pack['zip'], characters[body['pack']]['fbx'].format(name=body.get('fbx', '')))
-    wep_fbx = extract(weapon_pack['zip'], weapon_pack['fbx'].format(name=weapon_spec['mesh']))
+    wep_fbx = extract(weapon_pack['zip'], weapon_pack['fbx'].format(name=weapon_spec['mesh'])) if weapon_spec else None
 
     reset_scene()
     objs = import_fbx(chr_fbx)
@@ -688,15 +696,18 @@ def build(body, packs, characters, weapons, clip_files):
     if mirror:
         print(f"  {body['id']}: Hand_R on +X, mirroring grip")
 
-    weapon = import_weapon_mesh(wep_fbx)
-    weapon.name = f"{body['id']}-{body['weapon']}"
-    palette = weapon_pack['palettes'][weapon_spec['palette']]
-    # A blade from another pack brings its own atlas; it is small on screen, so ship it at half size.
-    weapon_mat = body_mat if weapon_spec['pack'] == body['pack'] and palette == pack_atlas(pack) \
-        else make_material(weapon_spec['pack'], extract(weapon_pack['zip'], palette), TEXTURE_SIZE // 2)
-    weapon.data.materials.clear()
-    weapon.data.materials.append(weapon_mat)
-    attach_weapon(arm, weapon, meshes[0], weapon_spec.get('grip', 0), mirror, weapon_spec.get('hand', 'Hand_R'))
+    weapons_held = []
+    if weapon_spec:
+        weapon = import_weapon_mesh(wep_fbx)
+        weapon.name = f"{body['id']}-{body['weapon']}"
+        palette = weapon_pack['palettes'][weapon_spec['palette']]
+        # A blade from another pack brings its own atlas; it is small on screen, so ship it at half size.
+        weapon_mat = body_mat if weapon_spec['pack'] == body['pack'] and palette == pack_atlas(pack) \
+            else make_material(weapon_spec['pack'], extract(weapon_pack['zip'], palette), TEXTURE_SIZE // 2)
+        weapon.data.materials.clear()
+        weapon.data.materials.append(weapon_mat)
+        attach_weapon(arm, weapon, meshes[0], weapon_spec.get('grip', 0), mirror, weapon_spec.get('hand', 'Hand_R'))
+        weapons_held.append(weapon)
     extras = []
     for extra in body.get('attach', []):
         mesh = import_weapon_mesh(extract(pack['zip'], extra['fbx']))
@@ -707,7 +718,7 @@ def build(body, packs, characters, weapons, clip_files):
         extras.append(mesh)
 
     lo, hi = scene_bounds(meshes)
-    tris = sum(len(p.vertices) - 2 for o in meshes + [weapon] + extras for p in o.data.polygons)
+    tris = sum(len(p.vertices) - 2 for o in meshes + weapons_held + extras for p in o.data.polygons)
     os.makedirs(BODY_DIR, exist_ok=True)
     body_glb = os.path.join(BODY_DIR, f"{body['id']}.glb")
     export_body_glb(body_glb)
@@ -744,7 +755,7 @@ def main():
     for body in manifest['bodies']:
         if ONLY and body['id'] not in ONLY:
             continue
-        print(f"body {body['id']} ({body.get('fbx') or body.get('mesh')} + {body['weapon']})")
+        print(f"body {body['id']} ({body.get('fbx') or body.get('mesh')} + {body.get('weapon', 'bare hands')})")
         catalog[body['id']] = build(body, packs, manifest['characters'], weapons, clip_files)
 
     ordered = {b['id']: catalog[b['id']] for b in manifest['bodies'] if b['id'] in catalog}

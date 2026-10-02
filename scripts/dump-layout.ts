@@ -6,12 +6,13 @@ import { generateDungeon } from '../src/dungeon/generator'
 import { hubDungeon } from '../src/dungeon/hub'
 import { KIT } from '../src/dungeon/kit'
 import { layoutDungeon } from '../src/dungeon/layout'
+import { authoredLayout } from '../src/dungeon/layouts'
 
 const seed = Number(process.argv[2] ?? 1337)
 const out = process.argv[3] ?? 'layout.json'
 const style = STYLES[(process.argv[4] as StyleId) ?? 'tight']
-// The hall is the authored hub, whatever the seed.
-const dungeon = style.id === 'hall' ? hubDungeon(style.torchEvery) : generateDungeon(seed, styleGeneratorOptions(style))
+// The hall is the authored hub, whatever the seed; so are the authored realms (Frozen Pass, Bogmaw, the Crypt).
+const dungeon = style.id === 'hall' ? hubDungeon(style.torchEvery) : authoredLayout(style) ?? generateDungeon(seed, styleGeneratorOptions(style))
 const cutaway = process.argv[5] === 'cutaway' && style.cutawayWall !== undefined
 const layout = layoutDungeon(dungeon, style, { cutaway })
 // The layout carries both camera modes; resolve to the one asked for, as the builder does.
@@ -24,7 +25,7 @@ writeFileSync(
   out,
   JSON.stringify({
     seed,
-    style: { id: style.id, tile: style.tile, size: style.size, wallHeight: style.wallHeight, floorTexture: style.floorTexture },
+    style: { id: style.id, tile: style.tile, size: style.size, span: style.span, wallHeight: style.wallHeight, floorTexture: style.floorTexture },
     stats: layout.stats,
     entrance: dungeon.entrance,
     boss: dungeon.boss,

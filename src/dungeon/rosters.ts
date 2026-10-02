@@ -62,6 +62,8 @@ export type Roster = {
   bomber?: Archetype
   shaman?: Archetype
   totem?: Archetype
+  /** A warden room's big body (the Crypt's Gargoyle); the grown guard stands in where a roster has none. */
+  beast?: Archetype
 }
 
 const FORTRESS: Roster = {
@@ -211,11 +213,54 @@ const BOG: Roster = {
   }
 }
 
+// The Crypt's dead: the Dark Fantasy characters on the Polygon rig with their
+// weapons baked in (scripts/enemy-bodies.json, pack `dk`). Skeletons are the
+// grunts, the ranger shoots (`archer`), the witch is the `shaman` (mends her
+// dead, hexes the living, faster while a bone ward stands: the `totem`), the
+// Gargoyle is the Chapel's `beast`, and the Lich raises his later waves himself.
+const CRYPT: Roster = {
+  striker: {
+    name: 'Risen Ghoul', characterId: 'dk-skeleton-flesh', weapon: 'dk-sickle-01', health: 115, scale: 1.0, damageScale: 1.15,
+    aggro: 7, leash: 12, speed: 1.2, profile: { blockChance: 0.08, pace: 0.75 }, role: 'grunt'
+  },
+  scout: {
+    name: 'Skeleton', characterId: 'dk-skeleton', weapon: 'dk-sword-03', health: 90, scale: 0.98, damageScale: 0.95,
+    aggro: 8, leash: 12, speed: 1.3, profile: { blockChance: 0.15, pace: 0.85 }, role: 'grunt'
+  },
+  guard: {
+    name: 'Bone Knight', characterId: 'dk-skeleton-heavy', weapon: 'dk-mace-01', health: 200, scale: 1.08, damageScale: 1.3,
+    aggro: 5.5, leash: 11, speed: 0.9, profile: { blockChance: 0.5, pace: 1.1 }, role: 'elite'
+  },
+  boss: {
+    name: 'Morvane the Lich', characterId: 'dk-darklord', weapon: 'dk-scythe-01', health: 700, scale: 1.3,
+    damageScale: 1.95, aggro: 12, leash: 22, speed: 1.04,
+    profile: { blockChance: 0.1, pace: 0.8, pattern: ['attack_light', 'attack_heavy', 'slam', 'attack_light2'], slamRange: 4 },
+    role: 'boss'
+  },
+  archer: {
+    name: 'Skeleton Ranger', characterId: 'dk-skeleton-ranger', weapon: 'dk-sword-01', health: 75, scale: 0.98, damageScale: 1.05,
+    aggro: 14, leash: 16, speed: 1.15, profile: { blockChance: 0, pace: 1 }, role: 'grunt', kind: 'archer'
+  },
+  shaman: {
+    name: 'Grave Witch', characterId: 'dk-witch', weapon: 'dk-staff-01', health: 130, scale: 0.98, damageScale: 1.05,
+    aggro: 13, leash: 16, speed: 1.05, profile: { blockChance: 0, pace: 1 }, role: 'elite', kind: 'shaman'
+  },
+  totem: {
+    name: 'Bone Ward', characterId: 'crypt-totem', weapon: 'dk-sword-03', health: 170, scale: 1, damageScale: 0,
+    aggro: 0, leash: 0, speed: 0, profile: { blockChance: 0, pace: 1 }, role: 'grunt', kind: 'totem'
+  },
+  beast: {
+    name: 'Chapel Gargoyle', characterId: 'dk-gargoyle', weapon: 'dk-hammer-01', health: 900, scale: 1.55, damageScale: 1.7,
+    aggro: 9, leash: 14, speed: 0.98, profile: { blockChance: 0.3, pace: 1.0, pattern: ['attack_light', 'attack_heavy', 'slam', 'attack_light2'], slamRange: 3.8 }, role: 'elite'
+  }
+}
+
 const BY_STYLE: Partial<Record<StyleId, Roster>> = {
   castle: CASTLE,
   forge: FORGE,
   pass: PASS,
-  bog: BOG
+  bog: BOG,
+  crypt: CRYPT
 }
 
 export function rosterFor(style: StyleId): Roster {
@@ -224,7 +269,7 @@ export function rosterFor(style: StyleId): Roster {
 
 export function allRosterArchetypes(): Archetype[] {
   const seen = new Set<Archetype>()
-  for (const roster of [FORTRESS, CASTLE, FORGE, PASS, BOG]) {
+  for (const roster of [FORTRESS, CASTLE, FORGE, PASS, BOG, CRYPT]) {
     seen.add(roster.striker)
     seen.add(roster.scout)
     seen.add(roster.guard)
@@ -234,6 +279,7 @@ export function allRosterArchetypes(): Archetype[] {
     if (roster.bomber) seen.add(roster.bomber)
     if (roster.shaman) seen.add(roster.shaman)
     if (roster.totem) seen.add(roster.totem)
+    if (roster.beast) seen.add(roster.beast)
   }
   return [...seen]
 }

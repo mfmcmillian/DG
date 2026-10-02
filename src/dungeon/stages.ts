@@ -11,9 +11,11 @@ import { Side } from './generator'
  * Roster keys a wave is written in; `warden` is the mini-boss, the roster's guard
  * grown. `archer`, `bomber` and `shaman` are the goblins' specialists (Bogmaw),
  * `totem` the shaman's standing idol that must be smashed; a roster without
- * them fields its scout / striker instead (a totem is simply skipped).
+ * them fields its scout / striker instead (a totem is simply skipped). `beast`
+ * is a roster's own big body for a warden room (the Crypt's Gargoyle); a roster
+ * without one fields the grown guard like `warden`.
  */
-export type WaveUnit = 'striker' | 'scout' | 'guard' | 'warden' | 'boss' | 'archer' | 'bomber' | 'shaman' | 'totem'
+export type WaveUnit = 'striker' | 'scout' | 'guard' | 'warden' | 'boss' | 'archer' | 'bomber' | 'shaman' | 'totem' | 'beast'
 
 export type Stage = {
   /** Index into the dungeon's rooms. */

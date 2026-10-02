@@ -7,6 +7,7 @@
 // scripts/realms/, which writes the kit JSON merged here from src/dungeon/kits/.
 import bogKit from './kits/bog.json'
 import castleKit from './kits/castle.json'
+import cryptKit from './kits/crypt.json'
 import forgeKit from './kits/forge.json'
 import passKit from './kits/pass.json'
 import pitKit from './kits/pit.json'
@@ -69,6 +70,7 @@ export const KIT = {
   ...DARK_FORTRESS,
   ...realmPieces(bogKit),
   ...realmPieces(castleKit),
+  ...realmPieces(cryptKit),
   ...realmPieces(forgeKit),
   ...realmPieces(pitKit),
   ...realmPieces(passKit),
@@ -88,7 +90,8 @@ export const DOOR_OPENINGS: Partial<Record<KitId, { width: number; height: numbe
   castle_wall_arch: { width: 3.4, height: 3.5 },
   forge_wall_arch: { width: 3.7, height: 3.55 },
   pass_arch: { width: 3.4, height: 3.2 },
-  bog_gate: { width: 7.4, height: 4.9 }
+  bog_gate: { width: 7.4, height: 4.9 },
+  crypt_arch: { width: 4.0, height: 4.5 }
 }
 
 /** Dark Fortress floor and brick; other realms carry their own in their kit JSON (see DungeonStyle). */
@@ -100,6 +103,7 @@ export const FORGE_TEXTURES = forgeKit.textures
 export const PIT_TEXTURES = pitKit.textures
 export const PASS_TEXTURES = passKit.textures
 export const BOG_TEXTURES = bogKit.textures
+export const CRYPT_TEXTURES = cryptKit.textures
 
 /** Triangle cost of the primitive pieces the builder makes itself. */
 export const PRIMITIVE_TRIS = { plane: 4, box: 12 }

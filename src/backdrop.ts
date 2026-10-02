@@ -12,7 +12,7 @@ import { Quaternion, Vector3 } from '@dcl/sdk/math'
 import alpine from './backdrop/alpine.json'
 import { onDungeonLoaded } from './dungeon'
 import { SCENE_SIZE } from './dungeon/config'
-import { BOG_TEXTURES, KIT, KitId } from './dungeon/kit'
+import { BOG_TEXTURES, CRYPT_TEXTURES, KIT, KitId } from './dungeon/kit'
 
 /**
  * The world outside the hall: Synty's Alpine Mountain biome (scripts/export-alpine.py)
@@ -26,7 +26,9 @@ import { BOG_TEXTURES, KIT, KitId } from './dungeon/kit'
  * except the Frozen Pass (src/dungeon/pass.ts), which is cut through these same
  * mountains: PASS_LAYOUT fills the plot's room-free pockets around its gorge, and
  * Bogmaw (src/dungeon/bogmaw.ts), whose swamp is drawn from its own kit
- * (BOG_LAYOUT: mud cliffs, marsh trees and low hills from the Goblin War Camp).
+ * (BOG_LAYOUT: mud cliffs, marsh trees and low hills from the Goblin War Camp),
+ * and the Crypt (src/dungeon/crypt.ts), whose hill is drawn from the Dark
+ * Fantasy kit (CRYPT_LAYOUT: cliffs, barrows, dead trees, the old mausoleums).
  */
 
 type PieceId = keyof typeof alpine.pieces
@@ -52,6 +54,7 @@ interface Put<Id extends string = PieceId> {
 const SNOW_TEXTURE = 'models/backdrop/alpine/alpine_snow.png'
 const SNOW_METRES_PER_TILE = 6
 const MARSH_METRES_PER_TILE = 5
+const GRAVE_METRES_PER_TILE = 4
 
 /** Pieces must stay this far inside the plot or the Explorer culls them. */
 const INNER = 1
@@ -277,6 +280,124 @@ const BOG_LAYOUT: Put<KitId>[] = [
   { id: 'bog_bush', x: 142, z: 76, s: 1.6 }
 ]
 
+/**
+ * Around the Crypt. Its rooms (see the plan in src/dungeon/crypt.ts) leave a
+ * 50 x 70 m block in the south-west, a 50 x 50 m block in the south-east, the
+ * 10 m strips along every edge, the 20 m west strip, and the pockets the path
+ * bends around (x 40..100 at z 90..120, x 20..100 at z 50..70, x 110..160 at
+ * z 100..130). Above the graveyard the hill rises in cliffs and barrows; dead
+ * trees, spires and the older mausoleums of the hill stand in the pockets,
+ * fenced yards run along the edges, and the dark stone closes the horizon.
+ */
+const CRYPT_LAYOUT: Put<KitId>[] = [
+  // --- the hill: barrows and cliffs on the horizon, stretched up ----------------------
+  { id: 'crypt_hill', x: 22, z: 30, yaw: 0, s: [1.4, 2.4, 1.2], sink: 1 },
+  { id: 'crypt_hill', x: 30, z: 56, yaw: 180, s: [1.1, 1.6, 0.8], sink: 0.8 },
+  { id: 'crypt_hill', x: 136, z: 24, yaw: 110, s: [1.2, 2.2, 1.1], sink: 1 },
+  { id: 'crypt_hill', x: 144, z: 116, yaw: 60, s: [0.9, 1.4, 0.9], sink: 0.8 },
+  { id: 'crypt_hill', x: 12, z: 100, yaw: 180, s: [0.7, 1.3, 0.8], sink: 0.8 },
+  { id: 'crypt_cliff', x: 9.5, z: 12, yaw: 45, s: [1.3, 1.6, 1.0] },
+  { id: 'crypt_cliff', x: 6.5, z: 60, yaw: 90, s: [1.1, 1.4, 0.9] },
+  { id: 'crypt_cliff', x: 8.5, z: 140, yaw: 90, s: [1.2, 1.3, 1.0] },
+  { id: 'crypt_cliff', x: 30, z: 5.5, yaw: 180, s: [1.4, 1.5, 0.9] },
+  { id: 'crypt_cliff', x: 80, z: 5.5, yaw: 180, s: [1.5, 1.3, 0.9] },
+  { id: 'crypt_cliff', x: 124, z: 5.5, yaw: 180, s: [1.3, 1.5, 0.9] },
+  { id: 'crypt_cliff', x: 153.5, z: 40, yaw: 270, s: [1.2, 1.6, 0.9] },
+  { id: 'crypt_cliff', x: 153.5, z: 80, yaw: 270, s: [1.1, 1.4, 0.9] },
+  { id: 'crypt_cliff', x: 153.5, z: 150, yaw: 270, s: [1.0, 1.2, 0.9] },
+  { id: 'crypt_cliff', x: 60, z: 154.5, yaw: 0, s: [1.3, 1.2, 0.9] },
+  { id: 'crypt_cliff', x: 100, z: 154.5, yaw: 0, s: [1.2, 1.3, 0.9] },
+  { id: 'crypt_cliff', x: 24, z: 154.5, yaw: 0, s: [1.1, 1.1, 0.9] },
+  // --- the old mausoleums of the hill, with their spires ------------------------------
+  { id: 'crypt_mausoleum_a', x: 36, z: 28, yaw: 160, s: 1.2 },
+  { id: 'crypt_mausoleum_b', x: 24, z: 44, yaw: 110, s: 1.1 },
+  { id: 'crypt_mausoleum_a', x: 128, z: 42, yaw: 250, s: 1.1 },
+  { id: 'crypt_mausoleum_b', x: 70, z: 100, yaw: 20, s: 1.0 },
+  { id: 'crypt_spire', x: 42, z: 20, s: 1.4 },
+  { id: 'crypt_spire', x: 16, z: 52, s: 1.2 },
+  { id: 'crypt_spire', x: 134, z: 50, s: 1.3 },
+  { id: 'crypt_spire', x: 62, z: 106, s: 1.1 },
+  { id: 'crypt_spire', x: 126, z: 112, s: 1.2 },
+  { id: 'crypt_wall_round', x: 46, z: 8, s: [1.2, 1.3, 1.2] },
+  { id: 'crypt_wall_round', x: 116, z: 14, s: [1.1, 1.2, 1.1] },
+  { id: 'crypt_wall_round', x: 148, z: 130, s: [1.0, 1.1, 1.0] },
+  // --- fenced yards in the strips and the pockets ---------------------------------------
+  { id: 'crypt_fence', x: 70, z: 92, s: 1 },
+  { id: 'crypt_fence', x: 80, z: 92, s: 1 },
+  { id: 'crypt_fence', x: 90, z: 92, s: 1 },
+  { id: 'crypt_yard_gate', x: 60, z: 92, s: 1 },
+  { id: 'crypt_fence', x: 46, z: 92, s: 1 },
+  { id: 'crypt_fence_short', x: 62, z: 60, yaw: 180, s: 1 },
+  { id: 'crypt_fence_short', x: 98, z: 60, yaw: 180, s: 1 },
+  { id: 'crypt_fence', x: 125, z: 104, s: 1 },
+  { id: 'crypt_fence', x: 135, z: 104, s: 1 },
+  { id: 'crypt_fence_post', x: 140.3, z: 104, s: 1 },
+  { id: 'crypt_fence', x: 125, z: 152, yaw: 180, s: 1 },
+  { id: 'crypt_fence', x: 135, z: 152, yaw: 180, s: 1 },
+  { id: 'crypt_fence_post', x: 145.3, z: 152, s: 1 },
+  { id: 'crypt_gallows', x: 88, z: 110, yaw: 210, s: 1.1 },
+  { id: 'crypt_well', x: 50, z: 100, yaw: 30, s: 1 },
+  { id: 'crypt_wagon', x: 118, z: 124, yaw: 300, s: 1 },
+  // --- graves and stones in the yards -----------------------------------------------------
+  { id: 'crypt_tomb_a', x: 74, z: 98, yaw: 0, s: 1 },
+  { id: 'crypt_tomb_a', x: 78, z: 98, yaw: 0, s: 1 },
+  { id: 'crypt_stone_a', x: 82, z: 98, yaw: 5, s: 1.1 },
+  { id: 'crypt_stone_a', x: 86, z: 98, yaw: 355, s: 1 },
+  { id: 'crypt_stone_a', x: 90, z: 97, yaw: 10, s: 1.2 },
+  { id: 'crypt_stone_a', x: 128, z: 110, yaw: 20, s: 1.1 },
+  { id: 'crypt_stone_a', x: 132, z: 112, yaw: 340, s: 1 },
+  { id: 'crypt_tomb_a', x: 136, z: 110, yaw: 0, s: 1 },
+  { id: 'crypt_stone_a', x: 120, z: 156, yaw: 15, s: 1 },
+  { id: 'crypt_stone_a', x: 124, z: 155, yaw: 350, s: 1.1 },
+  { id: 'crypt_tomb_a', x: 130, z: 156, yaw: 0, s: 1 },
+  { id: 'crypt_stone_a', x: 136, z: 155, yaw: 5, s: 1 },
+  { id: 'crypt_statue', x: 66, z: 64, yaw: 180, s: 1.2 },
+  { id: 'crypt_statue', x: 94, z: 64, yaw: 180, s: 1.2 },
+  // --- the dead wood in the pockets -------------------------------------------------------
+  { id: 'crypt_tree_c', x: 46, z: 108, yaw: 30, s: 1.3 },
+  { id: 'crypt_tree_b', x: 96, z: 100, yaw: 120, s: 1.3 },
+  { id: 'crypt_tree_a', x: 66, z: 114, yaw: 300, s: 1.4 },
+  { id: 'crypt_tree_b', x: 64, z: 134, yaw: 60, s: 1.2 },
+  { id: 'crypt_tree_a', x: 64, z: 146, yaw: 250, s: 1.3 },
+  { id: 'crypt_tree_c', x: 115, z: 110, yaw: 80, s: 1.2 },
+  { id: 'crypt_tree_b', x: 148, z: 100, yaw: 160, s: 1.3 },
+  { id: 'crypt_tree_c', x: 150, z: 60, yaw: 90, s: 1.4 },
+  { id: 'crypt_tree_b', x: 146, z: 142, yaw: 10, s: 1.4 },
+  { id: 'crypt_tree_a', x: 110, z: 154, yaw: 140, s: 1.2 },
+  { id: 'crypt_tree_c', x: 84, z: 152.5, yaw: 200, s: 1.3 },
+  { id: 'crypt_tree_b', x: 40, z: 150, yaw: 320, s: 1.3 },
+  { id: 'crypt_tree_c', x: 14, z: 124, yaw: 40, s: 1.4 },
+  { id: 'crypt_tree_b', x: 12, z: 80, yaw: 270, s: 1.3 },
+  { id: 'crypt_tree_c', x: 44, z: 60, yaw: 50, s: 1.5 },
+  { id: 'crypt_tree_b', x: 34, z: 66, yaw: 310, s: 1.2 },
+  { id: 'crypt_tree_a', x: 76, z: 66, yaw: 70, s: 1.3 },
+  { id: 'crypt_tree_c', x: 40, z: 40, yaw: 230, s: 1.4 },
+  { id: 'crypt_tree_b', x: 12, z: 20, yaw: 100, s: 1.3 },
+  { id: 'crypt_tree_c', x: 120, z: 30, yaw: 180, s: 1.5 },
+  { id: 'crypt_tree_b', x: 146, z: 12, yaw: 220, s: 1.3 },
+  { id: 'crypt_tree_a', x: 136, z: 8, yaw: 0, s: 1.2 },
+  { id: 'crypt_tree_b', x: 60, z: 6, yaw: 40, s: 1.2 },
+  { id: 'crypt_tree_a', x: 104, z: 6, yaw: 130, s: 1.1 },
+  { id: 'crypt_rock', x: 54, z: 96, yaw: 20, s: 1.6 },
+  { id: 'crypt_rock', x: 142, z: 108, yaw: 100, s: 1.4 },
+  { id: 'crypt_rock', x: 24, z: 66, yaw: 60, s: 1.8 },
+  { id: 'crypt_rock', x: 114, z: 44, yaw: 200, s: 1.6 },
+  { id: 'crypt_rocks', x: 64, z: 112, s: 1.8 },
+  { id: 'crypt_rocks', x: 130, z: 120, s: 1.6 },
+  { id: 'crypt_rocks', x: 86, z: 56, s: 1.8 },
+  { id: 'crypt_dirt', x: 80, z: 100, s: 1.4 },
+  { id: 'crypt_dirt', x: 128, z: 112, s: 1.2 },
+  { id: 'crypt_dirt', x: 128, z: 155, s: 0.7 },
+  { id: 'crypt_grass', x: 50, z: 104, s: 2.0 },
+  { id: 'crypt_grass', x: 92, z: 104, s: 1.8 },
+  { id: 'crypt_grass', x: 120, z: 116, s: 2.0 },
+  { id: 'crypt_grass', x: 64, z: 142, s: 1.8 },
+  { id: 'crypt_grass', x: 70, z: 56, s: 2.0 },
+  { id: 'crypt_fern', x: 58, z: 104, s: 1.8 },
+  { id: 'crypt_fern', x: 138, z: 116, s: 1.6 },
+  { id: 'crypt_fern', x: 98, z: 108, s: 1.8 }
+]
+
 let root: Entity | undefined
 
 export function initializeBackdrop() {
@@ -285,6 +406,7 @@ export function initializeBackdrop() {
     if (state.style.id === 'hall') build(HALL_LAYOUT, 'hall')
     else if (state.style.id === 'pass') build(PASS_LAYOUT, 'pass')
     else if (state.style.id === 'bog') build(BOG_LAYOUT, 'bog', KIT, BOG_TEXTURES.grass, MARSH_METRES_PER_TILE)
+    else if (state.style.id === 'crypt') build(CRYPT_LAYOUT, 'crypt', KIT, CRYPT_TEXTURES.dirt, GRAVE_METRES_PER_TILE)
   })
 }
 

@@ -7,8 +7,9 @@ import { CHARACTERS } from './characterPicker'
 import { fxSoundAssets, fxTextureAssets } from './combatFx'
 import { AMBIENCE_ASSETS } from './dungeon/builder'
 import { kitSrcsForStyle, StyleId, styleTexturesFor, STYLES } from './dungeon/config'
-import { KIT } from './dungeon/kit'
+import { CRYPT_TEXTURES, KIT } from './dungeon/kit'
 import { bogFurnitureIds } from './dungeon/bogmaw'
+import { cryptFurnitureIds } from './dungeon/crypt'
 import { hubFurnitureIds } from './dungeon/hub'
 import { passFurnitureIds } from './dungeon/pass'
 import { pitFurnitureIds } from './dungeon/pit'
@@ -54,12 +55,16 @@ export function requestRealmPreload(style: StyleId, urgent = false) {
     return
   }
   // The pass is drawn by hand: its lake, camp and bone field are furniture on top of the style's props.
-  const furniture = style === 'pass' ? passFurnitureIds().map((id) => KIT[id].src) : style === 'bog' ? bogFurnitureIds().map((id) => KIT[id].src) : []
+  const furniture = style === 'pass' ? passFurnitureIds() : style === 'bog' ? bogFurnitureIds() : style === 'crypt' ? cryptFurnitureIds() : []
+  const furnitureSrcs = furniture.map((id) => KIT[id].src)
+  // The Crypt's night (src/cryptFx.ts): its bats, its moon, the ground beyond the walls, the wind.
+  const air = style === 'crypt' ? [CRYPT_TEXTURES.bat, CRYPT_TEXTURES.moon, CRYPT_TEXTURES.dirt, 'sounds/crypt_loop.wav'] : []
   preloadGroup(realmGroupId(style), realmLabel(style), [
     ...kitSrcsForStyle(STYLES[style]),
-    ...furniture,
+    ...furnitureSrcs,
     ...styleTexturesFor(STYLES[style]),
-    ...enemyPreloadAssets(style)
+    ...enemyPreloadAssets(style),
+    ...air
   ], urgent)
 }
 

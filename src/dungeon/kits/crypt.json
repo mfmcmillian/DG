@@ -1,0 +1,897 @@
+{
+  "realm": "crypt",
+  "textures": {
+    "floor": "models/kits/crypt/floor.png",
+    "ceiling": "models/kits/crypt/ceiling.png",
+    "bat": "models/kits/crypt/bat.png",
+    "flame": "models/kits/crypt/flame.png",
+    "ray": "models/kits/crypt/ray.png",
+    "dirt": "models/kits/crypt/dirt.png",
+    "moon": "models/kits/crypt/moon.png"
+  },
+  "pieces": {
+    "crypt_wall_a": {
+      "src": "models/kits/crypt/crypt_wall_a.gltf",
+      "size": [
+        10.0,
+        6.245,
+        0.225
+      ],
+      "tris": 304
+    },
+    "crypt_wall_b": {
+      "src": "models/kits/crypt/crypt_wall_b.gltf",
+      "size": [
+        10.0,
+        6.245,
+        0.416
+      ],
+      "tris": 2064
+    },
+    "crypt_wall_c": {
+      "src": "models/kits/crypt/crypt_wall_c.gltf",
+      "size": [
+        10.0,
+        6.245,
+        0.523
+      ],
+      "tris": 746
+    },
+    "crypt_wall_d": {
+      "src": "models/kits/crypt/crypt_wall_d.gltf",
+      "size": [
+        10.0,
+        6.245,
+        0.333
+      ],
+      "tris": 1056
+    },
+    "crypt_wall_e": {
+      "src": "models/kits/crypt/crypt_wall_e.gltf",
+      "size": [
+        10.0,
+        6.245,
+        0.594
+      ],
+      "tris": 2392
+    },
+    "crypt_wall_low": {
+      "src": "models/kits/crypt/crypt_wall_low.gltf",
+      "size": [
+        10.0,
+        1.735,
+        0.225
+      ],
+      "tris": 224
+    },
+    "crypt_arch": {
+      "src": "models/kits/crypt/crypt_arch.gltf",
+      "size": [
+        10.0,
+        6.245,
+        1.235
+      ],
+      "tris": 2512
+    },
+    "crypt_portal": {
+      "src": "models/kits/crypt/crypt_portal.gltf",
+      "size": [
+        2.664,
+        6.211,
+        1.11
+      ],
+      "tris": 6297
+    },
+    "crypt_pillar": {
+      "src": "models/kits/crypt/crypt_pillar.gltf",
+      "size": [
+        1.05,
+        5.999,
+        1.235
+      ],
+      "tris": 1124
+    },
+    "crypt_sconce": {
+      "src": "models/kits/crypt/crypt_sconce.gltf",
+      "size": [
+        0.911,
+        1.439,
+        0.338
+      ],
+      "tris": 1042
+    },
+    "crypt_torch": {
+      "src": "models/kits/crypt/crypt_torch.gltf",
+      "size": [
+        0.756,
+        1.302,
+        0.722
+      ],
+      "tris": 840
+    },
+    "crypt_buttress": {
+      "src": "models/kits/crypt/crypt_buttress.gltf",
+      "size": [
+        1.194,
+        7.594,
+        1.529
+      ],
+      "tris": 348
+    },
+    "crypt_spire": {
+      "src": "models/kits/crypt/crypt_spire.gltf",
+      "size": [
+        2.001,
+        6.751,
+        1.004
+      ],
+      "tris": 704
+    },
+    "crypt_rose_window": {
+      "src": "models/kits/crypt/crypt_rose_window.gltf",
+      "size": [
+        5.0,
+        6.006,
+        0.595
+      ],
+      "tris": 5194
+    },
+    "crypt_wall_round": {
+      "src": "models/kits/crypt/crypt_wall_round.gltf",
+      "size": [
+        2.613,
+        6.019,
+        2.613
+      ],
+      "tris": 56
+    },
+    "crypt_tomb_a": {
+      "src": "models/kits/crypt/crypt_tomb_a.gltf",
+      "size": [
+        1.356,
+        1.77,
+        2.616
+      ],
+      "tris": 4620
+    },
+    "crypt_tomb_b": {
+      "src": "models/kits/crypt/crypt_tomb_b.gltf",
+      "size": [
+        1.47,
+        1.158,
+        2.825
+      ],
+      "tris": 1336
+    },
+    "crypt_stone_a": {
+      "src": "models/kits/crypt/crypt_stone_a.gltf",
+      "size": [
+        0.772,
+        1.263,
+        0.559
+      ],
+      "tris": 812
+    },
+    "crypt_stone_b": {
+      "src": "models/kits/crypt/crypt_stone_b.gltf",
+      "size": [
+        0.651,
+        1.776,
+        0.649
+      ],
+      "tris": 782
+    },
+    "crypt_stone_c": {
+      "src": "models/kits/crypt/crypt_stone_c.gltf",
+      "size": [
+        1.396,
+        0.3,
+        2.652
+      ],
+      "tris": 666,
+      "collide": false
+    },
+    "crypt_stone_d": {
+      "src": "models/kits/crypt/crypt_stone_d.gltf",
+      "size": [
+        1.111,
+        1.526,
+        0.372
+      ],
+      "tris": 222
+    },
+    "crypt_crypt_door": {
+      "src": "models/kits/crypt/crypt_crypt_door.gltf",
+      "size": [
+        1.077,
+        1.973,
+        0.197
+      ],
+      "tris": 1006
+    },
+    "crypt_crypt_door_chained": {
+      "src": "models/kits/crypt/crypt_crypt_door_chained.gltf",
+      "size": [
+        1.077,
+        1.973,
+        0.342
+      ],
+      "tris": 3006
+    },
+    "crypt_crypt_door_boarded": {
+      "src": "models/kits/crypt/crypt_crypt_door_boarded.gltf",
+      "size": [
+        1.364,
+        1.973,
+        0.259
+      ],
+      "tris": 1553
+    },
+    "crypt_mausoleum_a": {
+      "src": "models/kits/crypt/crypt_mausoleum_a.gltf",
+      "size": [
+        4.725,
+        5.77,
+        5.072
+      ],
+      "tris": 8439
+    },
+    "crypt_mausoleum_b": {
+      "src": "models/kits/crypt/crypt_mausoleum_b.gltf",
+      "size": [
+        4.725,
+        6.292,
+        5.072
+      ],
+      "tris": 6440
+    },
+    "crypt_candle_rack": {
+      "src": "models/kits/crypt/crypt_candle_rack.gltf",
+      "size": [
+        2.151,
+        1.242,
+        0.829
+      ],
+      "tris": 2181
+    },
+    "crypt_candelabra": {
+      "src": "models/kits/crypt/crypt_candelabra.gltf",
+      "size": [
+        0.693,
+        1.76,
+        0.696
+      ],
+      "tris": 1744
+    },
+    "crypt_candelabra_s": {
+      "src": "models/kits/crypt/crypt_candelabra_s.gltf",
+      "size": [
+        0.522,
+        0.838,
+        0.525
+      ],
+      "tris": 1590,
+      "collide": false
+    },
+    "crypt_chandelier": {
+      "src": "models/kits/crypt/crypt_chandelier.gltf",
+      "size": [
+        2.233,
+        2.002,
+        2.157
+      ],
+      "tris": 7811,
+      "collide": false
+    },
+    "crypt_brazier": {
+      "src": "models/kits/crypt/crypt_brazier.gltf",
+      "size": [
+        0.787,
+        0.896,
+        0.775
+      ],
+      "tris": 983
+    },
+    "crypt_lantern": {
+      "src": "models/kits/crypt/crypt_lantern.gltf",
+      "size": [
+        0.266,
+        0.721,
+        0.412
+      ],
+      "tris": 600,
+      "collide": false
+    },
+    "crypt_candle": {
+      "src": "models/kits/crypt/crypt_candle.gltf",
+      "size": [
+        0.308,
+        0.394,
+        0.27
+      ],
+      "tris": 430,
+      "collide": false
+    },
+    "crypt_candle_blob": {
+      "src": "models/kits/crypt/crypt_candle_blob.gltf",
+      "size": [
+        0.486,
+        0.055,
+        0.326
+      ],
+      "tris": 56,
+      "collide": false
+    },
+    "crypt_gargoyle": {
+      "src": "models/kits/crypt/crypt_gargoyle.gltf",
+      "size": [
+        2.449,
+        1.633,
+        1.087
+      ],
+      "tris": 6022
+    },
+    "crypt_gargoyle_b": {
+      "src": "models/kits/crypt/crypt_gargoyle_b.gltf",
+      "size": [
+        1.917,
+        1.255,
+        1.349
+      ],
+      "tris": 4361
+    },
+    "crypt_statue": {
+      "src": "models/kits/crypt/crypt_statue.gltf",
+      "size": [
+        1.781,
+        2.438,
+        1.127
+      ],
+      "tris": 2386
+    },
+    "crypt_statue_b": {
+      "src": "models/kits/crypt/crypt_statue_b.gltf",
+      "size": [
+        0.857,
+        1.899,
+        0.663
+      ],
+      "tris": 1196
+    },
+    "crypt_altar": {
+      "src": "models/kits/crypt/crypt_altar.gltf",
+      "size": [
+        2.027,
+        0.862,
+        0.899
+      ],
+      "tris": 1026
+    },
+    "crypt_tabernacle": {
+      "src": "models/kits/crypt/crypt_tabernacle.gltf",
+      "size": [
+        3.646,
+        1.44,
+        1.23
+      ],
+      "tris": 5941
+    },
+    "crypt_lectern": {
+      "src": "models/kits/crypt/crypt_lectern.gltf",
+      "size": [
+        0.788,
+        1.522,
+        0.775
+      ],
+      "tris": 974
+    },
+    "crypt_pew": {
+      "src": "models/kits/crypt/crypt_pew.gltf",
+      "size": [
+        2.01,
+        1.028,
+        0.764
+      ],
+      "tris": 860
+    },
+    "crypt_pew_l": {
+      "src": "models/kits/crypt/crypt_pew_l.gltf",
+      "size": [
+        4.02,
+        1.041,
+        0.764
+      ],
+      "tris": 1094
+    },
+    "crypt_organ": {
+      "src": "models/kits/crypt/crypt_organ.gltf",
+      "size": [
+        4.346,
+        6.056,
+        1.36
+      ],
+      "tris": 14804
+    },
+    "crypt_bell": {
+      "src": "models/kits/crypt/crypt_bell.gltf",
+      "size": [
+        1.358,
+        1.449,
+        1.337
+      ],
+      "tris": 1572,
+      "collide": false
+    },
+    "crypt_ward": {
+      "src": "models/kits/crypt/crypt_ward.gltf",
+      "size": [
+        1.478,
+        3.19,
+        0.713
+      ],
+      "tris": 2897
+    },
+    "crypt_ritual_circle": {
+      "src": "models/kits/crypt/crypt_ritual_circle.gltf",
+      "size": [
+        6.065,
+        1.085,
+        6.068
+      ],
+      "tris": 4939,
+      "collide": false
+    },
+    "crypt_bookshelf": {
+      "src": "models/kits/crypt/crypt_bookshelf.gltf",
+      "size": [
+        1.267,
+        2.901,
+        0.643
+      ],
+      "tris": 1406
+    },
+    "crypt_bookshelf_d": {
+      "src": "models/kits/crypt/crypt_bookshelf_d.gltf",
+      "size": [
+        2.513,
+        2.906,
+        0.643
+      ],
+      "tris": 1674
+    },
+    "crypt_desk": {
+      "src": "models/kits/crypt/crypt_desk.gltf",
+      "size": [
+        0.923,
+        1.235,
+        0.581
+      ],
+      "tris": 601
+    },
+    "crypt_table": {
+      "src": "models/kits/crypt/crypt_table.gltf",
+      "size": [
+        2.645,
+        0.784,
+        1.356
+      ],
+      "tris": 2180
+    },
+    "crypt_chair": {
+      "src": "models/kits/crypt/crypt_chair.gltf",
+      "size": [
+        0.675,
+        1.225,
+        0.691
+      ],
+      "tris": 822
+    },
+    "crypt_book": {
+      "src": "models/kits/crypt/crypt_book.gltf",
+      "size": [
+        0.27,
+        0.08,
+        0.284
+      ],
+      "tris": 442,
+      "collide": false
+    },
+    "crypt_goblet": {
+      "src": "models/kits/crypt/crypt_goblet.gltf",
+      "size": [
+        0.175,
+        0.369,
+        0.179
+      ],
+      "tris": 522,
+      "collide": false
+    },
+    "crypt_scroll": {
+      "src": "models/kits/crypt/crypt_scroll.gltf",
+      "size": [
+        0.282,
+        0.241,
+        0.597
+      ],
+      "tris": 456,
+      "collide": false
+    },
+    "crypt_skull_pile": {
+      "src": "models/kits/crypt/crypt_skull_pile.gltf",
+      "size": [
+        0.838,
+        0.477,
+        0.803
+      ],
+      "tris": 720,
+      "collide": false
+    },
+    "crypt_bone_pile": {
+      "src": "models/kits/crypt/crypt_bone_pile.gltf",
+      "size": [
+        1.016,
+        0.384,
+        1.009
+      ],
+      "tris": 1994,
+      "collide": false
+    },
+    "crypt_skeleton": {
+      "src": "models/kits/crypt/crypt_skeleton.gltf",
+      "size": [
+        0.974,
+        0.293,
+        1.865
+      ],
+      "tris": 3574,
+      "collide": false
+    },
+    "crypt_skeleton_b": {
+      "src": "models/kits/crypt/crypt_skeleton_b.gltf",
+      "size": [
+        0.569,
+        0.371,
+        1.87
+      ],
+      "tris": 3574,
+      "collide": false
+    },
+    "crypt_skull": {
+      "src": "models/kits/crypt/crypt_skull.gltf",
+      "size": [
+        0.224,
+        0.284,
+        0.258
+      ],
+      "tris": 328,
+      "collide": false
+    },
+    "crypt_head": {
+      "src": "models/kits/crypt/crypt_head.gltf",
+      "size": [
+        1.032,
+        1.406,
+        1.045
+      ],
+      "tris": 1769,
+      "wall": {
+        "inset": 0.2,
+        "height": 2.2
+      }
+    },
+    "crypt_cage": {
+      "src": "models/kits/crypt/crypt_cage.gltf",
+      "size": [
+        1.256,
+        1.212,
+        1.422
+      ],
+      "tris": 2140,
+      "collide": false
+    },
+    "crypt_cage_l": {
+      "src": "models/kits/crypt/crypt_cage_l.gltf",
+      "size": [
+        1.531,
+        2.227,
+        3.189
+      ],
+      "tris": 4000
+    },
+    "crypt_gibbet": {
+      "src": "models/kits/crypt/crypt_gibbet.gltf",
+      "size": [
+        3.336,
+        4.808,
+        3.212
+      ],
+      "tris": 750
+    },
+    "crypt_gallows": {
+      "src": "models/kits/crypt/crypt_gallows.gltf",
+      "size": [
+        6.13,
+        4.293,
+        2.15
+      ],
+      "tris": 1071
+    },
+    "crypt_stocks": {
+      "src": "models/kits/crypt/crypt_stocks.gltf",
+      "size": [
+        1.611,
+        2.499,
+        1.284
+      ],
+      "tris": 625
+    },
+    "crypt_pyre": {
+      "src": "models/kits/crypt/crypt_pyre.gltf",
+      "size": [
+        5.756,
+        2.702,
+        5.83
+      ],
+      "tris": 7908
+    },
+    "crypt_noose": {
+      "src": "models/kits/crypt/crypt_noose.gltf",
+      "size": [
+        0.312,
+        1.291,
+        0.122
+      ],
+      "tris": 236,
+      "collide": false
+    },
+    "crypt_well": {
+      "src": "models/kits/crypt/crypt_well.gltf",
+      "size": [
+        3.638,
+        1.163,
+        3.213
+      ],
+      "tris": 3166
+    },
+    "crypt_barrel": {
+      "src": "models/kits/crypt/crypt_barrel.gltf",
+      "size": [
+        0.734,
+        0.952,
+        0.713
+      ],
+      "tris": 518
+    },
+    "crypt_crate": {
+      "src": "models/kits/crypt/crypt_crate.gltf",
+      "size": [
+        1.113,
+        0.399,
+        0.681
+      ],
+      "tris": 510
+    },
+    "crypt_sack": {
+      "src": "models/kits/crypt/crypt_sack.gltf",
+      "size": [
+        0.563,
+        0.56,
+        0.555
+      ],
+      "tris": 682,
+      "collide": false
+    },
+    "crypt_chest": {
+      "src": "models/kits/crypt/crypt_chest.gltf",
+      "size": [
+        0.792,
+        0.563,
+        0.443
+      ],
+      "tris": 2495
+    },
+    "crypt_rubble": {
+      "src": "models/kits/crypt/crypt_rubble.gltf",
+      "size": [
+        2.225,
+        0.538,
+        2.196
+      ],
+      "tris": 355,
+      "collide": false
+    },
+    "crypt_boards": {
+      "src": "models/kits/crypt/crypt_boards.gltf",
+      "size": [
+        1.191,
+        1.185,
+        0.212
+      ],
+      "tris": 610,
+      "wall": {
+        "inset": 0.1,
+        "height": 1.6
+      }
+    },
+    "crypt_barricade": {
+      "src": "models/kits/crypt/crypt_barricade.gltf",
+      "size": [
+        2.028,
+        2.504,
+        2.292
+      ],
+      "tris": 1568
+    },
+    "crypt_wagon": {
+      "src": "models/kits/crypt/crypt_wagon.gltf",
+      "size": [
+        3.501,
+        2.019,
+        5.209
+      ],
+      "tris": 4900
+    },
+    "crypt_notice": {
+      "src": "models/kits/crypt/crypt_notice.gltf",
+      "size": [
+        2.953,
+        3.098,
+        1.259
+      ],
+      "tris": 2607
+    },
+    "crypt_banner": {
+      "src": "models/kits/crypt/crypt_banner.gltf",
+      "size": [
+        1.447,
+        3.004,
+        0.201
+      ],
+      "tris": 634,
+      "wall": {
+        "inset": 0.15,
+        "height": 5.6
+      }
+    },
+    "crypt_flag_pole": {
+      "src": "models/kits/crypt/crypt_flag_pole.gltf",
+      "size": [
+        1.77,
+        5.928,
+        1.25
+      ],
+      "tris": 244
+    },
+    "crypt_fence": {
+      "src": "models/kits/crypt/crypt_fence.gltf",
+      "size": [
+        10.033,
+        1.906,
+        0.414
+      ],
+      "tris": 4572
+    },
+    "crypt_fence_short": {
+      "src": "models/kits/crypt/crypt_fence_short.gltf",
+      "size": [
+        2.533,
+        1.906,
+        0.414
+      ],
+      "tris": 1143
+    },
+    "crypt_fence_post": {
+      "src": "models/kits/crypt/crypt_fence_post.gltf",
+      "size": [
+        0.903,
+        2.363,
+        0.87
+      ],
+      "tris": 323
+    },
+    "crypt_yard_gate": {
+      "src": "models/kits/crypt/crypt_yard_gate.gltf",
+      "size": [
+        10.383,
+        3.971,
+        0.87
+      ],
+      "tris": 4080
+    },
+    "crypt_tree_a": {
+      "src": "models/kits/crypt/crypt_tree_a.gltf",
+      "size": [
+        2.961,
+        3.412,
+        2.146
+      ],
+      "tris": 671
+    },
+    "crypt_tree_b": {
+      "src": "models/kits/crypt/crypt_tree_b.gltf",
+      "size": [
+        4.387,
+        7.871,
+        3.019
+      ],
+      "tris": 1068
+    },
+    "crypt_tree_c": {
+      "src": "models/kits/crypt/crypt_tree_c.gltf",
+      "size": [
+        8.626,
+        7.488,
+        4.895
+      ],
+      "tris": 1065
+    },
+    "crypt_hill": {
+      "src": "models/kits/crypt/crypt_hill.gltf",
+      "size": [
+        22.54,
+        5.531,
+        22.259
+      ],
+      "tris": 1296,
+      "collide": false
+    },
+    "crypt_cliff": {
+      "src": "models/kits/crypt/crypt_cliff.gltf",
+      "size": [
+        9.229,
+        15.371,
+        8.581
+      ],
+      "tris": 436
+    },
+    "crypt_rock": {
+      "src": "models/kits/crypt/crypt_rock.gltf",
+      "size": [
+        2.926,
+        1.531,
+        1.481
+      ],
+      "tris": 196
+    },
+    "crypt_rocks": {
+      "src": "models/kits/crypt/crypt_rocks.gltf",
+      "size": [
+        2.491,
+        0.281,
+        2.093
+      ],
+      "tris": 232,
+      "collide": false
+    },
+    "crypt_dirt": {
+      "src": "models/kits/crypt/crypt_dirt.gltf",
+      "size": [
+        9.379,
+        0.38,
+        9.5
+      ],
+      "tris": 236,
+      "collide": false
+    },
+    "crypt_fern": {
+      "src": "models/kits/crypt/crypt_fern.gltf",
+      "size": [
+        1.412,
+        0.859,
+        1.291
+      ],
+      "tris": 448,
+      "collide": false
+    },
+    "crypt_grass": {
+      "src": "models/kits/crypt/crypt_grass.gltf",
+      "size": [
+        3.092,
+        0.726,
+        2.57
+      ],
+      "tris": 602,
+      "collide": false
+    }
+  }
+}

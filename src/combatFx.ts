@@ -28,11 +28,13 @@ export type FxSound =
   | 'fire_flare' | 'reveal'
   /** Bogmaw: the King's gong, a bomb, the storm, a goblin bow (scripts/build-bog-sounds.py). */
   | 'gong' | 'explosion' | 'thunder' | 'bow'
+  /** The Crypt: the Chapel's bell, the Lich raising the dead (scripts/build-crypt-sounds.py). */
+  | 'bell' | 'raise_dead'
 
 const FX_SOUNDS: FxSound[] = [
   'swing_light', 'swing_heavy', 'hit_light', 'hit_heavy', 'block', 'hurt',
   'dodge', 'coin', 'heal', 'slam', 'roar', 'death', 'thunk_wood', 'thud_straw', 'fire_flare', 'reveal',
-  'gong', 'explosion', 'thunder', 'bow'
+  'gong', 'explosion', 'thunder', 'bow', 'bell', 'raise_dead'
 ]
 
 /** Every clip `fxSound` can play, for the title-screen preloader. */

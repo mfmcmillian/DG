@@ -19,7 +19,9 @@ const SOLID_BODIES: Readonly<Record<string, { path: string; height: number; tris
   ...enemyBodies,
   ...folkBodies,
   // Bogmaw's war totem: a kit prop standing in as a body so heroes can smash it (no clips; it never moves).
-  'bog-totem': { path: 'models/kits/bog/bog_totem.gltf', height: 2.34, tris: 1344 }
+  'bog-totem': { path: 'models/kits/bog/bog_totem.gltf', height: 2.34, tris: 1344 },
+  // The Crypt's bone ward: the witches' standing stone, the same way.
+  'crypt-totem': { path: 'models/kits/crypt/crypt_ward.gltf', height: 3.19, tris: 2897 }
 }
 
 export function isSolidBody(characterId: string): boolean {

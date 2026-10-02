@@ -97,13 +97,14 @@ except TypeError:
 scene.render.resolution_x = 1280; scene.render.resolution_y = 1280
 
 ent = data["entrance"]; boss = data["boss"]
-origin = (96 - size * tile) / 2
+span = style.get("span") or 96
+origin = (span - size * tile) / 2
 def cell(x, y):
     return origin + (x + 0.5) * tile, origin + (y + 0.5) * tile
 
 # 1. top-down plan
-bpy.ops.object.camera_add(location=(48, -48, 120), rotation=(0, 0, 0))
-cam = bpy.context.active_object; cam.data.type = 'ORTHO'; cam.data.ortho_scale = 76; cam.data.clip_end = 500
+bpy.ops.object.camera_add(location=(span / 2, -span / 2, 120), rotation=(0, 0, 0))
+cam = bpy.context.active_object; cam.data.type = 'ORTHO'; cam.data.ortho_scale = span * 1.02; cam.data.clip_end = 500
 scene.camera = cam
 scene.render.filepath = os.path.join(out_dir, "plan.png"); bpy.ops.render.render(write_still=True)
 
@@ -125,13 +126,17 @@ cam3.rotation_euler = mathutils.Vector(direction).to_track_quat('-Z', 'Y').to_eu
 scene.camera = cam3
 scene.render.filepath = os.path.join(out_dir, "boss.png"); bpy.ops.render.render(write_still=True)
 
-# 4. optional extra shots: --shot name,cellX,cellY,dirX,dirZ (looking direction in DCL space)
+# 4. optional extra shots: shot=name,cellX,cellY,dirX,dirZ[,height[,pitch]] (looking direction in DCL
+#    space; height in metres, pitch the downward tilt, both for the high three-quarter level cards)
 for spec in [a for a in args[2:] if a.startswith("shot=")]:
-    name, cx_, cy_, dx, dz = spec[5:].split(",")
+    parts = spec[5:].split(",")
+    name, cx_, cy_, dx, dz = parts[:5]
+    height = float(parts[5]) if len(parts) > 5 else 1.7
+    pitch = float(parts[6]) if len(parts) > 6 else 0.05
     px, pz = cell(float(cx_), float(cy_))
-    bpy.ops.object.camera_add(location=(px, -pz, 1.7))
+    bpy.ops.object.camera_add(location=(px, -pz, height))
     cam = bpy.context.active_object; cam.data.lens = 22
-    cam.rotation_euler = mathutils.Vector((float(dx), -float(dz), -0.05)).to_track_quat('-Z', 'Y').to_euler()
+    cam.rotation_euler = mathutils.Vector((float(dx), -float(dz), -pitch)).to_track_quat('-Z', 'Y').to_euler()
     scene.camera = cam
     scene.render.filepath = os.path.join(out_dir, name + ".png"); bpy.ops.render.render(write_still=True)
 print("RENDERED", out_dir)

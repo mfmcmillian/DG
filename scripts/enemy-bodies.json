@@ -12,6 +12,9 @@
     },
     "dr": {
       "fbx": "FBX/Characters/{name}.fbx"
+    },
+    "dk": {
+      "fbx": "Assets/Synty/PolygonDarkFantasy/Models/{name}.fbx"
     }
   },
   "bodies": [
@@ -248,6 +251,68 @@
           "SourceFiles/Animations/Polygon/Neutral/Locomotion/Run/A_POLY_GBL_Run_F_Neut.fbx"
         ]
       }
+    },
+    {
+      "id": "dk-skeleton",
+      "realm": "crypt",
+      "pack": "dk",
+      "fbx": "Characters",
+      "mesh": "SM_Chr_Skeleton_01",
+      "weapon": "dk-sword-03"
+    },
+    {
+      "id": "dk-skeleton-flesh",
+      "realm": "crypt",
+      "pack": "dk",
+      "fbx": "Characters",
+      "mesh": "SM_Chr_Skeleton_Flesh_01",
+      "weapon": "dk-sickle-01"
+    },
+    {
+      "id": "dk-skeleton-heavy",
+      "realm": "crypt",
+      "pack": "dk",
+      "fbx": "Characters",
+      "mesh": "SM_Chr_Skeleton_HeavyArmor_01",
+      "weapon": "dk-mace-01"
+    },
+    {
+      "id": "dk-skeleton-ranger",
+      "realm": "crypt",
+      "pack": "dk",
+      "fbx": "Characters",
+      "mesh": "SM_Chr_Skeleton_Ranger_01",
+      "weapon": "dk-crossbow-01"
+    },
+    {
+      "id": "dk-witch",
+      "realm": "crypt",
+      "pack": "dk",
+      "fbx": "Characters",
+      "mesh": "SM_Chr_Witch_Female_01",
+      "weapon": "dk-staff-01"
+    },
+    {
+      "id": "dk-gargoyle",
+      "realm": "crypt",
+      "pack": "dk",
+      "fbx": "BigCharacters",
+      "mesh": "SM_Chr_Gargoyle_01"
+    },
+    {
+      "id": "dk-darklord",
+      "realm": "crypt",
+      "pack": "dk",
+      "fbx": "Characters",
+      "mesh": "SM_Chr_DarkLord_Male_01",
+      "weapon": "dk-scythe-01"
+    },
+    {
+      "id": "dk-demon",
+      "realm": "crypt",
+      "pack": "dk",
+      "fbx": "BigCharacters",
+      "mesh": "SM_Chr_Demon_01"
     }
   ],
   "weapons": [
@@ -272,6 +337,14 @@
       "mesh": "SM_Wep_Staff_01",
       "palette": "base",
       "class": "club"
+    },
+    {
+      "id": "dk-crossbow-01",
+      "pack": "dk",
+      "mesh": "SM_Wep_Crossbow_01",
+      "palette": "base",
+      "class": "bow",
+      "hand": "Hand_L"
     }
   ]
 }

@@ -52,7 +52,7 @@ export const REALMS: RealmDefinition[] = [
     blurb: 'An elven wood gone wild. Living briar, old stone and archers who never miss.'
   },
   {
-    id: 'crypt', name: 'The Crypt', style: 'open', packs: 'Fantasy Sorcerers, Fantasy Skeletons', comingSoon: true,
+    id: 'crypt', name: 'The Crypt', style: 'crypt', packs: 'Fantasy Sorcerers, Fantasy Skeletons',
     blurb: 'Barrows under the hill. The sorcerers went down to study the dead, and stayed.'
   },
   {
@@ -104,6 +104,11 @@ export const LEVELS: LevelDefinition[] = [
     id: 2, realm: 'bog', name: 'Bogmaw', seed: 4041, style: 'bog',
     blurb: 'Through the marsh: the palisade and its ballistas, the bone yard, the shaman totems, the Goblin King. Fourteen minutes.',
     health: 1.7, damage: 1.5, coins: 2.6, seconds: 840
+  },
+  {
+    id: 3, realm: 'crypt', name: 'The Crypt', seed: 6066, style: 'crypt',
+    blurb: 'Under the hill: the graveyard, the ossuary and its Bone Warden, the witches\' catacombs, the Gargoyle\'s chapel, and Morvane the Lich, who raises what you kill. Fifteen minutes.',
+    health: 2.0, damage: 1.7, coins: 3.0, seconds: 900
   }
 ]
 

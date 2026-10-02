@@ -1,4 +1,4 @@
-import { BOG_TEXTURES, BRICK_TEXTURE, CASTLE_TEXTURES, FLOOR_TEXTURE, FORGE_TEXTURES, KIT, KitId, PASS_TEXTURES, PIT_TEXTURES } from './kit'
+import { BOG_TEXTURES, BRICK_TEXTURE, CASTLE_TEXTURES, CRYPT_TEXTURES, FLOOR_TEXTURE, FORGE_TEXTURES, KIT, KitId, PASS_TEXTURES, PIT_TEXTURES } from './kit'
 import { RoomKind } from './generator'
 
 /** The plot is 10 x 10 parcels = 160 m, base at the south-west corner. */
@@ -16,7 +16,7 @@ export const LEGACY_SPAN = 96
  * are the Dark Fortress; every later realm (Synty pack exported through
  * scripts/realms/) is one more entry here.
  */
-export type StyleId = 'tight' | 'open' | 'gauntlet' | 'hall' | 'castle' | 'forge' | 'pit' | 'pass' | 'bog'
+export type StyleId = 'tight' | 'open' | 'gauntlet' | 'hall' | 'castle' | 'forge' | 'pit' | 'pass' | 'bog' | 'crypt'
 
 export interface DungeonStyle {
   id: StyleId
@@ -450,6 +450,51 @@ export const STYLES: Record<StyleId, DungeonStyle> = {
     torchLightColor: [1, 0.62, 0.3],
     floorTexture: BOG_TEXTURES.floor,
     floorMetres: 5
+  },
+  /**
+   * The Crypt, drawn by hand in ./crypt.ts: barrows under the hill, Synty's
+   * Dark Fantasy pack (scripts/realms/crypt.json). Eight 2.5 m stone-block
+   * pieces are welded into each 10 m x 6 m wall (windows, a niche, a ruined
+   * top, a brick greeble); the doorway is a 4 m gothic arch between stacked
+   * pillars; a half wall is the cutaway the overhead camera sees over; candle
+   * sconces hang on every second wall. Open to the night like Bogmaw (the
+   * graveyard is the first stage), floor tiles underfoot, candlelight cold and
+   * sparse: the realm is meant to be dark.
+   */
+  crypt: {
+    id: 'crypt',
+    label: 'The Crypt',
+    tile: 10,
+    size: 16,
+    span: SCENE_SIZE,
+    wallHeight: 6.0,
+    entranceSize: 2,
+    minLeaf: 3,
+    maxLeaf: 5,
+    minRoom: 2,
+    ceiling: false,
+    firstPerson: false,
+    walls: ['crypt_wall_a', 'crypt_wall_b', 'crypt_wall_c', 'crypt_wall_a', 'crypt_wall_d', 'crypt_wall_e', 'crypt_wall_a', 'crypt_wall_c'],
+    door: 'crypt_arch',
+    pillar: 'crypt_pillar',
+    torch: 'crypt_sconce',
+    torchHeight: 2.6,
+    torchInset: 0.28,
+    torchEvery: 2,
+    props: {
+      entrance: ['crypt_stone_a', 'crypt_fern', 'crypt_stone_d', 'crypt_grass'],
+      boss: ['crypt_candelabra', 'crypt_banner', 'crypt_statue', 'crypt_candle_rack', 'crypt_skull_pile', 'crypt_banner', 'crypt_ward', 'crypt_brazier'],
+      treasure: ['crypt_candle_rack', 'crypt_bone_pile', 'crypt_skull_pile', 'crypt_head', 'crypt_candelabra', 'crypt_boards'],
+      combat: ['crypt_stone_b', 'crypt_bone_pile', 'crypt_candle_rack', 'crypt_skull_pile', 'crypt_banner', 'crypt_skeleton'],
+      quiet: ['crypt_candle_blob', 'crypt_skull', 'crypt_boards', 'crypt_rubble', 'crypt_candle_rack']
+    },
+    cutawayWall: 'crypt_wall_low',
+    torchLightCount: 4,
+    torchLightIntensity: 420,
+    torchLightRange: 14,
+    torchLightColor: [1, 0.74, 0.42],
+    floorTexture: CRYPT_TEXTURES.floor,
+    floorMetres: 4
   }
 }
 
