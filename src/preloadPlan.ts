@@ -22,6 +22,7 @@ import { getCommittedLoadout } from './equipmentState'
 import { isPreloadComplete, preloadGroup, PreloadGroup } from './preload'
 import { projectileAssets } from './projectiles'
 import { partSources } from './raid/colossusPose'
+import { GW_EVENT_END } from './shared/gravewatch'
 import { BARROW_YARD, LEVELS, RAID_LEVEL, RAID_OPEN, REALMS } from './shared/levels'
 import { t } from './i18n'
 
@@ -82,6 +83,14 @@ export function preloadCaption(group: Readonly<PreloadGroup> | undefined, verb =
   return `${verb} ${t(group.label)}\u2026${counts}`
 }
 
+/** Gravewatch sheet art, warmed with the hall so the tabs open without a download. */
+const GRAVEWATCH_ART = [
+  'images/ui/kit/title-bg-gravewatch.jpg',
+  'images/gravewatch/wheel-sheet.png', 'images/gravewatch/wheel-pointer.png', 'images/gravewatch/wheel-strip.png',
+  'images/gravewatch/board.png', 'images/gravewatch/icons.png', 'images/gravewatch/rising-banner.png',
+  'images/gravewatch/reliquary-strip.png', 'images/gravewatch/run-banner.png', 'images/gravewatch/run-icons.png'
+]
+
 /** Kick off the whole plan at start-up. Groups download two at a time in this order. */
 export function planPreload() {
   // The hall is authored: its own furniture (some from the castle and forge
@@ -93,7 +102,8 @@ export function planPreload() {
     ...projectileAssets(),
     ...fxSoundAssets(),
     ...AMBIENCE_ASSETS,
-    ...fxTextureAssets()
+    ...fxTextureAssets(),
+    ...(Date.now() < GW_EVENT_END ? GRAVEWATCH_ART : [])
   ])
   // First realm a new player enters, then the other heroes' default looks
   // (the picker shows them), then the later realms.

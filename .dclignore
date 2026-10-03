@@ -30,6 +30,11 @@ cursorignore
 scripts/
 # Fantasy Menus pack example screenshots (14.7 MB); the UI never references them
 images/ui/kit/SPR_FantasyMenus_Example_Image_*.png
+# Thumbnails not referenced by scene.json (the navmap uses the .jpg), plus prompt notes
+images/scene-thumbnail.png
+images/scene-thumbnail-halloween.png
+images/scene-thumbnail-gravewatch.png
+images/*.prompt.txt
 models/jump/
 models/equipment/
 models/yard_*.glb
