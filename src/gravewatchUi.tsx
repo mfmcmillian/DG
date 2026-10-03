@@ -38,6 +38,8 @@ const STAR_IMAGE = 'images/gravewatch/star.png'
 const CHEST_IMAGE = 'images/gravewatch/chest.png'
 const GEAR_BADGE_IMAGE = 'images/gravewatch/gear-badge.png'
 let rulesOpen = false
+/** Dev-only +1000 embers button; hidden for now, flip to true when testing payouts. */
+const SHOW_GRANT = false
 /** Six tiles a side; twenty around the edge. */
 const BOARD_SIDE = 6
 const TILE_COLORS: Record<GwTileKind, Color4> = {
@@ -135,8 +137,8 @@ export function GravewatchUi() {
             <Label value={`${shownEmbers()}  ${t('embers')}${gw.mult > serverNow() ? `  ×${GW_MULT}` : ''}`} color={shownEmbers() !== gw.embers ? gold : ember} font="serif" fontSize={17 * s} textWrap="nowrap"
               uiTransform={{ height: '100%', pointerFilter: 'none' }} />
           </UiEntity>
-          {isDeveloper() && <Action id="gw-grant" text="+1000" onClick={gravewatchGrant} width={64} height={38} scale={s} fontSize={13} accent="gold" />}
-          {isDeveloper() && <UiEntity uiTransform={{ width: 10 * s, pointerFilter: 'none' }} />}
+          {SHOW_GRANT && isDeveloper() && <Action id="gw-grant" text="+1000" onClick={gravewatchGrant} width={64} height={38} scale={s} fontSize={13} accent="gold" />}
+          {SHOW_GRANT && isDeveloper() && <UiEntity uiTransform={{ width: 10 * s, pointerFilter: 'none' }} />}
           <Action id="gw-rules" text={t('Rules')} onClick={() => { rulesOpen = !rulesOpen }} width={64} height={38} scale={s} fontSize={13} accent="gold" active={rulesOpen} />
           <UiEntity uiTransform={{ width: 10 * s, pointerFilter: 'none' }} />
           <Action id="gw-close" text="×" onClick={closeGravewatch} width={38} height={38} scale={s} fontSize={26} accent="gold" />
