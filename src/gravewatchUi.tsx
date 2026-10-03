@@ -11,7 +11,7 @@ import { menuColors, MenuAction as Action } from './menuUi'
 import {
   available, boardRolling, boardState, boardTiming, closeGravewatch, DICE_STRIP, emberGains, GAIN_SECONDS, getGravewatch, gravewatchBusy, gravewatchButtonLine, gravewatchConfirm,
   gravewatchCurse, gravewatchGrant, gravewatchRedeem, gravewatchRising, gravewatchRoll, gravewatchRounds, gravewatchScreenNote, gravewatchSpin, gravewatchTab, GW_TABS, GwTab,
-  inRisingArena, isAutoRoll, isFlyer, openGravewatch, risingClock, runEmberGain, serverNow, setGravewatchTab, shownEmbers, toggleAutoRoll, WHEEL_POINTER, WHEEL_SHEET, wheelState
+  emberTickLeft, inRisingArena, isAutoRoll, isFlyer, openGravewatch, risingClock, runEmberGain, serverNow, setGravewatchTab, shownEmbers, toggleAutoRoll, WHEEL_POINTER, WHEEL_SHEET, wheelState
 } from './gravewatch'
 import { heroLabel } from './lobbyUi'
 import { myParty } from './party'
@@ -121,6 +121,8 @@ export function GravewatchUi() {
             uiTransform={{ width: 320 * s, height: 42 * s, flexShrink: 0, pointerFilter: 'none' }} />
         </UiEntity>
         <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', pointerFilter: 'none' }}>
+          {emberTickLeft() > 0 && <Label value={`+${emberTickLeft()}`} color={gold} font="serif" fontSize={20 * s} textAlign="middle-right" textWrap="nowrap"
+            uiTransform={{ width: 80 * s, height: 38 * s, margin: { right: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
           <UiEntity uiTransform={{ height: 38 * s, padding: { left: 14 * s, right: 14 * s }, margin: { right: 10 * s }, borderRadius: 4 * s, borderWidth: shownEmbers() !== gw.embers ? 2 * s : s, borderColor: shownEmbers() !== gw.embers ? gold : ember,
             alignItems: 'center', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: emberDark }}>
             <Label value={`${shownEmbers()}  ${t('embers')}${gw.mult > serverNow() ? `  ×${GW_MULT}` : ''}`} color={shownEmbers() !== gw.embers ? gold : ember} font="serif" fontSize={17 * s} textWrap="nowrap"

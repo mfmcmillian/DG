@@ -96,8 +96,9 @@ let landingHeard = false
 let wedgeHeard = -1
 /** Auto-roll: keep rolling one die while rolls remain. */
 let autoRoll = false
-/** The ember count the header shows, ticking toward the real one. */
+/** The ember count the header shows, ticking toward the real one; held still while a roll or spin is still playing. */
 let shownEmbersValue = 0
+let tickSoundIn = 0
 /** Waiting on the host's answer to a spin, a roll or a redeem. */
 let busy = ''
 let confirmItem: GwItem | '' = ''
@@ -263,11 +264,18 @@ function update(dt: number) {
       else fxSound('bell', 0.4)
     }
   }
-  // The header's ember count walks toward the truth rather than jumping.
-  if (shownEmbersValue !== sheet.embers) {
+  // The header's ember count walks toward the truth rather than jumping, and waits for the pawn to land or the wheel to stop
+  // so the prize is seen arriving: a steady climb with a coin's tick along the way.
+  const holding = (board && board.t < boardSeconds(board)) || (wheel && !wheel.done)
+  if (!holding && shownEmbersValue !== sheet.embers) {
     const gap = sheet.embers - shownEmbersValue
-    const step = Math.max(1, Math.ceil(Math.abs(gap) * Math.min(1, span * 6)))
+    const step = Math.max(1, Math.ceil(Math.abs(gap) * Math.min(1, span * 4)))
     shownEmbersValue += Math.sign(gap) * Math.min(Math.abs(gap), step)
+    tickSoundIn -= span
+    if (tickSoundIn <= 0 && gap > 0) {
+      tickSoundIn = 0.07
+      fxSound('coin', 0.3)
+    }
   }
   // Auto-roll: one die after another while rolls remain and the sheet is on the board.
   if (autoRoll) {
@@ -417,6 +425,11 @@ export function toggleAutoRoll() {
 /** The ember count as the header shows it, ticking toward the real one. */
 export function shownEmbers(): number {
   return shownEmbersValue
+}
+
+/** Embers still to arrive in the header (positive while a prize is counting up). */
+export function emberTickLeft(): number {
+  return sheet.embers - shownEmbersValue
 }
 
 /** The "+n embers" toasts, newest last, with how long each has shown. */
