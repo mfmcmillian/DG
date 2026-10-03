@@ -1401,5 +1401,9 @@
   "Hours stack.": "Die Stunden addieren sich.",
   "A PIECE OF GEAR": "EIN AUSRÜSTUNGSTEIL",
   "A LEGENDARY PIECE OF GEAR": "EIN LEGENDÄRES AUSRÜSTUNGSTEIL",
-  "It is in your gear bag.": "Es liegt in deiner Ausrüstungstasche."
+  "It is in your gear bag.": "Es liegt in deiner Ausrüstungstasche.",
+  "Embers x1.5 for an hour": "Glut ×1,5 für eine Stunde",
+  "×{m} embers for an hour!": "×{m} Glut für eine Stunde!",
+  "One per hero: a second head on the same one does nothing.": "Einer pro Held: ein zweiter Kopf auf demselben bewirkt nichts.",
+  "The wheel gives embers, coins, a piece of gear, an hour of x1.5 embers, or a Pumpkin Head. A second x1.5 while one runs does nothing.": "Das Rad gibt Glut, Münzen, ein Ausrüstungsteil, eine Stunde ×1,5 Glut oder einen Kürbiskopf. Ein zweites ×1,5, während eines läuft, bewirkt nichts."
 }

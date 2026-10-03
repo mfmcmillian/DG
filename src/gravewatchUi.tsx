@@ -270,7 +270,7 @@ function WheelTab({ scale: s, inner }: { scale: number; inner: number }) {
         <Label value={gw.heads > 1 ? t('You hold {n} Pumpkin Heads', { n: gw.heads }) : t('You hold a Pumpkin Head')} color={coral} font="serif" fontSize={22 * s} textAlign="middle-center" textWrap="nowrap"
           uiTransform={{ width: '100%', height: 30 * s, flexShrink: 0, pointerFilter: 'none' }} />
         <Label value={(others.length ? t('Crown someone in your party, or wear it yourself. The wearer grins for an hour and earns ×{m} embers the while.', { m: GW_MULT })
-          : t('Nobody in your party to crown. Wear it yourself: a grin for an hour, and ×{m} embers the while.', { m: GW_MULT })) + (gw.heads > 1 ? ` ${t('Hours stack.')}` : '')}
+          : t('Nobody in your party to crown. Wear it yourself: a grin for an hour, and ×{m} embers the while.', { m: GW_MULT })) + (gw.heads > 1 ? ` ${t('One per hero: a second head on the same one does nothing.')}` : '')}
           color={white} fontSize={14 * s} textAlign="middle-center" textWrap="wrap" uiTransform={{ width: '100%', height: 44 * s, flexShrink: 0, pointerFilter: 'none' }} />
         <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', margin: { top: 10 * s }, flexShrink: 0, pointerFilter: 'none' }}>
           {others.slice(0, 5).map((m) => <Action key={`gw-curse-${m}`} id={`gw-curse-${m}`} text={heroLabel(m)} onClick={() => gravewatchCurse(m)} width={118} height={36} scale={s} fontSize={12} accent="gold" />)}
@@ -299,7 +299,7 @@ function prizeLine(seg: GwSegment): string {
     case 'embers': return `+${getGravewatch().mult > serverNow() ? Math.round(seg.amount * GW_MULT) : seg.amount} ${t('embers')}`
     case 'coins': return `+${seg.amount} ${t('coins')}`
     case 'gear': return t('A piece of gear!')
-    case 'mult': return t('×{m} embers for a day!', { m: GW_MULT })
+    case 'mult': return t('×{m} embers for an hour!', { m: GW_MULT })
     default: return t('Pumpkin Head!')
   }
 }
@@ -491,7 +491,7 @@ const RULES: Record<GwTab, { title: string; lines: () => string[] }> = {
   ] },
   wheel: { title: 'How the Wheel works', lines: () => [
     t('One free spin a day. More spins cost {n} embers each.', { n: GW_SPIN_COST }),
-    t('The wheel gives embers, coins, a piece of gear, a day of x1.5 embers, or a Pumpkin Head.'),
+    t('The wheel gives embers, coins, a piece of gear, an hour of x1.5 embers, or a Pumpkin Head. A second x1.5 while one runs does nothing.'),
     t('The Pumpkin Head is a grinning mask for an hour, and x1.5 embers while it is worn. Crown a party member, or wear it yourself.'),
     t('Every {n}th spin without gear is guaranteed to land on gear.', { n: GW_WHEEL_PITY })
   ] },

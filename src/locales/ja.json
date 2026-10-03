@@ -1401,5 +1401,9 @@
   "Hours stack.": "時間は積み重なります。",
   "A PIECE OF GEAR": "装備を獲得",
   "A LEGENDARY PIECE OF GEAR": "レジェンダリー装備を獲得",
-  "It is in your gear bag.": "装備バッグに入っています。"
+  "It is in your gear bag.": "装備バッグに入っています。",
+  "Embers x1.5 for an hour": "1時間、残り火×1.5",
+  "×{m} embers for an hour!": "1時間、残り火×{m}！",
+  "One per hero: a second head on the same one does nothing.": "1人につき1つ：同じ人に2つ目をかぶせても何も起きません。",
+  "The wheel gives embers, coins, a piece of gear, an hour of x1.5 embers, or a Pumpkin Head. A second x1.5 while one runs does nothing.": "ルーレットは残り火、コイン、装備、1時間の残り火×1.5、またはパンプキンヘッドを与えます。×1.5の効果中に再び出ても何も起きません。"
 }

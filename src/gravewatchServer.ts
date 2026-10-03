@@ -247,6 +247,11 @@ function boost(l: Ledger, amount: number, t: number): number {
   return l.mult && l.mult > t ? Math.round(amount * GW_MULT) : amount
 }
 
+/** Start the x1.5 for its hour; while one runs, another does nothing. */
+function startMult(l: Ledger, t: number) {
+  if (!(l.mult && l.mult > t)) l.mult = t + GW_MULT_MS
+}
+
 /** A run's verdict: the Barrow Yard pays Rounds, the ladder pays clears (the Crypt double). */
 async function creditClear(id: string, level: number) {
   if (over() || isGuest(id)) return
@@ -317,9 +322,9 @@ async function curse(id: string, target: string) {
   void save(id)
   const victim = await ledgerOf(to)
   const t = now()
-  // Hours stack: a second head on the same hero runs on from the first.
-  victim.curse = Math.max(victim.curse ?? 0, t) + GW_CURSE_MS
-  victim.mult = Math.max(victim.mult ?? 0, t) + GW_CURSE_MS
+  // A head on a hero already wearing one does nothing more; the x1.5 likewise only starts if none runs.
+  if (!(victim.curse && victim.curse > t)) victim.curse = t + GW_CURSE_MS
+  startMult(victim, t)
   if (to !== id) void save(to)
   metricsMark(id, 'gw-curse')
   await tell(id, 'cursed')
@@ -413,7 +418,7 @@ async function spin(id: string) {
       rewardGear(id, 0, 0)
       break
     case 'mult':
-      l.mult = Math.max(l.mult ?? 0, t) + GW_MULT_MS
+      startMult(l, t)
       break
     case 'curse':
       l.held = true
@@ -518,8 +523,8 @@ async function roll(id: string, double: boolean) {
         sendNet('loot', { party: HUB, x: 0, z: 0, coin: 200, heart: 0, item: '', boss: true, up: 0, uid: '' }, { to: [id] })
         said = '200 coins'
       } else {
-        l.mult = Math.max(l.mult ?? 0, t) + GW_MULT_MS
-        said = 'Embers x1.5 for a day'
+        startMult(l, t)
+        said = 'Embers x1.5 for an hour'
       }
       break
     }

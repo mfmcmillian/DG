@@ -92,9 +92,9 @@ export const GW_HAT_STEPS: readonly { rolls: number; embers: number }[] = [
   { rolls: 6, embers: 15 },
   { rolls: 10, embers: 25 }
 ]
-/** The Wheel's ember multiplier prize: this much, for this long. */
+/** The ember multiplier (the wheel's wedge, the mystery grave, the Pumpkin Head): this much, for this long; another while one runs does nothing. */
 export const GW_MULT = 1.5
-export const GW_MULT_MS = 24 * 3600 * 1000
+export const GW_MULT_MS = 3600 * 1000
 /** The Pumpkin Head: how long the wearer has it on, earning x1.5 embers the while. */
 export const GW_CURSE_MS = 3600 * 1000
 /** The Wheel's pity: this many spins without gear and the next one lands on it. */
@@ -116,7 +116,7 @@ export const GW_WHEEL: readonly GwSegment[] = [
   { kind: 'embers', amount: 50, weight: 10, label: '50 embers' },
   { kind: 'gear', amount: 1, weight: 9, label: 'A piece of gear' },
   { kind: 'embers', amount: 100, weight: 4, label: '100 embers' },
-  { kind: 'mult', amount: 1, weight: 7, label: 'Embers x1.5 for a day' },
+  { kind: 'mult', amount: 1, weight: 7, label: 'Embers x1.5 for an hour' },
   { kind: 'coins', amount: 400, weight: 6, label: '400 coins' },
   { kind: 'embers', amount: 10, weight: 2, label: '10 embers' }
 ]
