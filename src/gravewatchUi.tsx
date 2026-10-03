@@ -100,6 +100,15 @@ function countdown(seconds: number): string {
   return `${m}:${sec < 10 ? '0' : ''}${sec}`
 }
 
+/** "42m 07s" for the boost's remaining hour (hours shown only if ever past one). */
+function minutesLeft(seconds: number): string {
+  const s = Math.max(0, Math.floor(seconds))
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  const sec = s % 60
+  return `${h > 0 ? `${h}h ` : ''}${m}m ${sec < 10 ? '0' : ''}${sec}s`
+}
+
 function Heading({ title, scale: s }: { title: string; scale: number }) {
   return <Label value={title} color={gold} fontSize={13 * s} textAlign="middle-left" textWrap="nowrap"
     uiTransform={{ width: '100%', height: 22 * s, margin: { bottom: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />
@@ -138,7 +147,7 @@ export function GravewatchUi() {
             uiTransform={{ width: 80 * s, height: 38 * s, margin: { right: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
           <UiEntity uiTransform={{ height: 38 * s, padding: { left: 14 * s, right: 14 * s }, margin: { right: 10 * s }, borderRadius: 4 * s, borderWidth: shownEmbers() !== gw.embers ? 2 * s : s, borderColor: shownEmbers() !== gw.embers ? gold : ember,
             alignItems: 'center', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: emberDark }}>
-            <Label value={`${shownEmbers()}  ${t('embers')}${gw.mult > serverNow() ? `  ×${GW_MULT}` : ''}`} color={shownEmbers() !== gw.embers ? gold : ember} font="serif" fontSize={17 * s} textWrap="nowrap"
+            <Label value={`${shownEmbers()}  ${t('embers')}${gw.mult > serverNow() ? `  ×${GW_MULT} · ${minutesLeft((gw.mult - serverNow()) / 1000)}` : ''}`} color={shownEmbers() !== gw.embers ? gold : ember} font="serif" fontSize={17 * s} textWrap="nowrap"
               uiTransform={{ height: '100%', pointerFilter: 'none' }} />
           </UiEntity>
           {SHOW_GRANT && isDeveloper() && <Action id="gw-grant" text="+1000" onClick={gravewatchGrant} width={64} height={38} scale={s} fontSize={13} accent="gold" />}
