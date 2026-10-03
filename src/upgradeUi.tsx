@@ -140,8 +140,10 @@ export function UpgradeUi() {
   const chosen = offers.find((o) => o.uid === selectedId)
   const coins = getLootState().coins
   const canOffer = !!chosen?.to && chosen.affordable
-  // Every card carries a right margin, the last one too, so the row is measured with it.
-  const gridWidth = PER_ROW * (CARD.width + CARD.gap)
+  // The grid takes the sheet's whole width and centres the cards with padding: a row sized to
+  // the cards exactly wrapped the fourth one at some scales, over a fraction of a pixel.
+  const inner = FRAME.width - 80
+  const gridPad = (inner - (PER_ROW * (CARD.width + CARD.gap) - CARD.gap)) / 2
   return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}>
     <UiEntity uiTransform={wholeCanvas()} uiBackground={{ color: veil }} />
     <UiEntity uiTransform={{ width, height, positionType: 'absolute', position: { left: x, top: y },
@@ -167,7 +169,7 @@ export function UpgradeUi() {
         color={muted} fontSize={13 * s} textAlign="top-left" textWrap="wrap"
         uiTransform={{ width: '100%', height: 38 * s, margin: { bottom: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />
 
-      <UiEntity uiTransform={{ width: gridWidth * s, height: (PER_PAGE / PER_ROW) * (CARD.height + CARD.gap) * s, flexDirection: 'row', flexWrap: 'wrap', alignContent: 'flex-start', alignSelf: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+      <UiEntity uiTransform={{ width: '100%', height: (PER_PAGE / PER_ROW) * (CARD.height + CARD.gap) * s, padding: { left: gridPad * s }, flexDirection: 'row', flexWrap: 'wrap', alignContent: 'flex-start', flexShrink: 0, pointerFilter: 'none' }}>
         {shown.map((offer) => <WeaponCard key={offer.uid} offer={offer} scale={s} />)}
       </UiEntity>
 
