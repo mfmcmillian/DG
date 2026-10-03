@@ -123,8 +123,8 @@ export function GravewatchUi() {
       uiBackground={{ color: sheetColor }}>
       <UiEntity uiTransform={{ width: '100%', height: 62 * s, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', flexShrink: 0, pointerFilter: 'none' }}>
         <UiEntity uiTransform={{ flexDirection: 'column', pointerFilter: 'none' }}>
-          <Label value={flyer ? t('WELCOME TO').toUpperCase() : `${t('UNTIL')} ${etLabel(GW_EVENT_END, false).toUpperCase()}`} color={gold} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
-            uiTransform={{ width: 320 * s, height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
+          <Label value={flyer ? t('WELCOME TO').toUpperCase() : `${t('UNTIL')} ${etLabel(GW_EVENT_END, false).toUpperCase()}   ·   ${t('DAILY RESET IN')} ${countdown(untilReset())}`} color={gold} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
+            uiTransform={{ width: 420 * s, height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
           <Label value={t('Gravewatch')} font="serif" color={white} fontSize={32 * s} textAlign="middle-left" textWrap="nowrap"
             uiTransform={{ width: 320 * s, height: 42 * s, flexShrink: 0, pointerFilter: 'none' }} />
         </UiEntity>
@@ -181,8 +181,6 @@ function RoundsTab({ scale: s }: { scale: number }) {
     <Line text={t('Any fortress cleared pays too. The Crypt pays double.')} scale={s} />
     <Gap h={10} scale={s} />
     <Progress label={t('Clears today')} done={gw.clears} pays={GW_CLEAR_EMBERS} scale={s} suffix={`  (${t('Crypt')} ×${GW_CRYPT_CLEAR_MULT})`} />
-    <Gap h={10} scale={s} />
-    <Line text={t('Resets in {c} (midnight ET).', { c: countdown(untilReset()) })} scale={s} size={13} />
     <Gap h={18} scale={s} />
     <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }}>
       <Action id="gw-rounds-go" text={myParty() ? t('Leave your party first') : t('To the Barrow Yard')} onClick={gravewatchRounds} width={280} height={46} scale={s} fontSize={16} primary accent="gold" disabled={!can} />
@@ -332,8 +330,7 @@ function BoardTab({ scale: s, inner }: { scale: number; inner: number }) {
         <Label value={`${left}`} color={left > 0 ? ember : muted} font="serif" fontSize={44 * s} textAlign="middle-left" textWrap="nowrap"
           uiTransform={{ width: '100%', height: 50 * s, flexShrink: 0, pointerFilter: 'none' }} />
         <Line text={t('rolls left today')} scale={s} size={13} height={20} />
-        <Line text={t('Resets in {c}', { c: countdown(untilReset()) })} scale={s} size={11} height={16} />
-        <Gap h={6} scale={s} />
+        <Gap h={10} scale={s} />
         <Action id="gw-roll-one" text={rolling ? t('Rolling…') : t('Roll one die')} onClick={() => gravewatchRoll(false)} width={panel} height={44} scale={s} fontSize={15} primary accent="gold" disabled={!can} />
         <Gap h={8} scale={s} />
         <Action id="gw-roll-two" text={t('Two dice ({n} embers)', { n: GW_BOARD_DOUBLE_COST })} onClick={() => gravewatchRoll(true)} width={panel} height={44} scale={s} fontSize={14} accent="gold"
