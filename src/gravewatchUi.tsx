@@ -122,13 +122,13 @@ export function GravewatchUi() {
       flexDirection: 'column', pointerFilter: 'none' }}
       uiBackground={{ color: sheetColor }}>
       <UiEntity uiTransform={{ width: '100%', height: 62 * s, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', flexShrink: 0, pointerFilter: 'none' }}>
-        <UiEntity uiTransform={{ flexDirection: 'column', pointerFilter: 'none' }}>
-          <Label value={flyer ? t('WELCOME TO').toUpperCase() : `${t('UNTIL')} ${etLabel(GW_EVENT_END, false).toUpperCase()}   ·   ${t('DAILY RESET IN')} ${countdown(untilReset())}`} color={gold} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
-            uiTransform={{ width: 420 * s, height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
+        <UiEntity uiTransform={{ flexDirection: 'column', flexGrow: 1, flexShrink: 1, minWidth: 0, margin: { right: 12 * s }, pointerFilter: 'none' }}>
+          <Label value={flyer ? t('WELCOME TO').toUpperCase() : `${t('UNTIL')} ${etLabel(GW_EVENT_END, false).toUpperCase()}  ·  ${t('DAILY RESET IN')} ${countdown(untilReset())}`} color={gold} fontSize={10.5 * s} textAlign="middle-left" textWrap="nowrap"
+            uiTransform={{ width: '100%', height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
           <Label value={t('Gravewatch')} font="serif" color={white} fontSize={32 * s} textAlign="middle-left" textWrap="nowrap"
-            uiTransform={{ width: 320 * s, height: 42 * s, flexShrink: 0, pointerFilter: 'none' }} />
+            uiTransform={{ width: '100%', height: 42 * s, flexShrink: 0, pointerFilter: 'none' }} />
         </UiEntity>
-        <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', pointerFilter: 'none' }}>
+        <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
           {emberTickLeft() > 0 && <Label value={`+${emberTickLeft()}`} color={gold} font="serif" fontSize={20 * s} textAlign="middle-right" textWrap="nowrap"
             uiTransform={{ width: 80 * s, height: 38 * s, margin: { right: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
           <UiEntity uiTransform={{ height: 38 * s, padding: { left: 14 * s, right: 14 * s }, margin: { right: 10 * s }, borderRadius: 4 * s, borderWidth: shownEmbers() !== gw.embers ? 2 * s : s, borderColor: shownEmbers() !== gw.embers ? gold : ember,
