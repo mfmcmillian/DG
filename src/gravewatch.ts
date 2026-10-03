@@ -69,8 +69,13 @@ type Board = { dice: [number, number]; from: number; to: number; passed: boolean
 type Gain = { amount: number; age: number }
 
 /** The wheel sheet: 10 x 10 frames, frame k turned k * 3.6 degrees clockwise; segment 0 under the pointer at frame 0. */
-export const WHEEL_FRAMES = 100
-export const WHEEL_SHEET = 'images/gravewatch/wheel-sheet.png'
+// Deployed textures are capped at 1024 px by the asset-bundle converter, so the
+// wheel ships as four 1024 sheets of sixteen 256-px frames rather than one big one.
+export const WHEEL_FRAMES = 64
+export const WHEEL_SHEET_FRAMES = 16
+export const WHEEL_SHEET_COLS = 4
+export const WHEEL_SHEETS = [0, 1, 2, 3].map((i) => `images/gravewatch/wheel-${i}.png`)
+export function wheelSheet(frame: number): string { return WHEEL_SHEETS[Math.floor(frame / WHEEL_SHEET_FRAMES)] }
 export const WHEEL_POINTER = 'images/gravewatch/wheel-pointer.png'
 export const DICE_STRIP = 'images/gravewatch/dice.png'
 /** A "+n embers" toast stays this long. */

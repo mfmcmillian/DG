@@ -12,7 +12,7 @@ import {
   available, boardRolling, boardState, boardTiming, closeGravewatch, DICE_STRIP, dismissGearCard, emberGains, GAIN_SECONDS, gearCard, getGravewatch, gravewatchBusy, gravewatchButtonLine, gravewatchConfirm,
   gravewatchCurse, gravewatchGrant, gravewatchRedeem, gravewatchRising, gravewatchRoll, gravewatchRun, gravewatchScreenNote, gravewatchSpin, gravewatchTab, gravewatchTrain, GW_TABS, GwTab,
   runBoard, RunBoardRow, toggleRunBoard,
-  emberTickLeft, inRisingArena, isAutoRoll, isFlyer, openGravewatch, risingClock, runEmberGain, serverNow, setGravewatchTab, shownEmbers, toggleAutoRoll, WHEEL_POINTER, WHEEL_SHEET, wheelState
+  emberTickLeft, inRisingArena, isAutoRoll, isFlyer, openGravewatch, risingClock, runEmberGain, serverNow, setGravewatchTab, shownEmbers, toggleAutoRoll, WHEEL_POINTER, WHEEL_SHEET_COLS, WHEEL_SHEET_FRAMES, wheelSheet, wheelState
 } from './gravewatch'
 import { heroLabel } from './lobbyUi'
 import { myParty } from './party'
@@ -393,7 +393,7 @@ function WheelTab({ scale: s, inner }: { scale: number; inner: number }) {
       {/* The wheel: one frame of the sheet per angle, the pointer fixed over it. */}
       <UiEntity uiTransform={{ width: wheelSize * s, height: rowHeight * s, flexShrink: 0, pointerFilter: 'none' }}>
         <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 20 * s }, width: wheelSize * s, height: wheelSize * s, pointerFilter: 'none' }}
-          uiBackground={{ textureMode: 'stretch', texture: { src: WHEEL_SHEET }, uvs: sheetUvs(frame % 10, Math.floor(frame / 10), 10, 10), color: Color4.White() }} />
+          uiBackground={{ textureMode: 'stretch', texture: { src: wheelSheet(frame) }, uvs: sheetUvs((frame % WHEEL_SHEET_FRAMES) % WHEEL_SHEET_COLS, Math.floor((frame % WHEEL_SHEET_FRAMES) / WHEEL_SHEET_COLS), WHEEL_SHEET_COLS, WHEEL_SHEET_COLS), color: Color4.White() }} />
         <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (wheelSize / 2 - 18) * s, top: 4 * s }, width: 36 * s, height: 36 * s, pointerFilter: 'none' }}
           uiBackground={{ textureMode: 'stretch', texture: { src: WHEEL_POINTER }, color: Color4.White() }} />
         {result && !pumpkinCard && <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (wheelSize / 2 - 100 * pop) * s, top: (20 + wheelSize / 2 - 34 * pop) * s },

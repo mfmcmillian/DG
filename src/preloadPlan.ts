@@ -86,7 +86,8 @@ export function preloadCaption(group: Readonly<PreloadGroup> | undefined, verb =
 /** Gravewatch sheet art, warmed with the hall so the tabs open without a download. */
 const GRAVEWATCH_ART = [
   'images/ui/kit/title-bg-gravewatch.jpg',
-  'images/gravewatch/wheel-sheet.png', 'images/gravewatch/wheel-pointer.png', 'images/gravewatch/wheel-strip.png',
+  'images/gravewatch/wheel-0.png', 'images/gravewatch/wheel-1.png', 'images/gravewatch/wheel-2.png', 'images/gravewatch/wheel-3.png',
+  'images/gravewatch/wheel-pointer.png', 'images/gravewatch/wheel-strip.png',
   'images/gravewatch/board.png', 'images/gravewatch/icons.png', 'images/gravewatch/rising-banner.png',
   'images/gravewatch/reliquary-strip.png', 'images/gravewatch/run-banner.png', 'images/gravewatch/run-icons.png'
 ]
