@@ -303,7 +303,7 @@ function award(id: string, at: Vector3, up = 0, uid = ''): boolean {
   fxGlitter(at, rarity.color)
   fxGlitter(Vector3.add(at, Vector3.create(0, 0.6, 0)), rarity.color)
   markGearNew(row.uid)
-  fxSound('heal', 0.9)
+  fxSound(rarity.rank >= 4 ? 'legendary' : rarity.rank >= 2 ? 'rare' : 'pickup', 0.9)
   fxNumber(Vector3.add(at, Vector3.create(0, 0.9, 0)), item.name, 'note')
   run.found.push(`${item.id}@${row.rank}@${row.affix}`)
   toast(item, 0, tier, false, false, row.affix)

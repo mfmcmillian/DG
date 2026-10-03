@@ -209,7 +209,7 @@ export function takePitResult(): boolean {
     fxMagicBurst(at, taken.success ? color : ASH, legend ? 1.4 : 0.8)
     if (legend) fxGlitter(at, WHITE)
     fxSound(taken.success ? 'coin' : 'thud_straw', 0.8)
-    if (legend) fxSound('heal', 0.9)
+    if (legend) fxSound('legendary', 0.9)
     fxNumber(Vector3.add(at, Vector3.create(0, 0.3, 0)), taken.success ? t('Level {n}', { n: taken.to }) : t('Unchanged'), taken.success ? 'coin' : 'note')
   }
   if (taken) {

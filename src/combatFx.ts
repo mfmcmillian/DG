@@ -32,11 +32,16 @@ export type FxSound =
   | 'gong' | 'explosion' | 'thunder' | 'bow'
   /** The Crypt: the Chapel's bell, the Lich raising the dead (scripts/build-crypt-sounds.py). */
   | 'bell' | 'raise_dead'
+  /** The menus: a press, a close, a refusal, a nudge (from the Antrom sound library). */
+  | 'click' | 'cancel' | 'error' | 'notify'
+  /** Loot and progress: a chest, a pickup, a rare, a legendary, the level, the run's end (same library). */
+  | 'chest' | 'pickup' | 'rare' | 'legendary' | 'level_up' | 'victory' | 'defeat'
 
 const FX_SOUNDS: FxSound[] = [
   'swing_light', 'swing_heavy', 'hit_light', 'hit_heavy', 'block', 'hurt',
   'dodge', 'coin', 'heal', 'slam', 'roar', 'death', 'thunk_wood', 'thud_straw', 'fire_flare', 'reveal',
-  'gong', 'explosion', 'thunder', 'bow', 'bell', 'raise_dead', 'dice', 'hop'
+  'gong', 'explosion', 'thunder', 'bow', 'bell', 'raise_dead', 'dice', 'hop',
+  'click', 'cancel', 'error', 'notify', 'chest', 'pickup', 'rare', 'legendary', 'level_up', 'victory', 'defeat'
 ]
 
 /** Every clip `fxSound` can play, for the title-screen preloader. */

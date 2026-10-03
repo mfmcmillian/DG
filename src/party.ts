@@ -161,7 +161,7 @@ export function initializeParty() {
     const at = invites.findIndex((i) => i.from === from)
     if (at >= 0) invites.splice(at, 1)
     invites.unshift({ from, party: msg.party, level: msg.level, diff: msg.diff, left: INVITE_SECONDS })
-    fxSound('reveal', 0.5)
+    fxSound('notify', 0.6)
   })
   engine.addSystem(update)
 }
@@ -448,6 +448,7 @@ function update(dt: number) {
     if (leaving <= 0) enterRun(party)
   }
   if (party && phase !== HUB && party.state === 'done' && appliedState !== 'done') {
+    fxSound(party.won ? 'victory' : 'defeat', 0.7)
     state.result = {
       won: party.won, level: party.level, diff: party.diff, time: party.time,
       slain: party.slain, total: party.total, coins: getLootState().coins - coinsAtStart,

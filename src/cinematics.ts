@@ -248,7 +248,7 @@ export function playLegendaryReveal(id: string) {
         tr.position = Vector3.lerp(from, top, k)
         tr.rotation = Quaternion.fromEulerDegrees(0, (s * 120) % 360, 0)
       }
-      if (!beats[0] && s >= 0.5) { beats[0] = true; fxLootBeam(Vector3.create(at.x, at.y + 0.1, at.z), GOLD); ring(Vector3.create(at.x, at.y + 0.2, at.z), 1.0, 10, GOLD); fxSound('heal', 0.7) }
+      if (!beats[0] && s >= 0.5) { beats[0] = true; fxLootBeam(Vector3.create(at.x, at.y + 0.1, at.z), GOLD); ring(Vector3.create(at.x, at.y + 0.2, at.z), 1.0, 10, GOLD); fxSound('legendary', 0.8) }
       if (!beats[1] && s >= 1.4) { beats[1] = true; fxMagicBurst(top, GOLD, 1.4); fxNumber(Vector3.create(top.x, top.y + 0.6, top.z), t('LEGENDARY'), 'coin'); fxSound('slam', 0.6) }
       if (!beats[2] && s >= 2.1) { beats[2] = true; fxGlitter(top, WHITE); ring(top, 0.7, 8, GOLD) }
     },

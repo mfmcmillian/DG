@@ -84,7 +84,7 @@ function refreshLocal() {
   if (knownLevel && p.level > knownLevel && getPickerState().hasCreatedCharacter) {
     local.levelUp = p.level
     local.levelUpFor = 0
-    fxSound('heal', 0.9)
+    fxSound('level_up', 0.8)
   }
   knownLevel = p.level
   const bonuses = heroBonuses(cid, p.level)

@@ -226,6 +226,7 @@ function takeNote(note: string, msg: { spin: number; roll: number[] }, embersBef
     return
   }
   if (note === 'poor' || note === 'guest' || note === 'over') barrowRunRefused()
+  if (note === 'poor' || note === 'miles' || note === 'capped' || note === 'nokey' || note === 'locked') fxSound('error', 0.6)
   const text = noteText(note, embersBefore)
   if (text) {
     sheet.note = text
@@ -279,7 +280,8 @@ function update(dt: number) {
       // The stop: a chime, and a reveal on the big prizes.
       const kind = GW_WHEEL[wheel.target].kind
       fxSound('bell', 0.6)
-      if (kind === 'gear' || kind === 'mult' || kind === 'curse') fxSound('reveal', 0.8)
+      if (kind === 'gear') fxSound('rare', 0.9)
+      else if (kind === 'mult' || kind === 'curse') fxSound('reveal', 0.8)
     } else {
       // A tick as each wedge passes the pointer.
       const lit = wheelState()?.lit ?? -1
@@ -302,7 +304,8 @@ function update(dt: number) {
       landingHeard = true
       const kind = GW_BOARD[board.to].kind
       if (board.passed) fxSound('fire_flare', 0.5)
-      if (kind === 'chest' || kind === 'gear' || kind === 'mystery') fxSound('reveal', 0.8)
+      if (kind === 'chest') fxSound('chest', 0.9)
+      else if (kind === 'gear' || kind === 'mystery') fxSound('reveal', 0.8)
       else if (board.paid > 0) fxSound('coin', 0.8)
       else fxSound('bell', 0.4)
     }
