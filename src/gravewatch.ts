@@ -38,6 +38,8 @@ export type GwSheet = {
   mult: number
   curse: number
   held: boolean
+  /** Spins since the wheel last gave gear. */
+  pity: number
   live: GwItem[]
   won: GwItem[]
   sold: GwItem[]
@@ -75,7 +77,7 @@ const POLL_SECONDS = 10
 const FLYER_AFTER_SECONDS = 1.5
 
 const sheet: GwSheet = {
-  known: false, over: false, guest: false, embers: 0, rounds: 0, clears: 0, spins: 0, rolls: 0, pos: 0, tiles: GW_BOARD.map(() => 1), points: 0, miles: 0, mult: 0, curse: 0, held: false,
+  known: false, over: false, guest: false, embers: 0, rounds: 0, clears: 0, spins: 0, rolls: 0, pos: 0, tiles: GW_BOARD.map(() => 1), points: 0, miles: 0, mult: 0, curse: 0, held: false, pity: 0,
   live: ['w1'], won: [], sold: [], keyed: [], redeemed: {}, rising: 0, phase: 'idle', signed: 0, signedUp: false, arena: 0, note: '', noteFor: 0
 }
 let open = false
@@ -143,6 +145,7 @@ export function initializeGravewatch() {
     sheet.mult = msg.mult
     sheet.curse = msg.curse
     sheet.held = msg.held
+    sheet.pity = msg.pity
     sheet.live = msg.live as GwItem[]
     sheet.won = msg.won as GwItem[]
     sheet.sold = msg.sold as GwItem[]
@@ -221,7 +224,7 @@ function noteText(note: string, embersBefore: number): string {
     case 'joined': return ''
     case 'signed': return t('You are on the list. Be in the hall at 9:15.')
     case 'party': return t('They have to be in your party.')
-    case 'cursed': return sheet.curse > 0 ? t('Cursed! A pumpkin for an hour.') : t('The curse is given.')
+    case 'cursed': return sheet.curse > 0 ? t('You wear the Pumpkin Head: ×1.5 embers for an hour.') : t('The Pumpkin Head is given.')
     default:
       return embersBefore !== sheet.embers ? '' : ''
   }
@@ -237,11 +240,14 @@ function update(dt: number) {
     screenNoteFor -= span
     if (screenNoteFor <= 0) screenNote = ''
   }
+  if (wheel) wheel.t += span
   if (wheel && !wheel.done) {
-    wheel.t += span
     if (wheel.t >= WHEEL_SECONDS) {
       wheel.done = true
+      // The stop: a chime, and a reveal on the big prizes.
+      const kind = GW_WHEEL[wheel.target].kind
       fxSound('bell', 0.6)
+      if (kind === 'gear' || kind === 'mult' || kind === 'curse') fxSound('reveal', 0.8)
     } else {
       // A tick as each wedge passes the pointer.
       const lit = wheelState()?.lit ?? -1
@@ -369,15 +375,15 @@ export function available(): boolean {
  * by 36 * i degrees brings segment i under the pointer, so the landing angle
  * is 360 - 36 * target plus the full turns.
  */
-export function wheelState(): { frame: number; lit: number; done: boolean; target: number } | undefined {
+export function wheelState(): { frame: number; lit: number; done: boolean; target: number; sinceDone: number } | undefined {
   if (!wheel) return undefined
   const landing = WHEEL_TURNS * 360 + ((360 - wheel.target * 36) % 360)
-  if (wheel.done) return { frame: frameAt(landing), lit: wheel.target, done: true, target: wheel.target }
+  if (wheel.done) return { frame: frameAt(landing), lit: wheel.target, done: true, target: wheel.target, sinceDone: Math.max(0, wheel.t - WHEEL_SECONDS) }
   const k = Math.min(1, wheel.t / WHEEL_SECONDS)
   const eased = 1 - Math.pow(1 - k, 3)
   const angle = eased * landing
   const lit = ((GW_WHEEL.length - Math.round(angle / 36)) % GW_WHEEL.length + GW_WHEEL.length) % GW_WHEEL.length
-  return { frame: frameAt(angle), lit, done: false, target: wheel.target }
+  return { frame: frameAt(angle), lit, done: false, target: wheel.target, sinceDone: 0 }
 }
 
 function frameAt(angle: number): number {

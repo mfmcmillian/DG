@@ -22,7 +22,7 @@ import { newGearUid } from './shared/gearBag'
 import {
   etDayKey, GW_BOARD, GW_BOARD_DOUBLE_COST, GW_BOARD_MILESTONES, GW_BOARD_PASS_EMBERS, GW_BOARD_TOKENS, GW_CLEAR_EMBERS, GW_CRYPT_CLEAR_MULT, GW_CURSE_MS,
   GW_EVENT_END, GW_HAT_STEPS, GW_ITEMS, GW_MULT, GW_MULT_MS, GW_PRICES, GW_ROUNDS_EMBERS, GW_SPIN_COST, GW_TILE_MAX_LEVEL, GW_TILE_POINTS, GW_TILE_POINTS_BIG,
-  GW_WHEEL, GwItem, itemLive, tilePay
+  GW_WHEEL, GW_WHEEL_PITY, GwItem, itemLive, tilePay
 } from './shared/gravewatch'
 import { BARROW_YARD, LEVELS, RISING_PARTY } from './shared/levels'
 import { HUB } from './partyLookup'
@@ -49,9 +49,10 @@ type Ledger = {
   miles?: number
   /** The x1.5 multiplier runs until this time (ms), when set. */
   mult?: number
-  /** The pumpkin-head curse on this hero runs until this time, when set; `held` while the wheel's curse waits to be handed out. */
+  /** The Pumpkin Head on this hero runs until this time, when set; `held` while the wheel's waits to be handed out; `pity` spins since the wheel last gave gear. */
   curse?: number
   held?: boolean
+  pity?: number
   redeemed: Partial<Record<GwItem, RedeemState>>
   /** When the pending redeem was started, and for what, so one manual retry is allowed after a while. */
   pendingAt?: number
@@ -296,7 +297,7 @@ async function act(id: string, what: string) {
   }
 }
 
-/** The wheel's curse handed to a party member (or kept): a pumpkin head for an hour, cosmetic only. */
+/** The wheel's Pumpkin Head handed to a party member (or kept): the grinning mask for an hour, and x1.5 embers while it is worn. */
 async function curse(id: string, target: string) {
   const l = await ledgerOf(id)
   if (!l.held) return tell(id, '')
@@ -305,7 +306,9 @@ async function curse(id: string, target: string) {
   l.held = false
   void save(id)
   const victim = await ledgerOf(to)
-  victim.curse = now() + GW_CURSE_MS
+  const t = now()
+  victim.curse = t + GW_CURSE_MS
+  victim.mult = Math.max(victim.mult ?? 0, t) + GW_CURSE_MS
   if (to !== id) void save(to)
   metricsMark(id, 'gw-curse')
   await tell(id, 'cursed')
@@ -334,6 +337,7 @@ async function tell(id: string, note: string) {
     mult: l.mult && l.mult > t ? l.mult : 0,
     curse: l.curse && l.curse > t ? l.curse : 0,
     held: !!l.held,
+    pity: l.pity ?? 0,
     live: GW_ITEMS.filter((item) => itemLive(item, live.won, t) || isDev(id)),
     won: [...live.won],
     sold: [...live.sold],
@@ -379,7 +383,11 @@ async function spin(id: string) {
       break
     }
   }
+  // Pity: the spin that makes GW_WHEEL_PITY without gear lands on it.
+  l.pity = (l.pity ?? 0) + 1
+  if (l.pity >= GW_WHEEL_PITY) index = GW_WHEEL.findIndex((seg) => seg.kind === 'gear')
   const seg = GW_WHEEL[index]
+  if (seg.kind === 'gear') l.pity = 0
   const t = now()
   switch (seg.kind) {
     case 'embers':
@@ -408,7 +416,10 @@ async function spin(id: string) {
 /** A piece of armor from any open realm, cut for the hero, rolled as a Hard elite: the wheel's gear prize and the Rising's drop. */
 function rewardGear(id: string, x: number, z: number, source: 'elite' | 'boss' = 'elite') {
   const mine = heroCharacters((owner) => owner === id)
-  const armor = rollArmorDrop(source, LEVELS.map((l) => l.realm), () => Math.random() * 0.5, (piece) => mine.every((cid) => classAllowsArmor(cid, piece.hero)))
+  // A prize, not a kill: the first roll (does anything drop?) always passes, the pick is a fair one.
+  let first = true
+  const sure = () => { if (first) { first = false; return 0 } return Math.random() }
+  const armor = rollArmorDrop(source, LEVELS.map((l) => l.realm), sure, (piece) => mine.every((cid) => classAllowsArmor(cid, piece.hero)))
   if (!armor) return
   const party = source === 'boss' ? RISING_PARTY : HUB
   sendNet('loot', { party, x, z, coin: 0, heart: 0, item: armor, boss: true, up: rollArmorRank(source, 2), uid: newGearUid() }, { to: [id] })
@@ -474,7 +485,7 @@ async function roll(id: string, double: boolean) {
       break
     case 'curse':
       l.held = true
-      said = 'A pumpkin curse to hand out'
+      said = 'A Pumpkin Head to give out'
       break
     case 'mystery': {
       const pick = Math.random()

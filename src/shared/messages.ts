@@ -303,9 +303,10 @@ export const Messages = {
     rolls: Schemas.Int,
     /** The ember multiplier runs until this server time (0: none). */
     mult: Schemas.Number,
-    /** The pumpkin curse on this hero runs until this server time (0: none); `held` when the wheel gave one to hand out. */
+    /** The Pumpkin Head on this hero runs until this server time (0: none); `held` when the wheel gave one to hand out; `pity` spins since the wheel last gave gear. */
     curse: Schemas.Number,
     held: Schemas.Boolean,
+    pity: Schemas.Int,
     /** Wearables live in the Reliquary, those the Risings have won, those sold out, those with a key in env. */
     live: Schemas.Array(Schemas.String),
     won: Schemas.Array(Schemas.String),

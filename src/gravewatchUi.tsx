@@ -21,7 +21,7 @@ import { t } from './i18n'
 import {
   etOffset, GW_BACKSTOPS, GW_BOARD, GW_BOARD_DOUBLE_COST, GW_BOARD_MILESTONES, GW_BOARD_PASS_EMBERS, GW_BOARD_TOKENS, GW_CLEAR_EMBERS, GW_CRYPT_CLEAR_MULT, GW_EVENT_END,
   GW_HAT_STEPS, GW_ITEM_INFO, GW_ITEMS, GW_MULT, GW_PRICES, GW_RISING_FIGHT_EMBERS, GW_RISING_UNLOCKS, GW_RISING_WIN_EMBERS, GW_ROUNDS_EMBERS, GW_SPIN_COST,
-  GW_TILE_MAX_LEVEL, GW_WHEEL, GwItem, GwTileKind, tilePay
+  GW_TILE_MAX_LEVEL, GW_WHEEL, GW_WHEEL_PITY, GwItem, GwSegment, GwTileKind, tilePay
 } from './shared/gravewatch'
 import { StackButton } from './hudButtons'
 
@@ -40,6 +40,8 @@ const GEAR_BADGE_IMAGE = 'images/gravewatch/gear-badge.png'
 let rulesOpen = false
 /** Dev-only +1000 embers button; hidden for now, flip to true when testing payouts. */
 const SHOW_GRANT = false
+/** The wheel's prize stays popped over it this long. */
+const RESULT_SECONDS = 4
 /** Six tiles a side; twenty around the edge. */
 const BOARD_SIDE = 6
 const TILE_COLORS: Record<GwTileKind, Color4> = {
@@ -215,46 +217,103 @@ function WheelTab({ scale: s, inner }: { scale: number; inner: number }) {
   const me = localAddress()
   const party = myParty()
   const others = party ? party.members.filter((m) => m !== me) : []
-  const wheelSize = 250
+  const wheelSize = 230
+  const rowHeight = wheelSize + 20
   const frame = spin?.frame ?? 0
   const legendWidth = inner - wheelSize - 24
+  // The prize pops over the wheel as it stops and stays a few seconds; the Pumpkin Head card takes the row once that has been seen.
+  const result = spin?.done && spin.sinceDone < RESULT_SECONDS ? GW_WHEEL[spin.target] : undefined
+  const pop = result ? 1 + 0.3 * Math.max(0, 1 - spin!.sinceDone / 0.3) : 1
+  const pumpkinCard = gw.held && (!spin || (spin.done && spin.sinceDone >= 1.4))
+  const wearing = gw.curse > serverNow()
   return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', pointerFilter: 'none' }}>
     <Heading title={t('ONE FREE SPIN A DAY; MORE FOR {n} EMBERS', { n: GW_SPIN_COST })} scale={s} />
-    <UiEntity uiTransform={{ width: '100%', height: (wheelSize + 20) * s, flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+    <UiEntity uiTransform={{ width: '100%', height: rowHeight * s, flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
       {/* The wheel: one frame of the sheet per angle, the pointer fixed over it. */}
-      <UiEntity uiTransform={{ width: wheelSize * s, height: (wheelSize + 20) * s, flexShrink: 0, pointerFilter: 'none' }}>
+      <UiEntity uiTransform={{ width: wheelSize * s, height: rowHeight * s, flexShrink: 0, pointerFilter: 'none' }}>
         <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 20 * s }, width: wheelSize * s, height: wheelSize * s, pointerFilter: 'none' }}
           uiBackground={{ textureMode: 'stretch', texture: { src: WHEEL_SHEET }, uvs: sheetUvs(frame % 10, Math.floor(frame / 10), 10, 10), color: Color4.White() }} />
         <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (wheelSize / 2 - 18) * s, top: 4 * s }, width: 36 * s, height: 36 * s, pointerFilter: 'none' }}
           uiBackground={{ textureMode: 'stretch', texture: { src: WHEEL_POINTER }, color: Color4.White() }} />
+        {result && !pumpkinCard && <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (wheelSize / 2 - 100 * pop) * s, top: (20 + wheelSize / 2 - 34 * pop) * s },
+          width: 200 * pop * s, height: 68 * pop * s, borderRadius: 8 * s, borderWidth: 3 * s, borderColor: result.kind === 'curse' ? coral : gold, alignItems: 'center', justifyContent: 'center',
+          padding: { left: 10 * s, right: 10 * s }, pointerFilter: 'none' }} uiBackground={{ color: Color4.create(0.03, 0.04, 0.06, 0.96) }}>
+          <Label value={prizeLine(result)} color={result.kind === 'curse' ? coral : result.kind === 'gear' || result.kind === 'mult' ? gold : ember} font="serif"
+            fontSize={(result.kind === 'embers' || result.kind === 'coins' ? 26 : 19) * pop * s} textAlign="middle-center" textWrap="wrap" uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} />
+        </UiEntity>}
       </UiEntity>
       <UiEntity uiTransform={{ width: legendWidth * s, height: '100%', margin: { left: 24 * s }, flexDirection: 'column', justifyContent: 'center', pointerFilter: 'none' }}>
         {GW_WHEEL.map((seg, i) => {
           const lit = spin?.lit === i
           const landed = !!spin?.done && spin.target === i
-          return <UiEntity key={`gw-seg-${i}`} uiTransform={{ width: '100%', height: 22 * s, margin: { bottom: 3 * s }, padding: { left: 8 * s },
-            borderRadius: 3 * s, borderWidth: s, borderColor: landed ? gold : lit ? ember : line, alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}
+          const rare = seg.kind === 'gear' || seg.kind === 'mult'
+          return <UiEntity key={`gw-seg-${i}`} uiTransform={{ width: '100%', height: 22 * s, margin: { bottom: 3 * s }, padding: { left: 8 * s, right: 6 * s }, flexDirection: 'row',
+            borderRadius: 3 * s, borderWidth: s, borderColor: landed ? gold : lit ? ember : rare ? goldLine : line, alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}
             uiBackground={{ color: landed ? Color4.create(0.16, 0.12, 0.06, 0.96) : lit ? emberDark : panelColor }}>
-            <Label value={t(seg.label)} color={landed ? gold : lit ? ember : seg.kind === 'curse' ? coral : white} fontSize={13 * s} textAlign="middle-left" textWrap="nowrap"
-              uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} />
+            <Label value={t(seg.label)} color={landed ? gold : lit ? ember : seg.kind === 'curse' ? coral : rare ? gold : white} fontSize={13 * s} textAlign="middle-left" textWrap="nowrap"
+              uiTransform={{ flexGrow: 1, height: '100%', pointerFilter: 'none' }} />
+            {rare && <UiEntity uiTransform={{ height: 16 * s, padding: { left: 6 * s, right: 6 * s }, borderRadius: 3 * s, borderWidth: s, borderColor: goldLine, alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}
+              uiBackground={{ color: Color4.create(0.16, 0.12, 0.06, 0.96) }}>
+              <Label value={t('RARE')} color={gold} fontSize={9 * s} textWrap="nowrap" uiTransform={{ height: '100%', pointerFilter: 'none' }} />
+            </UiEntity>}
           </UiEntity>
         })}
       </UiEntity>
+      {/* The Pumpkin Head to give out: a card over the whole row, so the choice cannot be missed. */}
+      {pumpkinCard && <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width: '100%', height: '100%', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        borderRadius: 8 * s, borderWidth: 2 * s, borderColor: coral, padding: { left: 24 * s, right: 24 * s }, pointerFilter: 'block' }} uiBackground={{ color: Color4.create(0.03, 0.04, 0.06, 0.98) }}>
+        <UiEntity uiTransform={{ width: 56 * s, height: 56 * s, margin: { bottom: 8 * s }, flexShrink: 0, pointerFilter: 'none' }}
+          uiBackground={{ textureMode: 'stretch', texture: { src: PAWN_IMAGE }, color: Color4.White() }} />
+        <Label value={t('You hold a Pumpkin Head')} color={coral} font="serif" fontSize={22 * s} textAlign="middle-center" textWrap="nowrap"
+          uiTransform={{ width: '100%', height: 30 * s, flexShrink: 0, pointerFilter: 'none' }} />
+        <Label value={others.length ? t('Crown someone in your party, or wear it yourself. The wearer grins for an hour and earns ×{m} embers the while.', { m: GW_MULT })
+          : t('Nobody in your party to crown. Wear it yourself: a grin for an hour, and ×{m} embers the while.', { m: GW_MULT })}
+          color={white} fontSize={14 * s} textAlign="middle-center" textWrap="wrap" uiTransform={{ width: '100%', height: 44 * s, flexShrink: 0, pointerFilter: 'none' }} />
+        <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', margin: { top: 10 * s }, flexShrink: 0, pointerFilter: 'none' }}>
+          {others.slice(0, 5).map((m) => <Action key={`gw-curse-${m}`} id={`gw-curse-${m}`} text={heroLabel(m)} onClick={() => gravewatchCurse(m)} width={118} height={36} scale={s} fontSize={12} accent="gold" />)}
+          <Action id="gw-curse-me" text={t('Wear it myself')} onClick={() => gravewatchCurse('')} width={140} height={36} scale={s} fontSize={13} primary accent="gold" />
+        </UiEntity>
+      </UiEntity>}
+    </UiEntity>
+    <Line text={wearing ? t('You wear the Pumpkin Head for another {m} min: ×{x} embers the while.', { m: Math.max(1, Math.ceil((gw.curse - serverNow()) / 60000)), x: GW_MULT }) : ''}
+      scale={s} color={coral} size={13} height={24} />
+    <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+      {free && !turning && <UiEntity uiTransform={{ height: 24 * s, padding: { left: 10 * s, right: 10 * s }, margin: { right: 12 * s }, borderRadius: 12 * s, borderWidth: s, borderColor: ember,
+        alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: emberDark }}>
+        <Label value={t('1 free spin today')} color={ember} fontSize={12 * s} textWrap="nowrap" uiTransform={{ height: '100%', pointerFilter: 'none' }} />
+      </UiEntity>}
+      <Action id="gw-spin" text={turning ? t('Spinning…') : free ? t('Free spin') : t('Spin ({n} embers)', { n: GW_SPIN_COST })} onClick={gravewatchSpin}
+        width={free ? 200 : 260} height={46} scale={s} fontSize={17} primary accent="gold" disabled={!can} />
     </UiEntity>
     <Gap h={6} scale={s} />
-    <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
-      <Action id="gw-spin" text={turning ? t('Spinning…') : free ? t('Spin (free today)') : t('Spin ({n} embers)', { n: GW_SPIN_COST })} onClick={gravewatchSpin}
-        width={260} height={46} scale={s} fontSize={16} primary accent="gold" disabled={!can} />
+    <PityBar scale={s} inner={inner} />
+  </UiEntity>
+}
+
+/** The prize as it lands, in a few words. */
+function prizeLine(seg: GwSegment): string {
+  switch (seg.kind) {
+    case 'embers': return `+${seg.amount} ${t('embers')}`
+    case 'coins': return `+${seg.amount} ${t('coins')}`
+    case 'gear': return t('A piece of gear!')
+    case 'mult': return t('×{m} embers for a day!', { m: GW_MULT })
+    default: return t('Pumpkin Head!')
+  }
+}
+
+/** Spins since the last gear: a thin track that fills toward the guaranteed piece. */
+function PityBar({ scale: s, inner }: { scale: number; inner: number }) {
+  const gw = getGravewatch()
+  const left = Math.max(0, GW_WHEEL_PITY - gw.pity)
+  const trackWidth = 200
+  return <UiEntity uiTransform={{ width: '100%', height: 20 * s, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+    <Label value={left === 1 ? t('Next spin: guaranteed gear') : t('Guaranteed gear in {n} spins', { n: left })} color={muted} fontSize={12 * s} textAlign="middle-right" textWrap="nowrap"
+      uiTransform={{ width: (inner - trackWidth) / 2 * s, height: '100%', margin: { right: 10 * s }, pointerFilter: 'none' }} />
+    <UiEntity uiTransform={{ width: trackWidth * s, height: 8 * s, borderRadius: 4 * s, borderWidth: s, borderColor: line, flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: panelColor }}>
+      <UiEntity uiTransform={{ width: `${Math.min(100, (gw.pity / GW_WHEEL_PITY) * 100)}%`, height: '100%', borderRadius: 4 * s, pointerFilter: 'none' }} uiBackground={{ color: gold }} />
     </UiEntity>
-    {spin?.done && <Line text={`${t('The wheel stops on')}: ${t(GW_WHEEL[spin.target].label)}`} scale={s} color={gold} size={16} height={28} />}
-    {gw.held && <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', margin: { top: 6 * s }, flexShrink: 0, pointerFilter: 'none' }}>
-      <Line text={others.length ? t('You hold a pumpkin curse. Who wears it for an hour?') : t('You hold a pumpkin curse. No party to pass it to: wear it yourself?')} scale={s} color={coral} />
-      <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', flexWrap: 'wrap', flexShrink: 0, pointerFilter: 'none' }}>
-        {others.slice(0, 5).map((m) => <Action key={`gw-curse-${m}`} id={`gw-curse-${m}`} text={heroLabel(m)} onClick={() => gravewatchCurse(m)} width={118} height={34} scale={s} fontSize={12} accent="gold" />)}
-        <Action id="gw-curse-me" text={t('Wear it myself')} onClick={() => gravewatchCurse('')} width={140} height={34} scale={s} fontSize={12} accent="gold" />
-      </UiEntity>
-    </UiEntity>}
-    {gw.curse > serverNow() && <Line text={t('You wear the pumpkin for another {m} min.', { m: Math.max(1, Math.ceil((gw.curse - serverNow()) / 60000)) })} scale={s} color={coral} />}
+    <Label value={`${Math.min(gw.pity, GW_WHEEL_PITY)}/${GW_WHEEL_PITY}`} color={muted} fontSize={12 * s} textAlign="middle-left" textWrap="nowrap"
+      uiTransform={{ width: (inner - trackWidth) / 2 * s, height: '100%', margin: { left: 10 * s }, pointerFilter: 'none' }} />
   </UiEntity>
 }
 
@@ -355,7 +414,7 @@ function BoardTab({ scale: s, inner }: { scale: number; inner: number }) {
             </UiEntity>
           })}
         </UiEntity>
-        {gw.held && <Label value={t('Pumpkin curse held: give it out on the Wheel tab.')} color={coral} fontSize={11 * s} textAlign="top-left" textWrap="wrap"
+        {gw.held && <Label value={t('A Pumpkin Head to give out: see the Wheel tab.')} color={coral} fontSize={11 * s} textAlign="top-left" textWrap="wrap"
           uiTransform={{ width: '100%', height: 30 * s, margin: { top: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
       </UiEntity>
     </UiEntity>
@@ -429,8 +488,9 @@ const RULES: Record<GwTab, { title: string; lines: () => string[] }> = {
   ] },
   wheel: { title: 'How the Wheel works', lines: () => [
     t('One free spin a day. More spins cost {n} embers each.', { n: GW_SPIN_COST }),
-    t('The wheel gives embers, coins, a piece of gear, a day of x1.5 embers, or a pumpkin curse.'),
-    t('The curse is a pumpkin head for an hour. Give it to someone in your party, or wear it yourself.')
+    t('The wheel gives embers, coins, a piece of gear, a day of x1.5 embers, or a Pumpkin Head.'),
+    t('The Pumpkin Head is a grinning mask for an hour, and x1.5 embers while it is worn. Crown a party member, or wear it yourself.'),
+    t('Every {n}th spin without gear is guaranteed to land on gear.', { n: GW_WHEEL_PITY })
   ] },
   board: { title: 'How Gravewalk works', lines: () => [
     t('You get {n} free rolls a day.', { n: GW_BOARD_TOKENS }),

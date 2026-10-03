@@ -95,8 +95,10 @@ export const GW_HAT_STEPS: readonly { rolls: number; embers: number }[] = [
 /** The Wheel's ember multiplier prize: this much, for this long. */
 export const GW_MULT = 1.5
 export const GW_MULT_MS = 24 * 3600 * 1000
-/** The pumpkin-head curse: how long the party member wears it. */
+/** The Pumpkin Head: how long the wearer has it on, earning x1.5 embers the while. */
 export const GW_CURSE_MS = 3600 * 1000
+/** The Wheel's pity: this many spins without gear and the next one lands on it. */
+export const GW_WHEEL_PITY = 10
 
 /**
  * The Wheel of Bones, in segment order. The server picks by weight and tells
@@ -108,7 +110,7 @@ export const GW_WHEEL: readonly GwSegment[] = [
   { kind: 'embers', amount: 10, weight: 24, label: '10 embers' },
   { kind: 'coins', amount: 150, weight: 12, label: '150 coins' },
   { kind: 'embers', amount: 25, weight: 18, label: '25 embers' },
-  { kind: 'curse', amount: 1, weight: 8, label: 'Pumpkin curse' },
+  { kind: 'curse', amount: 1, weight: 8, label: 'Pumpkin Head' },
   { kind: 'embers', amount: 50, weight: 10, label: '50 embers' },
   { kind: 'gear', amount: 1, weight: 9, label: 'A piece of gear' },
   { kind: 'embers', amount: 100, weight: 4, label: '100 embers' },
