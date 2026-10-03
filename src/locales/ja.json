@@ -1461,5 +1461,21 @@
   "Three free runs a day; more cost {n} embers each. Clearing a dungeon drops a few embers too, three times a day.": "1日3回無料。それ以降は1回につき残り火{n}。ダンジョン制覇でも少しの残り火が1日3回まで手に入ります。",
   "1 free run left": "無料ラン残り1回",
   "{n} free runs left": "無料ラン残り{n}回",
-  "Free runs spent": "無料ラン使用済み"
+  "Free runs spent": "無料ラン使用済み",
+  "The Rising begins": "ライジング開始",
+  "Be in the hall and press Join.": "ホールにいて「参加」を押してください。",
+  "days": "日",
+  "hours": "時間",
+  "min": "分",
+  "sec": "秒",
+  "LIVE NOW": "開催中",
+  "SATURDAYS · 9:15 PM ET": "毎週土曜 · 21:15 ET",
+  "{n} heroes in the yard": "庭に英雄{n}人",
+  "embers for fighting": "参戦で残り火",
+  "more if the Demon dies": "悪魔を倒せばさらに",
+  "Raid loot": "レイド戦利品",
+  "unlocks for everyone on a win": "勝利で全員に解放",
+  "for everyone on a win": "勝利で全員に",
+  "Everyone fights the Demon in one yard. If you fall, an ally standing over you raises you.": "全員が一つの庭で悪魔と戦います。倒れても、そばに立つ味方が起こしてくれます。",
+  "The Join button appears here at 9:15 PM ET on Saturday.": "「参加」ボタンは土曜 21:15 ET にここに現れます。"
 }

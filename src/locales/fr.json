@@ -1461,5 +1461,21 @@
   "Three free runs a day; more cost {n} embers each. Clearing a dungeon drops a few embers too, three times a day.": "Trois courses gratuites par jour ; les suivantes coûtent {n} braises chacune. Terminer un donjon laisse aussi tomber quelques braises, trois fois par jour.",
   "1 free run left": "1 course gratuite restante",
   "{n} free runs left": "{n} courses gratuites restantes",
-  "Free runs spent": "Courses gratuites épuisées"
+  "Free runs spent": "Courses gratuites épuisées",
+  "The Rising begins": "Le Soulèvement commence",
+  "Be in the hall and press Join.": "Soyez dans la salle et appuyez sur Rejoindre.",
+  "days": "jours",
+  "hours": "heures",
+  "min": "min",
+  "sec": "s",
+  "LIVE NOW": "EN DIRECT",
+  "SATURDAYS · 9:15 PM ET": "LE SAMEDI · 21 H 15 ET",
+  "{n} heroes in the yard": "{n} héros dans la cour",
+  "embers for fighting": "braises pour le combat",
+  "more if the Demon dies": "de plus si le Démon meurt",
+  "Raid loot": "Butin du raid",
+  "unlocks for everyone on a win": "débloqué pour tous en cas de victoire",
+  "for everyone on a win": "pour tous en cas de victoire",
+  "Everyone fights the Demon in one yard. If you fall, an ally standing over you raises you.": "Tout le monde affronte le Démon dans une seule cour. Si vous tombez, un allié debout au-dessus de vous vous relève.",
+  "The Join button appears here at 9:15 PM ET on Saturday.": "Le bouton Rejoindre apparaît ici le samedi à 21 h 15 ET."
 }

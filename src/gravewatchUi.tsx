@@ -43,6 +43,13 @@ const CHEST_IMAGE = 'images/gravewatch/chest.png'
 const GEAR_BADGE_IMAGE = 'images/gravewatch/gear-badge.png'
 const RUN_BANNER = 'images/gravewatch/run-banner.png'
 const RUN_ICONS = 'images/gravewatch/run-icons.png'
+const GW_ICONS = 'images/gravewatch/icons.png'
+const RISING_BANNER = 'images/gravewatch/rising-banner.png'
+const WHEEL_STRIP = 'images/gravewatch/wheel-strip.png'
+const RELIQUARY_STRIP = 'images/gravewatch/reliquary-strip.png'
+/** Tiles of the prize icon sheet. */
+const ICON = { ember: 0, coins: 1, gear: 2, mult: 3, dice: 4, demon: 5 } as const
+const RARITY_COLORS: Record<GwItem, Color4> = { w1: cyan, w2: gold, w3: coral }
 let rulesOpen = false
 /** Dev-only +1000 embers button; hidden for now, flip to true when testing payouts. */
 const SHOW_GRANT = false
@@ -111,11 +118,6 @@ function minutesLeft(seconds: number): string {
   const m = Math.floor((s % 3600) / 60)
   const sec = s % 60
   return `${h > 0 ? `${h}h ` : ''}${m}m ${sec < 10 ? '0' : ''}${sec}s`
-}
-
-function Heading({ title, scale: s }: { title: string; scale: number }) {
-  return <Label value={title} color={gold} fontSize={13 * s} textAlign="middle-left" textWrap="nowrap"
-    uiTransform={{ width: '100%', height: 22 * s, margin: { bottom: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />
 }
 
 function Line({ text, scale: s, color = muted, size = 15, height = 26 }: { text: string; scale: number; color?: Color4; size?: number; height?: number }) {
@@ -219,10 +221,9 @@ function RunTab({ scale: s, inner }: { scale: number; inner: number }) {
     <Track best={gw.best} inner={inner} scale={s} />
     <Gap h={8} scale={s} />
     <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
-      <UiEntity uiTransform={{ padding: 3 * s, borderRadius: 6 * s, borderWidth: s, borderColor: can ? ember : line, flexShrink: 0, pointerFilter: 'none' }}
-        uiBackground={{ color: can ? Color4.create(0.98, 0.55, 0.2, 0.14) : Color4.create(0, 0, 0, 0) }}>
+      <Glow on={can} scale={s}>
         <Action id="gw-run-go" text={label} onClick={gravewatchRun} width={300} height={46} scale={s} fontSize={17} primary accent="gold" disabled={!can} />
-      </UiEntity>
+      </Glow>
       <Label value={free ? (left === 1 ? t('1 free run left') : t('{n} free runs left', { n: left })) : t('Free runs spent')} color={muted} fontSize={12 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={{ width: 120 * s, height: 20 * s, margin: { left: 12 * s }, pointerFilter: 'none' }} />
     </UiEntity>
@@ -242,6 +243,29 @@ function RunTab({ scale: s, inner }: { scale: number; inner: number }) {
 function RunIcon({ tile, size, scale: s }: { tile: number; size: number; scale: number }) {
   return <UiEntity uiTransform={{ width: size * s, height: size * 1.4 * s, margin: { right: 6 * s }, flexShrink: 0, pointerFilter: 'none' }}
     uiBackground={{ textureMode: 'stretch', texture: { src: RUN_ICONS }, uvs: sheetUvs(tile, 0, 4, 1), color: Color4.White() }} />
+}
+
+/** One tile of the prize icon sheet (ember, coins, gear, hourglass, dice, demon), sized by height; the tiles are tall. */
+function GwIcon({ tile, height, scale: s, right = 6 }: { tile: number; height: number; scale: number; right?: number }) {
+  return <UiEntity uiTransform={{ width: height * 0.61 * s, height: height * s, margin: { right: right * s }, flexShrink: 0, pointerFilter: 'none' }}
+    uiBackground={{ textureMode: 'stretch', texture: { src: GW_ICONS }, uvs: sheetUvs(tile, 0, 6, 1), color: Color4.White() }} />
+}
+
+/** A painted strip across the top of a tab, the heading over its dark left end. */
+function Strip({ src, title, sub, height, scale: s }: { src: string; title: string; sub: string; height: number; scale: number }) {
+  return <UiEntity uiTransform={{ width: '100%', height: height * s, borderRadius: 6 * s, borderWidth: s, borderColor: goldLine, flexShrink: 0, pointerFilter: 'none' }}
+    uiBackground={{ textureMode: 'stretch', texture: { src }, color: Color4.White() }}>
+    <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 16 * s, top: 0 }, height: '100%', flexDirection: 'column', justifyContent: 'center', pointerFilter: 'none' }}>
+      <Label value={title} font="serif" color={white} fontSize={21 * s} textAlign="middle-left" textWrap="nowrap" uiTransform={{ height: 26 * s, pointerFilter: 'none' }} />
+      <Label value={sub} color={gold} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap" uiTransform={{ height: 16 * s, pointerFilter: 'none' }} />
+    </UiEntity>
+  </UiEntity>
+}
+
+/** The ember glow around a tab's main button; dark and quiet while it cannot be pressed. */
+function Glow({ on, scale: s, children }: { on: boolean; scale: number; children?: ReactEcs.JSX.Element | ReactEcs.JSX.Element[] }) {
+  return <UiEntity uiTransform={{ padding: 3 * s, borderRadius: 6 * s, borderWidth: s, borderColor: on ? ember : line, flexShrink: 0, pointerFilter: 'none' }}
+    uiBackground={{ color: on ? Color4.create(0.98, 0.55, 0.2, 0.14) : Color4.create(0, 0, 0, 0) }}>{children}</UiEntity>
 }
 
 /** The road as a bar: the four distance marks as lamps along it, lit as far as today's best, the pumpkin pawn at the best itself. */
@@ -363,7 +387,8 @@ function WheelTab({ scale: s, inner }: { scale: number; inner: number }) {
   const pop = result ? 1 + 0.3 * Math.max(0, 1 - spin!.sinceDone / 0.3) : 1
   const pumpkinCard = gw.held && (!spin || (spin.done && spin.sinceDone >= 1.4))
   return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', pointerFilter: 'none' }}>
-    <Heading title={t('ONE FREE SPIN A DAY; MORE FOR {n} EMBERS', { n: GW_SPIN_COST })} scale={s} />
+    <Strip src={WHEEL_STRIP} title={t('Wheel of Bones').toUpperCase()} sub={t('ONE FREE SPIN A DAY; MORE FOR {n} EMBERS', { n: GW_SPIN_COST })} height={60} scale={s} />
+    <Gap h={8} scale={s} />
     <UiEntity uiTransform={{ width: '100%', height: rowHeight * s, flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
       {/* The wheel: one frame of the sheet per angle, the pointer fixed over it. */}
       <UiEntity uiTransform={{ width: wheelSize * s, height: rowHeight * s, flexShrink: 0, pointerFilter: 'none' }}>
@@ -386,6 +411,9 @@ function WheelTab({ scale: s, inner }: { scale: number; inner: number }) {
           return <UiEntity key={`gw-seg-${i}`} uiTransform={{ width: '100%', height: 22 * s, margin: { bottom: 3 * s }, padding: { left: 8 * s, right: 6 * s }, flexDirection: 'row',
             borderRadius: 3 * s, borderWidth: s, borderColor: landed ? gold : lit ? ember : rare ? goldLine : line, alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}
             uiBackground={{ color: landed ? Color4.create(0.16, 0.12, 0.06, 0.96) : lit ? emberDark : panelColor }}>
+            {seg.kind === 'curse'
+              ? <UiEntity uiTransform={{ width: 18 * s, height: 18 * s, margin: { right: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ textureMode: 'stretch', texture: { src: PAWN_IMAGE }, color: Color4.White() }} />
+              : <GwIcon tile={seg.kind === 'coins' ? ICON.coins : seg.kind === 'gear' ? ICON.gear : seg.kind === 'mult' ? ICON.mult : ICON.ember} height={20} scale={s} />}
             <Label value={t(seg.label)} color={landed ? gold : lit ? ember : seg.kind === 'curse' ? coral : rare ? gold : white} fontSize={13 * s} textAlign="middle-left" textWrap="nowrap"
               uiTransform={{ flexGrow: 1, height: '100%', pointerFilter: 'none' }} />
             {rare && <UiEntity uiTransform={{ height: 16 * s, padding: { left: 6 * s, right: 6 * s }, borderRadius: 3 * s, borderWidth: s, borderColor: goldLine, alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}
@@ -417,8 +445,10 @@ function WheelTab({ scale: s, inner }: { scale: number; inner: number }) {
         alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: emberDark }}>
         <Label value={t('1 free spin today')} color={ember} fontSize={12 * s} textWrap="nowrap" uiTransform={{ height: '100%', pointerFilter: 'none' }} />
       </UiEntity>}
-      <Action id="gw-spin" text={turning ? t('Spinning…') : free ? t('Free spin') : t('Spin ({n} embers)', { n: GW_SPIN_COST })} onClick={gravewatchSpin}
-        width={free ? 200 : 260} height={46} scale={s} fontSize={17} primary accent="gold" disabled={!can} />
+      <Glow on={can} scale={s}>
+        <Action id="gw-spin" text={turning ? t('Spinning…') : free ? t('Free spin') : t('Spin ({n} embers)', { n: GW_SPIN_COST })} onClick={gravewatchSpin}
+          width={free ? 200 : 260} height={46} scale={s} fontSize={17} primary accent="gold" disabled={!can} />
+      </Glow>
     </UiEntity>
     <Gap h={6} scale={s} />
     <PityBar scale={s} inner={inner} />
@@ -525,11 +555,16 @@ function BoardTab({ scale: s, inner }: { scale: number; inner: number }) {
       </UiEntity>
       {/* The side: rolls left, the two rolls, the daily meter. */}
       <UiEntity uiTransform={{ width: panel * s, height: '100%', margin: { left: 16 * s }, flexDirection: 'column', pointerFilter: 'none' }}>
-        <Label value={`${left}`} color={left > 0 ? ember : muted} font="serif" fontSize={44 * s} textAlign="middle-left" textWrap="nowrap"
-          uiTransform={{ width: '100%', height: 50 * s, flexShrink: 0, pointerFilter: 'none' }} />
+        <UiEntity uiTransform={{ width: '100%', height: 50 * s, flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+          <GwIcon tile={ICON.dice} height={48} scale={s} right={10} />
+          <Label value={`${left}`} color={left > 0 ? ember : muted} font="serif" fontSize={44 * s} textAlign="middle-left" textWrap="nowrap"
+            uiTransform={{ flexGrow: 1, height: '100%', pointerFilter: 'none' }} />
+        </UiEntity>
         <Line text={t('rolls left today')} scale={s} size={13} height={20} />
         <Gap h={10} scale={s} />
-        <Action id="gw-roll-one" text={rolling ? t('Rolling…') : t('Roll one die')} onClick={() => gravewatchRoll(false)} width={panel} height={44} scale={s} fontSize={15} primary accent="gold" disabled={!can} />
+        <Glow on={can} scale={s}>
+          <Action id="gw-roll-one" text={rolling ? t('Rolling…') : t('Roll one die')} onClick={() => gravewatchRoll(false)} width={panel - 8} height={44} scale={s} fontSize={15} primary accent="gold" disabled={!can} />
+        </Glow>
         <Gap h={8} scale={s} />
         <Action id="gw-roll-two" text={t('Two dice ({n} embers)', { n: GW_BOARD_DOUBLE_COST })} onClick={() => gravewatchRoll(true)} width={panel} height={44} scale={s} fontSize={14} accent="gold"
           disabled={!can || gw.embers < GW_BOARD_DOUBLE_COST} />
@@ -737,42 +772,90 @@ export function emberPayout(): number {
 
 // --- the Rising -----------------------------------------------------------------------------------
 
-function RisingTab({ scale: s }: { scale: number; inner: number }) {
+function RisingTab({ scale: s, inner }: { scale: number; inner: number }) {
   const gw = getGravewatch()
   const clock = risingClock()
   const dev = isDeveloper()
   const inside = inRisingArena()
   const unlock = clock.start > 0 ? GW_RISING_UNLOCKS[clock.start] : undefined
-  const canJoin = !gw.guest && !gw.over && !inside && (clock.phase === 'fight' || dev) && !myParty()
+  const fight = clock.phase === 'fight'
+  const canJoin = !gw.guest && !gw.over && !inside && (fight || dev) && !myParty()
   let headline = ''
   let sub = ''
   if (clock.phase === 'closed') {
     headline = t('The Risings are done.')
     sub = t('The Demon will not climb again this season.')
-  } else if (clock.phase === 'fight') {
+  } else if (fight) {
     headline = t('THE RISING IS ON')
     sub = t('{n} heroes in the yard. Join before the gate shuts at 10 PM ET.', { n: gw.arena })
   } else if (clock.phase === 'lobby') {
-    headline = t('The Rising begins in {c}', { c: countdown(clock.seconds) })
+    headline = t('The Rising begins')
     sub = t('Be in the hall; the Join button appears at 9:15.')
   } else {
     headline = `${t('Next Rising')}: ${etLabel(clock.start)}`
-    sub = t('In {c}. Be in the hall and press Join.', { c: countdown(clock.seconds) })
+    sub = t('Be in the hall and press Join.')
   }
+  const left = Math.max(0, Math.floor(clock.seconds))
+  const boxes: [number, string][] = [[Math.floor(left / 86400), t('days')], [Math.floor((left % 86400) / 3600), t('hours')], [Math.floor((left % 3600) / 60), t('min')], [left % 60, t('sec')]]
+  const chipW = (inner - 2 * 10) / 3
   return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', pointerFilter: 'none' }}>
-    <Label value={headline} font="serif" color={clock.phase === 'fight' ? coral : gold} fontSize={(clock.phase === 'fight' ? 26 : 22) * s} textAlign="middle-left" textWrap="nowrap"
-      uiTransform={{ width: '100%', height: 36 * s, flexShrink: 0, pointerFilter: 'none' }} />
-    <Line text={sub} scale={s} color={white} size={15} height={26} />
-    <Gap h={14} scale={s} />
-    <Line text={t('Saturdays, 9:15 PM ET. Everyone fights the Demon in one yard.')} scale={s} />
-    <Line text={t('Fighting pays {a} embers. A win pays {b} more and unlocks the week\'s wearable.', { a: GW_RISING_FIGHT_EMBERS, b: GW_RISING_WIN_EMBERS })} scale={s} />
-    {unlock && <Line text={`${t('This Rising unlocks')}: ${GW_ITEM_INFO[unlock].name} (${t(GW_ITEM_INFO[unlock].rarity)})`} scale={s} color={gold} />}
-    <Gap h={22} scale={s} />
+    <UiEntity uiTransform={{ width: '100%', height: 171 * s, borderRadius: 6 * s, borderWidth: s, borderColor: fight ? coral : goldLine, flexShrink: 0, pointerFilter: 'none' }}
+      uiBackground={{ textureMode: 'stretch', texture: { src: RISING_BANNER }, color: Color4.White() }}>
+      <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 18 * s, bottom: 12 * s }, width: (inner - 36) * s, flexDirection: 'column', pointerFilter: 'none' }}>
+        <Label value={headline} font="serif" color={fight ? coral : white} fontSize={(fight ? 28 : 24) * s} textAlign="middle-left" textWrap="nowrap" uiTransform={{ height: 34 * s, pointerFilter: 'none' }} />
+        <Label value={sub} color={gold} fontSize={13 * s} textAlign="middle-left" textWrap="nowrap" uiTransform={{ height: 20 * s, pointerFilter: 'none' }} />
+      </UiEntity>
+      <UiEntity uiTransform={{ positionType: 'absolute', position: { right: 12 * s, top: 10 * s }, height: 24 * s, padding: { left: 10 * s, right: 10 * s }, borderRadius: 12 * s, borderWidth: s,
+        borderColor: fight ? coral : goldLine, alignItems: 'center', pointerFilter: 'none' }} uiBackground={{ color: fight ? Color4.create(0.3, 0.06, 0.05, 0.9) : Color4.create(0.03, 0.04, 0.06, 0.8) }}>
+        <Label value={fight ? t('LIVE NOW') : t('SATURDAYS · 9:15 PM ET')} color={fight ? coral : gold} fontSize={10.5 * s} textWrap="nowrap" uiTransform={{ height: '100%', pointerFilter: 'none' }} />
+      </UiEntity>
+    </UiEntity>
+    <Gap h={10} scale={s} />
+    {/* The clock: four boxes down to the gate; while the fight is on, the yard's count instead. */}
+    {clock.phase !== 'closed' && <UiEntity uiTransform={{ width: '100%', height: 56 * s, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+      {fight
+        ? <Label value={t('{n} heroes in the yard', { n: gw.arena })} font="serif" color={coral} fontSize={24 * s} textAlign="middle-center" textWrap="nowrap" uiTransform={{ height: '100%', pointerFilter: 'none' }} />
+        : boxes.map(([n, unit], i) => <UiEntity key={`gw-rise-box-${i}`} uiTransform={{ width: 74 * s, height: '100%', margin: { left: 4 * s, right: 4 * s }, borderRadius: 6 * s, borderWidth: s, borderColor: goldLine,
+          flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: card }}>
+          <Label value={n < 10 ? `0${n}` : `${n}`} font="serif" color={white} fontSize={24 * s} textAlign="middle-center" textWrap="nowrap" uiTransform={{ height: 30 * s, pointerFilter: 'none' }} />
+          <Label value={unit} color={muted} fontSize={10 * s} textAlign="middle-center" textWrap="nowrap" uiTransform={{ height: 14 * s, pointerFilter: 'none' }} />
+        </UiEntity>)}
+    </UiEntity>}
+    <Gap h={10} scale={s} />
+    {/* What it pays: the two ember purses and the week's wearable. */}
+    <UiEntity uiTransform={{ width: '100%', height: 54 * s, flexDirection: 'row', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
+      <RisingChip icon={ICON.ember} big={`+${GW_RISING_FIGHT_EMBERS}`} small={t('embers for fighting')} width={chipW} color={ember} scale={s} />
+      <RisingChip icon={ICON.demon} big={`+${GW_RISING_WIN_EMBERS}`} small={t('more if the Demon dies')} width={chipW} color={ember} scale={s} />
+      <RisingChip picture={unlock ? GW_ITEM_INFO[unlock].picture : undefined} icon={ICON.gear} big={unlock ? GW_ITEM_INFO[unlock].name : t('Raid loot')} small={unlock ? t('unlocks for everyone on a win') : t('for everyone on a win')}
+        width={chipW} color={unlock ? RARITY_COLORS[unlock] : gold} scale={s} />
+    </UiEntity>
+    <Gap h={8} scale={s} />
+    <Line text={t('Everyone fights the Demon in one yard. If you fall, an ally standing over you raises you.')} scale={s} size={13} height={22} />
+    <Gap h={8} scale={s} />
     <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }}>
       {inside && <Action id="gw-rising-leave" text={t('Leave the yard')} onClick={() => gravewatchRising('leave')} width={220} height={46} scale={s} fontSize={15} accent="gold" />}
-      {!inside && (clock.phase === 'fight' || (dev && clock.phase !== 'closed')) &&
-        <Action id="gw-rising-join" text={myParty() ? t('Leave your party first') : dev && clock.phase !== 'fight' ? t('Open a test arena') : t('Join the Rising')} onClick={() => gravewatchRising('join')}
-          width={260} height={46} scale={s} fontSize={16} primary accent="gold" disabled={!canJoin} />}
+      {!inside && (fight || (dev && clock.phase !== 'closed')) &&
+        <Glow on={canJoin} scale={s}>
+          <Action id="gw-rising-join" text={myParty() ? t('Leave your party first') : dev && !fight ? t('Open a test arena') : t('Join the Rising')} onClick={() => gravewatchRising('join')}
+            width={260} height={46} scale={s} fontSize={16} primary accent="gold" disabled={!canJoin} />
+        </Glow>}
+      {!inside && !fight && !dev && clock.phase !== 'closed' && <Label value={t('The Join button appears here at 9:15 PM ET on Saturday.')} color={muted} fontSize={12 * s} textAlign="middle-center" textWrap="nowrap"
+        uiTransform={{ width: '100%', height: 22 * s, flexShrink: 0, pointerFilter: 'none' }} />}
+    </UiEntity>
+  </UiEntity>
+}
+
+/** One reward of the Rising: an icon or the wearable's picture, the figure, what it is for. */
+function RisingChip({ icon, picture, big, small, width, color, scale: s }: { icon: number; picture?: string; big: string; small: string; width: number; color: Color4; scale: number }) {
+  return <UiEntity uiTransform={{ width: width * s, height: '100%', padding: { left: 10 * s, right: 10 * s }, borderRadius: 6 * s, borderWidth: s, borderColor: goldLine,
+    flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: card }}>
+    {picture
+      ? <UiEntity uiTransform={{ width: 40 * s, height: 40 * s, margin: { right: 8 * s }, borderRadius: 4 * s, borderWidth: s, borderColor: color, flexShrink: 0, pointerFilter: 'none' }}
+        uiBackground={{ textureMode: 'stretch', texture: { src: picture }, color: Color4.White() }} />
+      : <GwIcon tile={icon} height={40} scale={s} right={8} />}
+    <UiEntity uiTransform={{ flexDirection: 'column', flexGrow: 1, minWidth: 0, pointerFilter: 'none' }}>
+      <Label value={big} font="serif" color={color} fontSize={(big.length > 8 ? 14 : 20) * s} textAlign="middle-left" textWrap="nowrap" uiTransform={{ width: '100%', height: 22 * s, pointerFilter: 'none' }} />
+      <Label value={small} color={muted} fontSize={10 * s} textAlign="middle-left" textWrap="nowrap" uiTransform={{ width: '100%', height: 14 * s, pointerFilter: 'none' }} />
     </UiEntity>
   </UiEntity>
 }
@@ -784,7 +867,8 @@ function ReliquaryTab({ scale: s, inner }: { scale: number; inner: number }) {
   const now = serverNow()
   const cardWidth = (inner - 2 * 12) / 3
   return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', pointerFilter: 'none' }}>
-    <Heading title={t('EMBERS BUY THE SEASON\'S WEARABLES')} scale={s} />
+    <Strip src={RELIQUARY_STRIP} title={t('Reliquary').toUpperCase()} sub={t('EMBERS BUY THE SEASON\'S WEARABLES')} height={60} scale={s} />
+    <Gap h={8} scale={s} />
     <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
       {GW_ITEMS.map((item) => <Relic key={`gw-relic-${item}`} item={item} scale={s} width={cardWidth} now={now} />)}
     </UiEntity>
@@ -821,17 +905,26 @@ function Relic({ item, scale: s, width }: { key?: string; item: GwItem; scale: n
     if (gw.embers < price) why = t('{n} more embers', { n: price - gw.embers })
   }
   const hover = hovered === `gw-relic-${item}`
-  return <UiEntity uiTransform={{ width: width * s, flexDirection: 'column', alignItems: 'center', padding: 10 * s, borderRadius: 6 * s, borderWidth: s,
-    borderColor: state === 'granted' ? green : live ? (hover ? gold : goldLine) : line, flexShrink: 0, pointerFilter: 'block' }}
+  const tint = RARITY_COLORS[item]
+  const dim = Color4.create(tint.r, tint.g, tint.b, 0.45)
+  return <UiEntity uiTransform={{ width: width * s, flexDirection: 'column', alignItems: 'center', padding: 10 * s, borderRadius: 6 * s, borderWidth: (live && hover) || state === 'granted' ? 2 * s : s,
+    borderColor: state === 'granted' ? green : live ? (hover ? white : tint) : dim, flexShrink: 0, pointerFilter: 'block' }}
     uiBackground={{ color: live ? card : panelColor }}
     onMouseEnter={() => { hovered = `gw-relic-${item}` }} onMouseLeave={() => { if (hovered === `gw-relic-${item}`) hovered = '' }}>
-    <UiEntity uiTransform={{ width: (width - 40) * s, height: (width - 40) * s, borderRadius: 4 * s, flexShrink: 0, pointerFilter: 'none', opacity: live ? 1 : 0.45 }}
-      uiBackground={{ textureMode: 'stretch', texture: { src: info.picture }, color: Color4.White() }} />
+    <UiEntity uiTransform={{ width: (width - 40) * s, height: (width - 40) * s, borderRadius: 4 * s, borderWidth: s, borderColor: live ? dim : line, flexShrink: 0, pointerFilter: 'none', opacity: live ? 1 : 0.45 }}
+      uiBackground={{ textureMode: 'stretch', texture: { src: info.picture }, color: Color4.White() }}>
+      <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 4 * s, top: 4 * s }, height: 16 * s, padding: { left: 6 * s, right: 6 * s }, borderRadius: 8 * s, alignItems: 'center', pointerFilter: 'none' }}
+        uiBackground={{ color: Color4.create(0.03, 0.04, 0.06, 0.85) }}>
+        <Label value={t(info.rarity).toUpperCase()} color={tint} fontSize={8.5 * s} textWrap="nowrap" uiTransform={{ height: '100%', pointerFilter: 'none' }} />
+      </UiEntity>
+    </UiEntity>
     <Label value={info.name} font="serif" color={white} fontSize={16 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 24 * s, margin: { top: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />
-    <Label value={`${t(info.rarity)}  ·  ${price} ${t('embers')}`} color={item === 'w3' ? coral : item === 'w2' ? gold : cyan} fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
-      uiTransform={{ width: '100%', height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
-    <Gap h={8} scale={s} />
+    <UiEntity uiTransform={{ height: 20 * s, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+      <GwIcon tile={ICON.ember} height={18} scale={s} right={4} />
+      <Label value={`${price} ${t('embers')}`} color={ember} fontSize={13 * s} textAlign="middle-left" textWrap="nowrap" uiTransform={{ height: '100%', pointerFilter: 'none' }} />
+    </UiEntity>
+    <Gap h={6} scale={s} />
     <Action id={`gw-claim-${item}`} text={text} onClick={() => gravewatchRedeem(item)} width={width - 20} height={38} scale={s} fontSize={13}
       primary={can && confirm} accent={state === 'granted' ? 'green' : 'gold'} active={state === 'granted'} disabled={!can} />
     <Label value={why} color={muted} fontSize={11.5 * s} textAlign="middle-center" textWrap="wrap"

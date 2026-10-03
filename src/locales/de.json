@@ -1461,5 +1461,21 @@
   "Three free runs a day; more cost {n} embers each. Clearing a dungeon drops a few embers too, three times a day.": "Drei freie Läufe pro Tag; weitere kosten je {n} Glut. Ein geschaffter Dungeon lässt auch ein paar Glut fallen, dreimal am Tag.",
   "1 free run left": "1 freier Lauf übrig",
   "{n} free runs left": "{n} freie Läufe übrig",
-  "Free runs spent": "Freie Läufe verbraucht"
+  "Free runs spent": "Freie Läufe verbraucht",
+  "The Rising begins": "Das Erheben beginnt",
+  "Be in the hall and press Join.": "Sei in der Halle und drücke Beitreten.",
+  "days": "Tage",
+  "hours": "Std.",
+  "min": "Min.",
+  "sec": "Sek.",
+  "LIVE NOW": "JETZT LIVE",
+  "SATURDAYS · 9:15 PM ET": "SAMSTAGS · 21:15 ET",
+  "{n} heroes in the yard": "{n} Helden im Hof",
+  "embers for fighting": "Glut fürs Kämpfen",
+  "more if the Demon dies": "mehr, wenn der Dämon stirbt",
+  "Raid loot": "Raid-Beute",
+  "unlocks for everyone on a win": "bei einem Sieg für alle freigeschaltet",
+  "for everyone on a win": "für alle bei einem Sieg",
+  "Everyone fights the Demon in one yard. If you fall, an ally standing over you raises you.": "Alle kämpfen gemeinsam in einem Hof gegen den Dämon. Fällst du, richtet dich ein Verbündeter, der über dir steht, wieder auf.",
+  "The Join button appears here at 9:15 PM ET on Saturday.": "Der Beitreten-Knopf erscheint hier samstags um 21:15 ET."
 }

@@ -1461,5 +1461,21 @@
   "Three free runs a day; more cost {n} embers each. Clearing a dungeon drops a few embers too, three times a day.": "Tres carreras gratis al día; las demás cuestan {n} ascuas cada una. Completar una mazmorra también deja caer unas pocas ascuas, tres veces al día.",
   "1 free run left": "1 carrera gratis restante",
   "{n} free runs left": "{n} carreras gratis restantes",
-  "Free runs spent": "Carreras gratis agotadas"
+  "Free runs spent": "Carreras gratis agotadas",
+  "The Rising begins": "El Alzamiento comienza",
+  "Be in the hall and press Join.": "Estate en la sala y pulsa Unirse.",
+  "days": "días",
+  "hours": "horas",
+  "min": "min",
+  "sec": "seg",
+  "LIVE NOW": "EN DIRECTO",
+  "SATURDAYS · 9:15 PM ET": "SÁBADOS · 21:15 ET",
+  "{n} heroes in the yard": "{n} héroes en el patio",
+  "embers for fighting": "ascuas por luchar",
+  "more if the Demon dies": "más si el Demonio muere",
+  "Raid loot": "Botín de la incursión",
+  "unlocks for everyone on a win": "se desbloquea para todos con una victoria",
+  "for everyone on a win": "para todos con una victoria",
+  "Everyone fights the Demon in one yard. If you fall, an ally standing over you raises you.": "Todos luchan contra el Demonio en un mismo patio. Si caes, un aliado de pie sobre ti te levanta.",
+  "The Join button appears here at 9:15 PM ET on Saturday.": "El botón Unirse aparece aquí el sábado a las 21:15 ET."
 }
