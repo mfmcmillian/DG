@@ -84,7 +84,7 @@ function layout() {
   const right = 24
   const top = 48
   const bottom = 24
-  const scale = Math.min((screenWidth - left - right) / FRAME.width, (screenHeight - top - bottom) / FRAME.height, 1)
+  const scale = Math.min((screenWidth - left - right) / FRAME.width, (screenHeight - top - bottom) / FRAME.height, 1.45)
   const width = FRAME.width * scale
   const height = FRAME.height * scale
   return { scale, width, height, x: left + (screenWidth - left - right - width) / 2, y: top + (screenHeight - top - bottom - height) / 2 }
@@ -107,23 +107,25 @@ function WeaponCard({ offer, scale: s }: { key?: string; offer: UpgradeOffer; sc
     {item?.icon ? <UiEntity uiTransform={{ width: 72 * s, height: 72 * s, flexShrink: 0, pointerFilter: 'none' }}
       uiBackground={{ textureMode: 'stretch', texture: { src: item.icon } }} />
       : <UiEntity uiTransform={{ width: 72 * s, height: 72 * s, flexShrink: 0, pointerFilter: 'none' }} />}
-    <Label value={item ? t(item.name) : offer.id} color={white} fontSize={11.5 * s} textAlign="middle-center" textWrap="nowrap"
-      uiTransform={{ width: '100%', height: 18 * s, margin: { top: 4 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+    <Label value={item ? t(item.name) : offer.id} color={white} fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 18 * s, margin: { top: 2 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+    <Label value={t(rarity.label)} color={rarity.color} fontSize={11.5 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 16 * s, flexShrink: 0, pointerFilter: 'none' }} />
     <UiEntity uiTransform={{ width: '100%', height: 16 * s, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
-      <Label value={`${t(rarity.label)} · ${t('Lv {n}', { n: offer.from })}`} color={rarity.color} fontSize={10 * s} textAlign="middle-right" textWrap="nowrap"
-        uiTransform={{ width: 58 * s, height: '100%', pointerFilter: 'none' }} />
-      <Label value={to ? '→' : ''} color={muted} fontSize={11 * s} textAlign="middle-center" textWrap="nowrap"
-        uiTransform={{ width: 16 * s, height: '100%', pointerFilter: 'none' }} />
-      <Label value={to ? t('Lv {n}', { n: to }) : ''} color={to ? gold : muted} fontSize={10 * s} textAlign="middle-left" textWrap="nowrap"
-        uiTransform={{ width: 58 * s, height: '100%', pointerFilter: 'none' }} />
+      <Label value={t('Lv {n}', { n: offer.from })} color={muted} fontSize={12 * s} textAlign="middle-right" textWrap="nowrap"
+        uiTransform={{ width: 50 * s, height: '100%', pointerFilter: 'none' }} />
+      <Label value={to ? '→' : ''} color={muted} fontSize={12 * s} textAlign="middle-center" textWrap="nowrap"
+        uiTransform={{ width: 18 * s, height: '100%', pointerFilter: 'none' }} />
+      <Label value={to ? t('Lv {n}', { n: to }) : ''} color={to ? gold : muted} fontSize={12 * s} textAlign="middle-left" textWrap="nowrap"
+        uiTransform={{ width: 50 * s, height: '100%', pointerFilter: 'none' }} />
     </UiEntity>
     <Label value={to ? `◆ ${offer.coins}` : t('Cannot rise further')}
-      color={to ? (offer.affordable ? gold : coral) : muted} fontSize={10.5 * s} textAlign="middle-center" textWrap="nowrap"
-      uiTransform={{ width: '100%', height: 16 * s, margin: { top: 4 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+      color={to ? (offer.affordable ? gold : coral) : muted} fontSize={12 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 16 * s, margin: { top: 2 * s }, flexShrink: 0, pointerFilter: 'none' }} />
     {offer.equipped && <UiEntity uiTransform={{ width: 46 * s, height: 16 * s, positionType: 'absolute', position: { top: -8 * s, right: 8 * s },
       borderRadius: 8 * s, alignItems: 'center', justifyContent: 'center', pointerFilter: 'none' }}
       uiBackground={{ color: gold }}>
-      <Label value={t('WORN')} color={ink} font="sans-serif" fontSize={9 * s} textWrap="nowrap"
+      <Label value={t('WORN')} color={ink} font="sans-serif" fontSize={10 * s} textWrap="nowrap"
         uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} />
     </UiEntity>}
   </UiEntity>
@@ -162,8 +164,8 @@ export function UpgradeUi() {
       <UiEntity uiTransform={{ width: 200 * s, height: 2 * s, margin: { bottom: 10 * s }, flexShrink: 0, pointerFilter: 'none' }}
         uiBackground={{ color: gold }} />
       <Label value={t('Offer a weapon or a piece of armor to the fire and it comes back a level stronger, to level {max} at most. Every level adds {pct}% to what it does, and a weapon +{flat} flat damage besides.', { max: MAX_LEVEL, pct: LEVEL_PERCENT, flat: LEVEL_FLAT_DAMAGE })}
-        color={muted} fontSize={11.5 * s} textAlign="middle-left" textWrap="nowrap"
-        uiTransform={{ width: '100%', height: 18 * s, margin: { bottom: 12 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+        color={muted} fontSize={13 * s} textAlign="top-left" textWrap="wrap"
+        uiTransform={{ width: '100%', height: 38 * s, margin: { bottom: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />
 
       <UiEntity uiTransform={{ width: gridWidth * s, height: (PER_PAGE / PER_ROW) * (CARD.height + CARD.gap) * s, flexDirection: 'row', flexWrap: 'wrap', alignContent: 'flex-start', alignSelf: 'center', flexShrink: 0, pointerFilter: 'none' }}>
         {shown.map((offer) => <WeaponCard key={offer.uid} offer={offer} scale={s} />)}
@@ -173,17 +175,17 @@ export function UpgradeUi() {
         <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', pointerFilter: 'none' }}>
           {pages > 1 && <Action id="upgrade-prev" text="‹" onClick={() => turnPage(-1, offers, pages)} width={38} height={38} scale={s} fontSize={20} accent="gold" disabled={page === 0} />}
           {pages > 1 && <Label value={`${page + 1} / ${pages}`} color={muted} fontSize={12 * s} textAlign="middle-center" textWrap="nowrap"
-            uiTransform={{ width: 60 * s, height: 38 * s, pointerFilter: 'none' }} />}
+            uiTransform={{ width: 56 * s, height: 38 * s, pointerFilter: 'none' }} />}
           {pages > 1 && <Action id="upgrade-next" text="›" onClick={() => turnPage(1, offers, pages)} width={38} height={38} scale={s} fontSize={20} accent="gold" disabled={page >= pages - 1} />}
         </UiEntity>
         <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', pointerFilter: 'none' }}>
           <Label value={chosen?.to ? (chosen.affordable ? t(chosen.equipped ? '{n} coins · worn now · the fire always takes' : '{n} coins · the fire always takes', { n: chosen.coins }) : t('Not enough coins'))
             : chosen ? t('Already at level {n}', { n: MAX_LEVEL }) : ''}
-            color={chosen?.to && !chosen.affordable ? coral : muted} fontSize={12 * s} textAlign="middle-right" textWrap="nowrap"
-            uiTransform={{ width: 240 * s, height: 38 * s, margin: { right: 12 * s }, pointerFilter: 'none' }} />
-          <Action id="upgrade-cancel" text={t('Cancel')} onClick={closeUpgradePicker} width={110} height={40} scale={s} fontSize={14} accent="gold" />
+            color={chosen?.to && !chosen.affordable ? coral : muted} fontSize={13 * s} textAlign="middle-right" textWrap="nowrap"
+            uiTransform={{ width: 270 * s, height: 38 * s, margin: { right: 12 * s }, pointerFilter: 'none' }} />
+          <Action id="upgrade-cancel" text={t('Cancel')} onClick={closeUpgradePicker} width={100} height={40} scale={s} fontSize={14} accent="gold" />
           <UiEntity uiTransform={{ width: 10 * s, pointerFilter: 'none' }} />
-          <Action id="upgrade-confirm" text={t('Offer to the fire')} onClick={confirm} width={170} height={40} scale={s} fontSize={14} accent="gold" primary disabled={!canOffer} />
+          <Action id="upgrade-confirm" text={t('Offer to the fire')} onClick={confirm} width={160} height={40} scale={s} fontSize={14} accent="gold" primary disabled={!canOffer} />
         </UiEntity>
       </UiEntity>
     </UiEntity>
