@@ -123,7 +123,7 @@ export function GravewatchUi() {
       uiBackground={{ color: sheetColor }}>
       <UiEntity uiTransform={{ width: '100%', height: 62 * s, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', flexShrink: 0, pointerFilter: 'none' }}>
         <UiEntity uiTransform={{ flexDirection: 'column', flexGrow: 1, flexShrink: 1, minWidth: 0, margin: { right: 12 * s }, pointerFilter: 'none' }}>
-          <Label value={flyer ? t('WELCOME TO').toUpperCase() : `${t('UNTIL')} ${etLabel(GW_EVENT_END, false).toUpperCase()}  ·  ${t('DAILY RESET IN')} ${countdown(untilReset())}`} color={gold} fontSize={10.5 * s} textAlign="middle-left" textWrap="nowrap"
+          <Label value={`${flyer ? t('WELCOME TO').toUpperCase() : `${t('UNTIL')} ${etLabel(GW_EVENT_END, false).toUpperCase()}`}  ·  ${t('DAILY RESET IN')} ${countdown(untilReset())}`} color={gold} fontSize={10.5 * s} textAlign="middle-left" textWrap="nowrap"
             uiTransform={{ width: '100%', height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
           <Label value={t('Gravewatch')} font="serif" color={white} fontSize={32 * s} textAlign="middle-left" textWrap="nowrap"
             uiTransform={{ width: '100%', height: 42 * s, flexShrink: 0, pointerFilter: 'none' }} />
