@@ -1355,5 +1355,7 @@
   "Every landing adds points. Fill the bar at the top to open the season chests.": "Jede Landung bringt Punkte. Füll die Leiste oben, um die Saisontruhen zu öffnen.",
   "Two dice costs {n} embers and moves you further.": "Zwei Würfel kosten {n} Glut und bringen dich weiter.",
   "Pumpkin curse held: give it out on the Wheel tab.": "Kürbisfluch in der Hand: verteil ihn im Rad-Reiter.",
-  "for passing Start": "fürs Passieren von Start"
+  "for passing Start": "fürs Passieren von Start",
+  "Resets in {c}": "Reset in {c}",
+  "Resets in {c} (midnight ET).": "Reset in {c} (Mitternacht ET)."
 }

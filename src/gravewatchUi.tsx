@@ -75,6 +75,14 @@ export function etLabel(at: number, withTime = true): string {
   return withTime ? `${day}, ${clock}` : day
 }
 
+/** Seconds until the day's counters reset: midnight ET, by the host's clock. */
+function untilReset(): number {
+  const now = serverNow()
+  const local = now + etOffset(now)
+  const day = 24 * 3600 * 1000
+  return (Math.floor(local / day) * day + day - local) / 1000
+}
+
 function countdown(seconds: number): string {
   const s = Math.max(0, Math.floor(seconds))
   const d = Math.floor(s / 86400)
@@ -174,7 +182,7 @@ function RoundsTab({ scale: s }: { scale: number }) {
     <Gap h={10} scale={s} />
     <Progress label={t('Clears today')} done={gw.clears} pays={GW_CLEAR_EMBERS} scale={s} suffix={`  (${t('Crypt')} ×${GW_CRYPT_CLEAR_MULT})`} />
     <Gap h={10} scale={s} />
-    <Line text={t('Resets at midnight ET.')} scale={s} size={13} />
+    <Line text={t('Resets in {c} (midnight ET).', { c: countdown(untilReset()) })} scale={s} size={13} />
     <Gap h={18} scale={s} />
     <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }}>
       <Action id="gw-rounds-go" text={myParty() ? t('Leave your party first') : t('To the Barrow Yard')} onClick={gravewatchRounds} width={280} height={46} scale={s} fontSize={16} primary accent="gold" disabled={!can} />
@@ -324,7 +332,8 @@ function BoardTab({ scale: s, inner }: { scale: number; inner: number }) {
         <Label value={`${left}`} color={left > 0 ? ember : muted} font="serif" fontSize={44 * s} textAlign="middle-left" textWrap="nowrap"
           uiTransform={{ width: '100%', height: 50 * s, flexShrink: 0, pointerFilter: 'none' }} />
         <Line text={t('rolls left today')} scale={s} size={13} height={20} />
-        <Gap h={10} scale={s} />
+        <Line text={t('Resets in {c}', { c: countdown(untilReset()) })} scale={s} size={11} height={16} />
+        <Gap h={6} scale={s} />
         <Action id="gw-roll-one" text={rolling ? t('Rolling…') : t('Roll one die')} onClick={() => gravewatchRoll(false)} width={panel} height={44} scale={s} fontSize={15} primary accent="gold" disabled={!can} />
         <Gap h={8} scale={s} />
         <Action id="gw-roll-two" text={t('Two dice ({n} embers)', { n: GW_BOARD_DOUBLE_COST })} onClick={() => gravewatchRoll(true)} width={panel} height={44} scale={s} fontSize={14} accent="gold"

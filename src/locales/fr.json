@@ -1355,5 +1355,7 @@
   "Every landing adds points. Fill the bar at the top to open the season chests.": "Chaque arrêt rapporte des points. Remplis la barre en haut pour ouvrir les coffres de saison.",
   "Two dice costs {n} embers and moves you further.": "Deux dés coûtent {n} braises et te mènent plus loin.",
   "Pumpkin curse held: give it out on the Wheel tab.": "Malédiction de citrouille en main : donne-la dans l'onglet Roue.",
-  "for passing Start": "pour avoir franchi le Départ"
+  "for passing Start": "pour avoir franchi le Départ",
+  "Resets in {c}": "Remise à zéro dans {c}",
+  "Resets in {c} (midnight ET).": "Remise à zéro dans {c} (minuit ET)."
 }

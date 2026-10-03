@@ -1355,5 +1355,7 @@
   "Every landing adds points. Fill the bar at the top to open the season chests.": "止まるたびにポイントが入る。上のバーを満たしてシーズン宝箱を開けよう。",
   "Two dice costs {n} embers and moves you further.": "サイコロ2つは燠{n}で、より遠くへ進める。",
   "Pumpkin curse held: give it out on the Wheel tab.": "カボチャの呪いを所持中。ルーレットのタブで渡せ。",
-  "for passing Start": "スタート通過ボーナス"
+  "for passing Start": "スタート通過ボーナス",
+  "Resets in {c}": "{c}後にリセット",
+  "Resets in {c} (midnight ET).": "{c}後にリセット（東部時間の真夜中）。"
 }
