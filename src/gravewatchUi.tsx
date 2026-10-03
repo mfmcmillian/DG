@@ -314,11 +314,9 @@ function BoardTab({ scale: s, inner }: { scale: number; inner: number }) {
             {play.faces[0] > 0 && <Die face={play.faces[0]} scale={s} size={46} dim={!play.settled} />}
             {play.faces[1] > 0 && <Die face={play.faces[1]} scale={s} size={46} dim={!play.settled} />}
           </UiEntity>
-          <Label value={roll ? (landed ? (roll.passed && roll.to !== 0 ? `${t(roll.said)} · ${t('passed Start')}` : t(roll.said)) : play.settled ? `${play.faces[0] + play.faces[1]}` : '') : t('Roll to walk the graves')}
-            color={landed ? gold : white} font="serif" fontSize={(landed ? 15 * pop : 20) * s} textAlign="middle-center" textWrap="wrap"
-            uiTransform={{ width: (size - 2 * cell - 16) * s, height: 40 * s, margin: { top: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />
-          <Label value={roll && landed && roll.paid > 0 ? `+${roll.paid} ${t('embers')}` : ''} color={ember} fontSize={15 * pop * s} textAlign="middle-center" textWrap="nowrap"
-            uiTransform={{ width: '100%', height: 22 * s, flexShrink: 0, pointerFilter: 'none' }} />
+          <Label value={roll ? (landed ? landingLine(roll.said, roll.paid, roll.passed && roll.to !== 0) : play.settled ? `${play.faces[0] + play.faces[1]}` : '') : t('Roll to walk the graves')}
+            color={landed ? ember : white} font="serif" fontSize={(landed ? 19 * pop : 20) * s} textAlign="middle-center" textWrap="wrap"
+            uiTransform={{ width: (size - 2 * cell - 16) * s, height: 60 * s, margin: { top: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />
         </UiEntity>
       </UiEntity>
       {/* The side: rolls left, the two rolls, the daily meter. */}
@@ -355,6 +353,19 @@ function BoardTab({ scale: s, inner }: { scale: number; inner: number }) {
     </UiEntity>
     {rulesOpen && <Rules scale={s} inner={inner} />}
   </UiEntity>
+}
+
+/**
+ * What the landing says, in one line: "+5 embers"; "+150 coins"; "Chest: +17 embers";
+ * "A piece of gear"; with " · passed Start" when the 20 for that is in the total.
+ */
+function landingLine(said: string, paid: number, passed: boolean): string {
+  let line: string
+  if (/^\d+ embers$/.test(said) || said === 'Start') line = `+${paid} ${t('embers')}`
+  else if (/^\d+ coins$/.test(said)) line = `+${said.replace('coins', t('coins'))}${paid > 0 ? ` · +${paid} ${t('embers')}` : ''}`
+  else if (said.startsWith('Chest')) line = `${t('Chest')}: +${paid} ${t('embers')}`
+  else line = paid > 0 ? `${t(said)} · +${paid} ${t('embers')}` : t(said)
+  return passed ? `${line} · ${t('passed Start')}` : line
 }
 
 /** Points toward the five season chests: a track that fills a fifth per chest, with the chest sitting on it. */
