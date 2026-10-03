@@ -79,8 +79,9 @@ function turnPage(step: number, offers: UpgradeOffer[], pages: number) {
 
 /** In virtual pixels of the UI root (uiScale.ts): the sheet fits the room the screen has, and never grows past its drawn size. */
 function layout() {
-  const { width: screenWidth, height: screenHeight } = uiViewport()
-  const left = 24
+  const { width: screenWidth, height: screenHeight, reserved } = uiViewport()
+  // Clear of the explorer's chat column on the left, as the main menu is (menuLayout.ts).
+  const left = Math.max(screenWidth * 0.25, reserved.left) + 24
   const right = 24
   const top = 48
   const bottom = 24
