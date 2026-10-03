@@ -86,10 +86,9 @@ const FLAMES: Partial<Record<KitId, number>> = {
 /** Styles whose fires crackle and whose room tone rides with the player: the places heroes linger. */
 const AMBIENT_STYLES = new Set(['hall', 'pit'])
 
-/** Ambient loops; the hall carries them, the fortresses stay tense and quiet. */
+/** The fires' crackle; the hall and the pit carry it, the fortresses stay tense and quiet. */
 const FIRE_LOOP = 'sounds/fire_loop.wav'
-const HALL_LOOP = 'sounds/hall_loop.wav'
-export const AMBIENCE_ASSETS = [FIRE_LOOP, HALL_LOOP]
+export const AMBIENCE_ASSETS = [FIRE_LOOP]
 
 export function buildDungeon(dungeon: Dungeon, style: DungeonStyle, options?: LayoutOptions): DungeonInstance {
   const T = style.tile
@@ -174,13 +173,12 @@ export function buildDungeon(dungeon: Dungeon, style: DungeonStyle, options?: La
   })
   for (const m of modal) setPieceEnabled(m, (m.only === 'cutaway') === cutaway, solid)
 
-  if (AMBIENT_STYLES.has(style.id)) {
-    // The room tone rides with the player: a draught through stone, no music. The pit's is a deeper, fire-fed roar.
+  if (style.id === 'pit') {
+    // The pit's room tone rides with the player: a deep, fire-fed roar. The hall has none; its fires and the music carry it.
     const tone = engine.addEntity()
     entities.push(tone)
     Transform.create(tone, { position: Vector3.Zero(), parent: engine.PlayerEntity })
-    const pit = style.id === 'pit'
-    AudioSource.create(tone, { audioClipUrl: pit ? FIRE_LOOP : HALL_LOOP, playing: true, loop: true, volume: pit ? 0.16 : 0.22, pitch: pit ? 0.6 : 1 })
+    AudioSource.create(tone, { audioClipUrl: FIRE_LOOP, playing: true, loop: true, volume: 0.16, pitch: 0.6 })
   }
 
   // Roofed styles have no room for the third-person boom, which the Explorer
