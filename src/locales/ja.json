@@ -1458,5 +1458,8 @@
   "No runs yet. Be the first.": "まだ記録なし。最初の一人に。",
   "Close": "閉じる",
   "Every {m} m run banks a mileage point. Spend them on Endurance (more stamina), Speed (faster from the start) or Luck (more and better pickups).": "{m} m走るごとにマイレージポイントを1獲得。持久力（スタミナ増）、スピード（最初から速く）、運（より多く良いアイテム）に使えます。",
-  "Three free runs a day; more cost {n} embers each. Clearing a dungeon drops a few embers too, three times a day.": "1日3回無料。それ以降は1回につき残り火{n}。ダンジョン制覇でも少しの残り火が1日3回まで手に入ります。"
+  "Three free runs a day; more cost {n} embers each. Clearing a dungeon drops a few embers too, three times a day.": "1日3回無料。それ以降は1回につき残り火{n}。ダンジョン制覇でも少しの残り火が1日3回まで手に入ります。",
+  "1 free run left": "無料ラン残り1回",
+  "{n} free runs left": "無料ラン残り{n}回",
+  "Free runs spent": "無料ラン使用済み"
 }

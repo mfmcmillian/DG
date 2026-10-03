@@ -41,6 +41,8 @@ const PAWN_IMAGE = 'images/gravewatch/pumpkin.png'
 const STAR_IMAGE = 'images/gravewatch/star.png'
 const CHEST_IMAGE = 'images/gravewatch/chest.png'
 const GEAR_BADGE_IMAGE = 'images/gravewatch/gear-badge.png'
+const RUN_BANNER = 'images/gravewatch/run-banner.png'
+const RUN_ICONS = 'images/gravewatch/run-icons.png'
 let rulesOpen = false
 /** Dev-only +1000 embers button; hidden for now, flip to true when testing payouts. */
 const SHOW_GRANT = false
@@ -199,42 +201,73 @@ function RunTab({ scale: s, inner }: { scale: number; inner: number }) {
   const can = !gw.guest && !gw.over && !myParty() && (free || gw.embers >= RUN_EXTRA_COST)
   const label = myParty() ? t('Leave your party first') : free ? t('Run') : t('Run ({n} embers)', { n: RUN_EXTRA_COST })
   const cardW = (inner - 2 * 10) / 3
+  const left = Math.max(0, RUN_TOKENS - gw.runs)
   return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', pointerFilter: 'none' }}>
-    <UiEntity uiTransform={{ width: '100%', height: 30 * s, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', margin: { bottom: 4 * s }, flexShrink: 0, pointerFilter: 'none' }}>
-      <Label value={t('THE BARROW RUN')} color={gold} fontSize={13 * s} textAlign="middle-left" textWrap="nowrap" uiTransform={{ height: '100%', pointerFilter: 'none' }} />
-      <Action id="gw-run-ladder" text={t('Leaderboard')} onClick={toggleRunBoard} width={120} height={30} scale={s} fontSize={13} accent="gold" active={runBoard().open} />
+    <UiEntity uiTransform={{ width: '100%', height: 132 * s, borderRadius: 6 * s, borderWidth: s, borderColor: goldLine, flexShrink: 0, pointerFilter: 'none' }}
+      uiBackground={{ textureMode: 'stretch', texture: { src: RUN_BANNER }, color: Color4.White() }}>
+      <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 18 * s, bottom: 12 * s }, flexDirection: 'column', pointerFilter: 'none' }}>
+        <Label value={t('THE BARROW RUN')} font="serif" color={white} fontSize={27 * s} textAlign="middle-left" textWrap="nowrap" uiTransform={{ height: 34 * s, pointerFilter: 'none' }} />
+        <Label value={`${t('Runs today')}: ${Math.min(gw.runs, RUN_TOKENS)}/${RUN_TOKENS}   ·   ${gw.best > 0 ? t('Best today: {n} m', { n: gw.best }) : t('No run yet today')}`}
+          color={gold} fontSize={13 * s} textAlign="middle-left" textWrap="nowrap" uiTransform={{ height: 20 * s, pointerFilter: 'none' }} />
+      </UiEntity>
+      <UiEntity uiTransform={{ positionType: 'absolute', position: { right: 12 * s, top: 10 * s }, flexDirection: 'row', alignItems: 'center', pointerFilter: 'none' }}>
+        <RunIcon tile={3} size={30} scale={s} />
+        <Action id="gw-run-ladder" text={t('Leaderboard')} onClick={toggleRunBoard} width={118} height={30} scale={s} fontSize={13} accent="gold" active={runBoard().open} />
+      </UiEntity>
     </UiEntity>
-    <UiEntity uiTransform={{ width: '100%', height: 30 * s, flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
-      <Label value={`${t('Runs today')}: ${Math.min(gw.runs, RUN_TOKENS)}/${RUN_TOKENS}`} color={white} fontSize={15 * s} textAlign="middle-left" textWrap="nowrap"
-        uiTransform={{ width: 270 * s, height: '100%', pointerFilter: 'none' }} />
-      <Label value={gw.best > 0 ? t('Best today: {n} m', { n: gw.best }) : t('No run yet today')} color={gold} fontSize={15 * s} textAlign="middle-left" textWrap="nowrap"
-        uiTransform={{ height: '100%', pointerFilter: 'none' }} />
+    <Gap h={10} scale={s} />
+    <Track best={gw.best} inner={inner} scale={s} />
+    <Gap h={8} scale={s} />
+    <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+      <UiEntity uiTransform={{ padding: 3 * s, borderRadius: 6 * s, borderWidth: s, borderColor: can ? ember : line, flexShrink: 0, pointerFilter: 'none' }}
+        uiBackground={{ color: can ? Color4.create(0.98, 0.55, 0.2, 0.14) : Color4.create(0, 0, 0, 0) }}>
+        <Action id="gw-run-go" text={label} onClick={gravewatchRun} width={300} height={46} scale={s} fontSize={17} primary accent="gold" disabled={!can} />
+      </UiEntity>
+      <Label value={free ? (left === 1 ? t('1 free run left') : t('{n} free runs left', { n: left })) : t('Free runs spent')} color={muted} fontSize={12 * s} textAlign="middle-left" textWrap="nowrap"
+        uiTransform={{ width: 120 * s, height: 20 * s, margin: { left: 12 * s }, pointerFilter: 'none' }} />
     </UiEntity>
-    <Gap h={6} scale={s} />
-    <UiEntity uiTransform={{ width: '100%', height: 46 * s, flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
-      {RUN_TIERS.map((tier) => {
-        const lit = gw.best >= tier.m
-        return <UiEntity key={`run-tier-${tier.m}`} uiTransform={{ width: 96 * s, height: 42 * s, margin: { right: 8 * s }, borderRadius: 4 * s, borderWidth: s,
-          borderColor: lit ? ember : line, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }}
-          uiBackground={{ color: lit ? emberDark : panelColor }}>
-          <Label value={`${tier.m} m`} color={lit ? ember : white} fontSize={13 * s} textWrap="nowrap" uiTransform={{ width: '100%', height: 18 * s, pointerFilter: 'none' }} />
-          <Label value={`+${tier.embers}`} color={lit ? ember : muted} fontSize={12 * s} textWrap="nowrap" uiTransform={{ width: '100%', height: 16 * s, pointerFilter: 'none' }} />
-        </UiEntity>
-      })}
-    </UiEntity>
-    <Gap h={12} scale={s} />
-    <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }}>
-      <Action id="gw-run-go" text={label} onClick={gravewatchRun} width={280} height={46} scale={s} fontSize={16} primary accent="gold" disabled={!can} />
-    </UiEntity>
-    <Gap h={16} scale={s} />
-    <UiEntity uiTransform={{ width: '100%', height: 22 * s, flexDirection: 'row', alignItems: 'center', margin: { bottom: 6 * s }, flexShrink: 0, pointerFilter: 'none' }}>
+    <Gap h={10} scale={s} />
+    <UiEntity uiTransform={{ width: '100%', height: 22 * s, flexDirection: 'row', alignItems: 'center', margin: { bottom: 4 * s }, flexShrink: 0, pointerFilter: 'none' }}>
       <Label value={t('TRAINING')} color={gold} fontSize={13 * s} textAlign="middle-left" textWrap="nowrap" uiTransform={{ height: '100%', pointerFilter: 'none' }} />
       <Label value={`   ${t('{n} mileage points', { n: gw.mileage })}  ·  ${t('one per {m} m run', { m: RUN_MILE })}`} color={muted} fontSize={13 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={{ height: '100%', pointerFilter: 'none' }} />
     </UiEntity>
     <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
-      {RUN_STATS.map((stat, i) => <TrainCard stat={stat} level={gw.train[i]} width={cardW} scale={s} />)}
+      {RUN_STATS.map((stat, i) => <TrainCard stat={stat} tile={i} level={gw.train[i]} width={cardW} scale={s} />)}
     </UiEntity>
+  </UiEntity>
+}
+
+/** One tile of the run icon sheet: heart, boot, clover, trophy. */
+function RunIcon({ tile, size, scale: s }: { tile: number; size: number; scale: number }) {
+  return <UiEntity uiTransform={{ width: size * s, height: size * 1.4 * s, margin: { right: 6 * s }, flexShrink: 0, pointerFilter: 'none' }}
+    uiBackground={{ textureMode: 'stretch', texture: { src: RUN_ICONS }, uvs: sheetUvs(tile, 0, 4, 1), color: Color4.White() }} />
+}
+
+/** The road as a bar: the four distance marks as lamps along it, lit as far as today's best, the pumpkin pawn at the best itself. */
+function Track({ best, inner, scale: s }: { best: number; inner: number; scale: number }) {
+  const last = RUN_TIERS[RUN_TIERS.length - 1].m
+  const pad = 44
+  const usable = inner - 2 * pad
+  const at = (m: number) => pad + usable * Math.min(1, m / last)
+  const reach = at(Math.min(best, last))
+  return <UiEntity uiTransform={{ width: '100%', height: 62 * s, flexShrink: 0, pointerFilter: 'none' }}>
+    <UiEntity uiTransform={{ positionType: 'absolute', position: { left: pad * s, top: 27 * s }, width: usable * s, height: 8 * s, borderRadius: 4 * s, pointerFilter: 'none' }}
+      uiBackground={{ color: panelColor }} />
+    {best > 0 && <UiEntity uiTransform={{ positionType: 'absolute', position: { left: pad * s, top: 27 * s }, width: (reach - pad) * s, height: 8 * s, borderRadius: 4 * s, pointerFilter: 'none' }}
+      uiBackground={{ color: ember }} />}
+    {RUN_TIERS.map((tier) => {
+      const lit = best >= tier.m
+      const x = at(tier.m)
+      return <UiEntity key={`gw-track-${tier.m}`} uiTransform={{ positionType: 'absolute', position: { left: (x - 34) * s, top: 0 }, width: 68 * s, height: '100%', flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
+        <Label value={`${tier.m} m`} color={lit ? ember : white} fontSize={12 * s} textAlign="middle-center" textWrap="nowrap" uiTransform={{ width: '100%', height: 18 * s, pointerFilter: 'none' }} />
+        <UiEntity uiTransform={{ width: 18 * s, height: 18 * s, margin: { top: 4 * s }, borderRadius: 9 * s, borderWidth: 2 * s, borderColor: lit ? gold : line, flexShrink: 0, pointerFilter: 'none' }}
+          uiBackground={{ color: lit ? ember : sheetColor }} />
+        <Label value={`+${tier.embers}`} color={lit ? gold : muted} fontSize={11 * s} textAlign="middle-center" textWrap="nowrap" uiTransform={{ width: '100%', height: 16 * s, margin: { top: 2 * s }, pointerFilter: 'none' }} />
+      </UiEntity>
+    })}
+    {best > 0 && <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (reach - 13) * s, top: 14 * s }, width: 26 * s, height: 26 * s, pointerFilter: 'none' }}
+      uiBackground={{ textureMode: 'stretch', texture: { src: PAWN_IMAGE }, color: Color4.White() }} />}
   </UiEntity>
 }
 
@@ -248,19 +281,30 @@ function statEffect(stat: RunStat, level: number): string {
   }
 }
 
-function TrainCard({ stat, level, width, scale: s }: { stat: RunStat; level: number; width: number; scale: number }) {
+function TrainCard({ stat, tile, level, width, scale: s }: { stat: RunStat; tile: number; level: number; width: number; scale: number }) {
   const gw = getGravewatch()
   const maxed = level >= RUN_TRAIN_MAX
   const cost = runTrainCost(level)
   const can = !maxed && !gw.guest && !gw.over && gw.mileage >= cost
-  return <UiEntity uiTransform={{ width: width * s, height: 92 * s, borderRadius: 6 * s, borderWidth: s, borderColor: level > 0 ? goldLine : line, flexDirection: 'column',
-    alignItems: 'center', padding: { top: 8 * s, bottom: 8 * s }, flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: panelColor }}>
-    <Label value={`${t(STAT_NAMES[stat])}  ·  ${t('Lv {a}/{b}', { a: level, b: RUN_TRAIN_MAX })}`} color={white} fontSize={14 * s} textWrap="nowrap"
-      uiTransform={{ width: '100%', height: 20 * s, pointerFilter: 'none' }} />
-    <Label value={statEffect(stat, level)} color={level > 0 ? gold : muted} fontSize={12 * s} textWrap="nowrap" uiTransform={{ width: '100%', height: 18 * s, pointerFilter: 'none' }} />
-    <Gap h={6} scale={s} />
-    <Action id={`gw-train-${stat}`} text={maxed ? t('Trained') : t('Train: {n} pts', { n: cost })} onClick={() => gravewatchTrain(stat)} width={Math.min(170, width - 24)} height={30} scale={s}
-      fontSize={13} accent="gold" primary={can} disabled={!can} />
+  const pips: number[] = []
+  for (let k = 0; k < RUN_TRAIN_MAX; k++) pips.push(k)
+  return <UiEntity uiTransform={{ width: width * s, height: 108 * s, borderRadius: 6 * s, borderWidth: s, borderColor: level > 0 ? goldLine : line, flexDirection: 'column',
+    padding: { top: 8 * s, bottom: 8 * s, left: 10 * s, right: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: panelColor }}>
+    <UiEntity uiTransform={{ width: '100%', height: 56 * s, flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+      <RunIcon tile={tile} size={38} scale={s} />
+      <UiEntity uiTransform={{ flexDirection: 'column', flexGrow: 1, pointerFilter: 'none' }}>
+        <Label value={t(STAT_NAMES[stat])} color={white} fontSize={14 * s} textAlign="middle-left" textWrap="nowrap" uiTransform={{ width: '100%', height: 18 * s, pointerFilter: 'none' }} />
+        <UiEntity uiTransform={{ width: '100%', height: 8 * s, flexDirection: 'row', margin: { top: 2 * s, bottom: 2 * s }, pointerFilter: 'none' }}>
+          {pips.map((k) => <UiEntity key={`gw-pip-${stat}-${k}`} uiTransform={{ width: 9 * s, height: 6 * s, margin: { right: 2 * s }, borderRadius: s, flexShrink: 0, pointerFilter: 'none' }}
+            uiBackground={{ color: k < level ? gold : line }} />)}
+        </UiEntity>
+        <Label value={statEffect(stat, level)} color={level > 0 ? gold : muted} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap" uiTransform={{ width: '100%', height: 16 * s, pointerFilter: 'none' }} />
+      </UiEntity>
+    </UiEntity>
+    <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', justifyContent: 'center', margin: { top: 6 * s }, flexShrink: 0, pointerFilter: 'none' }}>
+      <Action id={`gw-train-${stat}`} text={maxed ? t('Trained') : t('Train: {n} pts', { n: cost })} onClick={() => gravewatchTrain(stat)} width={width - 20} height={30} scale={s}
+        fontSize={13} accent="gold" primary={can} disabled={!can} />
+    </UiEntity>
   </UiEntity>
 }
 
@@ -286,7 +330,10 @@ function Ladder({ scale: s, inner }: { scale: number; inner: number }) {
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width: inner * s, height: '100%', padding: { left: 20 * s, right: 20 * s, top: 14 * s, bottom: 14 * s },
     borderRadius: 6 * s, borderWidth: s, borderColor: goldLine, flexDirection: 'column', pointerFilter: 'block' }} uiBackground={{ color: Color4.create(0.025, 0.045, 0.07, 1) }}>
     <UiEntity uiTransform={{ width: '100%', height: 34 * s, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', margin: { bottom: 8 * s }, flexShrink: 0, pointerFilter: 'none' }}>
-      <Label value={t('The Barrow Run: the best')} font="serif" color={gold} fontSize={22 * s} textAlign="middle-left" textWrap="nowrap" uiTransform={{ height: '100%', pointerFilter: 'none' }} />
+      <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', height: '100%', pointerFilter: 'none' }}>
+        <RunIcon tile={3} size={26} scale={s} />
+        <Label value={t('The Barrow Run: the best')} font="serif" color={gold} fontSize={22 * s} textAlign="middle-left" textWrap="nowrap" uiTransform={{ height: '100%', pointerFilter: 'none' }} />
+      </UiEntity>
       <Action id="gw-ladder-close" text={t('Close')} onClick={toggleRunBoard} width={80} height={32} scale={s} fontSize={13} accent="gold" />
     </UiEntity>
     <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', justifyContent: 'space-between', flexGrow: 1, pointerFilter: 'none' }}>

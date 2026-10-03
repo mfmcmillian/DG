@@ -1458,5 +1458,8 @@
   "No runs yet. Be the first.": "Noch keine Läufe. Sei der Erste.",
   "Close": "Schließen",
   "Every {m} m run banks a mileage point. Spend them on Endurance (more stamina), Speed (faster from the start) or Luck (more and better pickups).": "Je {m} m Lauf gibt es einen Meilenpunkt. Gib sie für Ausdauer (mehr Kraft), Tempo (von Anfang an schneller) oder Glück (mehr und bessere Funde) aus.",
-  "Three free runs a day; more cost {n} embers each. Clearing a dungeon drops a few embers too, three times a day.": "Drei freie Läufe pro Tag; weitere kosten je {n} Glut. Ein geschaffter Dungeon lässt auch ein paar Glut fallen, dreimal am Tag."
+  "Three free runs a day; more cost {n} embers each. Clearing a dungeon drops a few embers too, three times a day.": "Drei freie Läufe pro Tag; weitere kosten je {n} Glut. Ein geschaffter Dungeon lässt auch ein paar Glut fallen, dreimal am Tag.",
+  "1 free run left": "1 freier Lauf übrig",
+  "{n} free runs left": "{n} freie Läufe übrig",
+  "Free runs spent": "Freie Läufe verbraucht"
 }
