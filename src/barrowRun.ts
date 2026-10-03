@@ -517,7 +517,7 @@ function update(dt: number) {
     if (lane !== st.lane) {
       st.lane = lane
       sendNet('gwRunLane', { at: st.t, lane })
-      fxSound('dodge', 0.22)
+      fxSound('dodge', 0.1)
     }
     const events = stepRun(st, span, seed)
     for (const ev of events) onEvent(ev)
