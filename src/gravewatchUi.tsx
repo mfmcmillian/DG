@@ -147,8 +147,12 @@ export function GravewatchUi() {
             uiTransform={{ width: 80 * s, height: 38 * s, margin: { right: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
           <UiEntity uiTransform={{ height: 38 * s, padding: { left: 14 * s, right: 14 * s }, margin: { right: 10 * s }, borderRadius: 4 * s, borderWidth: shownEmbers() !== gw.embers ? 2 * s : s, borderColor: shownEmbers() !== gw.embers ? gold : ember,
             alignItems: 'center', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: emberDark }}>
-            <Label value={`${shownEmbers()}  ${t('embers')}${gw.mult > serverNow() ? `  ×${GW_MULT} · ${minutesLeft((gw.mult - serverNow()) / 1000)}` : ''}`} color={shownEmbers() !== gw.embers ? gold : ember} font="serif" fontSize={17 * s} textWrap="nowrap"
+            <Label value={`${shownEmbers()}  ${t('embers')}`} color={shownEmbers() !== gw.embers ? gold : ember} font="serif" fontSize={17 * s} textWrap="nowrap"
               uiTransform={{ height: '100%', pointerFilter: 'none' }} />
+            {gw.mult > serverNow() && <UiEntity uiTransform={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', margin: { left: 12 * s }, flexShrink: 0, pointerFilter: 'none' }}>
+              <Label value={`×${GW_MULT}`} color={gold} font="serif" fontSize={15 * s} textAlign="middle-center" textWrap="nowrap" uiTransform={{ height: 18 * s, pointerFilter: 'none' }} />
+              <Label value={minutesLeft((gw.mult - serverNow()) / 1000)} color={gold} fontSize={10 * s} textAlign="middle-center" textWrap="nowrap" uiTransform={{ height: 14 * s, pointerFilter: 'none' }} />
+            </UiEntity>}
           </UiEntity>
           {SHOW_GRANT && isDeveloper() && <Action id="gw-grant" text="+1000" onClick={gravewatchGrant} width={64} height={38} scale={s} fontSize={13} accent="gold" />}
           {SHOW_GRANT && isDeveloper() && <UiEntity uiTransform={{ width: 10 * s, pointerFilter: 'none' }} />}

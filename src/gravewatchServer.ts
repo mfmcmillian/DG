@@ -207,7 +207,11 @@ async function ledgerOf(id: string): Promise<Ledger> {
 
 /** The daily counters belong to one ET day; a new day empties them. */
 function touch(l: Ledger): Ledger {
-  const day = etDayKey(now())
+  const t = now()
+  const day = etDayKey(t)
+  // Hours banked under the old stacking rule (a day a wedge) are cut to the hour.
+  if (l.mult && l.mult > t + GW_MULT_MS) l.mult = t + GW_MULT_MS
+  if (l.curse && l.curse > t + GW_CURSE_MS) l.curse = t + GW_CURSE_MS
   if (l.day !== day) {
     l.day = day
     l.rounds = 0
