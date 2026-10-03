@@ -99,6 +99,11 @@ let autoRoll = false
 /** The ember count the header shows, ticking toward the real one; held still while a roll or spin is still playing. */
 let shownEmbersValue = 0
 let tickSoundIn = 0
+/** The count-up in progress: from, to, and how far along. */
+let tick: { from: number; to: number; t: number } | undefined
+/** The count-up lasts this long whatever the amount, and starts this long after the landing so the tile's word is read first. */
+const TICK_SECONDS = 1.0
+const TICK_AFTER_LANDING = 0.35
 /** Waiting on the host's answer to a spin, a roll or a redeem. */
 let busy = ''
 let confirmItem: GwItem | '' = ''
@@ -246,7 +251,7 @@ function update(dt: number) {
       }
     }
   }
-  if (board && board.t < boardSeconds(board)) board.t += span
+  if (board && board.t < boardSeconds(board) + TICK_AFTER_LANDING) board.t += span
   if (board) {
     const play = boardState()
     // One knock per hop, then the landing: a chime, a reveal on the chest, gear and mystery tiles, the fire when Start is passed.
@@ -266,21 +271,24 @@ function update(dt: number) {
   }
   // The header's ember count walks toward the truth rather than jumping, and waits for the pawn to land or the wheel to stop
   // so the prize is seen arriving: a steady climb with a coin's tick along the way.
-  const holding = (board && board.t < boardSeconds(board)) || (wheel && !wheel.done)
-  if (!holding && shownEmbersValue !== sheet.embers) {
-    const gap = sheet.embers - shownEmbersValue
-    const step = Math.max(1, Math.ceil(Math.abs(gap) * Math.min(1, span * 4)))
-    shownEmbersValue += Math.sign(gap) * Math.min(Math.abs(gap), step)
+  const holding = (board && board.t < boardSeconds(board) + TICK_AFTER_LANDING) || (wheel && !wheel.done)
+  if (!holding && !tick && shownEmbersValue !== sheet.embers) tick = { from: shownEmbersValue, to: sheet.embers, t: 0 }
+  if (tick) {
+    tick.to = sheet.embers
+    tick.t += span
+    const k = Math.min(1, tick.t / TICK_SECONDS)
+    shownEmbersValue = Math.round(tick.from + (tick.to - tick.from) * k)
     tickSoundIn -= span
-    if (tickSoundIn <= 0 && gap > 0) {
+    if (tickSoundIn <= 0 && tick.to > tick.from && k < 1) {
       tickSoundIn = 0.07
       fxSound('coin', 0.3)
     }
+    if (k >= 1) tick = undefined
   }
   // Auto-roll: one die after another while rolls remain and the sheet is on the board.
   if (autoRoll) {
     if (!open || tab !== 'board' || sheet.rolls >= GW_BOARD_TOKENS || sheet.guest || sheet.over) autoRoll = false
-    else if (!busy && !boardRolling() && (!board || board.t >= boardSeconds(board) + 0.8)) gravewatchRoll(false)
+    else if (!busy && !boardRolling() && !tick && (!board || board.t >= boardSeconds(board) + TICK_AFTER_LANDING)) gravewatchRoll(false)
   }
   for (const g of gains) g.age += span
   while (gains.length && gains[0].age >= GAIN_SECONDS) gains.shift()
