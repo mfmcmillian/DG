@@ -1343,5 +1343,15 @@
   "Season chest": "Saisontruhe",
   "Board ready": "Brett bereit",
   "Auto-roll": "Auto-Würfeln",
-  "Auto-roll: on": "Auto-Würfeln: an"
+  "Auto-roll: on": "Auto-Würfeln: an",
+  "Rules": "Regeln",
+  "points": "Punkte",
+  "How Gravewalk works": "So geht der Gräbergang",
+  "You get {n} free rolls a day.": "Du bekommst {n} freie Würfe am Tag.",
+  "Roll, and your pumpkin walks that many graves.": "Würfle, und dein Kürbis geht so viele Gräber weiter.",
+  "Every grave you land on gives you something: embers, coins, a chest, gear or a pumpkin curse.": "Jedes Grab, auf dem du landest, gibt dir etwas: Glut, Münzen, eine Truhe, Ausrüstung oder einen Kürbisfluch.",
+  "Each time you land on the same grave it earns a star. More stars, bigger prize (up to five).": "Jedes Mal, wenn du auf demselben Grab landest, bekommt es einen Stern. Mehr Sterne, größerer Preis (bis zu fünf).",
+  "Go all the way round and pass Start for {n} embers.": "Einmal herum und über Start für {n} Glut.",
+  "Every landing adds points. Fill the bar at the top to open the season chests.": "Jede Landung bringt Punkte. Füll die Leiste oben, um die Saisontruhen zu öffnen.",
+  "Two dice costs {n} embers and moves you further.": "Zwei Würfel kosten {n} Glut und bringen dich weiter."
 }

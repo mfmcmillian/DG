@@ -19,7 +19,7 @@ import { localAddress } from './multiplayer'
 import { isDeveloper } from './devAccess'
 import { t } from './i18n'
 import {
-  etOffset, GW_BACKSTOPS, GW_BOARD, GW_BOARD_DOUBLE_COST, GW_BOARD_MILESTONES, GW_BOARD_TOKENS, GW_CLEAR_EMBERS, GW_CRYPT_CLEAR_MULT, GW_EVENT_END,
+  etOffset, GW_BACKSTOPS, GW_BOARD, GW_BOARD_DOUBLE_COST, GW_BOARD_MILESTONES, GW_BOARD_PASS_EMBERS, GW_BOARD_TOKENS, GW_CLEAR_EMBERS, GW_CRYPT_CLEAR_MULT, GW_EVENT_END,
   GW_HAT_STEPS, GW_ITEM_INFO, GW_ITEMS, GW_MULT, GW_PRICES, GW_RISING_FIGHT_EMBERS, GW_RISING_UNLOCKS, GW_RISING_WIN_EMBERS, GW_ROUNDS_EMBERS, GW_SPIN_COST,
   GW_TILE_MAX_LEVEL, GW_WHEEL, GwItem, GwTileKind
 } from './shared/gravewatch'
@@ -33,7 +33,11 @@ const emberDark = Color4.create(0.22, 0.09, 0.03, 0.96)
 const FRAME = { width: 640, height: 600 }
 const TAB_NAMES: Record<GwTab, string> = { rounds: 'Rounds', wheel: 'Wheel of Bones', board: 'Gravewalk', rising: 'The Rising', reliquary: 'Reliquary' }
 const BOARD_IMAGE = 'images/gravewatch/board.png'
-const PAWN_IMAGE = 'images/hud/gravewatch.png'
+const PAWN_IMAGE = 'images/gravewatch/pumpkin.png'
+const STAR_IMAGE = 'images/gravewatch/star.png'
+const CHEST_IMAGE = 'images/gravewatch/chest.png'
+const GEAR_BADGE_IMAGE = 'images/gravewatch/gear-badge.png'
+let rulesOpen = false
 /** Six tiles a side; twenty around the edge. */
 const BOARD_SIDE = 6
 const TILE_COLORS: Record<GwTileKind, Color4> = {
@@ -101,6 +105,7 @@ export function GravewatchUi() {
   const { scale: s, width, height, x, y } = layout()
   const inner = FRAME.width - 80
   const tab = gravewatchTab()
+  if (tab !== 'board') rulesOpen = false
   const flyer = isFlyer()
   return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}>
     <UiEntity uiTransform={wholeCanvas()} uiBackground={{ color: veil }} />
@@ -270,20 +275,7 @@ function BoardTab({ scale: s, inner }: { scale: number; inner: number }) {
   const pop = landed ? 1 + 0.35 * Math.max(0, 1 - timing.sinceLanded / 0.3) : 1
   const lift = Math.sin(timing.hop * Math.PI) * 12
   return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', pointerFilter: 'none' }}>
-    {/* The season bar: points and the five chests. */}
-    <UiEntity uiTransform={{ width: '100%', height: 30 * s, flexDirection: 'row', alignItems: 'center', margin: { bottom: 8 * s }, flexShrink: 0, pointerFilter: 'none' }}>
-      <Label value={`${gw.points} ${t('pts')}`} color={gold} font="serif" fontSize={15 * s} textAlign="middle-left" textWrap="nowrap"
-        uiTransform={{ width: 74 * s, height: '100%', flexShrink: 0, pointerFilter: 'none' }} />
-      {GW_BOARD_MILESTONES.map((m, i) => {
-        const paid = i < gw.miles
-        return <UiEntity key={`gw-mile-${i}`} uiTransform={{ width: ((inner - 74) / GW_BOARD_MILESTONES.length - 4) * s, height: 26 * s, margin: { right: 4 * s }, borderRadius: 4 * s, borderWidth: s,
-          borderColor: paid ? gold : line, alignItems: 'center', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }}
-          uiBackground={{ color: paid ? Color4.create(0.16, 0.12, 0.06, 0.96) : panelColor }}>
-          <Label value={paid ? `✓ ${t(m.label)}` : `${m.points} · ${t(m.label)}`} color={paid ? gold : muted} fontSize={10 * s} textWrap="nowrap"
-            uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} />
-        </UiEntity>
-      })}
-    </UiEntity>
+    <SeasonBar scale={s} inner={inner} />
     <UiEntity uiTransform={{ width: '100%', height: size * s, flexDirection: 'row', flexShrink: 0, pointerFilter: 'none' }}>
       {/* The board: the painted ground, twenty tiles on the rim, the pawn, the dice in the middle. */}
       <UiEntity uiTransform={{ width: size * s, height: size * s, flexShrink: 0, pointerFilter: 'none' }}
@@ -299,17 +291,17 @@ function BoardTab({ scale: s, inner }: { scale: number; inner: number }) {
             uiBackground={{ color: TILE_COLORS[tileInfo.kind] }}>
             <Label value={t(tileInfo.label)} color={tileInfo.kind === 'curse' ? coral : tileInfo.kind === 'start' ? gold : white} fontSize={(tileInfo.kind === 'mystery' ? 16 : 9) * s} textAlign="middle-center" textWrap="wrap"
               uiTransform={{ width: '100%', height: 26 * s, flexShrink: 0, pointerFilter: 'none' }} />
-            <UiEntity uiTransform={{ height: 5 * s, flexDirection: 'row', flexShrink: 0, pointerFilter: 'none' }}>
+            <UiEntity uiTransform={{ height: 8 * s, flexDirection: 'row', flexShrink: 0, pointerFilter: 'none' }}>
               {tileInfo.kind !== 'start' && Array.from({ length: GW_TILE_MAX_LEVEL }, (_v, k) => <UiEntity key={`gw-pip-${i}-${k}`}
-                uiTransform={{ width: 5 * s, height: 5 * s, margin: { left: s, right: s }, borderRadius: 3 * s, flexShrink: 0, pointerFilter: 'none' }}
-                uiBackground={{ color: k < level ? gold : Color4.create(1, 1, 1, 0.14) }} />)}
+                uiTransform={{ width: 8 * s, height: 8 * s, margin: { left: 0.5 * s, right: 0.5 * s }, flexShrink: 0, pointerFilter: 'none', opacity: k < level ? 1 : 0.22 }}
+                uiBackground={{ textureMode: 'stretch', texture: { src: STAR_IMAGE }, color: Color4.White() }} />)}
             </UiEntity>
           </UiEntity>
         })}
         {/* The pawn. */}
         {(() => {
           const { col, row } = tileCell(play.pawn)
-          return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (col * cell + cell / 2 - 13) * s, top: (row * cell - 8 - lift) * s }, width: 26 * s, height: 26 * s, pointerFilter: 'none' }}
+          return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (col * cell + cell / 2 - 16) * s, top: (row * cell - 10 - lift) * s }, width: 32 * s, height: 32 * s, pointerFilter: 'none' }}
             uiBackground={{ textureMode: 'stretch', texture: { src: PAWN_IMAGE }, color: Color4.White() }} />
         })()}
         {/* The middle: dice and the word on the landing. */}
@@ -353,12 +345,86 @@ function BoardTab({ scale: s, inner }: { scale: number; inner: number }) {
             </UiEntity>
           })}
         </UiEntity>
-        <Gap h={8} scale={s} />
-        <Label value={t('Tiles pay more each time you land on them, up to five. Passing Start pays {n}.', { n: 20 })} color={muted} fontSize={11 * s} textAlign="top-left" textWrap="wrap"
-          uiTransform={{ width: '100%', height: 36 * s, flexShrink: 0, pointerFilter: 'none' }} />
+        <Gap h={10} scale={s} />
+        <Action id="gw-rules" text={t('Rules')} onClick={() => { rulesOpen = true }} width={panel} height={34} scale={s} fontSize={12} accent="gold" />
         {gw.held && <Line text={t('You hold a pumpkin curse: hand it out on the Wheel tab.')} scale={s} color={coral} size={11} height={18} />}
       </UiEntity>
     </UiEntity>
+    {rulesOpen && <Rules scale={s} inner={inner} />}
+  </UiEntity>
+}
+
+/** Points toward the five season chests: a track that fills a fifth per chest, with the chest sitting on it. */
+function SeasonBar({ scale: s, inner }: { scale: number; inner: number }) {
+  const gw = getGravewatch()
+  const steps = GW_BOARD_MILESTONES.length
+  // Where the fill stands: whole segments for chests paid, a part of the next.
+  let fill = 0
+  for (let i = 0; i < steps; i++) {
+    const from = i === 0 ? 0 : GW_BOARD_MILESTONES[i - 1].points
+    const to = GW_BOARD_MILESTONES[i].points
+    if (gw.points >= to) fill = (i + 1) / steps
+    else {
+      fill = (i + Math.max(0, gw.points - from) / (to - from)) / steps
+      break
+    }
+  }
+  const labelWidth = 70
+  const track = inner - labelWidth
+  const icon = 30
+  return <UiEntity uiTransform={{ width: '100%', height: 54 * s, flexDirection: 'row', alignItems: 'flex-start', margin: { bottom: 2 * s }, flexShrink: 0, pointerFilter: 'none' }}>
+    <UiEntity uiTransform={{ width: labelWidth * s, height: 30 * s, flexDirection: 'column', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+      <Label value={`${gw.points}`} color={gold} font="serif" fontSize={18 * s} textAlign="middle-left" textWrap="nowrap" uiTransform={{ width: '100%', height: 20 * s, flexShrink: 0, pointerFilter: 'none' }} />
+      <Label value={t('points')} color={muted} fontSize={10 * s} textAlign="middle-left" textWrap="nowrap" uiTransform={{ width: '100%', height: 12 * s, flexShrink: 0, pointerFilter: 'none' }} />
+    </UiEntity>
+    <UiEntity uiTransform={{ width: track * s, height: '100%', pointerFilter: 'none' }}>
+      {/* The track and its fill, through the middle of the icons. */}
+      <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 11 * s }, width: track * s, height: 8 * s, borderRadius: 4 * s, pointerFilter: 'none' }}
+        uiBackground={{ color: Color4.create(1, 1, 1, 0.1) }} />
+      <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 11 * s }, width: Math.max(0, track * fill) * s, height: 8 * s, borderRadius: 4 * s, pointerFilter: 'none' }}
+        uiBackground={{ color: ember }} />
+      {GW_BOARD_MILESTONES.map((m, i) => {
+        const paid = i < gw.miles
+        const x = (track * (i + 1)) / steps - icon / 2 - (i === steps - 1 ? icon / 2 : 0)
+        return <UiEntity key={`gw-mile-${i}`} uiTransform={{ positionType: 'absolute', position: { left: x * s, top: 0 }, width: (icon + 36) * s, flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
+          <UiEntity uiTransform={{ width: icon * s, height: icon * s, flexShrink: 0, pointerFilter: 'none', opacity: paid ? 1 : 0.5 }}
+            uiBackground={{ textureMode: 'stretch', texture: { src: m.kind === 'gear' ? GEAR_BADGE_IMAGE : CHEST_IMAGE }, color: Color4.White() }} />
+          <Label value={paid ? `✓ ${t(m.label)}` : t(m.label)} color={paid ? gold : muted} fontSize={9 * s} textAlign="middle-center" textWrap="nowrap"
+            uiTransform={{ width: '100%', height: 12 * s, flexShrink: 0, pointerFilter: 'none' }} />
+          <Label value={paid ? '' : `${m.points}`} color={muted} fontSize={8.5 * s} textAlign="middle-center" textWrap="nowrap"
+            uiTransform={{ width: '100%', height: 10 * s, flexShrink: 0, pointerFilter: 'none' }} />
+        </UiEntity>
+      })}
+    </UiEntity>
+  </UiEntity>
+}
+
+/** The rules, in plain words, over the board. */
+function Rules({ scale: s, inner }: { scale: number; inner: number }) {
+  const lines = [
+    t('You get {n} free rolls a day.', { n: GW_BOARD_TOKENS }),
+    t('Roll, and your pumpkin walks that many graves.'),
+    t('Every grave you land on gives you something: embers, coins, a chest, gear or a pumpkin curse.'),
+    t('Each time you land on the same grave it earns a star. More stars, bigger prize (up to five).'),
+    t('Go all the way round and pass Start for {n} embers.', { n: GW_BOARD_PASS_EMBERS }),
+    t('Every landing adds points. Fill the bar at the top to open the season chests.'),
+    t('Two dice costs {n} embers and moves you further.', { n: GW_BOARD_DOUBLE_COST })
+  ]
+  return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width: inner * s, height: '100%', padding: 22 * s, borderRadius: 6 * s, borderWidth: s, borderColor: goldLine,
+    flexDirection: 'column', pointerFilter: 'block' }} uiBackground={{ color: Color4.create(0.025, 0.045, 0.07, 0.985) }}>
+    <UiEntity uiTransform={{ width: '100%', height: 36 * s, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+      <Label value={t('How Gravewalk works')} font="serif" color={gold} fontSize={22 * s} textAlign="middle-left" textWrap="nowrap" uiTransform={{ height: '100%', pointerFilter: 'none' }} />
+      <Action id="gw-rules-close" text="×" onClick={() => { rulesOpen = false }} width={34} height={34} scale={s} fontSize={22} accent="gold" />
+    </UiEntity>
+    <Gap h={10} scale={s} />
+    {lines.map((text, i) => <UiEntity key={`gw-rule-${i}`} uiTransform={{ width: '100%', flexDirection: 'row', alignItems: 'flex-start', margin: { bottom: 8 * s }, flexShrink: 0, pointerFilter: 'none' }}>
+      <UiEntity uiTransform={{ width: 26 * s, height: 26 * s, margin: { right: 10 * s }, borderRadius: 13 * s, alignItems: 'center', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }}
+        uiBackground={{ color: emberDark }}>
+        <Label value={`${i + 1}`} color={ember} fontSize={13 * s} textWrap="nowrap" uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} />
+      </UiEntity>
+      <Label value={text} color={white} fontSize={14.5 * s} textAlign="middle-left" textWrap="wrap"
+        uiTransform={{ width: (inner - 44 - 36) * s, height: 40 * s, flexShrink: 0, pointerFilter: 'none' }} />
+    </UiEntity>)}
   </UiEntity>
 }
 

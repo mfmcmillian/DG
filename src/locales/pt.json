@@ -1343,5 +1343,15 @@
   "Season chest": "Baú da temporada",
   "Board ready": "Tabuleiro pronto",
   "Auto-roll": "Lançar automático",
-  "Auto-roll: on": "Lançar automático: ligado"
+  "Auto-roll: on": "Lançar automático: ligado",
+  "Rules": "Regras",
+  "points": "pontos",
+  "How Gravewalk works": "Como funciona o Passeio das Sepulturas",
+  "You get {n} free rolls a day.": "Tens {n} jogadas grátis por dia.",
+  "Roll, and your pumpkin walks that many graves.": "Lança, e a tua abóbora avança essas sepulturas.",
+  "Every grave you land on gives you something: embers, coins, a chest, gear or a pumpkin curse.": "Cada sepultura em que paras dá-te algo: brasas, moedas, um baú, equipamento ou uma maldição de abóbora.",
+  "Each time you land on the same grave it earns a star. More stars, bigger prize (up to five).": "De cada vez que paras na mesma sepultura ela ganha uma estrela. Mais estrelas, maior prémio (até cinco).",
+  "Go all the way round and pass Start for {n} embers.": "Dá a volta toda e passa a Partida por {n} brasas.",
+  "Every landing adds points. Fill the bar at the top to open the season chests.": "Cada paragem soma pontos. Enche a barra no topo para abrir os baús da temporada.",
+  "Two dice costs {n} embers and moves you further.": "Dois dados custam {n} brasas e levam-te mais longe."
 }

@@ -1343,5 +1343,15 @@
   "Season chest": "シーズン宝箱",
   "Board ready": "ボード準備完了",
   "Auto-roll": "自動ロール",
-  "Auto-roll: on": "自動ロール：オン"
+  "Auto-roll: on": "自動ロール：オン",
+  "Rules": "ルール",
+  "points": "ポイント",
+  "How Gravewalk works": "墓巡りの遊び方",
+  "You get {n} free rolls a day.": "一日{n}回まで無料で振れる。",
+  "Roll, and your pumpkin walks that many graves.": "振った数だけカボチャが墓を進む。",
+  "Every grave you land on gives you something: embers, coins, a chest, gear or a pumpkin curse.": "止まった墓は必ず何かをくれる。燠、コイン、宝箱、装備、カボチャの呪い。",
+  "Each time you land on the same grave it earns a star. More stars, bigger prize (up to five).": "同じ墓に止まるたびに星が付く。星が多いほど賞品が大きい（最大5つ）。",
+  "Go all the way round and pass Start for {n} embers.": "一周してスタートを通過すると燠{n}。",
+  "Every landing adds points. Fill the bar at the top to open the season chests.": "止まるたびにポイントが入る。上のバーを満たしてシーズン宝箱を開けよう。",
+  "Two dice costs {n} embers and moves you further.": "サイコロ2つは燠{n}で、より遠くへ進める。"
 }
