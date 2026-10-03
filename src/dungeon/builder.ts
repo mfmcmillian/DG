@@ -83,10 +83,7 @@ const FLAMES: Partial<Record<KitId, number>> = {
   pass_campfire: 0.45, vik_fire_ring: 0.7
 }
 
-/** Styles whose fires crackle and whose room tone rides with the player: the places heroes linger. */
-const AMBIENT_STYLES = new Set(['hall', 'pit'])
-
-/** The fires' crackle; the hall and the pit carry it, the fortresses stay tense and quiet. */
+/** The pit's fire-fed room tone; the hall's fires are silent, the music carries the room. */
 const FIRE_LOOP = 'sounds/fire_loop.wav'
 export const AMBIENCE_ASSETS = [FIRE_LOOP]
 
@@ -162,10 +159,6 @@ export function buildDungeon(dungeon: Dungeon, style: DungeonStyle, options?: La
         const flame = FLAMES[id]
         if (flame !== undefined) {
           torches.push({ entity: e, position: Vector3.create(p.x, p.y + flame * grow, p.z) })
-          if (AMBIENT_STYLES.has(style.id)) {
-            // Each fire crackles on its own, a touch off-pitch from the next so they never phase.
-            AudioSource.create(e, { audioClipUrl: FIRE_LOOP, playing: true, loop: true, volume: 0.3, pitch: 0.92 + Math.random() * 0.16 })
-          }
         }
         break
       }
