@@ -11,7 +11,7 @@ import { getPlayerCharacterState, setPumpkinCurse } from './playerCharacter'
 import { myParty, myPhase } from './party'
 import { HUB } from './partyLookup'
 import { isTitleOpen } from './titleScreen'
-import { GW_BOARD, GW_EVENT_END, GW_WHEEL, GwItem, GwRisingPhase, risingAt } from './shared/gravewatch'
+import { GW_BOARD, GW_BOARD_MILESTONES, GW_BOARD_TOKENS, GW_EVENT_END, GW_WHEEL, GwItem, GwRisingPhase, risingAt } from './shared/gravewatch'
 import { RISING_PARTY } from './shared/levels'
 import { fxSound } from './combatFx'
 import { t } from './i18n'
@@ -90,6 +90,14 @@ let clockOffset = 0
 let lastSeq = 0
 let wheel: Wheel | undefined
 let board: Board | undefined
+/** How far the pawn had hopped when we last made a sound, and the wheel's last lit wedge, so each gets one tick. */
+let hopsHeard = 0
+let landingHeard = false
+let wedgeHeard = -1
+/** Auto-roll: keep rolling one die while rolls remain. */
+let autoRoll = false
+/** The ember count the header shows, ticking toward the real one. */
+let shownEmbersValue = 0
 /** Waiting on the host's answer to a spin, a roll or a redeem. */
 let busy = ''
 let confirmItem: GwItem | '' = ''
@@ -119,7 +127,13 @@ export function initializeGravewatch() {
     sheet.pos = msg.pos
     sheet.tiles = msg.tiles
     sheet.points = msg.points
+    // A season chest crossed: say which.
+    if (known && msg.miles > sheet.miles && msg.miles <= GW_BOARD_MILESTONES.length) {
+      sheet.note = `${t('Season chest')}: ${t(GW_BOARD_MILESTONES[msg.miles - 1].label)}`
+      sheet.noteFor = NOTE_SECONDS * 1.5
+    }
     sheet.miles = msg.miles
+    if (!known) shownEmbersValue = msg.embers
     sheet.mult = msg.mult
     sheet.curse = msg.curse
     sheet.held = msg.held
@@ -168,7 +182,9 @@ function takeNote(note: string, msg: { spin: number; roll: number[] }, embersBef
   if (note.startsWith('board:')) {
     const r = msg.roll
     if (r.length >= 6) board = { dice: [r[0], r[1]], from: r[2], to: r[3], passed: r[4] === 1, paid: r[5], said: note.slice('board:'.length), t: 0 }
-    fxSound('coin', 0.5)
+    hopsHeard = 0
+    landingHeard = false
+    fxSound('dice', 0.8)
     return
   }
   const text = noteText(note, embersBefore)
@@ -219,12 +235,44 @@ function update(dt: number) {
     wheel.t += span
     if (wheel.t >= WHEEL_SECONDS) {
       wheel.done = true
-      fxSound('coin', 0.9)
+      fxSound('bell', 0.6)
+    } else {
+      // A tick as each wedge passes the pointer.
+      const lit = wheelState()?.lit ?? -1
+      if (lit !== wedgeHeard) {
+        wedgeHeard = lit
+        fxSound('hop', 0.35)
+      }
     }
   }
-  if (board && board.t < boardSeconds(board)) {
-    board.t += span
-    if (board.t >= boardSeconds(board)) fxSound('coin', 0.9)
+  if (board && board.t < boardSeconds(board)) board.t += span
+  if (board) {
+    const play = boardState()
+    // One knock per hop, then the landing: a chime, a reveal on the chest, gear and mystery tiles, the fire when Start is passed.
+    const hopped = play.settled ? ((play.pawn - board.from) + GW_BOARD.length) % GW_BOARD.length : 0
+    if (hopped > hopsHeard) {
+      hopsHeard = hopped
+      fxSound('hop', 0.6)
+    }
+    if (play.landed && !landingHeard) {
+      landingHeard = true
+      const kind = GW_BOARD[board.to].kind
+      if (board.passed) fxSound('fire_flare', 0.5)
+      if (kind === 'chest' || kind === 'gear' || kind === 'mystery') fxSound('reveal', 0.8)
+      else if (board.paid > 0) fxSound('coin', 0.8)
+      else fxSound('bell', 0.4)
+    }
+  }
+  // The header's ember count walks toward the truth rather than jumping.
+  if (shownEmbersValue !== sheet.embers) {
+    const gap = sheet.embers - shownEmbersValue
+    const step = Math.max(1, Math.ceil(Math.abs(gap) * Math.min(1, span * 6)))
+    shownEmbersValue += Math.sign(gap) * Math.min(Math.abs(gap), step)
+  }
+  // Auto-roll: one die after another while rolls remain and the sheet is on the board.
+  if (autoRoll) {
+    if (!open || tab !== 'board' || sheet.rolls >= GW_BOARD_TOKENS || sheet.guest || sheet.over) autoRoll = false
+    else if (!busy && !boardRolling() && (!board || board.t >= boardSeconds(board) + 0.8)) gravewatchRoll(false)
   }
   for (const g of gains) g.age += span
   while (gains.length && gains[0].age >= GAIN_SECONDS) gains.shift()
@@ -350,6 +398,27 @@ export function boardRolling(): boolean {
   return !!board && board.t < boardSeconds(board)
 }
 
+/** Within the current hop, 0..1 (the pawn's arc), and seconds since the pawn landed (negative until then). */
+export function boardTiming(): { hop: number; sinceLanded: number } {
+  if (!board || board.t < DICE_SECONDS) return { hop: 0, sinceLanded: -1 }
+  const steps = boardSteps(board)
+  const walked = (board.t - DICE_SECONDS) / STEP_SECONDS
+  return { hop: walked < steps ? walked % 1 : 0, sinceLanded: board.t - boardSeconds(board) }
+}
+
+export function isAutoRoll(): boolean {
+  return autoRoll
+}
+
+export function toggleAutoRoll() {
+  autoRoll = !autoRoll
+}
+
+/** The ember count as the header shows it, ticking toward the real one. */
+export function shownEmbers(): number {
+  return shownEmbersValue
+}
+
 /** The "+n embers" toasts, newest last, with how long each has shown. */
 export function emberGains(): readonly Gain[] {
   return gains
@@ -392,6 +461,7 @@ export function openGravewatch(which: GwTab = tab): boolean {
 export function closeGravewatch() {
   if (!open) return
   open = false
+  autoRoll = false
   flyer = false
   confirmItem = ''
   InputModifier.deleteFrom(engine.PlayerEntity)
@@ -399,6 +469,7 @@ export function closeGravewatch() {
 
 export function setGravewatchTab(which: GwTab) {
   tab = which
+  autoRoll = false
   confirmItem = ''
   flyer = false
 }
@@ -463,6 +534,7 @@ export function gravewatchButtonLine(): string {
   if (clock.phase === 'lobby') return t('The Rising in {m} min', { m: Math.max(1, Math.ceil(clock.seconds / 60)) })
   if (sheet.known && sheet.rounds === 0) return t('Rounds ready')
   if (sheet.known && sheet.spins === 0) return t('Wheel ready')
+  if (sheet.known && sheet.rolls === 0) return t('Board ready')
   if (clock.start > 0) {
     const h = Math.floor(clock.seconds / 3600)
     return h >= 48 ? t('Rising in {d} days', { d: Math.floor(h / 24) }) : t('Rising in {h}h', { h: Math.max(1, h) })

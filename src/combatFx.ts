@@ -26,6 +26,8 @@ export type FxSound =
   | 'thunk_wood' | 'thud_straw'
   /** The upgrade pit: the fire leaping, and the reveal (scripts/build-pit-sounds.py). */
   | 'fire_flare' | 'reveal'
+  /** Gravewatch's board: dice in the cup, the pawn's hop (scripts/build-gravewatch-sounds.py). */
+  | 'dice' | 'hop'
   /** Bogmaw: the King's gong, a bomb, the storm, a goblin bow (scripts/build-bog-sounds.py). */
   | 'gong' | 'explosion' | 'thunder' | 'bow'
   /** The Crypt: the Chapel's bell, the Lich raising the dead (scripts/build-crypt-sounds.py). */
@@ -34,7 +36,7 @@ export type FxSound =
 const FX_SOUNDS: FxSound[] = [
   'swing_light', 'swing_heavy', 'hit_light', 'hit_heavy', 'block', 'hurt',
   'dodge', 'coin', 'heal', 'slam', 'roar', 'death', 'thunk_wood', 'thud_straw', 'fire_flare', 'reveal',
-  'gong', 'explosion', 'thunder', 'bow', 'bell', 'raise_dead'
+  'gong', 'explosion', 'thunder', 'bow', 'bell', 'raise_dead', 'dice', 'hop'
 ]
 
 /** Every clip `fxSound` can play, for the title-screen preloader. */

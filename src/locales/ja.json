@@ -1339,5 +1339,9 @@
   "rolls": "回",
   "Tiles pay more each time you land on them, up to five. Passing Start pays {n}.": "マスは止まるたびに支払いが増える（最大5段階）。スタート通過で{n}。",
   "You hold a pumpkin curse: hand it out on the Wheel tab.": "カボチャの呪いを持っている。ルーレットのタブで渡せ。",
-  "No rolls left today. Come back tomorrow.": "今日の回数は終わり。また明日。"
+  "No rolls left today. Come back tomorrow.": "今日の回数は終わり。また明日。",
+  "Season chest": "シーズン宝箱",
+  "Board ready": "ボード準備完了",
+  "Auto-roll": "自動ロール",
+  "Auto-roll: on": "自動ロール：オン"
 }

@@ -1339,5 +1339,9 @@
   "rolls": "Würfe",
   "Tiles pay more each time you land on them, up to five. Passing Start pays {n}.": "Felder zahlen bei jedem Besuch mehr, bis zu fünfmal. Start passieren bringt {n}.",
   "You hold a pumpkin curse: hand it out on the Wheel tab.": "Du hältst einen Kürbisfluch: verteil ihn im Rad-Reiter.",
-  "No rolls left today. Come back tomorrow.": "Keine Würfe mehr heute. Komm morgen wieder."
+  "No rolls left today. Come back tomorrow.": "Keine Würfe mehr heute. Komm morgen wieder.",
+  "Season chest": "Saisontruhe",
+  "Board ready": "Brett bereit",
+  "Auto-roll": "Auto-Würfeln",
+  "Auto-roll: on": "Auto-Würfeln: an"
 }

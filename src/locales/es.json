@@ -1339,5 +1339,9 @@
   "rolls": "tiradas",
   "Tiles pay more each time you land on them, up to five. Passing Start pays {n}.": "Las casillas pagan más cada vez que caes en ellas, hasta cinco. Pasar la Salida paga {n}.",
   "You hold a pumpkin curse: hand it out on the Wheel tab.": "Tienes una maldición de calabaza: repártela en la pestaña de la Rueda.",
-  "No rolls left today. Come back tomorrow.": "No quedan tiradas hoy. Vuelve mañana."
+  "No rolls left today. Come back tomorrow.": "No quedan tiradas hoy. Vuelve mañana.",
+  "Season chest": "Cofre de temporada",
+  "Board ready": "Tablero listo",
+  "Auto-roll": "Tirada automática",
+  "Auto-roll: on": "Tirada automática: sí"
 }

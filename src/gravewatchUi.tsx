@@ -9,9 +9,9 @@ import { Color4 } from '@dcl/sdk/math'
 import { uiViewport, wholeCanvas } from './uiScale'
 import { menuColors, MenuAction as Action } from './menuUi'
 import {
-  available, boardRolling, boardState, closeGravewatch, DICE_STRIP, emberGains, GAIN_SECONDS, getGravewatch, gravewatchBusy, gravewatchButtonLine, gravewatchConfirm,
+  available, boardRolling, boardState, boardTiming, closeGravewatch, DICE_STRIP, emberGains, GAIN_SECONDS, getGravewatch, gravewatchBusy, gravewatchButtonLine, gravewatchConfirm,
   gravewatchCurse, gravewatchGrant, gravewatchRedeem, gravewatchRising, gravewatchRoll, gravewatchRounds, gravewatchScreenNote, gravewatchSpin, gravewatchTab, GW_TABS, GwTab,
-  inRisingArena, isFlyer, openGravewatch, risingClock, runEmberGain, serverNow, setGravewatchTab, WHEEL_POINTER, WHEEL_SHEET, wheelState
+  inRisingArena, isAutoRoll, isFlyer, openGravewatch, risingClock, runEmberGain, serverNow, setGravewatchTab, shownEmbers, toggleAutoRoll, WHEEL_POINTER, WHEEL_SHEET, wheelState
 } from './gravewatch'
 import { heroLabel } from './lobbyUi'
 import { myParty } from './party'
@@ -116,9 +116,9 @@ export function GravewatchUi() {
             uiTransform={{ width: 320 * s, height: 42 * s, flexShrink: 0, pointerFilter: 'none' }} />
         </UiEntity>
         <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', pointerFilter: 'none' }}>
-          <UiEntity uiTransform={{ height: 38 * s, padding: { left: 14 * s, right: 14 * s }, margin: { right: 10 * s }, borderRadius: 4 * s, borderWidth: s, borderColor: ember,
+          <UiEntity uiTransform={{ height: 38 * s, padding: { left: 14 * s, right: 14 * s }, margin: { right: 10 * s }, borderRadius: 4 * s, borderWidth: shownEmbers() !== gw.embers ? 2 * s : s, borderColor: shownEmbers() !== gw.embers ? gold : ember,
             alignItems: 'center', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: emberDark }}>
-            <Label value={`${gw.embers}  ${t('embers')}${gw.mult > serverNow() ? `  ×${GW_MULT}` : ''}`} color={ember} font="serif" fontSize={17 * s} textWrap="nowrap"
+            <Label value={`${shownEmbers()}  ${t('embers')}${gw.mult > serverNow() ? `  ×${GW_MULT}` : ''}`} color={shownEmbers() !== gw.embers ? gold : ember} font="serif" fontSize={17 * s} textWrap="nowrap"
               uiTransform={{ height: '100%', pointerFilter: 'none' }} />
           </UiEntity>
           {isDeveloper() && <Action id="gw-grant" text="+1000" onClick={gravewatchGrant} width={64} height={38} scale={s} fontSize={13} accent="gold" />}
@@ -264,6 +264,11 @@ function BoardTab({ scale: s, inner }: { scale: number; inner: number }) {
   const panel = inner - size - 16
   const roll = play.roll
   const landed = !!roll && play.landed
+  const timing = boardTiming()
+  // The landing tile pulses for a second; the payout pops in.
+  const pulse = landed && timing.sinceLanded < 1 ? 0.5 + 0.5 * Math.cos(timing.sinceLanded * Math.PI * 4) : 0
+  const pop = landed ? 1 + 0.35 * Math.max(0, 1 - timing.sinceLanded / 0.3) : 1
+  const lift = Math.sin(timing.hop * Math.PI) * 12
   return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', pointerFilter: 'none' }}>
     {/* The season bar: points and the five chests. */}
     <UiEntity uiTransform={{ width: '100%', height: 30 * s, flexDirection: 'row', alignItems: 'center', margin: { bottom: 8 * s }, flexShrink: 0, pointerFilter: 'none' }}>
@@ -289,7 +294,7 @@ function BoardTab({ scale: s, inner }: { scale: number; inner: number }) {
           const here = play.pawn === i
           const lit = here && landed
           return <UiEntity key={`gw-tile-${i}`} uiTransform={{ positionType: 'absolute', position: { left: (col * cell + 2) * s, top: (row * cell + 2) * s }, width: tile * s, height: tile * s,
-            borderRadius: 3 * s, borderWidth: lit ? 2 * s : s, borderColor: lit ? gold : here ? ember : Color4.create(0.5, 0.42, 0.25, 0.45),
+            borderRadius: 3 * s, borderWidth: lit ? (2 + 2 * pulse) * s : s, borderColor: lit ? Color4.create(1, 0.85 + 0.15 * pulse, 0.45 + 0.4 * pulse, 1) : here ? ember : Color4.create(0.5, 0.42, 0.25, 0.45),
             flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: { top: 3 * s, bottom: 4 * s }, pointerFilter: 'none' }}
             uiBackground={{ color: TILE_COLORS[tileInfo.kind] }}>
             <Label value={t(tileInfo.label)} color={tileInfo.kind === 'curse' ? coral : tileInfo.kind === 'start' ? gold : white} fontSize={(tileInfo.kind === 'mystery' ? 16 : 9) * s} textAlign="middle-center" textWrap="wrap"
@@ -304,7 +309,7 @@ function BoardTab({ scale: s, inner }: { scale: number; inner: number }) {
         {/* The pawn. */}
         {(() => {
           const { col, row } = tileCell(play.pawn)
-          return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (col * cell + cell / 2 - 13) * s, top: (row * cell - 8) * s }, width: 26 * s, height: 26 * s, pointerFilter: 'none' }}
+          return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (col * cell + cell / 2 - 13) * s, top: (row * cell - 8 - lift) * s }, width: 26 * s, height: 26 * s, pointerFilter: 'none' }}
             uiBackground={{ textureMode: 'stretch', texture: { src: PAWN_IMAGE }, color: Color4.White() }} />
         })()}
         {/* The middle: dice and the word on the landing. */}
@@ -315,10 +320,10 @@ function BoardTab({ scale: s, inner }: { scale: number; inner: number }) {
             {play.faces[1] > 0 && <Die face={play.faces[1]} scale={s} size={46} dim={!play.settled} />}
           </UiEntity>
           <Label value={roll ? (landed ? t(roll.said) : play.settled ? `${play.faces[0] + play.faces[1]}` : '') : t('Roll to walk the graves')}
-            color={landed ? gold : white} font="serif" fontSize={(landed ? 15 : 20) * s} textAlign="middle-center" textWrap="wrap"
+            color={landed ? gold : white} font="serif" fontSize={(landed ? 15 * pop : 20) * s} textAlign="middle-center" textWrap="wrap"
             uiTransform={{ width: (size - 2 * cell - 16) * s, height: 40 * s, margin: { top: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />
           <Label value={roll && landed && roll.paid > 0 ? `+${roll.paid} ${t('embers')}${roll.passed && roll.to !== 0 ? ` (${t('passed Start')})` : ''}` : ''}
-            color={ember} fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
+            color={ember} fontSize={13 * pop * s} textAlign="middle-center" textWrap="nowrap"
             uiTransform={{ width: '100%', height: 20 * s, flexShrink: 0, pointerFilter: 'none' }} />
         </UiEntity>
       </UiEntity>
@@ -332,7 +337,10 @@ function BoardTab({ scale: s, inner }: { scale: number; inner: number }) {
         <Gap h={8} scale={s} />
         <Action id="gw-roll-two" text={t('Two dice ({n} embers)', { n: GW_BOARD_DOUBLE_COST })} onClick={() => gravewatchRoll(true)} width={panel} height={44} scale={s} fontSize={14} accent="gold"
           disabled={!can || gw.embers < GW_BOARD_DOUBLE_COST} />
-        <Gap h={16} scale={s} />
+        <Gap h={8} scale={s} />
+        <Action id="gw-roll-auto" text={isAutoRoll() ? t('Auto-roll: on') : t('Auto-roll')} onClick={toggleAutoRoll} width={panel} height={34} scale={s} fontSize={12} accent="gold"
+          active={isAutoRoll()} disabled={!gw.guest && !gw.over && left > 0 ? false : true} />
+        <Gap h={10} scale={s} />
         <Line text={t('Today\'s meter')} scale={s} color={gold} size={12} height={20} />
         <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', flexShrink: 0, pointerFilter: 'none' }}>
           {GW_HAT_STEPS.map((step, i) => {
@@ -345,9 +353,9 @@ function BoardTab({ scale: s, inner }: { scale: number; inner: number }) {
             </UiEntity>
           })}
         </UiEntity>
-        <Gap h={12} scale={s} />
+        <Gap h={8} scale={s} />
         <Label value={t('Tiles pay more each time you land on them, up to five. Passing Start pays {n}.', { n: 20 })} color={muted} fontSize={11 * s} textAlign="top-left" textWrap="wrap"
-          uiTransform={{ width: '100%', height: 48 * s, flexShrink: 0, pointerFilter: 'none' }} />
+          uiTransform={{ width: '100%', height: 36 * s, flexShrink: 0, pointerFilter: 'none' }} />
         {gw.held && <Line text={t('You hold a pumpkin curse: hand it out on the Wheel tab.')} scale={s} color={coral} size={11} height={18} />}
       </UiEntity>
     </UiEntity>

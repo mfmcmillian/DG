@@ -1339,5 +1339,9 @@
   "rolls": "lancers",
   "Tiles pay more each time you land on them, up to five. Passing Start pays {n}.": "Les cases paient plus à chaque passage, jusqu'à cinq. Franchir le Départ rapporte {n}.",
   "You hold a pumpkin curse: hand it out on the Wheel tab.": "Tu tiens une malédiction de citrouille : donne-la dans l'onglet Roue.",
-  "No rolls left today. Come back tomorrow.": "Plus de lancers aujourd'hui. Reviens demain."
+  "No rolls left today. Come back tomorrow.": "Plus de lancers aujourd'hui. Reviens demain.",
+  "Season chest": "Coffre de saison",
+  "Board ready": "Plateau prêt",
+  "Auto-roll": "Lancer auto",
+  "Auto-roll: on": "Lancer auto : actif"
 }
