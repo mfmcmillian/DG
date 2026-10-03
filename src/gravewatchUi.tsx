@@ -241,7 +241,6 @@ function WheelTab({ scale: s, inner }: { scale: number; inner: number }) {
   const result = spin?.done && spin.sinceDone < RESULT_SECONDS ? GW_WHEEL[spin.target] : undefined
   const pop = result ? 1 + 0.3 * Math.max(0, 1 - spin!.sinceDone / 0.3) : 1
   const pumpkinCard = gw.held && (!spin || (spin.done && spin.sinceDone >= 1.4))
-  const wearing = gw.curse > serverNow()
   return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', pointerFilter: 'none' }}>
     <Heading title={t('ONE FREE SPIN A DAY; MORE FOR {n} EMBERS', { n: GW_SPIN_COST })} scale={s} />
     <UiEntity uiTransform={{ width: '100%', height: rowHeight * s, flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
@@ -291,8 +290,7 @@ function WheelTab({ scale: s, inner }: { scale: number; inner: number }) {
         </UiEntity>
       </UiEntity>}
     </UiEntity>
-    <Line text={wearing ? t('You wear the Pumpkin Head for another {m} min: ×{x} embers the while.', { m: Math.max(1, Math.ceil((gw.curse - serverNow()) / 60000)), x: GW_MULT }) : ''}
-      scale={s} color={coral} size={13} height={24} />
+    <Gap h={10} scale={s} />
     <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
       {free && !turning && <UiEntity uiTransform={{ height: 24 * s, padding: { left: 10 * s, right: 10 * s }, margin: { right: 12 * s }, borderRadius: 12 * s, borderWidth: s, borderColor: ember,
         alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: emberDark }}>
