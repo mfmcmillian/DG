@@ -314,20 +314,11 @@ function BoardTab({ scale: s, inner }: { scale: number; inner: number }) {
             {play.faces[0] > 0 && <Die face={play.faces[0]} scale={s} size={46} dim={!play.settled} />}
             {play.faces[1] > 0 && <Die face={play.faces[1]} scale={s} size={46} dim={!play.settled} />}
           </UiEntity>
-          <Label value={roll ? (landed ? t(roll.said) : play.settled ? `${play.faces[0] + play.faces[1]}` : '') : t('Roll to walk the graves')}
+          <Label value={roll ? (landed ? (roll.passed && roll.to !== 0 ? `${t(roll.said)} · ${t('passed Start')}` : t(roll.said)) : play.settled ? `${play.faces[0] + play.faces[1]}` : '') : t('Roll to walk the graves')}
             color={landed ? gold : white} font="serif" fontSize={(landed ? 15 * pop : 20) * s} textAlign="middle-center" textWrap="wrap"
             uiTransform={{ width: (size - 2 * cell - 16) * s, height: 40 * s, margin: { top: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />
-          {(() => {
-            // The tile's own pay on one line; passing Start, when it happened, on its own line beneath.
-            const passBonus = roll && landed && roll.passed && roll.to !== 0 ? GW_BOARD_PASS_EMBERS : 0
-            const tilePaid = roll && landed ? roll.paid - passBonus : 0
-            return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
-              <Label value={tilePaid > 0 ? `+${tilePaid} ${t('embers')}` : ''} color={ember} fontSize={13 * pop * s} textAlign="middle-center" textWrap="nowrap"
-                uiTransform={{ width: '100%', height: 20 * s, flexShrink: 0, pointerFilter: 'none' }} />
-              <Label value={passBonus > 0 ? `+${passBonus} ${t('for passing Start')}` : ''} color={gold} fontSize={12 * s} textAlign="middle-center" textWrap="nowrap"
-                uiTransform={{ width: '100%', height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
-            </UiEntity>
-          })()}
+          <Label value={roll && landed && roll.paid > 0 ? `+${roll.paid} ${t('embers')}` : ''} color={ember} fontSize={15 * pop * s} textAlign="middle-center" textWrap="nowrap"
+            uiTransform={{ width: '100%', height: 22 * s, flexShrink: 0, pointerFilter: 'none' }} />
         </UiEntity>
       </UiEntity>
       {/* The side: rolls left, the two rolls, the daily meter. */}
