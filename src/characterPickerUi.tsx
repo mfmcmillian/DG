@@ -396,12 +396,17 @@ function UpdatesPanel({ scale: s, screenWidth, screenHeight }: { scale: number; 
     </UiEntity>
     <UiEntity uiTransform={{ width: 160 * s, height: 2 * s, margin: { top: 4 * s, bottom: 14 * s }, flexShrink: 0, pointerFilter: 'none' }}
       uiBackground={{ color: gold }} />
-    <UiEntity uiTransform={{ width: '100%', flexGrow: 1, flexDirection: 'column', overflow: 'hidden', pointerFilter: 'none' }}>
+    <UiEntity uiTransform={{ width: '100%', flexGrow: 1, flexDirection: 'column', overflow: 'scroll', pointerFilter: 'block' }}>
       {shown.map((entry) => <UiEntity key={`notes-${entry.version}`} uiTransform={{ width: '100%', flexDirection: 'column', margin: { bottom: 12 * s }, flexShrink: 0, pointerFilter: 'none' }}>
         <Label value={`v${entry.version}`} color={gold} fontSize={12 * s} textAlign="middle-left" textWrap="nowrap"
           uiTransform={{ width: '100%', height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
-        {entry.notes.map((note, i) => <Label key={`note-${entry.version}-${i}`} value={`·  ${t(note)}`} color={muted} fontSize={12.5 * s} textAlign="top-left"
-          uiTransform={{ width: '100%', height: 20 * s, flexShrink: 0, pointerFilter: 'none' }} />)}
+        {entry.notes.map((note, i) => {
+          const text = `·  ${t(note)}`
+          // Labels need a fixed height; a wrapped note takes one 17 px line per ~72 characters at this width.
+          const lines = Math.max(1, Math.ceil(text.length / 72))
+          return <Label key={`note-${entry.version}-${i}`} value={text} color={muted} fontSize={12.5 * s} textAlign="top-left" textWrap="wrap"
+            uiTransform={{ width: '100%', height: (lines * 17 + 4) * s, flexShrink: 0, pointerFilter: 'none' }} />
+        })}
       </UiEntity>)}
     </UiEntity>
   </UiEntity>
