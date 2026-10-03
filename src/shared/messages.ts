@@ -284,7 +284,16 @@ export const Messages = {
   /** Client -> server: buy a wearable in the Reliquary (`item` is w1, w2 or w3). */
   gwRedeem: Schemas.Map({ item: Schemas.String }),
   /** Client -> server: start a Barrow Run (a free one if any stand today, else a paid one). */
-  gwRunStart: Schemas.Map({ v: Schemas.Int }),
+  gwRunStart: Schemas.Map({ v: Schemas.Int, name: Schemas.String }),
+  /** Client -> server: spend mileage points on one stat ('end' | 'spd' | 'lck'). */
+  gwTrain: Schemas.Map({ stat: Schemas.String }),
+  /** Client -> server: the Barrow Run leaderboards, please. */
+  gwBoard: Schemas.Map({ v: Schemas.Int }),
+  /** Server -> client: the week's and all-time best distances, best first. */
+  gwBoardState: Schemas.Map({
+    week: Schemas.Array(Schemas.Map({ id: Schemas.String, name: Schemas.String, m: Schemas.Int })),
+    all: Schemas.Array(Schemas.Map({ id: Schemas.String, name: Schemas.String, m: Schemas.Int }))
+  }),
   /** Client -> server: the hero changed lane at `at` run seconds (by the client's clock from the start). */
   gwRunLane: Schemas.Map({ at: Schemas.Number, lane: Schemas.Int }),
   /** Server -> one client: a run begins: the road's seed, the server time it started, the meter and speed the training gives. */
@@ -340,6 +349,8 @@ export const Messages = {
     runs: Schemas.Int,
     best: Schemas.Int,
     mileage: Schemas.Int,
+    /** Training levels: Endurance, Speed, Luck. */
+    train: Schemas.Array(Schemas.Int),
     spin: Schemas.Int,
     roll: Schemas.Array(Schemas.Int),
     seq: Schemas.Int,

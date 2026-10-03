@@ -16,8 +16,26 @@ export const RUN_TIERS: readonly { m: number; embers: number }[] = [
   { m: 1000, embers: 70 },
   { m: 1500, embers: 120 }
 ]
-/** A mileage point per this many metres (training, later). */
+/** A mileage point per this many metres; the points train the three stats below. */
 export const RUN_MILE = 50
+/** Training: Endurance (more stamina), Speed (faster from the start), Luck (more and better pickups). */
+export const RUN_STATS = ['end', 'spd', 'lck'] as const
+export type RunStat = (typeof RUN_STATS)[number]
+export const RUN_TRAIN_MAX = 10
+/** Each stat level adds this: a tenth more stamina, four hundredths more speed, a point of luck. */
+export const RUN_END_STEP = 0.1
+export const RUN_SPD_STEP = 0.04
+/** Mileage points for the next level: 10, 20, 30… */
+export function runTrainCost(level: number): number {
+  return 10 * (level + 1)
+}
+/** The leaderboards keep this many names. */
+export const RUN_BOARD_SIZE = 10
+/** Monday-start weeks, counted in Eastern days since the epoch, for the weekly board's key. */
+export function runWeekKey(dayKey: string): string {
+  const days = Math.floor(Date.UTC(Number(dayKey.slice(0, 4)), Number(dayKey.slice(5, 7)) - 1, Number(dayKey.slice(8, 10))) / 86400000)
+  return String(Math.floor((days + 3) / 7))
+}
 
 export const RUN_LANES = 3
 export const RUN_LANE_WIDTH = 2.2
@@ -98,7 +116,7 @@ export function chunkItems(seed: number, index: number, luck = 0): RunItem[] {
       }
       for (const lane of lanes) {
         const pick = r()
-        const kind: RunItemKind = pick < 0.5 ? 'stone' : pick < 0.8 ? 'tomb' : 'ghoul'
+        const kind: RunItemKind = pick < 0.35 ? 'stone' : pick < 0.6 ? 'tomb' : 'ghoul'
         items.push({ kind, lane, at, key: `${index}:${n++}` })
       }
       // Something to run through in an open lane just past it.

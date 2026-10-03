@@ -16,7 +16,7 @@ import { RISING_PARTY } from './shared/levels'
 import { fxSound } from './combatFx'
 import { t } from './i18n'
 import { barrowRunRefused, initializeBarrowRun, startBarrowRun } from './barrowRun'
-import { RUN_TOKENS } from './shared/barrowRun'
+import { RUN_TOKENS, RunStat } from './shared/barrowRun'
 
 export type GwTab = 'rounds' | 'wheel' | 'board' | 'rising' | 'reliquary'
 export const GW_TABS: readonly GwTab[] = ['rounds', 'wheel', 'board', 'rising', 'reliquary']
@@ -46,6 +46,8 @@ export type GwSheet = {
   runs: number
   best: number
   mileage: number
+  /** Training levels: Endurance, Speed, Luck. */
+  train: [number, number, number]
   /** Spins since the wheel last gave gear. */
   pity: number
   live: GwItem[]
@@ -85,7 +87,7 @@ const POLL_SECONDS = 10
 const FLYER_AFTER_SECONDS = 1.5
 
 const sheet: GwSheet = {
-  known: false, over: false, guest: false, embers: 0, rounds: 0, clears: 0, spins: 0, rolls: 0, pos: 0, tiles: GW_BOARD.map(() => 1), points: 0, miles: 0, mult: 0, curse: 0, held: false, heads: 0, pity: 0, runs: 0, best: 0, mileage: 0,
+  known: false, over: false, guest: false, embers: 0, rounds: 0, clears: 0, spins: 0, rolls: 0, pos: 0, tiles: GW_BOARD.map(() => 1), points: 0, miles: 0, mult: 0, curse: 0, held: false, heads: 0, pity: 0, runs: 0, best: 0, mileage: 0, train: [0, 0, 0],
   live: ['w1'], won: [], sold: [], keyed: [], redeemed: {}, rising: 0, phase: 'idle', signed: 0, signedUp: false, arena: 0, note: '', noteFor: 0
 }
 let open = false
@@ -132,6 +134,9 @@ export function initializeGravewatch() {
   if (initialized) return
   initialized = true
   initializeBarrowRun()
+  onNet('gwBoardState', (msg) => {
+    ladder = { ...ladder, loaded: true, week: msg.week.map((r) => ({ ...r })), all: msg.all.map((r) => ({ ...r })) }
+  })
   onNet('gwState', (msg) => {
     clockOffset = msg.now - Date.now()
     const before = sheet.embers
@@ -162,6 +167,7 @@ export function initializeGravewatch() {
     sheet.runs = msg.runs
     sheet.best = msg.best
     sheet.mileage = msg.mileage
+    sheet.train = [msg.train[0] ?? 0, msg.train[1] ?? 0, msg.train[2] ?? 0]
     // A new gear prize: shown on its card once the wheel or the pawn has stopped.
     if (msg.gear !== gearSeen) {
       gearSeen = msg.gear
@@ -233,6 +239,8 @@ function noteText(note: string, embersBefore: number): string {
     case 'over': return t('Gravewatch has ended.')
     case 'guest': return t('Sign in with a wallet to take part in Gravewatch.')
     case 'poor': return t('Not enough embers.')
+    case 'miles': return t('Not enough mileage points.')
+    case 'trained': return t('Trained.')
     case 'capped': return t('No rolls left today. Come back tomorrow.')
     case 'nokey': return t('Not yet available.')
     case 'locked': return t('Not unlocked yet.')
@@ -531,6 +539,7 @@ export function closeGravewatch() {
   flyer = false
   confirmItem = ''
   gearPrize = undefined
+  ladder.open = false
   InputModifier.deleteFrom(engine.PlayerEntity)
 }
 
@@ -550,6 +559,28 @@ function ask(what: string) {
 export function gravewatchRounds() {
   ask('rounds')
   closeGravewatch()
+}
+
+/** Mileage points into Endurance, Speed or Luck. */
+export function gravewatchTrain(stat: RunStat) {
+  if (sheet.guest || sheet.over) return
+  sendNet('gwTrain', { stat })
+}
+
+/** The Barrow Run's leaderboards: asked of the host when opened, shown until closed. */
+export type RunBoardRow = { id: string; name: string; m: number }
+let ladder: { open: boolean; loaded: boolean; week: RunBoardRow[]; all: RunBoardRow[] } = { open: false, loaded: false, week: [], all: [] }
+
+export function runBoard(): Readonly<typeof ladder> {
+  return ladder
+}
+
+export function toggleRunBoard() {
+  ladder.open = !ladder.open
+  if (ladder.open) {
+    ladder.loaded = false
+    sendNet('gwBoard', { v: 1 })
+  }
 }
 
 /** The Barrow Run: the sheet closes and the host is asked for a run (src/barrowRun.ts takes it from there). */

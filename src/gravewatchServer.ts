@@ -25,7 +25,10 @@ import {
   GW_GEAR_LEGENDARY, GW_WHEEL, GW_WHEEL_PITY, GwItem, itemLive, tilePay
 } from './shared/gravewatch'
 import { BARROW_YARD, LEVELS, RISING_PARTY } from './shared/levels'
-import { newRunState, RUN_EXTRA_COST, RUN_HOST_DELAY, RUN_LANES, RUN_MILE, RUN_STAMINA, RUN_SYNC_SECONDS, RUN_TOKENS, runTierEmbers, RunState, stepRun } from './shared/barrowRun'
+import {
+  newRunState, RUN_BOARD_SIZE, RUN_END_STEP, RUN_EXTRA_COST, RUN_HOST_DELAY, RUN_LANES, RUN_MILE, RUN_SPD_STEP, RUN_STAMINA, RUN_STATS, RUN_SYNC_SECONDS, RUN_TOKENS,
+  RUN_TRAIN_MAX, runTierEmbers, runTrainCost, RunStat, RunState, runWeekKey, stepRun
+} from './shared/barrowRun'
 import { HUB } from './partyLookup'
 import { RARITIES, rollArmorDrop, rollArmorRank } from './weapons'
 import { initializeRisingServer, risingAct, risingSnapshot } from './raid/risingServer'
@@ -59,6 +62,8 @@ type Ledger = {
   runs?: number
   best?: number
   mileage?: number
+  /** Training levels: Endurance, Speed, Luck. */
+  train?: [number, number, number]
   redeemed: Partial<Record<GwItem, RedeemState>>
   /** When the pending redeem was started, and for what, so one manual retry is allowed after a while. */
   pendingAt?: number
@@ -113,9 +118,17 @@ function bind() {
     if (!context) return
     void redeem(context.from.toLowerCase(), msg.item)
   })
-  onNet('gwRunStart', (_msg, context) => {
+  onNet('gwRunStart', (msg, context) => {
     if (!context) return
-    void startRun(context.from.toLowerCase())
+    void startRun(context.from.toLowerCase(), msg.name)
+  })
+  onNet('gwTrain', (msg, context) => {
+    if (!context) return
+    void train(context.from.toLowerCase(), msg.stat)
+  })
+  onNet('gwBoard', (_msg, context) => {
+    if (!context) return
+    void sendBoards(context.from.toLowerCase())
   })
   onNet('gwRunLane', (msg, context) => {
     if (!context) return
@@ -393,6 +406,7 @@ async function tell(id: string, note: string) {
     runs: l.runs ?? 0,
     best: l.best ?? 0,
     mileage: l.mileage ?? 0,
+    train: l.train ?? [0, 0, 0],
     spin: lastSpin.get(id) ?? -1,
     roll: lastRoll.get(id) ?? [],
     seq,
@@ -584,11 +598,13 @@ async function roll(id: string, double: boolean) {
 type HostRun = { seed: number; started: number; state: RunState; lanes: { at: number; lane: number }[]; syncAt: number }
 const runs = new Map<string, HostRun>()
 
-async function startRun(id: string) {
+async function startRun(id: string, name: string) {
   if (over()) return tell(id, 'over')
   if (isGuest(id)) return tell(id, 'guest')
   if (runs.has(id)) return
   const l = await ledgerOf(id)
+  const shown = (name || '').trim().slice(0, 24)
+  if (shown) names.set(id, shown)
   const free = (l.runs ?? 0) < RUN_TOKENS
   if (!free) {
     if (l.embers < RUN_EXTRA_COST) return tell(id, 'poor')
@@ -598,7 +614,8 @@ async function startRun(id: string) {
   l.runs = (l.runs ?? 0) + 1
   const seed = Math.floor(Math.random() * 0x7fffffff)
   const started = now()
-  const state = newRunState(RUN_STAMINA, 1, 0)
+  const [end, spd, lck] = l.train ?? [0, 0, 0]
+  const state = newRunState(RUN_STAMINA * (1 + RUN_END_STEP * end), 1 + RUN_SPD_STEP * spd, lck)
   runs.set(id, { seed, started, state, lanes: [{ at: 0, lane: 1 }], syncAt: 0 })
   metricsMark(id, 'gw-run')
   console.log(`[Gravewatch] ${id} runs the barrows (${free ? 'free' : 'paid'}), seed ${seed}`)
@@ -661,8 +678,80 @@ async function finishRun(id: string, run: HostRun) {
   l.mileage = (l.mileage ?? 0) + Math.floor(st.s / RUN_MILE)
   console.log(`[Gravewatch] ${id} ran ${metres} m (${st.hits} hits, ${st.picks} pickups): +${paid} embers, has ${l.embers}`)
   void save(id)
+  void recordBest(id, metres, t)
   sendNet('gwRunSync', { t: st.t, s: st.s, stamina: 0, hits: st.hits, embers: st.embers, over: true, paid }, { to: [id] })
   await tell(id, '')
+}
+
+/** Mileage points into a stat: the next level costs 10, 20, 30… up to ten levels. */
+async function train(id: string, stat: string) {
+  if (!(RUN_STATS as readonly string[]).includes(stat)) return
+  const l = await ledgerOf(id)
+  const train: [number, number, number] = l.train ? [...l.train] : [0, 0, 0]
+  const i = RUN_STATS.indexOf(stat as RunStat)
+  if (train[i] >= RUN_TRAIN_MAX) return tell(id, '')
+  const cost = runTrainCost(train[i])
+  if ((l.mileage ?? 0) < cost) return tell(id, 'miles')
+  l.mileage = (l.mileage ?? 0) - cost
+  train[i]++
+  l.train = train
+  console.log(`[Gravewatch] ${id} trains ${stat} to ${train[i]} for ${cost} mileage`)
+  void save(id)
+  await tell(id, 'trained')
+}
+
+// --- the leaderboards: best distance per wallet, this week and all time ------------------------
+
+type BoardRow = { id: string; name: string; m: number }
+type Board = { rows: BoardRow[] }
+const BOARD_ALL_KEY = 'gw:run:all'
+const boards = new Map<string, Board>()
+/** The last name each wallet gave when starting a run. */
+const names = new Map<string, string>()
+
+function weekBoardKey(t: number): string {
+  return `gw:run:w:${runWeekKey(etDayKey(t))}`
+}
+
+async function boardOf(key: string): Promise<Board> {
+  const held = boards.get(key)
+  if (held) return held
+  let board: Board = { rows: [] }
+  try {
+    const stored = await Storage.get<Board>(key)
+    if (stored && Array.isArray(stored.rows)) board = { rows: stored.rows.filter((r) => r && typeof r.id === 'string' && Number.isFinite(r.m)) }
+  } catch (error) {
+    console.log(`[Gravewatch] could not read ${key}`, error)
+  }
+  boards.set(key, board)
+  return board
+}
+
+async function recordBest(id: string, metres: number, t: number) {
+  if (metres <= 0) return
+  const name = names.get(id) ?? ''
+  for (const key of [BOARD_ALL_KEY, weekBoardKey(t)]) {
+    const board = await boardOf(key)
+    const mine = board.rows.find((r) => r.id === id)
+    if (mine) {
+      if (metres <= mine.m && (!name || mine.name === name)) continue
+      mine.m = Math.max(mine.m, metres)
+      if (name) mine.name = name
+    } else board.rows.push({ id, name, m: metres })
+    board.rows.sort((a, b) => b.m - a.m)
+    board.rows = board.rows.slice(0, RUN_BOARD_SIZE)
+    try {
+      await Storage.set(key, board)
+    } catch (error) {
+      console.log(`[Gravewatch] could not save ${key}`, error)
+    }
+  }
+}
+
+async function sendBoards(id: string) {
+  const week = await boardOf(weekBoardKey(now()))
+  const all = await boardOf(BOARD_ALL_KEY)
+  sendNet('gwBoardState', { week: week.rows, all: all.rows }, { to: [id] })
 }
 
 // --- the Reliquary -----------------------------------------------------------------------------

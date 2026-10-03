@@ -7,8 +7,8 @@ import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { Color4 } from '@dcl/sdk/math'
 import { uiViewport } from './uiScale'
 import { menuColors, MenuAction as Action } from './menuUi'
-import { barrowRunView, canLeaveBarrowRun, leaveBarrowRun, restartBarrowRun } from './barrowRun'
-import { RUN_EXTRA_COST, RUN_TIERS, RUN_TOKENS } from './shared/barrowRun'
+import { barrowRunView, canLeaveBarrowRun, CARD_DELAY, leaveBarrowRun, restartBarrowRun } from './barrowRun'
+import { RUN_EXTRA_COST, RUN_STUMBLE_SECONDS, RUN_TIERS, RUN_TOKENS } from './shared/barrowRun'
 import { getGravewatch } from './gravewatch'
 import { t } from './i18n'
 
@@ -21,11 +21,18 @@ export function BarrowRunUi() {
   const view = barrowRunView()
   const { width, height, reserved } = uiViewport()
   const scale = Math.min(1, width / 1280)
+  // A stumble flashes the edges of the screen red, fading as the hero recovers.
+  const flash = view.phase === 'running' ? Math.min(1, view.stumble / RUN_STUMBLE_SECONDS) : 0
+  const edge = 70 * scale
   return (
     <UiEntity uiTransform={{ width, height, positionType: 'absolute', position: { left: 0, top: 0 } }}>
+      {flash > 0 && <UiEntity uiTransform={{ width, height: edge, positionType: 'absolute', position: { left: 0, top: 0 } }} uiBackground={{ color: Color4.create(0.7, 0.08, 0.04, 0.45 * flash) }} />}
+      {flash > 0 && <UiEntity uiTransform={{ width, height: edge, positionType: 'absolute', position: { left: 0, top: height - edge } }} uiBackground={{ color: Color4.create(0.7, 0.08, 0.04, 0.45 * flash) }} />}
+      {flash > 0 && <UiEntity uiTransform={{ width: edge, height, positionType: 'absolute', position: { left: 0, top: 0 } }} uiBackground={{ color: Color4.create(0.7, 0.08, 0.04, 0.35 * flash) }} />}
+      {flash > 0 && <UiEntity uiTransform={{ width: edge, height, positionType: 'absolute', position: { left: width - edge, top: 0 } }} uiBackground={{ color: Color4.create(0.7, 0.08, 0.04, 0.35 * flash) }} />}
       {view.phase === 'running' && <Hud scale={scale} width={width} top={reserved.top} />}
       {view.phase === 'running' && view.s < 60 && <Hint scale={scale} width={width} height={height} bottom={reserved.bottom} />}
-      {view.phase !== 'running' && <EndCard scale={scale} width={width} height={height} />}
+      {view.phase !== 'running' && (view.phase === 'waiting' || view.sinceOver >= CARD_DELAY) && <EndCard scale={scale} width={width} height={height} />}
     </UiEntity>
   )
 }
@@ -36,7 +43,7 @@ function Hud({ scale, width, top }: { scale: number; width: number; top: number 
   const barW = 360 * scale
   const fill = Math.max(0, Math.min(1, view.stamina / view.staminaMax))
   const low = fill < 0.25
-  const colour = low ? LOW : view.lantern > 0 ? LANTERN : EMBER
+  const colour = low || view.stumble > 0 ? LOW : view.lantern > 0 ? LANTERN : EMBER
   const metres = Math.floor(view.s)
   const next = RUN_TIERS.find((tier) => tier.m > metres)
   return (
