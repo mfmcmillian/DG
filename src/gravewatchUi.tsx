@@ -113,7 +113,6 @@ export function GravewatchUi() {
   const { scale: s, width, height, x, y } = layout()
   const inner = FRAME.width - 80
   const tab = gravewatchTab()
-  if (tab !== 'board') rulesOpen = false
   const flyer = isFlyer()
   return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}>
     <UiEntity uiTransform={wholeCanvas()} uiBackground={{ color: veil }} />
@@ -138,6 +137,8 @@ export function GravewatchUi() {
           </UiEntity>
           {isDeveloper() && <Action id="gw-grant" text="+1000" onClick={gravewatchGrant} width={64} height={38} scale={s} fontSize={13} accent="gold" />}
           {isDeveloper() && <UiEntity uiTransform={{ width: 10 * s, pointerFilter: 'none' }} />}
+          <Action id="gw-rules" text={t('Rules')} onClick={() => { rulesOpen = !rulesOpen }} width={64} height={38} scale={s} fontSize={13} accent="gold" active={rulesOpen} />
+          <UiEntity uiTransform={{ width: 10 * s, pointerFilter: 'none' }} />
           <Action id="gw-close" text="×" onClick={closeGravewatch} width={38} height={38} scale={s} fontSize={26} accent="gold" />
         </UiEntity>
       </UiEntity>
@@ -158,6 +159,7 @@ export function GravewatchUi() {
         {tab === 'board' && <BoardTab scale={s} inner={inner} />}
         {tab === 'rising' && <RisingTab scale={s} inner={inner} />}
         {tab === 'reliquary' && <ReliquaryTab scale={s} inner={inner} />}
+        {rulesOpen && <Rules scale={s} inner={inner} tab={tab} />}
       </UiEntity>
 
       <Label value={gw.note} color={gw.note ? coral : muted} fontSize={14 * s} textAlign="middle-center" textWrap="nowrap"
@@ -351,13 +353,10 @@ function BoardTab({ scale: s, inner }: { scale: number; inner: number }) {
             </UiEntity>
           })}
         </UiEntity>
-        <Gap h={10} scale={s} />
-        <Action id="gw-rules" text={t('Rules')} onClick={() => { rulesOpen = true }} width={panel} height={34} scale={s} fontSize={12} accent="gold" />
         {gw.held && <Label value={t('Pumpkin curse held: give it out on the Wheel tab.')} color={coral} fontSize={11 * s} textAlign="top-left" textWrap="wrap"
           uiTransform={{ width: '100%', height: 30 * s, margin: { top: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
       </UiEntity>
     </UiEntity>
-    {rulesOpen && <Rules scale={s} inner={inner} />}
   </UiEntity>
 }
 
@@ -419,9 +418,19 @@ function SeasonBar({ scale: s, inner }: { scale: number; inner: number }) {
   </UiEntity>
 }
 
-/** The rules, in plain words, over the board. */
-function Rules({ scale: s, inner }: { scale: number; inner: number }) {
-  const lines = [
+/** The rules of the open tab, in plain words, over its content. */
+const RULES: Record<GwTab, { title: string; lines: () => string[] }> = {
+  rounds: { title: 'How Rounds work', lines: () => [
+    t('Press "To the Barrow Yard" to fight through the graveyard. About five minutes, any party size.'),
+    t('Your first three Rounds a day pay embers ({a}, then {b}, then {c}).', { a: GW_ROUNDS_EMBERS[0], b: GW_ROUNDS_EMBERS[1], c: GW_ROUNDS_EMBERS[2] }),
+    t('Clearing any dungeon pays embers too, three a day. The Crypt pays double.')
+  ] },
+  wheel: { title: 'How the Wheel works', lines: () => [
+    t('One free spin a day. More spins cost {n} embers each.', { n: GW_SPIN_COST }),
+    t('The wheel gives embers, coins, a piece of gear, a day of x1.5 embers, or a pumpkin curse.'),
+    t('The curse is a pumpkin head for an hour. Give it to someone in your party, or wear it yourself.')
+  ] },
+  board: { title: 'How Gravewalk works', lines: () => [
     t('You get {n} free rolls a day.', { n: GW_BOARD_TOKENS }),
     t('Roll, and your pumpkin walks that many graves.'),
     t('Every grave you land on gives you something: embers, coins, a chest, gear or a pumpkin curse.'),
@@ -429,22 +438,40 @@ function Rules({ scale: s, inner }: { scale: number; inner: number }) {
     t('Go all the way round and pass Start for {n} embers.', { n: GW_BOARD_PASS_EMBERS }),
     t('Every landing adds points. Fill the bar at the top to open the season chests.'),
     t('Two dice costs {n} embers and moves you further.', { n: GW_BOARD_DOUBLE_COST })
-  ]
-  return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width: inner * s, height: '100%', padding: 22 * s, borderRadius: 6 * s, borderWidth: s, borderColor: goldLine,
-    flexDirection: 'column', pointerFilter: 'block' }} uiBackground={{ color: Color4.create(0.025, 0.045, 0.07, 0.985) }}>
-    <UiEntity uiTransform={{ width: '100%', height: 36 * s, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
-      <Label value={t('How Gravewalk works')} font="serif" color={gold} fontSize={22 * s} textAlign="middle-left" textWrap="nowrap" uiTransform={{ height: '100%', pointerFilter: 'none' }} />
-      <Action id="gw-rules-close" text="×" onClick={() => { rulesOpen = false }} width={34} height={34} scale={s} fontSize={22} accent="gold" />
-    </UiEntity>
-    <Gap h={10} scale={s} />
-    {lines.map((text, i) => <UiEntity key={`gw-rule-${i}`} uiTransform={{ width: '100%', flexDirection: 'row', alignItems: 'flex-start', margin: { bottom: 8 * s }, flexShrink: 0, pointerFilter: 'none' }}>
+  ] },
+  rising: { title: 'How the Rising works', lines: () => [
+    t('Saturdays at 9:15 PM ET the Demon climbs out of the barrow.'),
+    t('Be in the hall and press Join. Everyone fights him together in one yard.'),
+    t('If you fall, an ally standing over you raises you. If everyone falls, you all walk back to the hall and can try again until 10 PM.'),
+    t('Everyone who fights gets {a} embers. If the Demon dies: {b} more, raid loot, and the week\'s wearable unlocks for everyone.', { a: GW_RISING_FIGHT_EMBERS, b: GW_RISING_WIN_EMBERS })
+  ] },
+  reliquary: { title: 'How the Reliquary works', lines: () => [
+    t('Embers buy the three Gravewatch wearables, minted straight to your wallet.'),
+    t('The legendary and the mythic unlock when a Rising is won, or on their backstop dates.'),
+    t('One of each per wallet. Tap Claim twice. It shows in your backpack within a minute.')
+  ] }
+}
+
+function Rules({ scale: s, inner, tab }: { scale: number; inner: number; tab: GwTab }) {
+  const { title, lines } = RULES[tab]
+  const rows = lines()
+  const row = rows.length > 5 ? 36 : 44
+  return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width: inner * s, height: '100%', padding: { left: 20 * s, right: 20 * s, top: 14 * s, bottom: 14 * s },
+    borderRadius: 6 * s, borderWidth: s, borderColor: goldLine, flexDirection: 'column', pointerFilter: 'block' }} uiBackground={{ color: Color4.create(0.025, 0.045, 0.07, 1) }}>
+    <Label value={t(title)} font="serif" color={gold} fontSize={22 * s} textAlign="middle-left" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 34 * s, margin: { bottom: 8 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+    {rows.map((text, i) => <UiEntity key={`gw-rule-${i}`} uiTransform={{ width: '100%', height: row * s, flexDirection: 'row', alignItems: 'center', margin: { bottom: 4 * s }, flexShrink: 0, pointerFilter: 'none' }}>
       <UiEntity uiTransform={{ width: 26 * s, height: 26 * s, margin: { right: 10 * s }, borderRadius: 13 * s, alignItems: 'center', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }}
         uiBackground={{ color: emberDark }}>
         <Label value={`${i + 1}`} color={ember} fontSize={13 * s} textWrap="nowrap" uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} />
       </UiEntity>
-      <Label value={text} color={white} fontSize={14.5 * s} textAlign="middle-left" textWrap="wrap"
-        uiTransform={{ width: (inner - 44 - 36) * s, height: 40 * s, flexShrink: 0, pointerFilter: 'none' }} />
+      <Label value={text} color={white} fontSize={(rows.length > 5 ? 13 : 14) * s} textAlign="middle-left" textWrap="wrap"
+        uiTransform={{ width: (inner - 40 - 36) * s, height: '100%', flexShrink: 0, pointerFilter: 'none' }} />
     </UiEntity>)}
+    <UiEntity uiTransform={{ flexGrow: 1, pointerFilter: 'none' }} />
+    <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+      <Action id="gw-rules-ok" text={t('Got it')} onClick={() => { rulesOpen = false }} width={160} height={38} scale={s} fontSize={14} primary accent="gold" />
+    </UiEntity>
   </UiEntity>
 }
 
