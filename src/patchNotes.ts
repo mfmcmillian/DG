@@ -6,6 +6,9 @@
 export type PatchNote = { version: string; notes: string[] }
 
 export const PATCH_NOTES: PatchNote[] = [
+  { version: '2.11.2', notes: [
+    'The Rising\'s Demon fights like a raid boss now: he holds his circle, his slam reaches as far as his arm, hellfire burns under anyone who stands off, and he raises the dead on a clock as well as when he is hurt.'
+  ] },
   { version: '2.11.0', notes: [
     'The Barrow Run: your hero runs the haunted road on their own; you steer with A and D round stones, tombs and ghouls. Three free runs a day, distance pays embers, and every 50 m banks a mileage point to train Endurance, Speed or Luck. Weekly and all-time leaderboards.',
     'Music under the whole game, and the menus, loot and level-ups have their sounds. The Gravewatch tabs got their art, and the title plays the Gravewatch village for the season.'

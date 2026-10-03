@@ -136,6 +136,9 @@ type Enemy = CombatPose & {
   castTimer: number
   fuse: number
   exploded: boolean
+  /** Anchored boss: seconds to the next hellfire, and the one marked and burning down. */
+  hellfireIn: number
+  hellfire?: { at: Vector3; age: number }
 }
 
 /** A goblin's arrow or venom bolt in flight: where it was aimed and when it arrives. The hero dodges it by not being there. */
@@ -169,6 +172,13 @@ export function enemyPreloadAssets(styleId: StyleId = 'open'): string[] {
 
 const SLAM_RADIUS = 3.2
 const SLAM_DAMAGE = 32
+/** An anchored boss's hellfire: a circle marked under a hero, which burns after the wind-up. Cast this often while engaged. */
+const HELLFIRE_EVERY = 7
+const HELLFIRE_WINDUP = 1.5
+const HELLFIRE_RADIUS = 3
+const HELLFIRE_DAMAGE = 30
+/** The Rising's Demon raises his next wave by this clock when his health has not called it sooner. */
+const RISING_RAISE_SECONDS = 25
 const CORPSE_SECONDS = 4
 const BODY_RADIUS = 0.42
 /** Soft lock-on only engages once a target is just about in reach, within this half-angle. */
@@ -691,7 +701,7 @@ function tickGauntlet(s: Sim, dt: number, fighters: NetFighter[]) {
   }
   // Bogmaw's King calls his later waves himself, by the gong, as he is worn down; the Lich raises his.
   if ((s.style.id === 'bog' || isCryptKit(s.style.id)) && g.stages[si].kind === 'boss') {
-    tickGong(s, si, mine, awake)
+    tickGong(s, si, mine, awake, dt)
     return
   }
   if (awake.some((e) => !e.dead)) {
@@ -810,7 +820,7 @@ function spawnEnemy(home: CombatPose, archetype: Archetype, boss: boolean): Enem
     ring: createDecal('ring'), ritual: boss ? createDecal('ritual') : undefined, hitStop: 0, announced: false, stillSeconds: 0,
     bossBrain: boss ? createBossBrain() : undefined, hyperArmor: false, rollSeconds: 0, rollDir: 1,
     provoked: 0, strayed: false, asleep: false, stage: -1, wave: -1,
-    shots: [], castTimer: 0, fuse: -1, exploded: false
+    shots: [], castTimer: 0, fuse: -1, exploded: false, hellfireIn: HELLFIRE_EVERY * 0.6
   }
 }
 
@@ -912,6 +922,7 @@ function stepSim(dt: number, fighters: NetFighter[], local: ReturnType<typeof ge
   if (isHost() && sim.gauntlet) tickGauntlet(sim, dt, fighters)
   if (!isHeadless()) {
     tickZoneFx(dt)
+    tickHellfireFx(dt)
     tickAuraRings(dt)
     if (sim.gauntlet) tickGates(sim)
   }
@@ -1165,6 +1176,7 @@ function updateBoss(e: Enemy, dt: number, target: NetFighter, fighters: NetFight
     const pace = (brain.phase === 3 ? 1.25 : 1) * (e.recovery > 0 ? 0.5 : 1)
     walkToward(e, dt, target, stride * pace, COMBAT_RULES.approachStop)
   }
+  if (e.archetype.anchored && isHost()) tickHellfire(e, dt, fighters)
 
   if (decision.telegraphAttack) {
     const slam = decision.telegraphAttack === 'slam'
@@ -1173,7 +1185,7 @@ function updateBoss(e: Enemy, dt: number, target: NetFighter, fighters: NetFight
       e.announced = true
       if (wide) fxSound('roar', 0.85)
     }
-    const radius = slam ? (brain.phase === 3 ? 4.1 : SLAM_RADIUS) :
+    const radius = slam ? slamRadiusOf(e) :
       attackRange(weaponOf(decision.telegraphAttack)) * 0.55
     const centre = slam
       ? e.position
@@ -1588,7 +1600,7 @@ function castSpell(e: Enemy, target: NetFighter) {
  * wave's share: the Goblin King strikes his gong, the Lich raises the dead
  * from his circle.
  */
-function tickGong(s: Sim, si: number, mine: Enemy[], awake: Enemy[]) {
+function tickGong(s: Sim, si: number, mine: Enemy[], awake: Enemy[], dt: number) {
   const g = s.gauntlet
   if (!g) return
   const king = mine.find((e) => e.boss)
@@ -1596,7 +1608,11 @@ function tickGong(s: Sim, si: number, mine: Enemy[], awake: Enemy[]) {
   const waves = g.stages[si].waves.length
   const nextWave = Math.max(...awake.map((e) => e.wave)) + 1
   if (nextWave >= waves) return
-  if (king.health / king.maxHealth > 1 - nextWave / waves) return
+  // An anchored boss also raises by the clock, once engaged, so the crowd never gets to settle on him.
+  g.waveTimer += king.engaged ? dt : 0
+  const byClock = !!king.archetype.anchored && g.waveTimer >= RISING_RAISE_SECONDS
+  if (!byClock && king.health / king.maxHealth > 1 - nextWave / waves) return
+  g.waveTimer = 0
   wakeWave(s, si, nextWave)
   if (king.health > 0 && !king.swing) {
     king.swing = createSwing('roar', elapsed)
@@ -1663,6 +1679,10 @@ function presentEnemyFx(fx: EnemyFxNet) {
       fxMagicBurst(at, Color4.create(1, 0.85, 0.3, 1), 1.4)
       fxSound('gong', 1)
       if (noticeSeconds === 0) showNotice('The Goblin King sounds the gong!', 2.5)
+      return
+    case 'hellfire':
+      hellfires.push({ at: Vector3.create(fx.x, COURTYARD.characterFloorY, fx.z), age: 0, decal: createDecal('crack') })
+      fxSound('roar', 0.5)
       return
     case 'raise': {
       // Grave-light out of the circle, and over every skeleton that just stood up.
@@ -2534,6 +2554,7 @@ const zoneFx: ZoneFx[] = []
 function clearZoneFx() {
   for (const z of zoneFx) destroyDecal(z.decal)
   zoneFx.length = 0
+  clearHellfireFx()
 }
 
 /** Another hero's cast, from the host's relay: the ground or the glow, where they put it. */
@@ -2795,8 +2816,81 @@ function advanceSwing(e: Enemy, dt: number, target: NetFighter, fighters: NetFig
   }
 }
 
+/** The slam's reach: the boss's whole arm's length when he is anchored, the usual circle (wider in his last phase) otherwise. */
+function slamRadiusOf(e: Enemy): number {
+  if (e.archetype.anchored) return (e.archetype.profile.slamRange ?? 6) * 0.9
+  return e.bossBrain?.phase === 3 ? 4.1 : SLAM_RADIUS
+}
+
+/**
+ * Host: an anchored boss marks hellfire under a hero who stands off beyond his
+ * slam (anyone, if all are close), and it burns after the wind-up. Clients get
+ * the mark once and run the same clock on their own decal.
+ */
+function tickHellfire(e: Enemy, dt: number, fighters: NetFighter[]) {
+  if (e.dead || e.health <= 0) return
+  if (e.hellfire) {
+    e.hellfire.age += dt
+    if (e.hellfire.age < HELLFIRE_WINDUP) return
+    const at = e.hellfire.at
+    const damage = Math.round(HELLFIRE_DAMAGE * (sim?.damageScale ?? 1))
+    for (const fighter of fighters) {
+      if (fighter.health <= 0) continue
+      const dx = fighter.position.x - at.x
+      const dz = fighter.position.z - at.z
+      if (Math.sqrt(dx * dx + dz * dz) > HELLFIRE_RADIUS || Math.abs(fighter.position.y - at.y) > COMBAT_RULES.maximumVerticalReach) continue
+      strikeFighter(fighter, damage, 0.9, Math.atan2(dx, dz))
+    }
+    e.hellfire = undefined
+    e.hellfireIn = HELLFIRE_EVERY
+    return
+  }
+  e.hellfireIn -= dt
+  if (e.hellfireIn > 0) return
+  const slamReach = slamRadiusOf(e)
+  const alive = fighters.filter((f) => f.health > 0 && simFloor(f.position.x, f.position.z) && combatDistance(e.home, f) <= e.archetype.leash)
+  const far = alive.filter((f) => combatDistance(e, f) > slamReach)
+  const pool = far.length ? far : alive
+  if (!pool.length) {
+    e.hellfireIn = 1
+    return
+  }
+  const mark = pool[Math.floor(Math.random() * pool.length)]
+  e.hellfire = { at: Vector3.create(mark.position.x, e.position.y, mark.position.z), age: 0 }
+  emitEnemyFx({ kind: 'hellfire', i: enemyIndex(e), j: -1, x: mark.position.x, y: e.position.y, z: mark.position.z, tx: 0, ty: 0, tz: 0, r: HELLFIRE_RADIUS })
+}
+
+/** Client: the hellfire marks burning down, each on its own decal. */
+type HellfireFx = { at: Vector3; age: number; decal: Decal }
+const hellfires: HellfireFx[] = []
+
+function tickHellfireFx(dt: number) {
+  for (let i = hellfires.length - 1; i >= 0; i--) {
+    const h = hellfires[i]
+    h.age += dt
+    if (h.age < HELLFIRE_WINDUP) {
+      updateDecal(h.decal, true, h.at, HELLFIRE_RADIUS, h.age / HELLFIRE_WINDUP, Color3.create(1, 0.4, 0.05))
+      continue
+    }
+    fxSlam(h.at, HELLFIRE_RADIUS)
+    for (let n = 0; n < 6; n++) {
+      const a = Math.random() * Math.PI * 2
+      const r = Math.random() * HELLFIRE_RADIUS
+      fxMagicBurst(Vector3.create(h.at.x + Math.sin(a) * r, h.at.y + 0.2, h.at.z + Math.cos(a) * r), Color4.create(1, 0.45, 0.1, 1), 0.8)
+    }
+    fxSound('fire_flare', 0.8)
+    destroyDecal(h.decal)
+    hellfires.splice(i, 1)
+  }
+}
+
+function clearHellfireFx() {
+  for (const h of hellfires) destroyDecal(h.decal)
+  hellfires.length = 0
+}
+
 function slam(e: Enemy, fighters: NetFighter[]) {
-  const radius = e.bossBrain?.phase === 3 ? 4.1 : SLAM_RADIUS
+  const radius = slamRadiusOf(e)
   const damage = Math.round((e.bossBrain?.phase === 3 ? 38 : SLAM_DAMAGE) * (sim?.damageScale ?? 1))
   hideDecals(e)
   fxSlam(e.position, radius)
@@ -2986,6 +3080,10 @@ function updateProvoked(e: Enemy, dt: number, stride: number) {
 
 /** Walk back to the post; health returns only if the fight actually pulled the enemy away from it. */
 function walkHome(e: Enemy, dt: number, stride: number) {
+  if (e.archetype.anchored) {
+    // No walking speed to get back with: he is simply there.
+    move(e, e.home.position.x - e.position.x, e.home.position.z - e.position.z)
+  }
   if (combatDistance(e, e.home) > 0.05) walkToward(e, dt, e.home, stride, 0)
   if (combatDistance(e, e.home) < 0.05) {
     e.returningHome = false
@@ -3156,6 +3254,8 @@ function canCross(x0: number, z0: number, x1: number, z1: number): boolean {
 }
 
 function separate(e: Enemy, target: CombatPose) {
+  // An anchored boss is not shoved: heroes make room round him, and he cannot walk back if he drifts.
+  if (e.archetype.anchored) return
   if (Math.abs(target.position.y - e.position.y) <= COMBAT_RULES.maximumVerticalReach) {
     const distance = combatDistance(e, target)
     if (distance < COMBAT_RULES.bodySeparation) {

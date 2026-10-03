@@ -33,6 +33,8 @@ export type Archetype = {
   armor?: Omit<EquipmentLoadout, 'weapon'>
   /** Bogmaw's specialists (src/dungeonEnemies.ts, goblin section); melee when absent. */
   kind?: 'archer' | 'bomber' | 'shaman' | 'totem'
+  /** A raid boss: never leaves his spot, slams as wide as his reach, and drops hellfire on anyone who stands off (src/dungeonEnemies.ts). */
+  anchored?: boolean
 }
 
 // The Starter-pack outfits the fortress rosters were built with. Hero defaults
@@ -276,9 +278,9 @@ const YARD: Roster = {
  */
 export const RISING_DEMON: Archetype = {
   name: 'The Demon', characterId: 'dk-demon', weapon: 'dk-halberd-01', health: 4200, scale: 3.0, damageScale: 2.4,
-  aggro: 16, leash: 45, speed: 0.95,
-  profile: { blockChance: 0.05, pace: 0.85, pattern: ['attack_light', 'slam', 'attack_heavy', 'attack_light2', 'slam'], slamRange: 6 },
-  role: 'boss'
+  aggro: 20, leash: 45, speed: 0,
+  profile: { blockChance: 0.05, pace: 0.75, pattern: ['slam', 'attack_heavy', 'slam', 'attack_light', 'slam'], slamRange: 6 },
+  role: 'boss', anchored: true
 }
 const RISING: Roster = { ...CRYPT, boss: RISING_DEMON }
 
