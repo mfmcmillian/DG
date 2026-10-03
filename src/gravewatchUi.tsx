@@ -21,7 +21,7 @@ import { t } from './i18n'
 import {
   etOffset, GW_BACKSTOPS, GW_BOARD, GW_BOARD_DOUBLE_COST, GW_BOARD_MILESTONES, GW_BOARD_PASS_EMBERS, GW_BOARD_TOKENS, GW_CLEAR_EMBERS, GW_CRYPT_CLEAR_MULT, GW_EVENT_END,
   GW_HAT_STEPS, GW_ITEM_INFO, GW_ITEMS, GW_MULT, GW_PRICES, GW_RISING_FIGHT_EMBERS, GW_RISING_UNLOCKS, GW_RISING_WIN_EMBERS, GW_ROUNDS_EMBERS, GW_SPIN_COST,
-  GW_TILE_MAX_LEVEL, GW_WHEEL, GwItem, GwTileKind
+  GW_TILE_MAX_LEVEL, GW_WHEEL, GwItem, GwTileKind, tilePay
 } from './shared/gravewatch'
 import { StackButton } from './hudButtons'
 
@@ -291,12 +291,13 @@ function BoardTab({ scale: s, inner }: { scale: number; inner: number }) {
             borderRadius: 3 * s, borderWidth: lit ? (2 + 2 * pulse) * s : s, borderColor: lit ? Color4.create(1, 0.85 + 0.15 * pulse, 0.45 + 0.4 * pulse, 1) : here ? ember : Color4.create(0.5, 0.42, 0.25, 0.45),
             flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: { top: 3 * s, bottom: 4 * s }, pointerFilter: 'none' }}
             uiBackground={{ color: TILE_COLORS[tileInfo.kind] }}>
-            <Label value={t(tileInfo.label)} color={tileInfo.kind === 'curse' ? coral : tileInfo.kind === 'start' ? gold : white} fontSize={(tileInfo.kind === 'mystery' ? 16 : 9) * s} textAlign="middle-center" textWrap="wrap"
+            <Label value={tileInfo.kind === 'embers' ? `${tilePay(tileInfo.amount, level)} ${t('embers')}` : tileInfo.kind === 'coins' ? `${tilePay(tileInfo.amount, level)} ${t('coins')}` : t(tileInfo.label)}
+              color={tileInfo.kind === 'curse' ? coral : tileInfo.kind === 'start' ? gold : white} fontSize={(tileInfo.kind === 'mystery' ? 16 : 9) * s} textAlign="middle-center" textWrap="wrap"
               uiTransform={{ width: '100%', height: 26 * s, flexShrink: 0, pointerFilter: 'none' }} />
             <UiEntity uiTransform={{ height: 8 * s, flexDirection: 'row', flexShrink: 0, pointerFilter: 'none' }}>
               {tileInfo.kind !== 'start' && Array.from({ length: GW_TILE_MAX_LEVEL }, (_v, k) => <UiEntity key={`gw-pip-${i}-${k}`}
-                uiTransform={{ width: 8 * s, height: 8 * s, margin: { left: 0.5 * s, right: 0.5 * s }, flexShrink: 0, pointerFilter: 'none', opacity: k < level ? 1 : 0.22 }}
-                uiBackground={{ textureMode: 'stretch', texture: { src: STAR_IMAGE }, color: Color4.White() }} />)}
+                uiTransform={{ width: 8 * s, height: 8 * s, margin: { left: 0.5 * s, right: 0.5 * s }, flexShrink: 0, pointerFilter: 'none' }}
+                uiBackground={{ textureMode: 'stretch', texture: { src: STAR_IMAGE }, color: k < level ? Color4.White() : Color4.create(0.5, 0.5, 0.5, 0.25) }} />)}
             </UiEntity>
           </UiEntity>
         })}
@@ -349,7 +350,8 @@ function BoardTab({ scale: s, inner }: { scale: number; inner: number }) {
         </UiEntity>
         <Gap h={10} scale={s} />
         <Action id="gw-rules" text={t('Rules')} onClick={() => { rulesOpen = true }} width={panel} height={34} scale={s} fontSize={12} accent="gold" />
-        {gw.held && <Line text={t('You hold a pumpkin curse: hand it out on the Wheel tab.')} scale={s} color={coral} size={11} height={18} />}
+        {gw.held && <Label value={t('Pumpkin curse held: give it out on the Wheel tab.')} color={coral} fontSize={11 * s} textAlign="top-left" textWrap="wrap"
+          uiTransform={{ width: '100%', height: 30 * s, margin: { top: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
       </UiEntity>
     </UiEntity>
     {rulesOpen && <Rules scale={s} inner={inner} />}
@@ -389,8 +391,8 @@ function SeasonBar({ scale: s, inner }: { scale: number; inner: number }) {
         const paid = i < gw.miles
         const x = (track * (i + 1)) / steps - icon / 2 - (i === steps - 1 ? icon / 2 : 0)
         return <UiEntity key={`gw-mile-${i}`} uiTransform={{ positionType: 'absolute', position: { left: x * s, top: 0 }, width: (icon + 36) * s, flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
-          <UiEntity uiTransform={{ width: icon * s, height: icon * s, flexShrink: 0, pointerFilter: 'none', opacity: paid ? 1 : 0.5 }}
-            uiBackground={{ textureMode: 'stretch', texture: { src: m.kind === 'gear' ? GEAR_BADGE_IMAGE : CHEST_IMAGE }, color: Color4.White() }} />
+          <UiEntity uiTransform={{ width: icon * s, height: icon * s, flexShrink: 0, pointerFilter: 'none' }}
+            uiBackground={{ textureMode: 'stretch', texture: { src: m.kind === 'gear' ? GEAR_BADGE_IMAGE : CHEST_IMAGE }, color: paid ? Color4.White() : Color4.create(0.6, 0.6, 0.6, 0.55) }} />
           <Label value={paid ? `✓ ${t(m.label)}` : t(m.label)} color={paid ? gold : muted} fontSize={9 * s} textAlign="middle-center" textWrap="nowrap"
             uiTransform={{ width: '100%', height: 12 * s, flexShrink: 0, pointerFilter: 'none' }} />
           <Label value={paid ? '' : `${m.points}`} color={muted} fontSize={8.5 * s} textAlign="middle-center" textWrap="nowrap"
@@ -442,8 +444,8 @@ function sheetUvs(col: number, row: number, cols: number, rows: number): number[
 /** A die face from the strip (1..6). */
 function Die({ face, scale: s, size, dim }: { key?: string; face: number; scale: number; size: number; dim: boolean }) {
   const f = Math.max(1, Math.min(6, face))
-  return <UiEntity uiTransform={{ width: size * s, height: size * s, margin: { left: 5 * s, right: 5 * s }, flexShrink: 0, pointerFilter: 'none', opacity: dim ? 0.55 : 1 }}
-    uiBackground={{ textureMode: 'stretch', texture: { src: DICE_STRIP }, uvs: sheetUvs(f - 1, 0, 6, 1), color: Color4.White() }} />
+  return <UiEntity uiTransform={{ width: size * s, height: size * s, margin: { left: 5 * s, right: 5 * s }, flexShrink: 0, pointerFilter: 'none' }}
+    uiBackground={{ textureMode: 'stretch', texture: { src: DICE_STRIP }, uvs: sheetUvs(f - 1, 0, 6, 1), color: dim ? Color4.create(0.75, 0.75, 0.75, 0.7) : Color4.White() }} />
 }
 
 /** "+n embers" over the hall and the yard, as the host credits them. */

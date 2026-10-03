@@ -449,9 +449,12 @@ async function roll(id: string, double: boolean) {
     case 'start':
       paid += GW_BOARD_PASS_EMBERS * 2
       break
-    case 'embers':
-      paid += tilePay(tile.amount, level)
+    case 'embers': {
+      const pay = tilePay(tile.amount, level)
+      paid += pay
+      said = `${pay} embers`
       break
+    }
     case 'coins': {
       const coins = tilePay(tile.amount, level)
       sendNet('loot', { party: HUB, x: 0, z: 0, coin: coins, heart: 0, item: '', boss: true, up: 0, uid: '' }, { to: [id] })
