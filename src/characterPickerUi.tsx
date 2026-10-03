@@ -9,7 +9,7 @@ import { WorldHudUi } from './worldHudUi'
 import { getMenuLayout } from './menuLayout'
 import { menuColors, MenuAction as Action } from './menuUi'
 import { PATCH_NOTES } from './patchNotes'
-import { kitTexture, UI_KIT } from './uiKit'
+import { kitTexture, UI_KIT, titleBackdrop } from './uiKit'
 import { isSettingsOpen } from './settings'
 import { SettingsUi } from './settingsUi'
 import { isGravewatchOpen } from './gravewatch'
@@ -295,7 +295,7 @@ function MovedScreen() {
   const column = EMBLEM.height * s + 20 * s + 130 * s
   const columnTop = Math.max(top + 12 * s, (screenHeight - column) / 2 - 10 * s)
   return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}>
-    <UiEntity uiTransform={wholeCanvas()} uiBackground={kitTexture(UI_KIT.titleBg)} />
+    <UiEntity uiTransform={wholeCanvas()} uiBackground={kitTexture(titleBackdrop())} />
     <UiEntity uiTransform={wholeCanvas()} uiBackground={{ color: titleVeil }} />
     <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: columnTop }, width: '100%',
       flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
@@ -323,7 +323,7 @@ function TitleScreen() {
   const columnTop = Math.max(top + 12 * s, (screenHeight - column) / 2 - 10 * s)
   return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}>
     {/* The still stands in until the video behind the UI is really playing (titleVideo.ts), and comes back if it stops. */}
-    {!isTitleVideoShowing() && <UiEntity uiTransform={wholeCanvas()} uiBackground={kitTexture(UI_KIT.titleBg)} />}
+    {!isTitleVideoShowing() && <UiEntity uiTransform={wholeCanvas()} uiBackground={kitTexture(titleBackdrop())} />}
     <UiEntity uiTransform={wholeCanvas()} uiBackground={{ color: titleVeil }} />
     <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: columnTop }, width: '100%',
       flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>

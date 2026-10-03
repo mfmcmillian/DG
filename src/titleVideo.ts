@@ -17,6 +17,7 @@ import { isTitleOpen } from './titleScreen'
 import { hasMoved } from './home'
 import { uiViewport } from './uiScale'
 import { isHeadless } from './multiplayer'
+import { GW_EVENT_END } from './shared/gravewatch'
 
 /**
  * 1280x720, 10 s, locked-off camera, made to loop; hosted with open CORS and
@@ -26,7 +27,17 @@ import { isHeadless } from './multiplayer'
  * still-to-video handover shows nothing.
  */
 const TITLE_VIDEO_URL = 'https://media.decentraland-dashboard.org/v/21c86d39-03cc-4f5e-bb3b-60efb64c1758/c840e5f7-62e7-4b1a-a97b-58e5d26ea987.mp4'
+/**
+ * The Gravewatch title, same specs: the village under the harvest moon, the mill
+ * wheel turning, green fire in the windows. Its first frame is title-bg-gravewatch.jpg.
+ */
+const GRAVEWATCH_VIDEO_URL = 'https://media.decentraland-dashboard.org/v/21c86d39-03cc-4f5e-bb3b-60efb64c1758/fec52d0c-375e-4335-8f2c-8c90dcab206f.mp4'
 const VIDEO_ASPECT = 16 / 9
+
+/** Which clip the title streams: the event's while it runs, the castle after. Decided when the screen is made, so a loop never swaps mid-play. */
+function titleVideoUrl(): string {
+  return Date.now() < GW_EVENT_END ? GRAVEWATCH_VIDEO_URL : TITLE_VIDEO_URL
+}
 
 const TAN_HALF_FOV = Math.tan(Math.PI / 6)
 /** Where the picker's backdrop sits too: the room in front of the title camera is known clear this far. */
@@ -62,7 +73,7 @@ function ensureScreen(): Entity {
   // backdrop seen from its rig.
   Transform.create(screen, { parent: engine.CameraEntity, position: Vector3.create(0, 0, DEPTH) })
   MeshRenderer.setPlane(screen)
-  VideoPlayer.create(screen, { src: TITLE_VIDEO_URL, playing: false, loop: true, volume: 0 })
+  VideoPlayer.create(screen, { src: titleVideoUrl(), playing: false, loop: true, volume: 0 })
   // Unlit: the clip carries its own light, the courtyard's must not tint it.
   Material.setBasicMaterial(screen, {
     texture: Material.Texture.Video({ videoPlayerEntity: screen }),
