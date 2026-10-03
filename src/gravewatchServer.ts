@@ -22,11 +22,11 @@ import { newGearUid } from './shared/gearBag'
 import {
   etDayKey, GW_BOARD, GW_BOARD_DOUBLE_COST, GW_BOARD_MILESTONES, GW_BOARD_PASS_EMBERS, GW_BOARD_TOKENS, GW_CLEAR_EMBERS, GW_CRYPT_CLEAR_MULT, GW_CURSE_MS,
   GW_EVENT_END, GW_HAT_STEPS, GW_ITEMS, GW_MULT, GW_MULT_MS, GW_PRICES, GW_ROUNDS_EMBERS, GW_SPIN_COST, GW_TILE_MAX_LEVEL, GW_TILE_POINTS, GW_TILE_POINTS_BIG,
-  GW_WHEEL, GW_WHEEL_PITY, GwItem, itemLive, tilePay
+  GW_GEAR_LEGENDARY, GW_WHEEL, GW_WHEEL_PITY, GwItem, itemLive, tilePay
 } from './shared/gravewatch'
 import { BARROW_YARD, LEVELS, RISING_PARTY } from './shared/levels'
 import { HUB } from './partyLookup'
-import { rollArmorDrop, rollArmorRank } from './weapons'
+import { RARITIES, rollArmorDrop, rollArmorRank } from './weapons'
 import { initializeRisingServer, risingAct, risingSnapshot } from './raid/risingServer'
 
 type RedeemState = 'pending' | 'granted' | 'failed'
@@ -52,6 +52,7 @@ type Ledger = {
   /** The Pumpkin Head on this hero runs until this time, when set; `held` while the wheel's waits to be handed out; `pity` spins since the wheel last gave gear. */
   curse?: number
   held?: boolean
+  heads?: number
   pity?: number
   redeemed: Partial<Record<GwItem, RedeemState>>
   /** When the pending redeem was started, and for what, so one manual retry is allowed after a while. */
@@ -75,6 +76,9 @@ let liveLoaded = false
 /** Per wallet: the last spin's segment and the last roll, and a counter so the client can tell a fresh answer. */
 const lastSpin = new Map<string, number>()
 const lastRoll = new Map<string, number[]>()
+/** The last gear prize per hero, "n:item@rank", n counting up so the client knows a new one. */
+const lastGear = new Map<string, string>()
+let gearCount = 0
 const seqs = new Map<string, number>()
 let initialized = false
 
@@ -231,11 +235,16 @@ async function credit(id: string, amount: number, why: string): Promise<number> 
   if (amount <= 0 || over() || isGuest(id)) return 0
   const l = await ledgerOf(id)
   const t = now()
-  const boosted = l.mult && l.mult > t ? Math.round(amount * GW_MULT) : amount
+  const boosted = boost(l, amount, t)
   l.embers += boosted
   console.log(`[Gravewatch] ${id} +${boosted} embers (${why}), has ${l.embers}`)
   void save(id)
   return boosted
+}
+
+/** An ember amount with the x1.5 if it runs: every ember that comes in, the wheel's and the board's too. */
+function boost(l: Ledger, amount: number, t: number): number {
+  return l.mult && l.mult > t ? Math.round(amount * GW_MULT) : amount
 }
 
 /** A run's verdict: the Barrow Yard pays Rounds, the ladder pays clears (the Crypt double). */
@@ -303,11 +312,13 @@ async function curse(id: string, target: string) {
   if (!l.held) return tell(id, '')
   const to = target || id
   if (to !== id && !sameParty(id, to)) return tell(id, 'party')
-  l.held = false
+  l.heads = Math.max(0, (l.heads ?? 1) - 1)
+  l.held = l.heads > 0
   void save(id)
   const victim = await ledgerOf(to)
   const t = now()
-  victim.curse = t + GW_CURSE_MS
+  // Hours stack: a second head on the same hero runs on from the first.
+  victim.curse = Math.max(victim.curse ?? 0, t) + GW_CURSE_MS
   victim.mult = Math.max(victim.mult ?? 0, t) + GW_CURSE_MS
   if (to !== id) void save(to)
   metricsMark(id, 'gw-curse')
@@ -337,7 +348,9 @@ async function tell(id: string, note: string) {
     mult: l.mult && l.mult > t ? l.mult : 0,
     curse: l.curse && l.curse > t ? l.curse : 0,
     held: !!l.held,
+    heads: l.held ? Math.max(1, l.heads ?? 1) : 0,
     pity: l.pity ?? 0,
+    gear: lastGear.get(id) ?? '',
     live: GW_ITEMS.filter((item) => itemLive(item, live.won, t) || isDev(id)),
     won: [...live.won],
     sold: [...live.sold],
@@ -391,7 +404,7 @@ async function spin(id: string) {
   const t = now()
   switch (seg.kind) {
     case 'embers':
-      l.embers += seg.amount
+      l.embers += boost(l, seg.amount, t)
       break
     case 'coins':
       sendNet('loot', { party: HUB, x: 0, z: 0, coin: seg.amount, heart: 0, item: '', boss: true, up: 0, uid: '' }, { to: [id] })
@@ -404,6 +417,7 @@ async function spin(id: string) {
       break
     case 'curse':
       l.held = true
+      l.heads = (l.heads ?? 0) + 1
       break
   }
   lastSpin.set(id, index)
@@ -413,7 +427,11 @@ async function spin(id: string) {
   await tell(id, `spin:${seg.label}`)
 }
 
-/** A piece of armor from any open realm, cut for the hero, rolled as a Hard elite: the wheel's gear prize and the Rising's drop. */
+/**
+ * A piece of armor from any open realm, cut for the hero: the wheel's gear
+ * prize, the Gear grave and the season chest fall epic (legendary one time
+ * in four); the Rising's drop rolls as a Hard boss.
+ */
 function rewardGear(id: string, x: number, z: number, source: 'elite' | 'boss' = 'elite') {
   const mine = heroCharacters((owner) => owner === id)
   // A prize, not a kill: the first roll (does anything drop?) always passes, the pick is a fair one.
@@ -422,7 +440,9 @@ function rewardGear(id: string, x: number, z: number, source: 'elite' | 'boss' =
   const armor = rollArmorDrop(source, LEVELS.map((l) => l.realm), sure, (piece) => mine.every((cid) => classAllowsArmor(cid, piece.hero)))
   if (!armor) return
   const party = source === 'boss' ? RISING_PARTY : HUB
-  sendNet('loot', { party, x, z, coin: 0, heart: 0, item: armor, boss: true, up: rollArmorRank(source, 2), uid: newGearUid() }, { to: [id] })
+  const up = source === 'boss' ? rollArmorRank(source, 2) : Math.random() < GW_GEAR_LEGENDARY ? RARITIES.legendary.rank : RARITIES.epic.rank
+  lastGear.set(id, `${++gearCount}:${armor}@${up}`)
+  sendNet('loot', { party, x, z, coin: 0, heart: 0, item: armor, boss: true, up, uid: newGearUid() }, { to: [id] })
 }
 
 // --- Gravewalk, the board -------------------------------------------------------------------
@@ -485,6 +505,7 @@ async function roll(id: string, double: boolean) {
       break
     case 'curse':
       l.held = true
+      l.heads = (l.heads ?? 0) + 1
       said = 'A Pumpkin Head to give out'
       break
     case 'mystery': {
@@ -507,20 +528,22 @@ async function roll(id: string, double: boolean) {
   l.tiles = tiles
   l.pos = to
   l.rolls++
+  // The x1.5, if it runs, on the roll's embers (the client shows the boosted figure).
+  paid = boost(l, paid, t)
   l.embers += paid
   // Points and the season chests.
   l.points = (l.points ?? 0) + (tile.kind === 'chest' || tile.kind === 'gear' ? GW_TILE_POINTS_BIG : GW_TILE_POINTS)
   let miles = l.miles ?? 0
   while (miles < GW_BOARD_MILESTONES.length && l.points >= GW_BOARD_MILESTONES[miles].points) {
     const m = GW_BOARD_MILESTONES[miles]
-    if (m.kind === 'embers') l.embers += m.amount
+    if (m.kind === 'embers') l.embers += boost(l, m.amount, t)
     else rewardGear(id, 0, 0)
     console.log(`[Gravewatch] ${id} reaches ${m.points} board points: ${m.label}`)
     miles++
   }
   l.miles = miles
   // The daily meter.
-  for (const step of GW_HAT_STEPS) if (step.rolls === l.rolls) l.embers += step.embers
+  for (const step of GW_HAT_STEPS) if (step.rolls === l.rolls) l.embers += boost(l, step.embers, t)
   lastRoll.set(id, [d1, d2, from, to, passed ? 1 : 0, paid])
   metricsMark(id, 'gw-roll')
   void save(id)

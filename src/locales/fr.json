@@ -1396,5 +1396,10 @@
   "A Pumpkin Head to give out": "Une tête de citrouille à donner",
   "The wheel gives embers, coins, a piece of gear, a day of x1.5 embers, or a Pumpkin Head.": "La roue donne des braises, des pièces, un équipement, un jour de braises ×1,5 ou une tête de citrouille.",
   "The Pumpkin Head is a grinning mask for an hour, and x1.5 embers while it is worn. Crown a party member, or wear it yourself.": "La tête de citrouille est un masque souriant pendant une heure, et ×1,5 braises tant qu’elle est portée. Couronnez un membre du groupe, ou portez-la vous-même.",
-  "Every {n}th spin without gear is guaranteed to land on gear.": "Tous les {n} tours sans équipement, le suivant tombe à coup sûr sur l’équipement."
+  "Every {n}th spin without gear is guaranteed to land on gear.": "Tous les {n} tours sans équipement, le suivant tombe à coup sûr sur l’équipement.",
+  "You hold {n} Pumpkin Heads": "Vous tenez {n} têtes de citrouille",
+  "Hours stack.": "Les heures s’additionnent.",
+  "A PIECE OF GEAR": "UNE PIÈCE D’ÉQUIPEMENT",
+  "A LEGENDARY PIECE OF GEAR": "UNE PIÈCE D’ÉQUIPEMENT LÉGENDAIRE",
+  "It is in your gear bag.": "Elle est dans votre sac d’équipement."
 }

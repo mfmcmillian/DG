@@ -38,6 +38,8 @@ export type GwSheet = {
   mult: number
   curse: number
   held: boolean
+  /** Pumpkin Heads waiting to be handed out. */
+  heads: number
   /** Spins since the wheel last gave gear. */
   pity: number
   live: GwItem[]
@@ -77,7 +79,7 @@ const POLL_SECONDS = 10
 const FLYER_AFTER_SECONDS = 1.5
 
 const sheet: GwSheet = {
-  known: false, over: false, guest: false, embers: 0, rounds: 0, clears: 0, spins: 0, rolls: 0, pos: 0, tiles: GW_BOARD.map(() => 1), points: 0, miles: 0, mult: 0, curse: 0, held: false, pity: 0,
+  known: false, over: false, guest: false, embers: 0, rounds: 0, clears: 0, spins: 0, rolls: 0, pos: 0, tiles: GW_BOARD.map(() => 1), points: 0, miles: 0, mult: 0, curse: 0, held: false, heads: 0, pity: 0,
   live: ['w1'], won: [], sold: [], keyed: [], redeemed: {}, rising: 0, phase: 'idle', signed: 0, signedUp: false, arena: 0, note: '', noteFor: 0
 }
 let open = false
@@ -98,6 +100,9 @@ let landingHeard = false
 let wedgeHeard = -1
 /** Auto-roll: keep rolling one die while rolls remain. */
 let autoRoll = false
+/** The last gear prize the host told of, and the one waiting to be shown on its card. */
+let gearSeen = ''
+let gearPrize: { item: string; up: number } | undefined
 /** The ember count the header shows, ticking toward the real one; held still while a roll or spin is still playing. */
 let shownEmbersValue = 0
 let tickSoundIn = 0
@@ -145,7 +150,15 @@ export function initializeGravewatch() {
     sheet.mult = msg.mult
     sheet.curse = msg.curse
     sheet.held = msg.held
+    sheet.heads = msg.heads
     sheet.pity = msg.pity
+    // A new gear prize: shown on its card once the wheel or the pawn has stopped.
+    if (msg.gear !== gearSeen) {
+      gearSeen = msg.gear
+      const [, rest] = msg.gear.split(':')
+      const [item, rank] = (rest ?? '').split('@')
+      if (known && item) gearPrize = { item, up: Number(rank) || 0 }
+    }
     sheet.live = msg.live as GwItem[]
     sheet.won = msg.won as GwItem[]
     sheet.sold = msg.sold as GwItem[]
@@ -294,7 +307,7 @@ function update(dt: number) {
   // Auto-roll: one die after another while rolls remain and the sheet is on the board.
   if (autoRoll) {
     if (!open || tab !== 'board' || sheet.rolls >= GW_BOARD_TOKENS || sheet.guest || sheet.over) autoRoll = false
-    else if (!busy && !boardRolling() && !tick && (!board || board.t >= boardSeconds(board) + TICK_AFTER_LANDING)) gravewatchRoll(false)
+    else if (!busy && !boardRolling() && !tick && !gearPrize && (!board || board.t >= boardSeconds(board) + TICK_AFTER_LANDING)) gravewatchRoll(false)
   }
   for (const g of gains) g.age += span
   while (gains.length && gains[0].age >= GAIN_SECONDS) gains.shift()
@@ -384,6 +397,21 @@ export function wheelState(): { frame: number; lit: number; done: boolean; targe
   const angle = eased * landing
   const lit = ((GW_WHEEL.length - Math.round(angle / 36)) % GW_WHEEL.length + GW_WHEEL.length) % GW_WHEEL.length
   return { frame: frameAt(angle), lit, done: false, target: wheel.target, sinceDone: 0 }
+}
+
+/**
+ * The gear prize waiting on its card, once the wheel has stopped or the pawn
+ * has landed and the prize has had its beat; nothing while the sheet is closed.
+ */
+export function gearCard(): { item: string; up: number } | undefined {
+  if (!gearPrize || !open) return undefined
+  if (wheel && (!wheel.done || wheel.t - WHEEL_SECONDS < 1.4)) return undefined
+  if (board && board.t < boardSeconds(board) + 0.6) return undefined
+  return gearPrize
+}
+
+export function dismissGearCard() {
+  gearPrize = undefined
 }
 
 function frameAt(angle: number): number {
@@ -491,6 +519,7 @@ export function closeGravewatch() {
   autoRoll = false
   flyer = false
   confirmItem = ''
+  gearPrize = undefined
   InputModifier.deleteFrom(engine.PlayerEntity)
 }
 

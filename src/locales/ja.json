@@ -1396,5 +1396,10 @@
   "A Pumpkin Head to give out": "渡せるパンプキンヘッド",
   "The wheel gives embers, coins, a piece of gear, a day of x1.5 embers, or a Pumpkin Head.": "ルーレットは残り火、コイン、装備、1日の残り火×1.5、またはパンプキンヘッドを与えます。",
   "The Pumpkin Head is a grinning mask for an hour, and x1.5 embers while it is worn. Crown a party member, or wear it yourself.": "パンプキンヘッドは1時間のにやり笑いの仮面で、かぶっている間は残り火×1.5。パーティの仲間にかぶせるか、自分でかぶりましょう。",
-  "Every {n}th spin without gear is guaranteed to land on gear.": "装備が出ないまま{n}回目のスピンは必ず装備に止まります。"
+  "Every {n}th spin without gear is guaranteed to land on gear.": "装備が出ないまま{n}回目のスピンは必ず装備に止まります。",
+  "You hold {n} Pumpkin Heads": "パンプキンヘッドを{n}個持っています",
+  "Hours stack.": "時間は積み重なります。",
+  "A PIECE OF GEAR": "装備を獲得",
+  "A LEGENDARY PIECE OF GEAR": "レジェンダリー装備を獲得",
+  "It is in your gear bag.": "装備バッグに入っています。"
 }

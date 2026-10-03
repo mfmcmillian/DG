@@ -306,7 +306,11 @@ export const Messages = {
     /** The Pumpkin Head on this hero runs until this server time (0: none); `held` when the wheel gave one to hand out; `pity` spins since the wheel last gave gear. */
     curse: Schemas.Number,
     held: Schemas.Boolean,
+    /** Pumpkin Heads waiting to be handed out. */
+    heads: Schemas.Int,
     pity: Schemas.Int,
+    /** The last gear prize, "n:item@rank" (n counts prizes, so a new one can be told from the last). */
+    gear: Schemas.String,
     /** Wearables live in the Reliquary, those the Risings have won, those sold out, those with a key in env. */
     live: Schemas.Array(Schemas.String),
     won: Schemas.Array(Schemas.String),

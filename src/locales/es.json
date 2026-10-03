@@ -1396,5 +1396,10 @@
   "A Pumpkin Head to give out": "Una cabeza de calabaza para entregar",
   "The wheel gives embers, coins, a piece of gear, a day of x1.5 embers, or a Pumpkin Head.": "La rueda da ascuas, monedas, una pieza de equipo, un día de ascuas ×1,5 o una cabeza de calabaza.",
   "The Pumpkin Head is a grinning mask for an hour, and x1.5 embers while it is worn. Crown a party member, or wear it yourself.": "La cabeza de calabaza es una máscara sonriente durante una hora y ascuas ×1,5 mientras se lleva. Corona a alguien del grupo o llévala tú.",
-  "Every {n}th spin without gear is guaranteed to land on gear.": "Cada {n}.º giro sin equipo cae seguro en equipo."
+  "Every {n}th spin without gear is guaranteed to land on gear.": "Cada {n}.º giro sin equipo cae seguro en equipo.",
+  "You hold {n} Pumpkin Heads": "Tienes {n} cabezas de calabaza",
+  "Hours stack.": "Las horas se acumulan.",
+  "A PIECE OF GEAR": "UNA PIEZA DE EQUIPO",
+  "A LEGENDARY PIECE OF GEAR": "UNA PIEZA DE EQUIPO LEGENDARIA",
+  "It is in your gear bag.": "Está en tu bolsa de equipo."
 }

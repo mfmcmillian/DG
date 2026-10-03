@@ -9,7 +9,7 @@ import { Color4 } from '@dcl/sdk/math'
 import { uiViewport, wholeCanvas } from './uiScale'
 import { menuColors, MenuAction as Action } from './menuUi'
 import {
-  available, boardRolling, boardState, boardTiming, closeGravewatch, DICE_STRIP, emberGains, GAIN_SECONDS, getGravewatch, gravewatchBusy, gravewatchButtonLine, gravewatchConfirm,
+  available, boardRolling, boardState, boardTiming, closeGravewatch, DICE_STRIP, dismissGearCard, emberGains, GAIN_SECONDS, gearCard, getGravewatch, gravewatchBusy, gravewatchButtonLine, gravewatchConfirm,
   gravewatchCurse, gravewatchGrant, gravewatchRedeem, gravewatchRising, gravewatchRoll, gravewatchRounds, gravewatchScreenNote, gravewatchSpin, gravewatchTab, GW_TABS, GwTab,
   emberTickLeft, inRisingArena, isAutoRoll, isFlyer, openGravewatch, risingClock, runEmberGain, serverNow, setGravewatchTab, shownEmbers, toggleAutoRoll, WHEEL_POINTER, WHEEL_SHEET, wheelState
 } from './gravewatch'
@@ -24,6 +24,8 @@ import {
   GW_TILE_MAX_LEVEL, GW_WHEEL, GW_WHEEL_PITY, GwItem, GwSegment, GwTileKind, tilePay
 } from './shared/gravewatch'
 import { StackButton } from './hudButtons'
+import { getEquipmentItemOrNull } from './equipmentCatalog'
+import { RARITIES, rarityOf } from './weapons'
 
 const { white, muted, gold, panel: panelColor, card, line, goldLine, green, coral, cyan } = menuColors
 const veil = Color4.create(0.01, 0.02, 0.03, 0.62)
@@ -164,6 +166,7 @@ export function GravewatchUi() {
         {tab === 'rising' && <RisingTab scale={s} inner={inner} />}
         {tab === 'reliquary' && <ReliquaryTab scale={s} inner={inner} />}
         {rulesOpen && <Rules scale={s} inner={inner} tab={tab} />}
+        {!rulesOpen && gearCard() && <GearCard scale={s} prize={gearCard()!} />}
       </UiEntity>
 
       <Label value={gw.note} color={gw.note ? coral : muted} fontSize={14 * s} textAlign="middle-center" textWrap="nowrap"
@@ -264,10 +267,10 @@ function WheelTab({ scale: s, inner }: { scale: number; inner: number }) {
         borderRadius: 8 * s, borderWidth: 2 * s, borderColor: coral, padding: { left: 24 * s, right: 24 * s }, pointerFilter: 'block' }} uiBackground={{ color: Color4.create(0.03, 0.04, 0.06, 0.98) }}>
         <UiEntity uiTransform={{ width: 56 * s, height: 56 * s, margin: { bottom: 8 * s }, flexShrink: 0, pointerFilter: 'none' }}
           uiBackground={{ textureMode: 'stretch', texture: { src: PAWN_IMAGE }, color: Color4.White() }} />
-        <Label value={t('You hold a Pumpkin Head')} color={coral} font="serif" fontSize={22 * s} textAlign="middle-center" textWrap="nowrap"
+        <Label value={gw.heads > 1 ? t('You hold {n} Pumpkin Heads', { n: gw.heads }) : t('You hold a Pumpkin Head')} color={coral} font="serif" fontSize={22 * s} textAlign="middle-center" textWrap="nowrap"
           uiTransform={{ width: '100%', height: 30 * s, flexShrink: 0, pointerFilter: 'none' }} />
-        <Label value={others.length ? t('Crown someone in your party, or wear it yourself. The wearer grins for an hour and earns ×{m} embers the while.', { m: GW_MULT })
-          : t('Nobody in your party to crown. Wear it yourself: a grin for an hour, and ×{m} embers the while.', { m: GW_MULT })}
+        <Label value={(others.length ? t('Crown someone in your party, or wear it yourself. The wearer grins for an hour and earns ×{m} embers the while.', { m: GW_MULT })
+          : t('Nobody in your party to crown. Wear it yourself: a grin for an hour, and ×{m} embers the while.', { m: GW_MULT })) + (gw.heads > 1 ? ` ${t('Hours stack.')}` : '')}
           color={white} fontSize={14 * s} textAlign="middle-center" textWrap="wrap" uiTransform={{ width: '100%', height: 44 * s, flexShrink: 0, pointerFilter: 'none' }} />
         <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', margin: { top: 10 * s }, flexShrink: 0, pointerFilter: 'none' }}>
           {others.slice(0, 5).map((m) => <Action key={`gw-curse-${m}`} id={`gw-curse-${m}`} text={heroLabel(m)} onClick={() => gravewatchCurse(m)} width={118} height={36} scale={s} fontSize={12} accent="gold" />)}
@@ -293,7 +296,7 @@ function WheelTab({ scale: s, inner }: { scale: number; inner: number }) {
 /** The prize as it lands, in a few words. */
 function prizeLine(seg: GwSegment): string {
   switch (seg.kind) {
-    case 'embers': return `+${seg.amount} ${t('embers')}`
+    case 'embers': return `+${getGravewatch().mult > serverNow() ? Math.round(seg.amount * GW_MULT) : seg.amount} ${t('embers')}`
     case 'coins': return `+${seg.amount} ${t('coins')}`
     case 'gear': return t('A piece of gear!')
     case 'mult': return t('×{m} embers for a day!', { m: GW_MULT })
@@ -534,6 +537,29 @@ function Rules({ scale: s, inner, tab }: { scale: number; inner: number; tab: Gw
     <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }}>
       <Action id="gw-rules-ok" text={t('Got it')} onClick={() => { rulesOpen = false }} width={160} height={38} scale={s} fontSize={14} primary accent="gold" />
     </UiEntity>
+  </UiEntity>
+}
+
+/** The gear prize, shown: its icon, name, rarity in its colour, and where it went. Over whatever tab is open. */
+function GearCard({ scale: s, prize }: { scale: number; prize: { item: string; up: number } }) {
+  const item = getEquipmentItemOrNull(prize.item)
+  const rarity = RARITIES[item ? rarityOf(item.id, prize.up) : 'epic']
+  const legendary = rarity.rank >= RARITIES.legendary.rank
+  return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width: '100%', height: '100%', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+    borderRadius: 8 * s, borderWidth: 3 * s, borderColor: rarity.color, padding: { left: 24 * s, right: 24 * s }, pointerFilter: 'block' }} uiBackground={{ color: Color4.create(0.03, 0.04, 0.06, 0.98) }}>
+    <Label value={legendary ? t('A LEGENDARY PIECE OF GEAR') : t('A PIECE OF GEAR')} color={rarity.color} fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 22 * s, margin: { bottom: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+    <UiEntity uiTransform={{ width: 120 * s, height: 120 * s, borderRadius: 8 * s, borderWidth: 2 * s, borderColor: rarity.color, margin: { bottom: 12 * s }, flexShrink: 0, pointerFilter: 'none' }}
+      uiBackground={{ color: Color4.create(rarity.color.r * 0.2, rarity.color.g * 0.2, rarity.color.b * 0.2, 1) }}>
+      {item && <UiEntity uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} uiBackground={{ textureMode: 'stretch', texture: { src: item.icon }, color: Color4.White() }} />}
+    </UiEntity>
+    <Label value={item ? item.name : prize.item} color={white} font="serif" fontSize={24 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 32 * s, flexShrink: 0, pointerFilter: 'none' }} />
+    <Label value={`${t(rarity.label)}${item?.setLabel ? `  ·  ${t(item.setLabel)}` : ''}`} color={rarity.color} fontSize={15 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 24 * s, flexShrink: 0, pointerFilter: 'none' }} />
+    <Label value={t('It is in your gear bag.')} color={muted} fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 22 * s, margin: { bottom: 12 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+    <Action id="gw-gear-ok" text={t('Got it')} onClick={dismissGearCard} width={160} height={38} scale={s} fontSize={14} primary accent="gold" />
   </UiEntity>
 }
 

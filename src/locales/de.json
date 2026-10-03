@@ -1396,5 +1396,10 @@
   "A Pumpkin Head to give out": "Ein Kürbiskopf zu vergeben",
   "The wheel gives embers, coins, a piece of gear, a day of x1.5 embers, or a Pumpkin Head.": "Das Rad gibt Glut, Münzen, ein Ausrüstungsteil, einen Tag ×1,5 Glut oder einen Kürbiskopf.",
   "The Pumpkin Head is a grinning mask for an hour, and x1.5 embers while it is worn. Crown a party member, or wear it yourself.": "Der Kürbiskopf ist eine grinsende Maske für eine Stunde und ×1,5 Glut, solange er getragen wird. Kröne ein Gruppenmitglied oder trag ihn selbst.",
-  "Every {n}th spin without gear is guaranteed to land on gear.": "Jeder {n}. Dreh ohne Ausrüstung landet garantiert auf Ausrüstung."
+  "Every {n}th spin without gear is guaranteed to land on gear.": "Jeder {n}. Dreh ohne Ausrüstung landet garantiert auf Ausrüstung.",
+  "You hold {n} Pumpkin Heads": "Du hältst {n} Kürbisköpfe",
+  "Hours stack.": "Die Stunden addieren sich.",
+  "A PIECE OF GEAR": "EIN AUSRÜSTUNGSTEIL",
+  "A LEGENDARY PIECE OF GEAR": "EIN LEGENDÄRES AUSRÜSTUNGSTEIL",
+  "It is in your gear bag.": "Es liegt in deiner Ausrüstungstasche."
 }

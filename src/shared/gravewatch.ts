@@ -99,6 +99,8 @@ export const GW_MULT_MS = 24 * 3600 * 1000
 export const GW_CURSE_MS = 3600 * 1000
 /** The Wheel's pity: this many spins without gear and the next one lands on it. */
 export const GW_WHEEL_PITY = 10
+/** Gravewatch's gear prizes (the wheel, the Gear grave, the season chest) fall epic, legendary this often. */
+export const GW_GEAR_LEGENDARY = 0.25
 
 /**
  * The Wheel of Bones, in segment order. The server picks by weight and tells
