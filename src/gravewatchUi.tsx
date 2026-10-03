@@ -10,7 +10,7 @@ import { uiViewport, wholeCanvas } from './uiScale'
 import { menuColors, MenuAction as Action } from './menuUi'
 import {
   available, boardRolling, boardState, boardTiming, closeGravewatch, DICE_STRIP, dismissGearCard, emberGains, GAIN_SECONDS, gearCard, getGravewatch, gravewatchBusy, gravewatchButtonLine, gravewatchConfirm,
-  gravewatchCurse, gravewatchGrant, gravewatchRedeem, gravewatchRising, gravewatchRoll, gravewatchRounds, gravewatchScreenNote, gravewatchSpin, gravewatchTab, GW_TABS, GwTab,
+  gravewatchCurse, gravewatchGrant, gravewatchRedeem, gravewatchRising, gravewatchRoll, gravewatchRun, gravewatchScreenNote, gravewatchSpin, gravewatchTab, GW_TABS, GwTab,
   emberTickLeft, inRisingArena, isAutoRoll, isFlyer, openGravewatch, risingClock, runEmberGain, serverNow, setGravewatchTab, shownEmbers, toggleAutoRoll, WHEEL_POINTER, WHEEL_SHEET, wheelState
 } from './gravewatch'
 import { heroLabel } from './lobbyUi'
@@ -20,10 +20,11 @@ import { isDeveloper } from './devAccess'
 import { t } from './i18n'
 import {
   etOffset, GW_BACKSTOPS, GW_BOARD, GW_BOARD_DOUBLE_COST, GW_BOARD_MILESTONES, GW_BOARD_PASS_EMBERS, GW_BOARD_TOKENS, GW_CLEAR_EMBERS, GW_CRYPT_CLEAR_MULT, GW_EVENT_END,
-  GW_HAT_STEPS, GW_ITEM_INFO, GW_ITEMS, GW_MULT, GW_PRICES, GW_RISING_FIGHT_EMBERS, GW_RISING_UNLOCKS, GW_RISING_WIN_EMBERS, GW_ROUNDS_EMBERS, GW_SPIN_COST,
+  GW_HAT_STEPS, GW_ITEM_INFO, GW_ITEMS, GW_MULT, GW_PRICES, GW_RISING_FIGHT_EMBERS, GW_RISING_UNLOCKS, GW_RISING_WIN_EMBERS, GW_SPIN_COST,
   GW_TILE_MAX_LEVEL, GW_WHEEL, GW_WHEEL_PITY, GwItem, GwSegment, GwTileKind, tilePay
 } from './shared/gravewatch'
 import { StackButton } from './hudButtons'
+import { RUN_EXTRA_COST, RUN_TIERS, RUN_TOKENS } from './shared/barrowRun'
 import { getEquipmentItemOrNull } from './equipmentCatalog'
 import { RARITIES, rarityOf } from './weapons'
 
@@ -33,7 +34,7 @@ const sheetColor = Color4.create(0.025, 0.045, 0.07, 0.97)
 const ember = Color4.create(1, 0.55, 0.2, 1)
 const emberDark = Color4.create(0.22, 0.09, 0.03, 0.96)
 const FRAME = { width: 640, height: 600 }
-const TAB_NAMES: Record<GwTab, string> = { rounds: 'Rounds', wheel: 'Wheel of Bones', board: 'Gravewalk', rising: 'The Rising', reliquary: 'Reliquary' }
+const TAB_NAMES: Record<GwTab, string> = { rounds: 'The Run', wheel: 'Wheel of Bones', board: 'Gravewalk', rising: 'The Rising', reliquary: 'Reliquary' }
 const BOARD_IMAGE = 'images/gravewatch/board.png'
 const PAWN_IMAGE = 'images/gravewatch/pumpkin.png'
 const STAR_IMAGE = 'images/gravewatch/star.png'
@@ -173,7 +174,7 @@ export function GravewatchUi() {
       {gw.guest && !gw.over && <Line text={t('Sign in with a wallet to earn embers and claim the wearables; guests may look.')} scale={s} color={coral} />}
 
       <UiEntity uiTransform={{ width: '100%', flexGrow: 1, flexDirection: 'column', pointerFilter: 'none' }}>
-        {tab === 'rounds' && <RoundsTab scale={s} />}
+        {tab === 'rounds' && <RunTab scale={s} />}
         {tab === 'wheel' && <WheelTab scale={s} inner={inner} />}
         {tab === 'board' && <BoardTab scale={s} inner={inner} />}
         {tab === 'rising' && <RisingTab scale={s} inner={inner} />}
@@ -190,23 +191,43 @@ export function GravewatchUi() {
 
 // --- Rounds ------------------------------------------------------------------------------------
 
-function RoundsTab({ scale: s }: { scale: number }) {
+function RunTab({ scale: s }: { scale: number }) {
   const gw = getGravewatch()
-  const can = !gw.guest && !gw.over && !myParty()
+  const free = gw.runs < RUN_TOKENS
+  const can = !gw.guest && !gw.over && !myParty() && (free || gw.embers >= RUN_EXTRA_COST)
+  const label = myParty() ? t('Leave your party first') : free ? t('Run') : t('Run ({n} embers)', { n: RUN_EXTRA_COST })
   return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', pointerFilter: 'none' }}>
-    <Heading title={t('THE BARROW YARD')} scale={s} />
-    <Line text={t('Five minutes through the graves, any party. Three Rounds a day pay embers.')} scale={s} />
+    <Heading title={t('THE BARROW RUN')} scale={s} />
+    <Line text={t('Your hero runs the haunted road alone. A and D change lane. Stones and ghouls drain your stamina; embers refill it. The run ends when it runs out.')} scale={s} />
     <Gap h={10} scale={s} />
-    <Progress label={t('Rounds today')} done={gw.rounds} pays={GW_ROUNDS_EMBERS} scale={s} />
-    <Gap h={18} scale={s} />
-    <Heading title={t('DUNGEON CLEARS')} scale={s} />
-    <Line text={t('Any fortress cleared pays too. The Crypt pays double.')} scale={s} />
-    <Gap h={10} scale={s} />
-    <Progress label={t('Clears today')} done={gw.clears} pays={GW_CLEAR_EMBERS} scale={s} suffix={`  (${t('Crypt')} ×${GW_CRYPT_CLEAR_MULT})`} />
-    <Gap h={18} scale={s} />
-    <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }}>
-      <Action id="gw-rounds-go" text={myParty() ? t('Leave your party first') : t('To the Barrow Yard')} onClick={gravewatchRounds} width={280} height={46} scale={s} fontSize={16} primary accent="gold" disabled={!can} />
+    <UiEntity uiTransform={{ width: '100%', height: 30 * s, flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+      <Label value={`${t('Runs today')}: ${Math.min(gw.runs, RUN_TOKENS)}/${RUN_TOKENS}`} color={white} fontSize={15 * s} textAlign="middle-left" textWrap="nowrap"
+        uiTransform={{ width: 270 * s, height: '100%', pointerFilter: 'none' }} />
+      <Label value={gw.best > 0 ? t('Best today: {n} m', { n: gw.best }) : t('No run yet today')} color={gold} fontSize={15 * s} textAlign="middle-left" textWrap="nowrap"
+        uiTransform={{ height: '100%', pointerFilter: 'none' }} />
     </UiEntity>
+    <Gap h={6} scale={s} />
+    <Line text={t('Distance pays embers, each mark on top of the last:')} scale={s} />
+    <UiEntity uiTransform={{ width: '100%', height: 46 * s, flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+      {RUN_TIERS.map((tier) => {
+        const lit = gw.best >= tier.m
+        return <UiEntity key={`run-tier-${tier.m}`} uiTransform={{ width: 96 * s, height: 42 * s, margin: { right: 8 * s }, borderRadius: 4 * s, borderWidth: s,
+          borderColor: lit ? ember : line, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }}
+          uiBackground={{ color: lit ? emberDark : panelColor }}>
+          <Label value={`${tier.m} m`} color={lit ? ember : white} fontSize={13 * s} textWrap="nowrap" uiTransform={{ width: '100%', height: 18 * s, pointerFilter: 'none' }} />
+          <Label value={`+${tier.embers}`} color={lit ? ember : muted} fontSize={12 * s} textWrap="nowrap" uiTransform={{ width: '100%', height: 16 * s, pointerFilter: 'none' }} />
+        </UiEntity>
+      })}
+    </UiEntity>
+    <Gap h={14} scale={s} />
+    <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }}>
+      <Action id="gw-run-go" text={label} onClick={gravewatchRun} width={280} height={46} scale={s} fontSize={16} primary accent="gold" disabled={!can} />
+    </UiEntity>
+    <Gap h={6} scale={s} />
+    <Line text={free ? t('Three free runs a day; more cost {n} embers each.', { n: RUN_EXTRA_COST }) : t('Your free runs are spent today; more cost {n} embers each.', { n: RUN_EXTRA_COST })} scale={s} />
+    <Gap h={14} scale={s} />
+    <Heading title={t('DUNGEON CLEARS')} scale={s} />
+    <Progress label={t('Clears today')} done={gw.clears} pays={GW_CLEAR_EMBERS} scale={s} suffix={`  (${t('Crypt')} ×${GW_CRYPT_CLEAR_MULT})`} />
   </UiEntity>
 }
 
@@ -495,10 +516,11 @@ function SeasonBar({ scale: s, inner }: { scale: number; inner: number }) {
 
 /** The rules of the open tab, in plain words, over its content. */
 const RULES: Record<GwTab, { title: string; lines: () => string[] }> = {
-  rounds: { title: 'How Rounds work', lines: () => [
-    t('Press "To the Barrow Yard" to fight through the graveyard. About five minutes, any party size.'),
-    t('Your first three Rounds a day pay embers ({a}, then {b}, then {c}).', { a: GW_ROUNDS_EMBERS[0], b: GW_ROUNDS_EMBERS[1], c: GW_ROUNDS_EMBERS[2] }),
-    t('Clearing any dungeon pays embers too, three a day. The Crypt pays double.')
+  rounds: { title: 'How the Run works', lines: () => [
+    t('Press "Run" and your hero sets off down the haunted road on their own. Press A or D to change lane.'),
+    t('Your stamina drains as you run. Stones and ghouls knock a chunk off it and slow you; embers on the road refill it. A lantern makes you fast for a moment; a ward smashes anything you hit.'),
+    t('The run ends when your stamina is gone. Distance pays embers at {a} m, {b} m, {c} m and {d} m, and every ember you picked up counts too.', { a: RUN_TIERS[0].m, b: RUN_TIERS[1].m, c: RUN_TIERS[2].m, d: RUN_TIERS[3].m }),
+    t('Three free runs a day; more cost {n} embers each. Clearing any dungeon pays embers too, three a day; the Crypt pays double.', { n: RUN_EXTRA_COST })
   ] },
   wheel: { title: 'How the Wheel works', lines: () => [
     t('One free spin a day. More spins cost {n} embers each.', { n: GW_SPIN_COST }),

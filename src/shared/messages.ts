@@ -283,6 +283,14 @@ export const Messages = {
   gwRoll: Schemas.Map({ double: Schemas.Boolean }),
   /** Client -> server: buy a wearable in the Reliquary (`item` is w1, w2 or w3). */
   gwRedeem: Schemas.Map({ item: Schemas.String }),
+  /** Client -> server: start a Barrow Run (a free one if any stand today, else a paid one). */
+  gwRunStart: Schemas.Map({ v: Schemas.Int }),
+  /** Client -> server: the hero changed lane at `at` run seconds (by the client's clock from the start). */
+  gwRunLane: Schemas.Map({ at: Schemas.Number, lane: Schemas.Int }),
+  /** Server -> one client: a run begins: the road's seed, the server time it started, the meter and speed the training gives. */
+  gwRun: Schemas.Map({ seed: Schemas.Int, started: Schemas.Number, staminaMax: Schemas.Number, speedMult: Schemas.Number, luck: Schemas.Int }),
+  /** Server -> one client: where the host's race stands (so the client's drawing keeps to it); `over` carries the result, `paid` the embers it earned. */
+  gwRunSync: Schemas.Map({ t: Schemas.Number, s: Schemas.Number, stamina: Schemas.Number, hits: Schemas.Int, embers: Schemas.Int, over: Schemas.Boolean, paid: Schemas.Int }),
   /**
    * Server -> one client: their Gravewatch sheet. `now` is the server clock
    * (every countdown is drawn from it); `redeemed` lists "item:state" per
@@ -328,6 +336,10 @@ export const Messages = {
     tiles: Schemas.Array(Schemas.Int),
     points: Schemas.Int,
     miles: Schemas.Int,
+    /** The Barrow Run: runs today, the best distance today (m), mileage points banked. */
+    runs: Schemas.Int,
+    best: Schemas.Int,
+    mileage: Schemas.Int,
     spin: Schemas.Int,
     roll: Schemas.Array(Schemas.Int),
     seq: Schemas.Int,

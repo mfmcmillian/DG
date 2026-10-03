@@ -25,6 +25,7 @@ import {
   GW_GEAR_LEGENDARY, GW_WHEEL, GW_WHEEL_PITY, GwItem, itemLive, tilePay
 } from './shared/gravewatch'
 import { BARROW_YARD, LEVELS, RISING_PARTY } from './shared/levels'
+import { newRunState, RUN_EXTRA_COST, RUN_HOST_DELAY, RUN_LANES, RUN_MILE, RUN_STAMINA, RUN_SYNC_SECONDS, RUN_TOKENS, runTierEmbers, RunState, stepRun } from './shared/barrowRun'
 import { HUB } from './partyLookup'
 import { RARITIES, rollArmorDrop, rollArmorRank } from './weapons'
 import { initializeRisingServer, risingAct, risingSnapshot } from './raid/risingServer'
@@ -54,6 +55,10 @@ type Ledger = {
   held?: boolean
   heads?: number
   pity?: number
+  /** The Barrow Run: runs today, the best distance today (m), mileage points banked. */
+  runs?: number
+  best?: number
+  mileage?: number
   redeemed: Partial<Record<GwItem, RedeemState>>
   /** When the pending redeem was started, and for what, so one manual retry is allowed after a while. */
   pendingAt?: number
@@ -108,6 +113,15 @@ function bind() {
     if (!context) return
     void redeem(context.from.toLowerCase(), msg.item)
   })
+  onNet('gwRunStart', (_msg, context) => {
+    if (!context) return
+    void startRun(context.from.toLowerCase())
+  })
+  onNet('gwRunLane', (msg, context) => {
+    if (!context) return
+    runLane(context.from.toLowerCase(), msg.at, msg.lane)
+  })
+  engine.addSystem(tickRuns)
   onRunFinished((party, won) => {
     if (!won || party.id === RISING_PARTY) return
     for (const member of party.members) void creditClear(member, party.level)
@@ -218,6 +232,8 @@ function touch(l: Ledger): Ledger {
     l.clears = 0
     l.spins = 0
     l.rolls = 0
+    l.runs = 0
+    l.best = 0
   }
   return l
 }
@@ -374,6 +390,9 @@ async function tell(id: string, note: string) {
     tiles: GW_BOARD.map((_tile, i) => l.tiles?.[i] ?? 1),
     points: l.points ?? 0,
     miles: l.miles ?? 0,
+    runs: l.runs ?? 0,
+    best: l.best ?? 0,
+    mileage: l.mileage ?? 0,
     spin: lastSpin.get(id) ?? -1,
     roll: lastRoll.get(id) ?? [],
     seq,
@@ -557,6 +576,93 @@ async function roll(id: string, double: boolean) {
   metricsMark(id, 'gw-roll')
   void save(id)
   await tell(id, `board:${said}`)
+}
+
+// --- the Barrow Run -----------------------------------------------------------------------
+
+/** A race in progress: the road's seed, when it started, the host's state, and the hero's lane changes in run seconds. */
+type HostRun = { seed: number; started: number; state: RunState; lanes: { at: number; lane: number }[]; syncAt: number }
+const runs = new Map<string, HostRun>()
+
+async function startRun(id: string) {
+  if (over()) return tell(id, 'over')
+  if (isGuest(id)) return tell(id, 'guest')
+  if (runs.has(id)) return
+  const l = await ledgerOf(id)
+  const free = (l.runs ?? 0) < RUN_TOKENS
+  if (!free) {
+    if (l.embers < RUN_EXTRA_COST) return tell(id, 'poor')
+    l.embers -= RUN_EXTRA_COST
+    l.spent += RUN_EXTRA_COST
+  }
+  l.runs = (l.runs ?? 0) + 1
+  const seed = Math.floor(Math.random() * 0x7fffffff)
+  const started = now()
+  const state = newRunState(RUN_STAMINA, 1, 0)
+  runs.set(id, { seed, started, state, lanes: [{ at: 0, lane: 1 }], syncAt: 0 })
+  metricsMark(id, 'gw-run')
+  console.log(`[Gravewatch] ${id} runs the barrows (${free ? 'free' : 'paid'}), seed ${seed}`)
+  void save(id)
+  sendNet('gwRun', { seed, started, staminaMax: state.staminaMax, speedMult: state.speedMult, luck: state.luck }, { to: [id] })
+  await tell(id, '')
+}
+
+/** A lane change, at the client's run clock; it may not claim a moment already raced, nor one ahead of the host's own clock. */
+function runLane(id: string, at: number, lane: number) {
+  const run = runs.get(id)
+  if (!run || run.state.over || !Number.isFinite(at)) return
+  if (lane < 0 || lane >= RUN_LANES || lane !== Math.floor(lane)) return
+  const clock = (now() - run.started) / 1000
+  const when = Math.max(run.state.t, Math.min(at, clock + 0.05))
+  const last = run.lanes[run.lanes.length - 1]
+  if (last && when < last.at) return
+  run.lanes.push({ at: when, lane })
+}
+
+function laneAt(run: HostRun, t: number): number {
+  let lane = run.lanes[0]?.lane ?? 1
+  for (const change of run.lanes) {
+    if (change.at > t) break
+    lane = change.lane
+  }
+  return lane
+}
+
+/** The host races each run up to a beat behind the clock, in small steps with the lane the hero had at each. */
+function tickRuns() {
+  if (!runs.size) return
+  const t = now()
+  for (const [id, run] of runs) {
+    const target = (t - run.started) / 1000 - RUN_HOST_DELAY
+    while (!run.state.over && run.state.t < target) {
+      run.state.lane = laneAt(run, run.state.t)
+      stepRun(run.state, Math.min(0.05, target - run.state.t), run.seed)
+    }
+    if (run.state.over) {
+      runs.delete(id)
+      void finishRun(id, run)
+    } else if (run.state.t - run.syncAt >= RUN_SYNC_SECONDS) {
+      run.syncAt = run.state.t
+      const st = run.state
+      sendNet('gwRunSync', { t: st.t, s: st.s, stamina: st.stamina, hits: st.hits, embers: st.embers, over: false, paid: 0 }, { to: [id] })
+    }
+  }
+}
+
+/** The race is run: the tiers pay, the embers picked up pay, the best and the mileage are kept. */
+async function finishRun(id: string, run: HostRun) {
+  const st = run.state
+  const metres = Math.floor(st.s)
+  const l = await ledgerOf(id)
+  const t = now()
+  const paid = boost(l, runTierEmbers(metres) + st.embers, t)
+  l.embers += paid
+  l.best = Math.max(l.best ?? 0, metres)
+  l.mileage = (l.mileage ?? 0) + Math.floor(st.s / RUN_MILE)
+  console.log(`[Gravewatch] ${id} ran ${metres} m (${st.hits} hits, ${st.picks} pickups): +${paid} embers, has ${l.embers}`)
+  void save(id)
+  sendNet('gwRunSync', { t: st.t, s: st.s, stamina: 0, hits: st.hits, embers: st.embers, over: true, paid }, { to: [id] })
+  await tell(id, '')
 }
 
 // --- the Reliquary -----------------------------------------------------------------------------

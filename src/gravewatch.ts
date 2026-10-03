@@ -15,6 +15,8 @@ import { GW_BOARD, GW_BOARD_MILESTONES, GW_BOARD_TOKENS, GW_EVENT_END, GW_WHEEL,
 import { RISING_PARTY } from './shared/levels'
 import { fxSound } from './combatFx'
 import { t } from './i18n'
+import { barrowRunRefused, initializeBarrowRun, startBarrowRun } from './barrowRun'
+import { RUN_TOKENS } from './shared/barrowRun'
 
 export type GwTab = 'rounds' | 'wheel' | 'board' | 'rising' | 'reliquary'
 export const GW_TABS: readonly GwTab[] = ['rounds', 'wheel', 'board', 'rising', 'reliquary']
@@ -40,6 +42,10 @@ export type GwSheet = {
   held: boolean
   /** Pumpkin Heads waiting to be handed out. */
   heads: number
+  /** The Barrow Run: runs today, best distance today (m), mileage points banked. */
+  runs: number
+  best: number
+  mileage: number
   /** Spins since the wheel last gave gear. */
   pity: number
   live: GwItem[]
@@ -79,7 +85,7 @@ const POLL_SECONDS = 10
 const FLYER_AFTER_SECONDS = 1.5
 
 const sheet: GwSheet = {
-  known: false, over: false, guest: false, embers: 0, rounds: 0, clears: 0, spins: 0, rolls: 0, pos: 0, tiles: GW_BOARD.map(() => 1), points: 0, miles: 0, mult: 0, curse: 0, held: false, heads: 0, pity: 0,
+  known: false, over: false, guest: false, embers: 0, rounds: 0, clears: 0, spins: 0, rolls: 0, pos: 0, tiles: GW_BOARD.map(() => 1), points: 0, miles: 0, mult: 0, curse: 0, held: false, heads: 0, pity: 0, runs: 0, best: 0, mileage: 0,
   live: ['w1'], won: [], sold: [], keyed: [], redeemed: {}, rising: 0, phase: 'idle', signed: 0, signedUp: false, arena: 0, note: '', noteFor: 0
 }
 let open = false
@@ -125,6 +131,7 @@ let lastPhase = ''
 export function initializeGravewatch() {
   if (initialized) return
   initialized = true
+  initializeBarrowRun()
   onNet('gwState', (msg) => {
     clockOffset = msg.now - Date.now()
     const before = sheet.embers
@@ -152,6 +159,9 @@ export function initializeGravewatch() {
     sheet.held = msg.held
     sheet.heads = msg.heads
     sheet.pity = msg.pity
+    sheet.runs = msg.runs
+    sheet.best = msg.best
+    sheet.mileage = msg.mileage
     // A new gear prize: shown on its card once the wheel or the pawn has stopped.
     if (msg.gear !== gearSeen) {
       gearSeen = msg.gear
@@ -209,6 +219,7 @@ function takeNote(note: string, msg: { spin: number; roll: number[] }, embersBef
     fxSound('dice', 0.8)
     return
   }
+  if (note === 'poor' || note === 'guest' || note === 'over') barrowRunRefused()
   const text = noteText(note, embersBefore)
   if (text) {
     sheet.note = text
@@ -541,6 +552,13 @@ export function gravewatchRounds() {
   closeGravewatch()
 }
 
+/** The Barrow Run: the sheet closes and the host is asked for a run (src/barrowRun.ts takes it from there). */
+export function gravewatchRun() {
+  if (sheet.guest || sheet.over) return
+  closeGravewatch()
+  startBarrowRun()
+}
+
 export function gravewatchSpin() {
   if (busy) return
   if (wheel && !wheel.done) return
@@ -588,7 +606,7 @@ export function gravewatchButtonLine(): string {
   const clock = risingClock()
   if (clock.phase === 'fight') return t('The Rising is on. Join!')
   if (clock.phase === 'lobby') return t('The Rising in {m} min', { m: Math.max(1, Math.ceil(clock.seconds / 60)) })
-  if (sheet.known && sheet.rounds === 0) return t('Rounds ready')
+  if (sheet.known && sheet.runs < RUN_TOKENS) return t('Run ready')
   if (sheet.known && sheet.spins === 0) return t('Wheel ready')
   if (sheet.known && sheet.rolls === 0) return t('Board ready')
   if (clock.start > 0) {
