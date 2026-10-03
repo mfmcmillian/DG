@@ -1457,5 +1457,6 @@
   "Asking the host...": "Demande à l’hôte…",
   "No runs yet. Be the first.": "Pas encore de course. Soyez le premier.",
   "Close": "Fermer",
-  "Every {m} m run banks a mileage point. Spend them on Endurance (more stamina), Speed (faster from the start) or Luck (more and better pickups).": "Chaque tranche de {m} m courus rapporte un point de distance. Dépensez-les en Endurance (plus de souffle), Vitesse (plus rapide dès le départ) ou Chance (plus d’objets, et de meilleurs)."
+  "Every {m} m run banks a mileage point. Spend them on Endurance (more stamina), Speed (faster from the start) or Luck (more and better pickups).": "Chaque tranche de {m} m courus rapporte un point de distance. Dépensez-les en Endurance (plus de souffle), Vitesse (plus rapide dès le départ) ou Chance (plus d’objets, et de meilleurs).",
+  "Three free runs a day; more cost {n} embers each. Clearing a dungeon drops a few embers too, three times a day.": "Trois courses gratuites par jour ; les suivantes coûtent {n} braises chacune. Terminer un donjon laisse aussi tomber quelques braises, trois fois par jour."
 }

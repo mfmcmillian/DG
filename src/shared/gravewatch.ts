@@ -26,8 +26,8 @@ export const GW_ITEM_INFO: Record<GwItem, { name: string; rarity: string; pictur
 
 /** Barrow Yard clears: the first of the day, then the second and third; nothing after. */
 export const GW_ROUNDS_EMBERS = [100, 20, 20] as const
-/** Dungeon clears on the ladder: the first, then two more; the Crypt pays double. */
-export const GW_CLEAR_EMBERS = [25, 10, 10] as const
+/** Dungeon clears on the ladder: a few embers for each of the first three a day, the Crypt double. A nudge toward the dungeons, not an income. */
+export const GW_CLEAR_EMBERS = [5, 5, 5] as const
 export const GW_CRYPT_CLEAR_MULT = 2
 /** The Rising: for being in the arena when it ends, and on top of that for a win. */
 export const GW_RISING_FIGHT_EMBERS = 100

@@ -20,7 +20,7 @@ import { localAddress } from './multiplayer'
 import { isDeveloper } from './devAccess'
 import { t } from './i18n'
 import {
-  etOffset, GW_BACKSTOPS, GW_BOARD, GW_BOARD_DOUBLE_COST, GW_BOARD_MILESTONES, GW_BOARD_PASS_EMBERS, GW_BOARD_TOKENS, GW_CLEAR_EMBERS, GW_CRYPT_CLEAR_MULT, GW_EVENT_END,
+  etOffset, GW_BACKSTOPS, GW_BOARD, GW_BOARD_DOUBLE_COST, GW_BOARD_MILESTONES, GW_BOARD_PASS_EMBERS, GW_BOARD_TOKENS, GW_EVENT_END,
   GW_HAT_STEPS, GW_ITEM_INFO, GW_ITEMS, GW_MULT, GW_PRICES, GW_RISING_FIGHT_EMBERS, GW_RISING_UNLOCKS, GW_RISING_WIN_EMBERS, GW_SPIN_COST,
   GW_TILE_MAX_LEVEL, GW_WHEEL, GW_WHEEL_PITY, GwItem, GwSegment, GwTileKind, tilePay
 } from './shared/gravewatch'
@@ -235,9 +235,6 @@ function RunTab({ scale: s, inner }: { scale: number; inner: number }) {
     <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
       {RUN_STATS.map((stat, i) => <TrainCard stat={stat} level={gw.train[i]} width={cardW} scale={s} />)}
     </UiEntity>
-    <Gap h={14} scale={s} />
-    <Heading title={t('DUNGEON CLEARS')} scale={s} />
-    <Progress label={t('Clears today')} done={gw.clears} pays={GW_CLEAR_EMBERS} scale={s} suffix={`  (${t('Crypt')} ×${GW_CRYPT_CLEAR_MULT})`} />
   </UiEntity>
 }
 
@@ -296,18 +293,6 @@ function Ladder({ scale: s, inner }: { scale: number; inner: number }) {
       {column(t('THIS WEEK'), ladder.week)}
       {column(t('ALL TIME'), ladder.all)}
     </UiEntity>
-  </UiEntity>
-}
-
-function Progress({ label, done, pays, scale: s, suffix = '' }: { label: string; done: number; pays: readonly number[]; scale: number; suffix?: string }) {
-  return <UiEntity uiTransform={{ width: '100%', height: 30 * s, flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
-    <Label value={`${label}: ${Math.min(done, pays.length)}/${pays.length}${suffix}`} color={white} fontSize={15 * s} textAlign="middle-left" textWrap="nowrap"
-      uiTransform={{ width: 270 * s, height: '100%', pointerFilter: 'none' }} />
-    {pays.map((pay, i) => <UiEntity key={`${label}-${i}`} uiTransform={{ width: 72 * s, height: 28 * s, margin: { right: 8 * s }, borderRadius: 4 * s, borderWidth: s,
-      borderColor: i < done ? ember : line, alignItems: 'center', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }}
-      uiBackground={{ color: i < done ? emberDark : panelColor }}>
-      <Label value={i < done ? '✓' : `+${pay}`} color={i < done ? ember : muted} fontSize={14 * s} textWrap="nowrap" uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} />
-    </UiEntity>)}
   </UiEntity>
 }
 
@@ -589,7 +574,7 @@ const RULES: Record<GwTab, { title: string; lines: () => string[] }> = {
     t('Your stamina drains as you run. Stones and ghouls knock a chunk off it and slow you; embers on the road refill it. A lantern makes you fast for a moment; a ward smashes anything you hit.'),
     t('The run ends when your stamina is gone. Distance pays embers at {a} m, {b} m, {c} m and {d} m, and every ember you picked up counts too.', { a: RUN_TIERS[0].m, b: RUN_TIERS[1].m, c: RUN_TIERS[2].m, d: RUN_TIERS[3].m }),
     t('Every {m} m run banks a mileage point. Spend them on Endurance (more stamina), Speed (faster from the start) or Luck (more and better pickups).', { m: RUN_MILE }),
-    t('Three free runs a day; more cost {n} embers each. Clearing any dungeon pays embers too, three a day; the Crypt pays double.', { n: RUN_EXTRA_COST })
+    t('Three free runs a day; more cost {n} embers each. Clearing a dungeon drops a few embers too, three times a day.', { n: RUN_EXTRA_COST })
   ] },
   wheel: { title: 'How the Wheel works', lines: () => [
     t('One free spin a day. More spins cost {n} embers each.', { n: GW_SPIN_COST }),
