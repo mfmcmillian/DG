@@ -6,8 +6,12 @@
 // Presentation (particles, numbers, sounds, telegraph decals, camera kicks,
 // hit-stop) lives in combatFx; loot in loot.ts.
 
-import { ColliderLayer, EasingFunction, engine, Entity, Material, MaterialTransparencyMode, MeshCollider, MeshRenderer, Transform, Tween } from '@dcl/sdk/ecs'
+import {
+  ColliderLayer, EasingFunction, engine, Entity, InputAction, InputModifier, inputSystem, Material, MaterialTransparencyMode, MeshCollider,
+  MeshRenderer, pointerEventsSystem, PointerEventType, PointerLock, PrimaryPointerInfo, Transform, Tween, UiCanvasInformation
+} from '@dcl/sdk/ecs'
 import { Color3, Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
+import { movePlayerTo } from '~system/RestrictedActions'
 import { COURTYARD } from './courtyard'
 import { ArmorRealm, DEFAULT_LOADOUTS, EquipmentLoadout, getEquipmentItemOrNull } from './equipmentCatalog'
 import { CharacterAppearance } from './appearance'
@@ -21,7 +25,7 @@ import {
   combatDistance, CombatPose, COMBAT_RULES, createSwing, facesCombatant, HeroAttackMotion, isHeavyMotion, isRangedAttack,
   MAX_COMBAT_HEALTH, MELEE, resolveCombatHit, resolveSkillHit, Swing, WeaponModifiers, WeaponMotion
 } from './combatActions'
-import { classAllowsArmor, classOfCharacter, heroClassOf, shotProfile, skillShotProfile, weaponPoolFor } from './heroClasses'
+import { classAllowsArmor, classOfCharacter, DEMON_FORM_CLASS, heroClassOf, shotProfile, skillShotProfile, weaponPoolFor } from './heroClasses'
 import { SkillDef, skillById } from './shared/skills'
 import { clearProjectiles, launchShot, ProjectileTarget, setProjectileTargets, SHOT_HEIGHT } from './projectiles'
 import { BOG_GONG } from './dungeon/bogmaw'
@@ -40,11 +44,11 @@ import {
   createEnemyHealthBar, destroyEnemyHealthBar, EnemyHealthBar, updateEnemyHealthBar
 } from './enemyHealthBar'
 import {
-  getPlayerCharacterState, getPlayerCombatPose, getPlayerWeapon, healPlayer, hitStopPlayer, isPlayerDown, playerBlockedHit, playerDodgedHit,
+  beginPlayerDemonForm, beginPlayerPublishedTravel, clearPlayerPublishedTravel, endPlayerDemonForm, getPlayerCharacterState, getPlayerCombatPose, getPlayerVitals, getPlayerWeapon, healPlayer, hitStopPlayer, isPlayerDemonForm, isPlayerDown, playerBlockedHit, playerDodgedHit,
   receivePlayerCombatHit, reconcilePlayerHealth, restorePlayerCombatHealth,
   setPlayerAttackContactHandler, setPlayerAttackStartHandler, setPlayerEnemyWithinHandler, setPlayerFacingOverride, setPlayerStepIn
 } from './playerCharacter'
-import { presentRemoteHeal, presentRemoteHit, presentRemoteRevive, presentRemoteShot } from './remotePlayers'
+import { clearRemoteDemonForms, presentRemoteDemonForm, presentRemoteHeal, presentRemoteHit, presentRemoteRevive, presentRemoteShot } from './remotePlayers'
 import { applyBuff, buffMight, healHero, noteBuff, RAID_RECOVER_SECONDS, RECOVER_SECONDS, strikeHero } from './heroVitals'
 import { isDungeonFloor } from './dungeon'
 import { sendNet } from './net'
@@ -68,10 +72,12 @@ import {
 } from './combatFx'
 import { kickCrawlerCamera } from './dungeon/crawlerCamera'
 import { playBossIntro } from './cinematics'
+import { hudConsumedWorldPointer, tapCombatAction } from './combatControls'
 import { clearLoot, grantLootDirect, lootKindOf, spawnLoot } from './loot'
 import { rollArmorDrop, rollArmorRank, rollWeaponLoot, weaponStats } from './weapons'
 import { newGearUid } from './shared/gearBag'
 import { AttackContext, maxHealth } from './roamingCombat'
+import { tapWorldControlsEnabled } from './settings'
 import { noteAllyHealth } from './allyVitals'
 import {
   allFighters, EnemyFxNet, EnemySnap, heroArmorAffixOf, heroArmorLevelOf, heroArmorRankOf, heroCharacters, HeroHit, heroMembers, heroLoadout, heroPosition, heroWeapon, heroWeaponAffix, heroWeaponLevel, heroWeaponRank, ImpactNet, isHeadless, isHost, localAddress, NetFighter, publishEnemies,
@@ -93,6 +99,9 @@ type Enemy = CombatPose & {
   root: Entity
   /** Child carrying rotation, scale, the outfit and the health bar. */
   body: Entity
+  /** Invisible pointer hull used by desktop clicks and mobile taps. */
+  pointer?: Entity
+  pointerActive: boolean
   archetype: Archetype; boss: boolean
   /** Full health for this run: the archetype's, scaled by level and difficulty. */
   maxHealth: number
@@ -231,6 +240,8 @@ type Sim = {
   bogTraps?: BogTrapHost
   /** Host-owned skill zones (a slam's ring, burning ground, falling arrows) still delivering blows. */
   zones: Zone[]
+  /** Host-owned Gravecaller warriors; clients reconstruct their bodies from the relayed cast. */
+  summons: Summon[]
   /** The staged fights' bookkeeping when the level is hand-drawn (src/dungeon/stages.ts): its stages, the wave clock, the sealed doors. */
   gauntlet?: { stages: readonly Stage[]; waveTimer: number; gates: Gate[]; hold?: number }
 }
@@ -246,11 +257,22 @@ type Zone = {
   caster: string
   weapon: WeaponModifiers
   might: number
+  healed: number
+}
+
+type Summon = {
+  owner: string
+  left: number
+  attackIn: number
+  def: SkillDef
+  weapon: WeaponModifiers
+  might: number
 }
 
 /** A skill a hero cast, as the host remembers it: when, and how many blows it has claimed since. */
 type CastRecord = { at: number; hits: number }
 const casts = new Map<string, CastRecord>()
+const transformedUntil = new Map<string, number>()
 /** A blow may be claimed this long after the cast that threw it (a shot's flight, a chain's jumps). */
 const CAST_CLAIM_SECONDS = 4
 /** Clients report cooldowns a little early at times (their clock, the wire): this much is forgiven. */
@@ -272,6 +294,23 @@ let noticeSeconds = 0
 let defeated = false
 /** The local countdown ran out and a `respawn` was sent; cleared by the revive. */
 let respawnAsked = false
+/** Local target chosen by clicking/tapping an enemy; never sent to the host. */
+let selectedEnemy: Enemy | undefined
+let heldEnemy: Enemy | undefined
+let selectedMarker: Decal | undefined
+let groundMarker: Decal | undefined
+type PlayerApproach = { target: Enemy; moving: boolean; routeKey: string; cells: Array<{ cx: number; cy: number }> }
+let playerApproach: PlayerApproach | undefined
+/** Half-second glides stay smooth while letting a newer click redirect promptly. */
+const PLAYER_APPROACH_STEP = 2.5
+const PLAYER_GROUND_STEP = 2.5
+const PLAYER_APPROACH_SPEED = 5
+type GroundMove = { destination: Vector3; moving: boolean; routeKey: string; cells: Array<{ cx: number; cy: number }> }
+let groundMove: GroundMove | undefined
+/** Shared by ground movement and enemy approach: never queue competing timed move RPCs. */
+let clickMoveInFlight = false
+let pendingGroundClick: { at: Vector3; delay: number } | undefined
+let lastEnemyPointerAt = -Infinity
 
 export function initializeDungeonEnemies() {
   if (initialized) return
@@ -279,6 +318,10 @@ export function initializeDungeonEnemies() {
   setPlayerAttackStartHandler(lockOn)
   setPlayerAttackContactHandler(hitEnemies)
   setPlayerEnemyWithinHandler(enemyWithin)
+  if (!isHeadless()) {
+    selectedMarker = createDecal('ring')
+    groundMarker = createDecal('ring')
+  }
   setProjectileTargets(projectileTargets)
   setMultiplayerHandlers({
     hitEnemy: applyRemoteHit,
@@ -321,11 +364,11 @@ export function initializeDungeonEnemies() {
       if (!def) return
       if (isHost()) hostSkillCast(id, def, x, z, yaw)
       // Our own cast was played as it happened; another hero's plays now, if they fight beside us.
-      if (!isHeadless() && id !== localAddress() && samePhase(id)) presentSkillCast(id, def, Vector3.create(x, COURTYARD.characterFloorY, z))
+      if (!isHeadless() && id !== localAddress() && samePhase(id)) presentSkillCast(id, def, Vector3.create(x, COURTYARD.characterFloorY, z), yaw)
     },
     buff: (id, skill, might, toughness, seconds) => {
       noteBuff(id, skill, might, toughness, seconds)
-      if (!isHeadless() && seconds > 0 && samePhase(id)) presentBuff(id, skill)
+      if (!isHeadless() && seconds > 0 && samePhase(id)) presentBuff(id, skill, seconds)
     },
     enemies: applyEnemySnapshots,
     enemyFx: (fx) => {
@@ -472,6 +515,8 @@ function postedDoorHome(dungeon: Dungeon, room: { x: number; y: number; w: numbe
 
 /** Client: a dungeon was (re)built; the one client sim follows it. */
 function populate(dungeon: Readonly<DungeonState>) {
+  cancelGroundMove()
+  clearSelectedEnemy()
   if (clientSim) {
     for (const e of clientSim.enemies) despawn(e)
     destroyGates(clientSim)
@@ -510,7 +555,7 @@ function createSim(
     blockedEdges: new Set(), doorEdges: new Set(),
     graceSeconds: 1.2, paused: true, bossDropGiven: false, snapshotAge: 0,
     damageScale: level.damage * diff.damage, coinScale: level.coins * diff.coins,
-    slain: 0, won: false, lost: false, traps: [], zones: []
+    slain: 0, won: false, lost: false, traps: [], zones: [], summons: []
   }
   indexEdges(s)
   if (!withEnemies) return s
@@ -812,8 +857,8 @@ function spawnEnemy(home: CombatPose, archetype: Archetype, boss: boolean): Enem
     // Enemies advance at a fixed pace; play the walk cycle (authored for ~1.5 m/s) to match it.
     setEquipmentStride(body, Math.min(1.35, Math.max(0.7, (COMBAT_RULES.rivalSpeed * archetype.speed) / 1.5)))
   }
-  return {
-    root, body, archetype, boss, maxHealth: archetype.health, home, position: { ...home.position }, facing: home.facing, lastFacing: home.facing,
+  const enemy: Enemy = {
+    root, body, pointerActive: false, archetype, boss, maxHealth: archetype.health, home, position: { ...home.position }, facing: home.facing, lastFacing: home.facing,
     health: archetype.health, recovery: 0, stagger: 0, blocking: false, visible: false,
     motion: 'combat_idle', healthBar: createEnemyHealthBar(body), brain: createRivalBrain(), slamming: false,
     engaged: false, returningHome: false, dead: false, deadSeconds: 0, loading: isHeadless() ? 'ready' : 'loading', loadSeconds: 0,
@@ -822,34 +867,88 @@ function spawnEnemy(home: CombatPose, archetype: Archetype, boss: boolean): Enem
     provoked: 0, strayed: false, asleep: false, stage: -1, wave: -1,
     shots: [], castTimer: 0, fuse: -1, exploded: false, hellfireIn: HELLFIRE_EVERY * 0.6
   }
+  if (!isHeadless()) {
+    const pointer = engine.addEntity()
+    enemy.pointer = pointer
+    Transform.create(pointer, {
+      parent: root,
+      position: Vector3.create(0, 0.95 * archetype.scale, 0),
+      scale: Vector3.create(0.95 * archetype.scale, 1.9 * archetype.scale, 0.95 * archetype.scale)
+    })
+    pointerEventsSystem.onPointerDown({
+      entity: pointer,
+      opts: { button: InputAction.IA_POINTER, hoverText: `Attack ${archetype.name}`, maxDistance: 30 }
+    }, () => {
+      if (!tapWorldControlsEnabled()) return
+      heldEnemy = enemy
+      selectEnemy(enemy)
+    })
+    pointerEventsSystem.onPointerUp({
+      entity: pointer,
+      opts: { button: InputAction.IA_POINTER, maxDistance: 30 }
+    }, () => {
+      if (heldEnemy === enemy) heldEnemy = undefined
+    })
+  }
+  return enemy
 }
 
 function despawn(e: Enemy) {
+  if (selectedEnemy === e) clearSelectedEnemy()
+  if (heldEnemy === e) heldEnemy = undefined
+  if (e.pointer !== undefined) {
+    pointerEventsSystem.removeOnPointerDown(e.pointer)
+    pointerEventsSystem.removeOnPointerUp(e.pointer)
+  }
   destroyEnemyHealthBar(e.healthBar)
   destroyEquipmentAvatar(e.body)
   destroyDecal(e.ring)
   if (e.ritual) destroyDecal(e.ritual)
+  if (e.pointer !== undefined) engine.removeEntity(e.pointer)
   engine.removeEntity(e.body)
   engine.removeEntity(e.root)
 }
 
 // --- per-frame ---------------------------------------------------------------
 
+/** Faults per party since the last line was printed; one line a second at most, so a stuck sim cannot flood the log. */
+const simFaults = new Map<string, number>()
+let simFaultLoggedAt = 0
+function reportSimFault(party: string, error: unknown) {
+  simFaults.set(party, (simFaults.get(party) ?? 0) + 1)
+  const now = Date.now()
+  if (now - simFaultLoggedAt < 1000) return
+  simFaultLoggedAt = now
+  const counts = [...simFaults].map(([p, n]) => `${p.slice(0, 8)}×${n}`).join(', ')
+  console.log(`[Enemies] sim fault (${counts}): ${error instanceof Error ? error.stack ?? error.message : String(error)}`)
+  simFaults.clear()
+}
+
 function updateEnemies(deltaTime: number) {
   const dt = Number.isFinite(deltaTime) ? Math.max(0, deltaTime) : 0
   elapsed += dt
   noticeSeconds = Math.max(0, noticeSeconds - dt)
   if (isHeadless()) {
-    // One pass per party; each sees only its own members.
+    // One pass per party; each sees only its own members. A party's step is
+    // fenced: the engine runs systems with no guard of its own, so an error
+    // left to escape here would skip every later system this tick (runs, hero
+    // tracking, the raid) and, if the bad state persisted, every tick after.
     const everyone = allFighters()
     for (const s of [...sims.values()]) {
       sim = s
-      stepSim(dt, everyone.filter((f) => partyOf(f.address) === s.party), undefined)
+      try {
+        stepSim(dt, everyone.filter((f) => partyOf(f.address) === s.party), undefined)
+      } catch (error) {
+        reportSimFault(s.party, error)
+      }
     }
     sim = undefined
     return
   }
-  if (!clientSim) return
+  if (!clientSim) {
+    clearSelectedEnemy()
+    return
+  }
   sim = clientSim
   const local = getPlayerCombatPose()
   const fighters = allFighters(local).filter((f) => f.local || partyOf(f.address) === clientSim!.party)
@@ -857,6 +956,18 @@ function updateEnemies(deltaTime: number) {
   state.party = fighters.length
   if (local) state.playerHealth = local.health
   stepSim(dt, fighters, local)
+  if (tapWorldControlsEnabled()) {
+    readGroundClick(dt)
+    updateGroundMove()
+    updatePlayerApproach()
+    updateHeldEnemyAttack()
+  } else {
+    if (groundMove || pendingGroundClick) cancelGroundMove()
+    if (playerApproach) cancelPlayerApproach()
+    if (selectedEnemy) clearSelectedEnemy()
+    heldEnemy = undefined
+  }
+  updateSelectedEnemy()
 }
 
 /** Advance the current sim by one tick against the heroes in its party. */
@@ -919,11 +1030,13 @@ function stepSim(dt: number, fighters: NetFighter[], local: ReturnType<typeof ge
   }
 
   if (isHost() && sim.zones.length) tickZones(dt)
+  if (isHost() && sim.summons.length) tickSummons(sim, dt)
   if (isHost() && sim.gauntlet) tickGauntlet(sim, dt, fighters)
   if (!isHeadless()) {
     tickZoneFx(dt)
     tickHellfireFx(dt)
     tickAuraRings(dt)
+    tickBuffAuras(dt)
     if (sim.gauntlet) tickGates(sim)
   }
 
@@ -1075,6 +1188,14 @@ function stepSim(dt: number, fighters: NetFighter[], local: ReturnType<typeof ge
 }
 
 function tickEnemyPresentation(e: Enemy, dt: number) {
+  if (e.pointer !== undefined) {
+    const active = tapWorldControlsEnabled() && e.loading === 'ready' && e.visible && !e.dead && !e.asleep && !e.returningHome
+    if (active !== e.pointerActive) {
+      e.pointerActive = active
+      if (active) MeshCollider.setBox(e.pointer, ColliderLayer.CL_POINTER)
+      else MeshCollider.deleteFrom(e.pointer)
+    }
+  }
   if (e.hitStop > 0) {
     e.hitStop -= dt
     if (e.hitStop <= 0) {
@@ -1834,6 +1955,320 @@ function aimCos(): number {
   return Math.cos((heroClassOf(getPlayerCharacterState().characterId).aimCone * Math.PI) / 180)
 }
 
+function selectable(e: Enemy): boolean {
+  return !!clientSim && clientSim.enemies.includes(e) && e.loading === 'ready' && e.visible &&
+    !e.dead && !e.asleep && !e.returningHome && !clientSim.paused && !defeated
+}
+
+function selectedInRange(attacker: CombatPose, range: number): { e: Enemy; index: number } | undefined {
+  const e = selectedEnemy
+  if (!e || !selectable(e) || combatDistance(attacker, e) > range ||
+    Math.abs(attacker.position.y - e.position.y) > COMBAT_RULES.maximumVerticalReach + 1) return undefined
+  const index = clientSim!.enemies.indexOf(e)
+  return index >= 0 ? { e, index } : undefined
+}
+
+function selectEnemy(e: Enemy) {
+  if (!selectable(e)) return
+  lastEnemyPointerAt = elapsed
+  cancelGroundMove()
+  selectedEnemy = e
+  updateSelectedEnemy()
+  const attacker = getPlayerCombatPose()
+  const cid = getPlayerCharacterState().characterId
+  if (!attacker || !cid) return
+  const motion = heroClassOf(cid).light[0]
+  const shot = shotProfile(cid, motion)
+  const reach = (shot?.range ?? attackRange(motion)) + LOCK_MARGIN
+  // A tap in range attacks now. Out of range it only locks the target, leaving
+  // WASD/the mobile joystick able to cancel the automatic approach at once.
+  const pointerLocked = PointerLock.getOrNull(engine.CameraEntity)?.isPointerLocked ?? false
+  if (combatDistance(attacker, e) <= reach) {
+    cancelPlayerApproach()
+    if (!pointerLocked) tapCombatAction('light')
+  } else {
+    playerApproach = { target: e, moving: false, routeKey: '', cells: [] }
+  }
+}
+
+function updateSelectedEnemy() {
+  const e = selectedEnemy
+  if (!e || !selectable(e)) {
+    clearSelectedEnemy()
+    return
+  }
+  if (selectedMarker) {
+    const pulse = 0.65 + 0.35 * (0.5 + 0.5 * Math.sin(elapsed * 5))
+    // The enemy root carries the renderer's snapshot glide. Parenting the ring
+    // to it keeps both on the same smoothed path instead of following raw snaps.
+    const marker = Transform.getMutable(selectedMarker.entity)
+    marker.parent = e.root
+    updateDecal(selectedMarker, true, Vector3.Zero(), 0.72 * e.archetype.scale, pulse, Color3.create(1, 0.78, 0.18))
+  }
+}
+
+function manualMovementPressed(): boolean {
+  return inputSystem.isPressed(InputAction.IA_FORWARD) || inputSystem.isPressed(InputAction.IA_BACKWARD) ||
+    inputSystem.isPressed(InputAction.IA_LEFT) || inputSystem.isPressed(InputAction.IA_RIGHT) ||
+    inputSystem.isPressed(InputAction.IA_WALK)
+}
+
+function readGroundClick(dt: number) {
+  if (pendingGroundClick) {
+    pendingGroundClick.delay -= dt
+    if (pendingGroundClick.delay <= 0) {
+      const at = pendingGroundClick.at
+      pendingGroundClick = undefined
+      if (hudConsumedWorldPointer() || pointerOverExplorerUi() || elapsed - lastEnemyPointerAt < 0.12 || !canStand(at.x, at.z)) return
+      clearSelectedEnemy()
+      groundMove = { destination: at, moving: false, routeKey: '', cells: [] }
+      if (groundMarker) updateDecal(groundMarker, true, at, 0.42, 1, Color3.create(0.3, 0.82, 1))
+    }
+  }
+  if (!inputSystem.isTriggered(InputAction.IA_POINTER, PointerEventType.PET_DOWN)) return
+  if (PointerLock.getOrNull(engine.CameraEntity)?.isPointerLocked !== false || !clientSim?.enemies.length) return
+  if (hudConsumedWorldPointer() || pointerOverExplorerUi()) return
+  const modifier = InputModifier.getOrNull(engine.PlayerEntity)
+  if (modifier?.mode?.$case === 'standard' && modifier.mode.standard.disableAll) return
+  const dir = PrimaryPointerInfo.getOrNull(engine.RootEntity)?.worldRayDirection
+  const origin = Transform.getOrNull(engine.CameraEntity)?.position
+  const player = Transform.getOrNull(engine.PlayerEntity)?.position
+  if (!dir || !origin || !player || dir.y >= -0.001) return
+  const t = (player.y - origin.y) / dir.y
+  if (t <= 0) return
+  const at = Vector3.create(origin.x + dir.x * t, player.y, origin.z + dir.z * t)
+  pendingGroundClick = { at, delay: 0.06 }
+}
+
+/** Explorer shrinks this rect when chat or another native HUD panel owns an edge of the screen. */
+function pointerOverExplorerUi(): boolean {
+  const canvas = UiCanvasInformation.getOrNull(engine.RootEntity)
+  const point = PrimaryPointerInfo.getOrNull(engine.RootEntity)?.screenCoordinates
+  const area = canvas?.interactableArea
+  if (!canvas || !point || !area) return false
+  return point.x < area.left || point.x > canvas.width - area.right ||
+    point.y < area.top || point.y > canvas.height - area.bottom
+}
+
+function updateGroundMove() {
+  const move = groundMove
+  if (!move) return
+  const pose = getPlayerCombatPose()
+  const player = Transform.getOrNull(engine.PlayerEntity)
+  const vitals = getPlayerVitals()
+  if (manualMovementPressed() || !pose || !player || pose.health <= 0 || pose.swinging || vitals.dodging || vitals.blocking) {
+    cancelGroundMove()
+    return
+  }
+  // A newer click may replace `groundMove` while the renderer is still
+  // completing the prior segment. Keep the new destination, but do not issue
+  // another timed move until that one settles.
+  if (move.moving || clickMoveInFlight) return
+  const distance = Math.hypot(move.destination.x - player.position.x, move.destination.z - player.position.z)
+  if (distance <= 0.16) {
+    cancelGroundMove()
+    return
+  }
+  const here = simCell(player.position.x, player.position.z)
+  const there = simCell(move.destination.x, move.destination.z)
+  const key = `${here.cx},${here.cy}>${there.cx},${there.cy}`
+  if (move.routeKey !== key) {
+    move.routeKey = key
+    move.cells = findRoute(here, there)
+  }
+  let waypoint = move.destination
+  if (!clearLine(player.position, move.destination)) {
+    if (move.cells.length < 2) {
+      cancelGroundMove()
+      return
+    }
+    for (let i = move.cells.length - 1; i >= 1; i--) {
+      const c = cellCenter(sim?.style ?? STYLES.open, move.cells[i].cx, move.cells[i].cy)
+      const candidate = Vector3.create(c.x, player.position.y, c.z)
+      if (clearLine(player.position, candidate)) {
+        waypoint = candidate
+        break
+      }
+    }
+  }
+  const dx = waypoint.x - player.position.x
+  const dz = waypoint.z - player.position.z
+  const waypointDistance = Math.hypot(dx, dz)
+  if (waypointDistance < 0.03) {
+    cancelGroundMove()
+    return
+  }
+  const travel = Math.min(PLAYER_GROUND_STEP, waypointDistance)
+  const to = Vector3.create(
+    player.position.x + (dx / waypointDistance) * travel,
+    player.position.y,
+    player.position.z + (dz / waypointDistance) * travel
+  )
+  if (!clearLine(player.position, to)) {
+    cancelGroundMove()
+    return
+  }
+  move.moving = true
+  clickMoveInFlight = true
+  const duration = travel / PLAYER_APPROACH_SPEED
+  beginPlayerPublishedTravel(player.position, to, duration)
+  movePlayerTo({
+    newRelativePosition: to,
+    duration
+  }).then((result) => {
+    if (groundMove === move && result.success === false) cancelGroundMove()
+  }).catch((error: unknown) => {
+    if (groundMove === move) {
+      console.log('[DG] click movement failed', error)
+      cancelGroundMove()
+    }
+  }).finally(() => {
+    clickMoveInFlight = false
+    if (groundMove === move) move.moving = false
+  })
+}
+
+function cancelGroundMove() {
+  const wasMoving = groundMove?.moving ?? false
+  pendingGroundClick = undefined
+  groundMove = undefined
+  clearPlayerPublishedTravel()
+  if (groundMarker) updateDecal(groundMarker, false)
+  if (wasMoving) stopPlayerTimedMove()
+}
+
+function updateHeldEnemyAttack() {
+  if (inputSystem.isTriggered(InputAction.IA_POINTER, PointerEventType.PET_UP)) heldEnemy = undefined
+  const e = heldEnemy
+  if (!e || !selectable(e) || playerApproach) return
+  // Pointer-lock combat already treats a held mouse button exactly like held E.
+  // This bridge is for free-cursor desktop play and mobile long presses.
+  if (PointerLock.getOrNull(engine.CameraEntity)?.isPointerLocked) return
+  const attacker = getPlayerCombatPose()
+  const reach = selectedLightReach()
+  if (attacker && reach > 0 && combatDistance(attacker, e) <= reach) tapCombatAction('light')
+}
+
+function selectedLightReach(): number {
+  const cid = getPlayerCharacterState().characterId
+  if (!cid) return 0
+  const motion = heroClassOf(cid).light[0]
+  return (shotProfile(cid, motion)?.range ?? attackRange(motion)) + LOCK_MARGIN
+}
+
+function updatePlayerApproach() {
+  const approach = playerApproach
+  if (!approach) return
+  if (manualMovementPressed() || !selectable(approach.target)) {
+    cancelPlayerApproach()
+    return
+  }
+  const pose = getPlayerCombatPose()
+  const player = Transform.getOrNull(engine.PlayerEntity)
+  if (!pose || !player || pose.health <= 0) {
+    cancelPlayerApproach()
+    return
+  }
+  // Ground movement and enemy approach share one renderer move owner. A new
+  // enemy selection is coalesced here and begins after the current segment.
+  if (approach.moving || clickMoveInFlight || pose.swinging || getPlayerVitals().dodging || getPlayerVitals().blocking) return
+  const reach = selectedLightReach()
+  const target = approach.target.position
+  const distance = Math.hypot(target.x - player.position.x, target.z - player.position.z)
+  if (reach <= 0 || distance <= reach) {
+    cancelPlayerApproach()
+    if (reach > 0) tapCombatAction('light')
+    return
+  }
+
+  const here = simCell(player.position.x, player.position.z)
+  const there = simCell(target.x, target.z)
+  const key = `${here.cx},${here.cy}>${there.cx},${there.cy}`
+  if (approach.routeKey !== key) {
+    approach.routeKey = key
+    approach.cells = findRoute(here, there)
+  }
+  let waypoint = target
+  if (!clearLine(player.position, target)) {
+    if (approach.cells.length < 2) {
+      cancelPlayerApproach()
+      return
+    }
+    for (let i = approach.cells.length - 1; i >= 1; i--) {
+      const c = cellCenter(sim?.style ?? STYLES.open, approach.cells[i].cx, approach.cells[i].cy)
+      const candidate = Vector3.create(c.x, player.position.y, c.z)
+      if (clearLine(player.position, candidate)) {
+        waypoint = candidate
+        break
+      }
+    }
+  }
+  const dx = waypoint.x - player.position.x
+  const dz = waypoint.z - player.position.z
+  const waypointDistance = Math.hypot(dx, dz)
+  if (waypointDistance < 0.05) {
+    cancelPlayerApproach()
+    return
+  }
+  const directToTarget = waypoint === target
+  const travel = Math.min(PLAYER_APPROACH_STEP, directToTarget ? Math.max(0, distance - (reach - 0.12)) : waypointDistance)
+  if (travel < 0.03) return
+  const to = Vector3.create(
+    player.position.x + (dx / waypointDistance) * travel,
+    player.position.y,
+    player.position.z + (dz / waypointDistance) * travel
+  )
+  if (!clearLine(player.position, to)) {
+    cancelPlayerApproach()
+    return
+  }
+  approach.moving = true
+  clickMoveInFlight = true
+  const duration = travel / PLAYER_APPROACH_SPEED
+  beginPlayerPublishedTravel(player.position, to, duration)
+  movePlayerTo({
+    newRelativePosition: to,
+    duration
+  }).then((result) => {
+    if (playerApproach === approach && result.success === false) cancelPlayerApproach()
+  }).catch((error: unknown) => {
+    if (playerApproach === approach) {
+      console.log('[DG] click approach failed', error)
+      cancelPlayerApproach()
+    }
+  }).finally(() => {
+    clickMoveInFlight = false
+    if (playerApproach === approach) approach.moving = false
+  })
+}
+
+function cancelPlayerApproach() {
+  const wasMoving = playerApproach?.moving ?? false
+  playerApproach = undefined
+  clearPlayerPublishedTravel()
+  if (wasMoving) stopPlayerTimedMove()
+}
+
+/** A fresh move request replaces an in-flight glide at its current rendered position. */
+function stopPlayerTimedMove() {
+  clearPlayerPublishedTravel()
+  const p = Transform.getOrNull(engine.PlayerEntity)?.position
+  if (!p) return
+  movePlayerTo({ newRelativePosition: Vector3.create(p.x, p.y, p.z), duration: 0.01 })
+    .catch(() => undefined)
+}
+
+function clearSelectedEnemy() {
+  cancelPlayerApproach()
+  heldEnemy = undefined
+  selectedEnemy = undefined
+  if (selectedMarker) {
+    updateDecal(selectedMarker, false)
+    const marker = Transform.getMutable(selectedMarker.entity)
+    marker.parent = undefined
+  }
+}
+
 /**
  * Soft lock-on: turn the body to the best enemy in front and step in if it is
  * just out of reach. A shot locks over the class's range and cone and never
@@ -1852,7 +2287,8 @@ function lockOn(motion: HeroAttackMotion, context: AttackContext) {
   const reach = shot ? shot.range : attackRange(motion)
   // Only when the enemy is actually there: swinging while running through a room
   // must not yank the body around or teleport the player toward distant targets.
-  const best = pickHeroTarget(attacker, reach + LOCK_MARGIN, shot ? aimCos() : LOCK_COS, shot ? 1.5 : 0, !!shot)
+  const best = selectedInRange(attacker, reach + LOCK_MARGIN) ??
+    pickHeroTarget(attacker, reach + LOCK_MARGIN, shot ? aimCos() : LOCK_COS, shot ? 1.5 : 0, !!shot)
   if (!best) return
   const dx = best.e.position.x - attacker.position.x
   const dz = best.e.position.z - attacker.position.z
@@ -1868,7 +2304,7 @@ function enemyWithin(range: number): boolean {
   const attacker = getPlayerCombatPose()
   if (!attacker || !clientSim || clientSim.paused || defeated) return false
   sim = clientSim
-  return !!pickHeroTarget(attacker, range, LOCK_COS)
+  return !!selectedInRange(attacker, range) || !!pickHeroTarget(attacker, range, LOCK_COS)
 }
 
 /** Something living and awake stands within `range` of the hero, any direction: no moment for a shot (src/cinematics.ts). */
@@ -1877,6 +2313,17 @@ export function liveEnemyNear(range: number): boolean {
   const s = clientSim
   if (!p || !s) return false
   return s.enemies.some((e) => !e.dead && !e.asleep && (e.position.x - p.x) ** 2 + (e.position.z - p.z) ** 2 <= range * range)
+}
+
+/** Minimal immutable combat data for the dungeon minimap. */
+export type MinimapEnemy = Readonly<{ x: number; z: number; boss: boolean }>
+
+export function minimapEnemies(): MinimapEnemy[] {
+  const s = clientSim
+  if (!s) return []
+  return s.enemies
+    .filter((e) => e.loading === 'ready' && e.visible && !e.dead && !e.asleep)
+    .map((e) => ({ x: e.position.x, z: e.position.z, boss: e.boss }))
 }
 
 /** The enemies a projectile can reach right now, as bodies. */
@@ -1904,6 +2351,10 @@ function hitEnemies(motion: HeroAttackMotion, context: AttackContext) {
   if (isRangedAttack(motion)) {
     shootEnemies(attacker, motion, context)
     return
+  }
+  if (isPlayerDemonForm() && motion === 'heavy_combo_c') {
+    fxSlam(Vector3.create(attacker.position.x, COURTYARD.characterFloorY, attacker.position.z), 2.8)
+    kickCrawlerCamera(Vector3.create(0, -0.3, 0))
   }
   // Everyone the swing can reach, nearest first. The nearest takes the blow in
   // full; a light also catches the next body for part of it, a heavy or a
@@ -2040,7 +2491,7 @@ function applyRemoteHit(id: string, index: number, motion: string, finisher: boo
   if (combatDistance(attacker, e) > attackRange(attack) + 1.5) return
   // Only the class that owns the motion may claim it: a blade cannot report a volley.
   const cid = heroCharacters((owner) => owner === id)[0]
-  if (!heroClassMotionAllowed(cid, attack)) return
+  if (!heroClassMotionAllowed(id, cid, attack)) return
   // The weapon is read off the hero's synced body: the client never states its own damage.
   const hit = { finisher, weapon: weaponStats(heroWeapon(id), true, heroWeaponRank(id), heroWeaponLevel(id), heroWeaponAffix(id)), might: hostMight(id, cid) }
   applyPlayerHit(attacker, e, attack, hit)
@@ -2052,7 +2503,10 @@ function applyRemoteHit(id: string, index: number, motion: string, finisher: boo
 
 /** A hero's multiplier on damage dealt as the host applies it: their level, any buff on them, and the armor their body wears. */
 function hostMight(id: string, cid: string | undefined): number {
-  return heroBonusesFor(id, cid ?? '').might * buffMight(id) * armorBonuses(heroLoadout(id), heroArmorRankOf(id), heroArmorLevelOf(id), heroArmorAffixOf(id)).might
+  const form = skillById('dread_ascension')?.effect
+  const transformedMight = (transformedUntil.get(id) ?? 0) > elapsed && form?.kind === 'transform' ? form.meleeMight : 1
+  return heroBonusesFor(id, cid ?? '').might * Math.max(buffMight(id), transformedMight) *
+    armorBonuses(heroLoadout(id), heroArmorRankOf(id), heroArmorLevelOf(id), heroArmorAffixOf(id)).might
 }
 
 /** The local hero's weapon, for the numbers it shows and the hits it hosts. */
@@ -2063,7 +2517,10 @@ function localWeapon(): WeaponModifiers {
 /** The local hero's bonus on damage dealt: their level (src/heroXp.ts), buffs, and their armor (src/armor.ts). */
 function localMight(): number {
   const me = localAddress()
-  return heroBonusesFor(me, getPlayerCharacterState().characterId ?? '').might * buffMight(me) * armorBonuses(heroLoadout(me), heroArmorRankOf(me), heroArmorLevelOf(me), heroArmorAffixOf(me)).might
+  const form = skillById('dread_ascension')?.effect
+  const transformedMight = isPlayerDemonForm() && form?.kind === 'transform' ? form.meleeMight : 1
+  return heroBonusesFor(me, getPlayerCharacterState().characterId ?? '').might * Math.max(buffMight(me), transformedMight) *
+    armorBonuses(heroLoadout(me), heroArmorRankOf(me), heroArmorLevelOf(me), heroArmorAffixOf(me)).might
 }
 
 /** A blow's damage after the hero's level; a blow that landed never rounds to nothing. */
@@ -2078,8 +2535,8 @@ function enemySnaps(): EnemySnap[] {
 }
 
 /** Whether the champion's class fights with this motion (the host trusts no client's word for it). */
-function heroClassMotionAllowed(cid: string | undefined, motion: HeroAttackMotion): boolean {
-  const cls = heroClassOf(cid)
+function heroClassMotionAllowed(id: string, cid: string | undefined, motion: HeroAttackMotion): boolean {
+  const cls = (transformedUntil.get(id) ?? 0) > elapsed ? DEMON_FORM_CLASS : heroClassOf(cid)
   return cls.light.includes(motion) || cls.heavy === motion || cls.pointBlank?.motion === motion
 }
 
@@ -2170,7 +2627,8 @@ function presentPlayerStrike(
 /** The numbers a skill's blow is measured by; shots stagger and shove a little, like a heavy arrow. */
 function skillBlow(def: SkillDef): { mult: number; stagger: number; knockback: number } {
   const e = def.effect
-  if (e.kind === 'strike' || e.kind === 'zone') return { mult: e.mult, stagger: e.stagger, knockback: e.knockback }
+  if (e.kind === 'strike' || e.kind === 'zone' || e.kind === 'line') return { mult: e.mult, stagger: e.stagger, knockback: e.knockback }
+  if (e.kind === 'drain') return { mult: e.mult, stagger: 0.35, knockback: 0 }
   if (e.kind === 'shot') return { mult: e.mult, stagger: 0.7, knockback: 0.2 }
   return { mult: 0, stagger: 0, knockback: 0 }
 }
@@ -2206,7 +2664,8 @@ function lockOnSkill(attacker: CombatPose, def: SkillDef) {
     return
   }
   setPlayerStepIn(0)
-  const range = e.kind === 'shot' ? e.range : e.kind === 'zone' && e.at === 'aim' ? e.aimRange : 0
+  const range = e.kind === 'shot' || e.kind === 'line' ? e.range
+    : e.kind === 'zone' && e.at === 'aim' || e.kind === 'drain' ? e.aimRange : 0
   if (range <= 0) return
   const best = pickHeroTarget(attacker, range + LOCK_MARGIN, aimCos(), 1.5, true)
   if (!best) return
@@ -2237,6 +2696,24 @@ function castSkill(def: SkillDef, attacker: CombatPose) {
     case 'aura':
       publishSkillCast(def.id, attacker.position.x, attacker.position.z, attacker.facing)
       presentAura(def, attacker.position)
+      break
+    case 'line':
+      publishSkillCast(def.id, attacker.position.x, attacker.position.z, attacker.facing)
+      presentLine(def, attacker.position, attacker.facing)
+      break
+    case 'drain': {
+      const at = zoneAim(attacker, e.aimRange)
+      publishSkillCast(def.id, at.x, at.z, attacker.facing)
+      presentDrain(def, at, true)
+      break
+    }
+    case 'summon':
+      publishSkillCast(def.id, attacker.position.x, attacker.position.z, attacker.facing)
+      presentSummons(def, localAddress())
+      break
+    case 'transform':
+      publishSkillCast(def.id, attacker.position.x, attacker.position.z, attacker.facing)
+      presentTransformation(def, localAddress(), attacker.position)
       break
   }
 }
@@ -2417,7 +2894,7 @@ function applySkillHit(attacker: CombatPose, e: Enemy, def: SkillDef, context: {
 
 /** Whether this hero may use the skill at all: their class owns it and their level has reached it. */
 function skillAllowed(id: string, cid: string | undefined, def: SkillDef): boolean {
-  return heroClassOf(cid).id === def.cls && heroLevel(id, cid ?? '') >= def.level
+  return (transformedUntil.get(id) ?? 0) <= elapsed && heroClassOf(cid).id === def.cls && heroLevel(id, cid ?? '') >= def.level
 }
 
 /** Host: another client's report that a skill's blow landed on enemy `i`. */
@@ -2454,7 +2931,7 @@ function claimSkillHit(id: string, def: SkillDef): boolean {
 }
 
 /** Host: a hero's skill fired. Record the cast; deliver auras and zones. */
-function hostSkillCast(id: string, def: SkillDef, x: number, z: number, _yaw: number) {
+function hostSkillCast(id: string, def: SkillDef, x: number, z: number, yaw: number) {
   const cid = heroCharacters((owner) => owner === id)[0]
   if (!skillAllowed(id, cid, def)) return
   const key = `${id}|${def.id}`
@@ -2478,8 +2955,101 @@ function hostSkillCast(id: string, def: SkillDef, x: number, z: number, _yaw: nu
       def, x, z, ticksLeft: e.ticks, interval: e.ticks > 1 ? e.seconds / (e.ticks - 1) : 0,
       // An aimed circle is a telegraph first; a slam lands with the blow.
       timer: e.at === 'aim' ? ZONE_TELEGRAPH : 0,
-      caster: id, weapon: weaponStats(heroWeapon(id), true, heroWeaponRank(id), heroWeaponLevel(id), heroWeaponAffix(id)), might: hostMight(id, cid)
+      caster: id, weapon: weaponStats(heroWeapon(id), true, heroWeaponRank(id), heroWeaponLevel(id), heroWeaponAffix(id)), might: hostMight(id, cid), healed: 0
     })
+  } else if (e.kind === 'drain') {
+    const s = simFor(partyOf(id))
+    if (!s) return
+    const here = heroPosition(id)
+    if (here && Math.hypot(x - here.x, z - here.z) > e.aimRange + 3) return
+    s.zones.push({
+      def, x, z, ticksLeft: e.ticks, interval: e.ticks > 1 ? e.seconds / (e.ticks - 1) : 0,
+      timer: ZONE_TELEGRAPH, caster: id,
+      weapon: weaponStats(heroWeapon(id), true, heroWeaponRank(id), heroWeaponLevel(id), heroWeaponAffix(id)),
+      might: hostMight(id, cid), healed: 0
+    })
+  } else if (e.kind === 'line') {
+    hostLineCast(id, def, x, z, yaw, cid)
+  } else if (e.kind === 'summon') {
+    hostSummons(id, def, cid)
+  } else if (e.kind === 'transform') {
+    applyBuff(id, def.id, e.meleeMight, 1, e.seconds)
+    transformedUntil.set(id, elapsed + e.seconds)
+  }
+}
+
+/** Host: one Gravespike cast hits each body at most once along the aimed line. */
+function hostLineCast(id: string, def: SkillDef, x: number, z: number, yaw: number, cid: string | undefined) {
+  if (def.effect.kind !== 'line') return
+  const s = simFor(partyOf(id))
+  const here = heroPosition(id)
+  if (!s || !here || Math.hypot(x - here.x, z - here.z) > 3) return
+  sim = s
+  const e = def.effect
+  const origin = Vector3.create(here.x, COURTYARD.characterFloorY, here.z)
+  const sx = Math.sin(yaw)
+  const sz = Math.cos(yaw)
+  const weapon = weaponStats(heroWeapon(id), true, heroWeaponRank(id), heroWeaponLevel(id), heroWeaponAffix(id))
+  for (const enemy of s.enemies) {
+    if (enemy.loading !== 'ready' || enemy.dead || enemy.asleep) continue
+    const dx = enemy.position.x - origin.x
+    const dz = enemy.position.z - origin.z
+    const along = dx * sx + dz * sz
+    const across = Math.abs(dx * sz - dz * sx)
+    if (along < -0.4 || along > e.range + 0.45 * enemy.archetype.scale || across > e.radius + 0.35 * enemy.archetype.scale) continue
+    const before = enemy.health
+    applySkillHit(poseToward(origin, enemy.position), enemy, def, { weapon, might: hostMight(id, cid) })
+    presentHostHit(s.party, Vector3.create(enemy.position.x, enemy.position.y + 1.15 * enemy.archetype.scale, enemy.position.z), before - enemy.health)
+  }
+}
+
+function hostSummons(id: string, def: SkillDef, cid: string | undefined) {
+  if (def.effect.kind !== 'summon') return
+  const s = simFor(partyOf(id))
+  if (!s) return
+  s.summons = s.summons.filter((summon) => summon.owner !== id)
+  const weapon = weaponStats(heroWeapon(id), true, heroWeaponRank(id), heroWeaponLevel(id), heroWeaponAffix(id))
+  for (let i = 0; i < def.effect.count; i++) {
+    s.summons.push({ owner: id, left: def.effect.seconds, attackIn: 0.35 + i * 0.22, def, weapon, might: hostMight(id, cid) })
+  }
+}
+
+/** Host: spectral warriors are untargetable timed damage sources that pursue the nearest living enemy. */
+function tickSummons(s: Sim, dt: number) {
+  for (let i = s.summons.length - 1; i >= 0; i--) {
+    const summon = s.summons[i]
+    summon.left -= dt
+    summon.attackIn -= dt
+    if (summon.left <= 0) {
+      s.summons.splice(i, 1)
+      continue
+    }
+    if (summon.attackIn > 0 || summon.def.effect.kind !== 'summon') continue
+    const owner = heroPosition(summon.owner)
+    if (!owner) continue
+    let target: Enemy | undefined
+    let distance = 10
+    for (const enemy of s.enemies) {
+      if (enemy.loading !== 'ready' || enemy.dead || enemy.asleep || enemy.returningHome) continue
+      const d = Math.hypot(enemy.position.x - owner.x, enemy.position.z - owner.z)
+      if (d < distance) {
+        distance = d
+        target = enemy
+      }
+    }
+    summon.attackIn = 1.2
+    if (!target) continue
+    const hit = resolveSkillHit(summon.def.effect.damageShare * 0.75, 0.4, 0.08, false, summon.weapon)
+    const before = target.health
+    target.engaged = true
+    target.health = Math.max(0, target.health - withMight(hit.damage, summon.might))
+    target.hitStop = 0.05
+    if (target.health === 0) kill(target)
+    else {
+      target.stagger = Math.max(target.stagger, hit.stagger)
+      playMotion(target, 'hit', true)
+    }
+    presentHostHit(s.party, Vector3.create(target.position.x, target.position.y + 1.15 * target.archetype.scale, target.position.z), before - target.health)
   }
 }
 
@@ -2511,8 +3081,10 @@ function tickZones(dt: number) {
 }
 
 function zoneTick(z: Zone) {
-  if (!sim || z.def.effect.kind !== 'zone') return
-  const radius = z.def.effect.radius
+  if (!sim || (z.def.effect.kind !== 'zone' && z.def.effect.kind !== 'drain')) return
+  const effect = z.def.effect
+  const radius = effect.radius
+  let damage = 0
   for (const e of sim.enemies) {
     if (e.loading !== 'ready' || e.dead || e.asleep) continue
     const dx = e.position.x - z.x
@@ -2521,7 +3093,14 @@ function zoneTick(z: Zone) {
     if (Math.abs(e.position.y - COURTYARD.characterFloorY) > 1.5) continue
     const before = e.health
     applySkillHit(poseToward(Vector3.create(z.x, e.position.y, z.z), e.position), e, z.def, { weapon: z.weapon, might: z.might })
-    presentHostHit(sim.party, Vector3.create(e.position.x, e.position.y + 1.15 * e.archetype.scale, e.position.z), before - e.health)
+    const dealt = before - e.health
+    damage += dealt
+    presentHostHit(sim.party, Vector3.create(e.position.x, e.position.y + 1.15 * e.archetype.scale, e.position.z), dealt)
+  }
+  if (effect.kind === 'drain' && damage > 0 && z.healed < effect.healCap) {
+    const amount = Math.min(effect.healCap - z.healed, Math.max(1, Math.round(damage * effect.leech)))
+    z.healed += amount
+    healHero(z.caster, amount)
   }
 }
 
@@ -2554,13 +3133,24 @@ const zoneFx: ZoneFx[] = []
 function clearZoneFx() {
   for (const z of zoneFx) destroyDecal(z.decal)
   zoneFx.length = 0
+  for (const aura of buffAuras) destroyDecal(aura.decal)
+  buffAuras.length = 0
+  lineFx.length = 0
+  clearSummonFx()
+  clearTransformationFx()
   clearHellfireFx()
 }
 
 /** Another hero's cast, from the host's relay: the ground or the glow, where they put it. */
-function presentSkillCast(id: string, def: SkillDef, at: Vector3) {
+function presentSkillCast(id: string, def: SkillDef, at: Vector3, yaw: number) {
   if (def.effect.kind === 'zone') presentZone(def, at, false)
   else if (def.effect.kind === 'aura') presentAura(def, heroPosition(id) ?? at)
+  else if (def.effect.kind === 'drain') presentDrain(def, at, false)
+  else if (def.effect.kind === 'line') {
+    const from = heroPosition(id) ?? at
+    presentLine(def, from, yaw)
+  } else if (def.effect.kind === 'summon') presentSummons(def, id)
+  else if (def.effect.kind === 'transform') presentTransformation(def, id, heroPosition(id) ?? at)
 }
 
 function skillColor(def: SkillDef): Color4 {
@@ -2574,14 +3164,161 @@ function presentZone(def: SkillDef, at: Vector3, mine: boolean) {
   if (def.effect.at === 'self') fxSound('slam', 0.8)
 }
 
+function presentDrain(def: SkillDef, at: Vector3, mine: boolean) {
+  if (def.effect.kind !== 'drain') return
+  zoneFx.push({ def, at: Vector3.clone(at), decal: createDecal('ring'), age: 0, ticked: 0, mine })
+}
+
+type LineFx = { def: SkillDef; at: Vector3; yaw: number; age: number; next: number }
+const lineFx: LineFx[] = []
+
+function presentLine(def: SkillDef, at: Vector3, yaw: number) {
+  if (def.effect.kind !== 'line') return
+  lineFx.push({ def, at: Vector3.create(at.x, COURTYARD.characterFloorY, at.z), yaw, age: 0, next: 0 })
+}
+
+function tickLineFx(dt: number) {
+  for (let i = lineFx.length - 1; i >= 0; i--) {
+    const line = lineFx[i]
+    if (line.def.effect.kind !== 'line') {
+      lineFx.splice(i, 1)
+      continue
+    }
+    const e = line.def.effect
+    line.age += dt
+    const count = Math.max(1, Math.floor(e.range / e.spacing))
+    while (line.next < count && line.age >= (line.next / Math.max(1, count - 1)) * e.seconds) {
+      const distance = e.spacing * (line.next + 1)
+      const at = Vector3.create(line.at.x + Math.sin(line.yaw) * distance, line.at.y, line.at.z + Math.cos(line.yaw) * distance)
+      fxSlam(at, e.radius * 0.75)
+      fxMagicBurst(Vector3.add(at, Vector3.create(0, 0.35, 0)), skillColor(line.def), e.radius * 0.6)
+      line.next++
+    }
+    if (line.age >= e.seconds + 0.4) lineFx.splice(i, 1)
+  }
+}
+
+type SummonFx = {
+  owner: string
+  entity: Entity
+  left: number
+  age: number
+  slot: number
+  attackIn: number
+  motion: EquipmentMotion
+}
+const summonFx: SummonFx[] = []
+
+function presentSummons(def: SkillDef, owner: string) {
+  if (def.effect.kind !== 'summon') return
+  for (let i = summonFx.length - 1; i >= 0; i--) {
+    if (summonFx[i].owner === owner) destroySummonFx(i)
+  }
+  const at = heroPosition(owner) ?? (owner === localAddress() ? getPlayerCombatPose()?.position : undefined)
+  if (!at) return
+  for (let slot = 0; slot < def.effect.count; slot++) {
+    const angle = (slot / def.effect.count) * Math.PI * 2
+    const entity = engine.addEntity()
+    Transform.create(entity, {
+      position: Vector3.create(at.x + Math.sin(angle) * 1.2, COURTYARD.characterFloorY, at.z + Math.cos(angle) * 1.2),
+      rotation: Quaternion.fromEulerDegrees(0, angle * 180 / Math.PI, 0),
+      scale: Vector3.create(0.05, 0.05, 0.05)
+    })
+    setEquipmentAvatar(entity, 'dk-skeleton', { ...DEFAULT_LOADOUTS.vanguard, weapon: 'dk-sword-03' }, false)
+    setEquipmentMotion(entity, 'idle')
+    summonFx.push({ owner, entity, left: def.effect.seconds, age: 0, slot, attackIn: 0.5 + slot * 0.2, motion: 'idle' })
+    fxMagicBurst(Vector3.create(at.x + Math.sin(angle) * 1.2, COURTYARD.characterFloorY + 0.2, at.z + Math.cos(angle) * 1.2), skillColor(def), 0.7)
+  }
+  fxSound('roar', 0.45)
+}
+
+function destroySummonFx(index: number) {
+  const summon = summonFx[index]
+  if (!summon) return
+  destroyEquipmentAvatar(summon.entity)
+  engine.removeEntity(summon.entity)
+  summonFx.splice(index, 1)
+}
+
+function clearSummonFx() {
+  for (let i = summonFx.length - 1; i >= 0; i--) destroySummonFx(i)
+}
+
+function summonMotion(summon: SummonFx, motion: EquipmentMotion) {
+  if (summon.motion === motion) return
+  summon.motion = motion
+  setEquipmentMotion(summon.entity, motion, motion.startsWith('attack'))
+}
+
+function tickSummonFx(dt: number) {
+  for (let i = summonFx.length - 1; i >= 0; i--) {
+    const summon = summonFx[i]
+    summon.left -= dt
+    summon.age += dt
+    summon.attackIn -= dt
+    if (summon.left <= 0) {
+      destroySummonFx(i)
+      continue
+    }
+    const owner = heroPosition(summon.owner) ?? (summon.owner === localAddress() ? getPlayerCombatPose()?.position : undefined)
+    const transform = Transform.getMutable(summon.entity)
+    const grow = Math.min(1, summon.age / 0.45) * Math.min(1, summon.left / 0.35)
+    transform.scale = Vector3.create(0.98 * grow, 0.98 * grow, 0.98 * grow)
+    if (!owner || !clientSim) continue
+    let target: Enemy | undefined
+    let best = 10
+    for (const enemy of clientSim.enemies) {
+      if (enemy.loading !== 'ready' || enemy.dead || enemy.asleep) continue
+      const d = Math.hypot(enemy.position.x - owner.x, enemy.position.z - owner.z)
+      if (d < best) {
+        best = d
+        target = enemy
+      }
+    }
+    const angle = (summon.slot / 3) * Math.PI * 2
+    const goal = target?.position ?? Vector3.create(owner.x + Math.sin(angle) * 1.4, COURTYARD.characterFloorY, owner.z + Math.cos(angle) * 1.4)
+    const dx = goal.x - transform.position.x
+    const dz = goal.z - transform.position.z
+    const distance = Math.hypot(dx, dz)
+    if (distance > (target ? 1.45 : 0.3)) {
+      const step = Math.min(distance, 3.4 * dt)
+      transform.position = Vector3.create(transform.position.x + dx / distance * step, COURTYARD.characterFloorY, transform.position.z + dz / distance * step)
+      transform.rotation = Quaternion.fromEulerDegrees(0, Math.atan2(dx, dz) * 180 / Math.PI, 0)
+      summonMotion(summon, 'run')
+    } else if (target && summon.attackIn <= 0) {
+      transform.rotation = Quaternion.fromEulerDegrees(0, Math.atan2(dx, dz) * 180 / Math.PI, 0)
+      summonMotion(summon, 'attack_light')
+      summon.attackIn = 1.2
+    } else if (!target) summonMotion(summon, 'idle')
+  }
+}
+
+function presentTransformation(def: SkillDef, id: string, at: Vector3) {
+  if (def.effect.kind !== 'transform') return
+  const e = def.effect
+  fxMagicBurst(Vector3.create(at.x, at.y + 1, at.z), skillColor(def), 1.8)
+  fxSlam(Vector3.create(at.x, COURTYARD.characterFloorY, at.z), 2.2)
+  fxSound('roar', 0.9)
+  if (id === localAddress()) beginPlayerDemonForm(e.seconds, e.scale)
+  else presentRemoteDemonForm(id, e.seconds, e.scale)
+}
+
+function clearTransformationFx() {
+  endPlayerDemonForm()
+  clearRemoteDemonForms()
+  transformedUntil.clear()
+}
+
 /** Draw the zones and play each tick as the host's clock would land it. */
 function tickZoneFx(dt: number) {
+  tickLineFx(dt)
+  tickSummonFx(dt)
   for (let i = zoneFx.length - 1; i >= 0; i--) {
     const z = zoneFx[i]
     const e = z.def.effect
-    if (e.kind !== 'zone') continue
+    if (e.kind !== 'zone' && e.kind !== 'drain') continue
     z.age += dt
-    const start = e.at === 'aim' ? ZONE_TELEGRAPH : 0
+    const start = e.kind === 'drain' || e.at === 'aim' ? ZONE_TELEGRAPH : 0
     const interval = e.ticks > 1 ? e.seconds / (e.ticks - 1) : 0
     const total = start + interval * (e.ticks - 1) + 0.6
     while (z.ticked < e.ticks && z.age >= start + interval * z.ticked) {
@@ -2599,9 +3336,16 @@ function tickZoneFx(dt: number) {
 
 function zoneTickFx(z: ZoneFx) {
   const e = z.def.effect
-  if (e.kind !== 'zone') return
+  if (e.kind !== 'zone' && e.kind !== 'drain') return
   const c = skillColor(z.def)
-  switch (z.def.id) {
+  if (e.kind === 'drain') {
+    for (let n = 0; n < 7; n++) {
+      const a = Math.random() * Math.PI * 2
+      const r = Math.random() * e.radius
+      fxMagicBurst(Vector3.create(z.at.x + Math.sin(a) * r, z.at.y + 0.25, z.at.z + Math.cos(a) * r), c, 0.45)
+    }
+    fxSound('heal', 0.35)
+  } else switch (z.def.id) {
     case 'ground_slam':
       fxSlam(z.at, e.radius)
       kickCrawlerCamera(Vector3.create(0, -0.35, 0))
@@ -2676,12 +3420,37 @@ function tickAuraRings(dt: number) {
   }
 }
 
-/** A buff landed on a hero in our phase: a glint on them. */
-function presentBuff(id: string, skill: string) {
+type BuffAuraFx = { id: string; decal: Decal; left: number }
+const buffAuras: BuffAuraFx[] = []
+
+/** A buff landed on a hero in our phase: a glint, plus Berserk's active ground aura. */
+function presentBuff(id: string, skill: string, seconds: number) {
   const def = skillById(skill)
   const at = id === localAddress() ? getPlayerCombatPose()?.position : heroPosition(id)
   if (!def || !at) return
   fxGlitter(Vector3.create(at.x, at.y + 1.3, at.z), skillColor(def))
+  if (skill !== 'berserk') return
+  const previous = buffAuras.findIndex((aura) => aura.id === id)
+  if (previous >= 0) {
+    destroyDecal(buffAuras[previous].decal)
+    buffAuras.splice(previous, 1)
+  }
+  buffAuras.push({ id, decal: createDecal('ring'), left: seconds })
+}
+
+function tickBuffAuras(dt: number) {
+  for (let i = buffAuras.length - 1; i >= 0; i--) {
+    const aura = buffAuras[i]
+    aura.left -= dt
+    const at = aura.id === localAddress() ? getPlayerCombatPose()?.position : heroPosition(aura.id)
+    if (aura.left <= 0 || !at) {
+      destroyDecal(aura.decal)
+      buffAuras.splice(i, 1)
+      continue
+    }
+    const pulse = 0.72 + 0.28 * (0.5 + 0.5 * Math.sin(elapsed * 7))
+    updateDecal(aura.decal, true, Vector3.create(at.x, COURTYARD.characterFloorY, at.z), 1.15, pulse, Color3.create(1, 0.18, 0.04))
+  }
 }
 
 function presentImpact(p: ImpactNet) {
@@ -2700,7 +3469,7 @@ function asAttack(motion: string): AttackMotion | undefined {
 function asHeroAttack(motion: string): HeroAttackMotion | undefined {
   if (asAttack(motion)) return motion as AttackMotion
   if (motion === 'bow_shoot' || motion === 'bow_volley' || motion === 'bow_bash' || motion === 'cast_bolt' || motion === 'cast_nova') return motion
-  if (motion === 'attack_light3' || motion === 'heavy_combo_c' || motion === 'leap') return motion
+  if (motion === 'attack_light3' || motion === 'heavy_combo_a' || motion === 'heavy_combo_c' || motion === 'leap') return motion
 }
 
 function kill(e: Enemy) {
@@ -3157,15 +3926,16 @@ function clearLine(from: Vector3, to: Vector3): boolean {
   return true
 }
 
-/** Breadth-first route over floor cells (through doorways, never through walls), kept near the enemy's territory. */
-function findRoute(from: { cx: number; cy: number }, to: { cx: number; cy: number }, e: Enemy): Array<{ cx: number; cy: number }> {
+/** Breadth-first route over floor cells (through doorways, never through walls). Enemy AI stays near home; player approach may use the full floor. */
+function findRoute(from: { cx: number; cy: number }, to: { cx: number; cy: number }, e?: Enemy): Array<{ cx: number; cy: number }> {
   if (!sim) return []
   const d = sim.dungeon
   const n = d.size
   const style = sim.style
-  const limit = e.archetype.leash + style.tile * 2
+  const limit = e ? e.archetype.leash + style.tile * 2 : Infinity
   const open = (cx: number, cy: number) => {
     if (cx < 0 || cy < 0 || cx >= n || cy >= n || d.cells[cy * n + cx] === 0) return false
+    if (!e) return true
     const c = cellCenter(style, cx, cy)
     return combatDistance(e.home, { position: Vector3.create(c.x, e.home.position.y, c.z), facing: 0 }) <= limit
   }

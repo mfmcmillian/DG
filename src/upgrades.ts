@@ -1,6 +1,6 @@
 // The upgrade pit's rules: a weapon or a piece of armor goes into the smithy's
-// fire with a purse of coins and comes out one level stronger (same item, same
-// rarity, a little more of everything it does), up to MAX_LEVEL. The fire always
+// fire with a purse of coins and comes out one level stronger (same item and
+// rarity, stronger existing attributes), up to MAX_LEVEL. The fire always
 // takes; the price climbs with the level. The offering is a two-step affair so
 // the cinematic (src/pitCinematic.ts) can play between them: `attemptUpgrade`
 // spends, the result hovers over the fire, and `takeUpgrade` writes it to the

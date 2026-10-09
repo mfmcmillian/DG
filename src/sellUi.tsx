@@ -76,12 +76,13 @@ function sellShown(offers: SellOffer[]) {
 
 /** In virtual pixels of the UI root (uiScale.ts): the sheet fits the room the screen has, and never grows past its drawn size. */
 function layout() {
-  const { width: screenWidth, height: screenHeight } = uiViewport()
-  const left = 24
+  const { width: screenWidth, height: screenHeight, reserved } = uiViewport()
+  // Match the Upgrade Pit's larger readable scale while staying clear of the native chat column.
+  const left = Math.max(screenWidth * 0.25, reserved.left) + 24
   const right = 24
   const top = 48
   const bottom = 24
-  const scale = Math.min((screenWidth - left - right) / FRAME.width, (screenHeight - top - bottom) / FRAME.height, 1)
+  const scale = Math.min((screenWidth - left - right) / FRAME.width, (screenHeight - top - bottom) / FRAME.height, 1.45)
   const width = FRAME.width * scale
   const height = FRAME.height * scale
   return { scale, width, height, x: left + (screenWidth - left - right - width) / 2, y: top + (screenHeight - top - bottom - height) / 2 }

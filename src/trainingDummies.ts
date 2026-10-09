@@ -5,12 +5,13 @@
 
 import { engine, Entity, Transform } from '@dcl/sdk/ecs'
 import { Quaternion, Vector3 } from '@dcl/sdk/math'
-import { CombatPose } from './combatActions'
+import { CombatPose, HeroAttackMotion } from './combatActions'
 import { onDungeonLoaded } from './dungeon'
 import { TRAINING_TARGETS } from './dungeon/hub'
 import { setTrainingTargets, TrainingTarget } from './dungeonEnemies'
 
 type Dummy = {
+  tag: string
   entity: Entity
   target: TrainingTarget
   /** The piece's authored rotation, which the rock returns to. */
@@ -48,6 +49,14 @@ const tally: TrainingTally = { last: 0, hits: 0, total: 0, perSecond: 0, best: 0
 let stringStart = 0
 let lastHitAt = 0
 let clock = 0
+export type TrainingHit = { tag: string; damage: number; motion: HeroAttackMotion; heavy: boolean }
+const hitListeners = new Set<(hit: TrainingHit) => void>()
+
+/** Focused combat signal for onboarding and other yard-only presentation. */
+export function onTrainingHit(listener: (hit: TrainingHit) => void): () => void {
+  hitListeners.add(listener)
+  return () => { hitListeners.delete(listener) }
+}
 
 export function trainingTally(): Readonly<TrainingTally> {
   return tally
@@ -68,7 +77,7 @@ export function nearTrainingDummy(x: number, z: number, reach: number): boolean 
   return false
 }
 
-function onHit(damage: number, attacker: CombatPose, heavy: boolean, d: Dummy) {
+function onHit(damage: number, attacker: CombatPose, motion: HeroAttackMotion, heavy: boolean, d: Dummy) {
   if (clock - lastHitAt > STRING_GAP) {
     tally.hits = 0
     tally.total = 0
@@ -86,6 +95,7 @@ function onHit(damage: number, attacker: CombatPose, heavy: boolean, d: Dummy) {
   d.rockAmplitude = Math.min(22, (heavy ? 14 : 8) + (d.rocking < ROCK_SECONDS ? 4 : 0))
   d.rocking = 0
   d.rockYaw = attacker.facing
+  for (const listener of hitListeners) listener({ tag: d.tag, damage, motion, heavy })
 }
 
 function collect(): Dummy[] {
@@ -97,6 +107,7 @@ function collect(): Dummy[] {
     const t = Transform.getOrNull(entity)
     if (!t) continue
     const d: Dummy = {
+      tag,
       entity,
       rest: Quaternion.create(t.rotation.x, t.rotation.y, t.rotation.z, t.rotation.w),
       rocking: Infinity, rockYaw: 0, rockAmplitude: 0,
@@ -104,7 +115,7 @@ function collect(): Dummy[] {
         position: Vector3.create(t.position.x, t.position.y, t.position.z),
         scale: TRAINING_TARGETS[tag].scale,
         material: TRAINING_TARGETS[tag].material,
-        onHit: (damage, attacker, _motion, heavy) => onHit(damage, attacker, heavy, d)
+        onHit: (damage, attacker, motion, heavy) => onHit(damage, attacker, motion, heavy, d)
       }
     }
     out.push(d)

@@ -3,7 +3,7 @@ import { Color4 } from '@dcl/sdk/math'
 import {
   getInventoryState, getInventoryCharacter, getInventoryItems, getInventoryNewItems, isInventoryItemLocked,
   getPreviewLoadout, getCommittedLoadout, getInventoryIsDirty, inventoryEntry, InventoryEntry, FREE_COPY,
-  selectInventorySlot, selectInventoryItem, setInventoryFilter, setInventoryPage,
+  selectInventorySlot, selectInventoryItem, setInventoryFilter, setInventoryRarity, setInventoryPage,
   equipSelectedItem, unequipSelectedSlot, revertInventoryPreview,
   retryInventoryPreview, rotateInventoryPreview, closeInventory
 } from './inventory'
@@ -15,16 +15,20 @@ import { armorBonuses, armorPieceStats } from './armor'
 import { affixOf } from './shared/affixes'
 import { HeroAttackMotion, resolveCombatHit } from './combatActions'
 import { heroClassOf } from './heroClasses'
-import { upgradeAffixOf, upgradeLevelOf, upgradeRankOf } from './shared/upgradeRanks'
+import { CHARACTERS } from './characterPicker'
+import { levelFlatBonus, levelMultiplier, upgradeAffixOf, upgradeLevelOf, upgradeRankOf } from './shared/upgradeRanks'
 import { t } from './i18n'
 import { isGearNew, newGearCount } from './newGear'
-import { bagRowsOf } from './shared/gearBag'
+import { copyCommittedBy, getCommittedCopy } from './equipmentState'
 
 const { white, muted, gold, green, line, panel, card, selectedGold, goldLine, coral } = menuColors
 /** The lobby's sheet, shared by every full-screen panel. */
 const sheet = Color4.create(0.025, 0.045, 0.07, 0.97)
 const ink = Color4.create(0.12, 0.08, 0.02, 1)
 let hovered = ''
+let rarityMenuOpen = false
+let transferConfirmUid = ''
+let lastSelectedUid = ''
 
 function rect(x: number, y: number, width: number, height: number, s: number) {
   return { positionType: 'absolute' as const, position: { left: x * s, top: y * s },
@@ -63,7 +67,7 @@ function outfitLine(): string {
 }
 
 /** One number on the picked piece: what it is, its value, and how that compares with the piece worn in the slot. */
-type StatCell = { label: string; value: string; delta?: string; better?: boolean }
+type StatCell = { label: string; value: string; delta?: string; better?: boolean; forged?: string }
 /** A copy's identity for the stat math: the item and the rank, forge level and affix of that copy. */
 type Copy = Pick<InventoryEntry, 'item' | 'rank' | 'level' | 'affix'>
 
@@ -86,11 +90,17 @@ function weaponHits(characterId: string, copy: Copy): { light: number; finisher:
 function weaponCells(characterId: string, copy: Copy, worn?: Copy): StatCell[] {
   const a = weaponHits(characterId, copy)
   const b = worn && weaponHits(characterId, worn)
-  const cell = (label: string, v: number, w: number | undefined, shots = 1): StatCell => ({
+  const base = copy.level > 1 ? weaponHits(characterId, { ...copy, level: 1 }) : undefined
+  const cell = (label: string, v: number, w: number | undefined, baseValue: number | undefined, shots = 1): StatCell => ({
     label, value: shots > 1 ? `${shots} × ${v}` : `${v}`,
-    ...(w !== undefined && w !== v ? { delta: signed(v - w), better: v > w } : {})
+    ...(w !== undefined && w !== v ? { delta: signed(v - w), better: v > w } : {}),
+    ...(baseValue !== undefined && v !== baseValue ? { forged: signed(v - baseValue) } : {})
   })
-  return [cell(t('Light hit'), a.light, b?.light), cell(t('Finisher'), a.finisher, b?.finisher), cell(t('Heavy hit'), a.heavy, b?.heavy, a.shots)]
+  return [
+    cell(t('Light hit'), a.light, b?.light, base?.light),
+    cell(t('Finisher'), a.finisher, b?.finisher, base?.finisher),
+    cell(t('Heavy hit'), a.heavy, b?.heavy, base?.heavy, a.shots)
+  ]
 }
 
 /** How the copy's blows land compared with a plain sword, in words; empty when it is within a tenth either way. */
@@ -106,17 +116,23 @@ function weaponFeel(copy: Copy): string {
 function armorCells(copy: Copy, worn?: Copy): StatCell[] {
   const a = armorPieceStats(copy.item, () => copy.rank, () => copy.level, () => copy.affix)
   const b = worn ? armorPieceStats(worn.item, () => worn.rank, () => worn.level, () => worn.affix) : undefined
+  const base = copy.level > 1 ? armorPieceStats(copy.item, () => copy.rank, () => 1, () => copy.affix) : undefined
   const cells: StatCell[] = []
   // `sign` is how the stat reads on the card: damage taken counts down, everything else up.
-  const cell = (label: string, v: number, w: number | undefined, sign: 1 | -1, suffix: string) => {
+  const cell = (label: string, v: number, w: number | undefined, baseValue: number | undefined, sign: 1 | -1, suffix: string) => {
     if (!v && !w) return
     const shown = (n: number) => n ? signed(sign * n, suffix) : '0'
-    cells.push({ label, value: shown(v), ...(w !== undefined && Math.round((v - w) * 10) ? { delta: signed(sign * (v - w), suffix), better: v > w } : {}) })
+    cells.push({
+      label,
+      value: shown(v),
+      ...(w !== undefined && Math.round((v - w) * 10) ? { delta: signed(sign * (v - w), suffix), better: v > w } : {}),
+      ...(baseValue !== undefined && Math.round((v - baseValue) * 10) ? { forged: signed(sign * (v - baseValue), suffix) } : {})
+    })
   }
-  cell(t('Damage taken'), a.toughness, b?.toughness, -1, '%')
-  cell(t('Damage dealt'), a.might, b?.might, 1, '%')
-  cell(t('Health'), a.health, b?.health, 1, '')
-  cell(t('Stamina'), a.stamina, b?.stamina, 1, '')
+  cell(t('Damage taken'), a.toughness, b?.toughness, base?.toughness, -1, '%')
+  cell(t('Damage dealt'), a.might, b?.might, base?.might, 1, '%')
+  cell(t('Health'), a.health, b?.health, base?.health, 1, '')
+  cell(t('Stamina'), a.stamina, b?.stamina, base?.stamina, 1, '')
   return cells
 }
 
@@ -135,6 +151,8 @@ function StatCells({ cells, y, scale: s }: { cells: StatCell[]; y: number; scale
         uiTransform={{ width: textWidth(c.label, 13) * s, height: '100%', pointerFilter: 'none' }} />
       <Label value={c.value} color={white} fontSize={18 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={{ width: textWidth(c.value, 18) * s, height: '100%', pointerFilter: 'none' }} />
+      {c.forged && <Label value={c.forged} color={gold} fontSize={13 * s} textAlign="middle-left" textWrap="nowrap"
+        uiTransform={{ width: textWidth(c.forged, 13) * s, height: '100%', pointerFilter: 'none' }} />}
       {c.delta && <Label value={c.delta} color={c.better ? green : coral} fontSize={13 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={{ width: textWidth(c.delta, 13) * s, height: '100%', pointerFilter: 'none' }} />}
     </UiEntity>)}
@@ -142,8 +160,9 @@ function StatCells({ cells, y, scale: s }: { cells: StatCell[]; y: number; scale
 }
 
 /** The copy of `itemId` the hero uses, as a card uid. */
-function activeUid(itemId: string): string {
-  return bagRowsOf(itemId)[0]?.uid ?? FREE_COPY + itemId
+function activeUid(itemId: string, slot: EquipmentSlot): string {
+  const state = getInventoryState()
+  return getCommittedCopy(state.characterId, slot) ?? FREE_COPY + itemId
 }
 
 function ItemIcon({ item, size, scale: s }: { item?: EquipmentItem, size: number, scale: number }) {
@@ -176,6 +195,7 @@ function EquipmentSocket({ slot, x, y, scale: s }: { key?: string, slot: Equipme
   const id = `socket-${slot}`
   // The piece's rarity frames the socket, as it does the backpack's cards, so the outfit's worth reads at a glance.
   const rarity = item && !isEmptyItem(item) ? RARITIES[rarityOf(item.id)] : undefined
+  const level = item && !isEmptyItem(item) ? upgradeLevelOf(item.id) : 1
   return <UiEntity uiTransform={rect(x, y, SOCKET, SOCKET + 28, s)}>
     <UiEntity uiTransform={{ width: SOCKET * s, height: SOCKET * s, flexShrink: 0,
       borderRadius: 6 * s, borderWidth: (active ? 2 : 1) * s, borderColor: active ? gold : changed ? goldLine : rarity && rarity.rank > 0 ? rarity.color : line,
@@ -186,6 +206,8 @@ function EquipmentSocket({ slot, x, y, scale: s }: { key?: string, slot: Equipme
       <ItemIcon item={item} size={SOCKET - 8} scale={s} />
       {rarity && rarity.rank > 0 && <UiEntity uiTransform={rect(5, 5, 8, 8, s)} uiBackground={{ color: rarity.color }} />}
       {changed && <UiEntity uiTransform={{ ...rect(SOCKET - 15, 7, 8, 8, s), borderRadius: 4 * s }} uiBackground={{ color: gold }} />}
+      {level > 1 && <Label value={t('Lv {n}', { n: level })} color={gold} fontSize={12 * s} textAlign="middle-right" textWrap="nowrap"
+        uiTransform={rect(SOCKET - 50, SOCKET - 25, 44, 20, s)} />}
     </UiEntity>
     <Label value={slotLabel(slot).toUpperCase()} color={active ? gold : muted} fontSize={13 * s} textWrap="nowrap"
       uiTransform={rect(-32, SOCKET + 4, SOCKET + 64, 22, s)} />
@@ -198,11 +220,13 @@ function BackpackCard({ entry, index, scale: s }: { key?: string, entry?: Invent
   const state = getInventoryState()
   const item = entry?.item
   const selected = !!entry && entry.uid === state.selectedUid
-  const equipped = !!entry && getCommittedLoadout(state.characterId)[entry.item.slot] === entry.item.id && activeUid(entry.item.id) === entry.uid
+  const equipped = !!entry && getCommittedLoadout(state.characterId)[entry.item.slot] === entry.item.id && activeUid(entry.item.id, entry.item.slot) === entry.uid
   const id = entry ? `item-${entry.uid}` : `empty-${index}`
   const hover = hovered === id && !!entry
   const fresh = !!entry && isGearNew(entry.uid)
   const rarity = entry && !isEmptyItem(item) ? RARITIES[rarityOf(entry.item.id, entry.rank)] : undefined
+  const assigned = entry ? copyCommittedBy(entry.uid) : undefined
+  const assignedName = assigned ? CHARACTERS.find((character) => character.id === assigned.characterId)?.name ?? assigned.characterId : ''
   return <UiEntity uiTransform={{ ...rect(GRID.x + (index % 4) * GRID.stepX, GRID.y + Math.floor(index / 4) * GRID.stepY, GRID.card, GRID.tall, s),
     borderRadius: 6 * s, borderWidth: (selected || fresh ? 2 : 1) * s, borderColor: selected || fresh ? gold : hover ? goldLine : rarity && rarity.rank > 0 ? rarity.color : line,
     alignItems: 'center', justifyContent: 'center', opacity: !entry ? 0.25 : 1,
@@ -216,8 +240,11 @@ function BackpackCard({ entry, index, scale: s }: { key?: string, entry?: Invent
       uiTransform={rect(8, GRID.tall - 24, 70, 20, s)} />}
     {entry && entry.affix > 0 && <Label value={t(affixOf(entry.affix)?.name ?? '')} color={rarity?.color ?? muted} fontSize={12 * s} textAlign="middle-right" textWrap="nowrap"
       uiTransform={rect(GRID.card - 78, GRID.tall - 24, 70, 20, s)} />}
-    {equipped && !isEmptyItem(item) && <Label value="✓" color={gold} fontSize={20 * s}
-      uiTransform={rect(GRID.card - 28, 4, 24, 26, s)} />}
+    {assigned && !isEmptyItem(item) && <UiEntity uiTransform={{ ...rect(GRID.card - 98, 5, 92, 18, s), borderRadius: 9 * s,
+      alignItems: 'center', justifyContent: 'center' }} uiBackground={{ color: equipped ? gold : panel }}>
+      <Label value={t(assignedName)} color={equipped ? ink : gold} fontSize={9.5 * s} textWrap="nowrap"
+        uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} />
+    </UiEntity>}
     {fresh && <UiEntity uiTransform={{ ...rect(GRID.card - 50, -8, 46, 18, s), borderRadius: 9 * s, alignItems: 'center', justifyContent: 'center' }}
       uiBackground={{ color: gold }}>
       <Label value={t('NEW')} color={ink} font="sans-serif" fontSize={10 * s} textWrap="nowrap"
@@ -229,10 +256,16 @@ function BackpackCard({ entry, index, scale: s }: { key?: string, entry?: Invent
 }
 
 const FILTER_NAMES = { all: 'All', weapon: 'Weapons', head: 'Head', chest: 'Chest', other: 'Other' } as const
+const RARITY_NAMES = { all: 'All rarities', common: 'Common', uncommon: 'Uncommon', rare: 'Rare', epic: 'Epic', legendary: 'Legendary' } as const
+const RARITY_FILTERS = ['all', 'common', 'uncommon', 'rare', 'epic', 'legendary'] as const
 
 export function InventoryUi() {
   const { scale: s, x, y, width, height } = getMenuLayout('inventory')
   const state = getInventoryState()
+  if (state.selectedUid !== lastSelectedUid) {
+    lastSelectedUid = state.selectedUid
+    transferConfirmUid = ''
+  }
   const character = getInventoryCharacter()
   const items = getInventoryItems()
   const pages = Math.max(1, Math.ceil(items.length / 12))
@@ -243,7 +276,7 @@ export function InventoryUi() {
     ?? { uid: state.selectedUid, item: selectedItem, rank: upgradeRankOf(selectedItem.id), level: upgradeLevelOf(selectedItem.id), affix: upgradeAffixOf(selectedItem.id), virtual: true }
   const selected = chosen.item
   const committed = getCommittedLoadout(state.characterId)
-  const equipped = committed[selected.slot] === selected.id && (chosen.virtual || activeUid(selected.id) === chosen.uid)
+  const equipped = committed[selected.slot] === selected.id && activeUid(selected.id, selected.slot) === chosen.uid
   const dirty = getInventoryIsDirty()
   const canUnequip = committed[state.selectedSlot] !== getUnequippedItem(state.selectedSlot).id
   const loading = state.loading === 'loading'
@@ -256,12 +289,21 @@ export function InventoryUi() {
     filter === 'other' ? item.slot !== 'head' && item.slot !== 'chest' && item.slot !== 'weapon' : item.slot === filter)
   const otherActive = state.filter !== 'all' && state.filter !== 'head' && state.filter !== 'chest' && state.filter !== 'weapon'
   const source = armorSourceLabel(selected.realm)
+  const assigned = copyCommittedBy(chosen.uid)
+  const assignedElsewhere = assigned && assigned.characterId !== state.characterId
+  const assignedName = assignedElsewhere ? CHARACTERS.find((character) => character.id === assigned.characterId)?.name ?? assigned.characterId : ''
+  const confirmingTransfer = !!assignedElsewhere && transferConfirmUid === chosen.uid
   const status = error ? t('Preview unavailable. Please try again.') : loading ? t('Preparing equipment…') :
     locked ? (selected.weapon ? t("Not yet found · weapons drop from the dungeons' enemies") : (armorSourceComingSoon(selected.realm) ? t('Not yet found · this set drops in {realm}, a map still being built', { realm: t(source) }) : t('Not yet found · a piece of this set drops in {realm}', { realm: t(source) }))) :
+    confirmingTransfer ? t('Move this item from {from} to {to}?', { from: t(assignedName), to: t(character.name) }) :
+    assignedElsewhere ? t('Equipped by {name} · equipping it here removes it there', { name: t(assignedName) }) :
     dirty ? t('Previewing · equip to keep this change') : isEmptyItem(selected) ? t('Nothing equipped in this slot') : t('Currently equipped')
   const showAction = error || (!locked && (!equipped || canUnequip))
-  const actionText = error ? t('Retry preview') : equipped ? t('Unequip') : isEmptyItem(selected) ? t('Remove item') : t('Equip item')
-  const action = error ? retryInventoryPreview : equipped ? unequipSelectedSlot : equipSelectedItem
+  const actionText = error ? t('Retry preview') : equipped ? t('Unequip') : confirmingTransfer ? t('Confirm transfer')
+    : isEmptyItem(selected) ? t('Remove item') : t('Equip item')
+  const action = error ? retryInventoryPreview : equipped ? unequipSelectedSlot
+    : assignedElsewhere && !confirmingTransfer ? () => { transferConfirmUid = chosen.uid }
+      : () => { transferConfirmUid = ''; equipSelectedItem() }
   const preview = getPreviewLoadout()
   // The numbers compare with the piece worn in the same slot, unless this is that piece.
   const wornItem = getEquipmentItem(committed[selected.slot])
@@ -270,6 +312,12 @@ export function InventoryUi() {
   const cells = selected.weapon ? weaponCells(state.characterId, chosen, worn) : armorCells(chosen, worn)
   const feel = selected.weapon ? weaponFeel(chosen) : ''
   const outfit = outfitLine()
+  const forgePercent = Math.round((levelMultiplier(chosen.level) - 1) * 100)
+  const forgeText = chosen.level > 1
+    ? selected.weapon
+      ? t('FORGED +{pct}% · +{n} DAMAGE', { pct: forgePercent, n: levelFlatBonus(chosen.level) })
+      : t('FORGED BONUSES SHOWN IN GOLD')
+    : ''
 
   // The shared frame reserves the native chat column. Only controls capture pointers;
   // the hero bay stays clear so the scene's animated equipment preview remains visible.
@@ -308,7 +356,11 @@ export function InventoryUi() {
       <Label value={t('BACKPACK')} color={gold} fontSize={14 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={rect(666, 110, 200, 24, s)} />
       {freshCount > 0 && <Label value={t('{n} new', { n: freshCount })} color={gold} fontSize={14 * s} textAlign="middle-right" textWrap="nowrap"
-        uiTransform={rect(742, 110, 500, 24, s)} />}
+        uiTransform={rect(862, 110, 160, 24, s)} />}
+      <UiEntity uiTransform={rect(1042, 102, 200, 36, s)}>
+        <Action id="inventory-rarity" text={`${t(RARITY_NAMES[state.rarity])}  ▾`} onClick={() => { rarityMenuOpen = !rarityMenuOpen }}
+          width={200} height={36} scale={s} accent="gold" active={state.rarity !== 'all'} fontSize={13} />
+      </UiEntity>
       <UiEntity uiTransform={{ ...rect(666, 144, 576, 42, s), flexDirection: 'row', justifyContent: 'space-between' }}>
         {(['all', 'weapon', 'head', 'chest', 'other'] as const).map((filter) => <Action key={filter} id={`filter-${filter}`}
           text={t(FILTER_NAMES[filter])}
@@ -336,7 +388,9 @@ export function InventoryUi() {
       </UiEntity>
       <Label value={itemSubtitle(chosen).toUpperCase()}
         color={selected.weapon || selected.realm ? RARITIES[rarityOf(selected.id, chosen.rank)].color : gold} fontSize={13 * s}
-        textAlign="middle-left" textWrap="nowrap" uiTransform={rect(758, 642, 484, 22, s)} />
+        textAlign="middle-left" textWrap="nowrap" uiTransform={rect(758, 642, forgeText ? 280 : 484, 22, s)} />
+      {forgeText && <Label value={forgeText} color={gold} fontSize={12 * s} textAlign="middle-right" textWrap="nowrap"
+        uiTransform={rect(1038, 642, 204, 22, s)} />}
       <Label value={gearDisplayName(selected, chosen.affix)} font="serif" color={white} fontSize={30 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={rect(758, 664, 484, 38, s)} />
       {/* Weapons: the three blows on one row, how they land in words under. Armor: up to four stats over two rows. */}
@@ -347,11 +401,19 @@ export function InventoryUi() {
       <Label value={status} color={error || locked ? coral : dirty ? gold : muted} fontSize={15 * s} textAlign="middle-left"
         uiTransform={rect(666, 750, showAction ? 360 : 576, 24, s)} />
       {dirty && <UiEntity uiTransform={rect(666, 774, 150, 30, s)}>
-        <Action id="inventory-revert" text={t('Revert preview')} onClick={revertInventoryPreview} width={150} height={30} scale={s} fontSize={13} accent="gold" />
+        <Action id="inventory-revert" text={t('Revert preview')} onClick={() => { transferConfirmUid = ''; revertInventoryPreview() }} width={150} height={30} scale={s} fontSize={13} accent="gold" />
       </UiEntity>}
       {showAction && <UiEntity uiTransform={rect(1042, 748, 200, 52, s)}>
         <Action id="inventory-apply" text={actionText} onClick={action} width={200} height={52} scale={s} accent="gold"
           primary={!equipped || error} disabled={loading || (!error && !equipped && !dirty)} fontSize={18} />
+      </UiEntity>}
+
+      {rarityMenuOpen && <UiEntity uiTransform={{ ...rect(1042, 142, 200, 224, s), flexDirection: 'column',
+        padding: 4 * s, borderRadius: 6 * s, borderWidth: s, borderColor: goldLine, pointerFilter: 'block' }}
+        uiBackground={{ color: sheet }}>
+        {RARITY_FILTERS.map((rarity) => <Action key={rarity} id={`rarity-${rarity}`} text={t(RARITY_NAMES[rarity])}
+          onClick={() => { setInventoryRarity(rarity); rarityMenuOpen = false }} width={190} height={34} scale={s}
+          accent="gold" active={state.rarity === rarity} fontSize={13} />)}
       </UiEntity>}
     </UiEntity>
   </UiEntity>

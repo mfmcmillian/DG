@@ -15,7 +15,7 @@ import { playerDisplayName } from './heroNameTag'
 import { isClientSynced, localAddress } from './multiplayer'
 import { menuColors, MenuAction as Action } from './menuUi'
 import {
-  comingSoonPick, cycleLobbyPickLevel, doorsWait, getLobbyPick, getLobbyState, goRun, holdDoors, isLeader, joinParty, leaveParty, LOBBY_PAGES, myParty,
+  comingSoonPick, cycleLobbyPickLevel, doorsWait, getLobbyPick, getLobbyState, goRun, holdDoors, isLeader, joinParty, leaveParty, lobbyPages, myParty,
   openParties, PartyInfo, setLobbyPage, setLobbyPickDiff, startRun
 } from './party'
 import { devToolsOn } from './devAccess'
@@ -96,11 +96,11 @@ function Heading({ title, scale: s }: { title: string; scale: number }) {
 }
 
 /** Each dungeon's card picture: a diorama of its kit. */
-const LEVEL_PICTURES: Record<number, string> = { 0: 'images/levels/fortress.png', 1: 'images/levels/pass.png', 2: 'images/levels/bog.png', 3: 'images/levels/crypt.png' }
+const LEVEL_PICTURES: Record<number, string> = { 0: 'images/levels/fortress.png', 1: 'images/levels/pass.png', 2: 'images/levels/bog.png', 3: 'images/levels/crypt.png', 4: 'images/levels/fortress.png' }
 
-/** The ladder is linear: a dungeon opens once the one before it has been cleared (developer tools skip the gate). */
+/** The ladder is linear: a dungeon opens once the one before it has been cleared; a hidden one never does. */
 export function lobbyLevelOpen(level: number): boolean {
-  return devToolsOn() || levelUnlocked(getLobbyState().progress, level)
+  return !levelById(level).hidden && (devToolsOn() || levelUnlocked(getLobbyState().progress, level))
 }
 
 /** One arrow of the dungeon switcher. */
@@ -120,7 +120,7 @@ function LevelArrow({ id, glyph, scale: s, enabled, onClick }: { id: string; gly
 function ComingSoonCard({ scale: s, canPick, page }: { scale: number; canPick: boolean; page: number }) {
   const realm = comingSoonPick(page)!
   const picture = { w: LEFT, h: Math.round(LEFT * 400 / 570) }
-  const many = LOBBY_PAGES > 1 && canPick
+  const many = lobbyPages().length > 1 && canPick
   return <UiEntity uiTransform={{ width: LEFT * s, flexDirection: 'column', flexShrink: 0, pointerFilter: 'none' }}>
     <Pager scale={s} page={page} many={many} />
     <UiEntity uiTransform={{ width: picture.w * s, height: picture.h * s, borderRadius: 6 * s, borderWidth: s, borderColor: line, flexShrink: 0,
@@ -138,12 +138,16 @@ function ComingSoonCard({ scale: s, canPick, page }: { scale: number; canPick: b
 
 /** "DUNGEON" and the arrows with "n / total" between them, over the picture. */
 function Pager({ scale: s, page, many }: { scale: number; page: number; many: boolean }) {
+  const pages = lobbyPages()
+  // A hidden level a developer lined the party up with has no page of its own; count it where it sits.
+  const at = pages.indexOf(page)
+  const count = at < 0 ? `${page + 1} / ${pages.length}` : `${at + 1} / ${pages.length}`
   return <UiEntity uiTransform={{ width: '100%', height: 40 * s, margin: { bottom: 8 * s }, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
     <Label value={t('DUNGEON')} color={gold} fontSize={15 * s} textAlign="middle-left" textWrap="nowrap"
       uiTransform={{ width: 200 * s, height: 24 * s, flexShrink: 0, pointerFilter: 'none' }} />
     <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
       <LevelArrow id="level-prev" glyph="‹" scale={s} enabled={many} onClick={() => cycleLobbyPickLevel(-1)} />
-      <Label value={`${page + 1} / ${LOBBY_PAGES}`} color={muted} fontSize={18 * s} textAlign="middle-center" textWrap="nowrap"
+      <Label value={count} color={muted} fontSize={18 * s} textAlign="middle-center" textWrap="nowrap"
         uiTransform={{ width: 72 * s, height: 24 * s, flexShrink: 0, pointerFilter: 'none' }} />
       <LevelArrow id="level-next" glyph="›" scale={s} enabled={many} onClick={() => cycleLobbyPickLevel(1)} />
     </UiEntity>
@@ -158,7 +162,7 @@ function MapCard({ scale: s, canPick }: { scale: number; canPick: boolean }) {
   const open = lobbyLevelOpen(level.id)
   const before = level.id > 0 ? LEVELS[level.id - 1] : undefined
   const picture = { w: LEFT, h: Math.round(LEFT * 400 / 570) }
-  const many = LOBBY_PAGES > 1 && canPick
+  const many = lobbyPages().length > 1 && canPick
   return <UiEntity uiTransform={{ width: LEFT * s, flexDirection: 'column', flexShrink: 0, pointerFilter: 'none' }}>
     <Pager scale={s} page={level.id} many={many} />
     <UiEntity uiTransform={{ width: picture.w * s, height: picture.h * s, borderRadius: 6 * s, borderWidth: s, borderColor: goldLine, flexShrink: 0, pointerFilter: 'none', opacity: open ? 1 : 0.55 }}
@@ -295,8 +299,9 @@ function ChoosePage({ scale: s, width }: { scale: number; width: number }) {
   </UiEntity>
 }
 
-/** Most hall players the invite list shows before folding the rest into "+n more". */
-const INVITE_ROWS = 4
+/** Hall players shown per invite page. Three fit beneath the dungeon preview, including the pager. */
+const INVITE_ROWS = 3
+let invitePage = 0
 
 /**
  * Everyone else in the hall who has a champion picked, each with a button to
@@ -306,7 +311,10 @@ const INVITE_ROWS = 4
 function InviteList({ scale: s, party }: { scale: number; party?: PartyInfo }) {
   const people = presence().filter((p) => p.inHall && !p.me && !!p.cls && !party?.members.includes(p.id))
   if (people.length === 0) return null
-  const rows = people.slice(0, INVITE_ROWS)
+  const pages = Math.max(1, Math.ceil(people.length / INVITE_ROWS))
+  invitePage = Math.max(0, Math.min(invitePage, pages - 1))
+  const first = invitePage * INVITE_ROWS
+  const rows = people.slice(first, first + INVITE_ROWS)
   const seats = party ? MAX_PARTY - party.members.length : MAX_PARTY - 1
   return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', flexShrink: 0, margin: { top: 18 * s }, pointerFilter: 'none' }}>
     <Heading title={t('IN THE HALL')} scale={s} />
@@ -323,8 +331,16 @@ function InviteList({ scale: s, party }: { scale: number; party?: PartyInfo }) {
           disabled={pending || seats <= 0} onClick={() => invitePlayer(p.id)} />
       </UiEntity>
     })}
-    {people.length > rows.length && <Label value={t('+{n} more', { n: people.length - rows.length })} color={muted} fontSize={15 * s} textAlign="middle-right" textWrap="nowrap"
-      uiTransform={{ width: '100%', height: 22 * s, flexShrink: 0, pointerFilter: 'none' }} />}
+    {pages > 1 && <UiEntity uiTransform={{ width: '100%', height: 34 * s, flexDirection: 'row', alignItems: 'center',
+      justifyContent: 'flex-end', flexShrink: 0, pointerFilter: 'none' }}>
+      <Action id="invite-previous" text="‹" onClick={() => { invitePage = Math.max(0, invitePage - 1) }}
+        width={34} height={34} scale={s} disabled={invitePage === 0} fontSize={24} accent="gold" />
+      <Label value={`${first + 1}–${Math.min(first + INVITE_ROWS, people.length)} / ${people.length}`} color={muted}
+        fontSize={14 * s} textAlign="middle-center" textWrap="nowrap"
+        uiTransform={{ width: 100 * s, height: 34 * s, pointerFilter: 'none' }} />
+      <Action id="invite-next" text="›" onClick={() => { invitePage = Math.min(pages - 1, invitePage + 1) }}
+        width={34} height={34} scale={s} disabled={invitePage >= pages - 1} fontSize={24} accent="gold" />
+    </UiEntity>}
     {seats <= 0 && <Label value={t('The party is full.')} color={muted} fontSize={15 * s} textAlign="middle-left" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 22 * s, margin: { top: 4 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
   </UiEntity>
@@ -370,10 +386,9 @@ function PartyCard({ scale: s, party }: { scale: number; party: PartyInfo }) {
         : <Label value={t('{name} says when.', { name: heroLabel(party.leader) })} color={muted} fontSize={16 * s} textAlign="middle-left" textWrap="nowrap"
           uiTransform={{ width: 150 * s, height: '100%', pointerFilter: 'none' }} />}
       {leader && <Action id="party-hold" text={held ? t('Close the doors') : t('Hold the doors')} width={150} height={52} scale={s} fontSize={16} accent="gold" active={held} onClick={holdDoors} />}
-      <Action id="party-leave" text={leader ? t('Cancel') : t('Stay here')} width={104} height={52} scale={s} fontSize={16} accent="gold"
+      <Action id="party-leave" text={t('Leave party')} width={120} height={52} scale={s} fontSize={15} accent="gold"
         onClick={() => { leaveParty(); setLobbyPage('choose') }} />
     </UiEntity>
-    {party.members.length < MAX_PARTY && !comingSoonPick(getLobbyPick().level) && <InviteList scale={s} party={party} />}
   </UiEntity>
 }
 
@@ -453,6 +468,8 @@ function CreateOrParty({ party }: { party?: PartyInfo }) {
     <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
       <UiEntity uiTransform={{ width: LEFT * s, flexDirection: 'column', flexShrink: 0, pointerFilter: 'none' }}>
         <MapCard scale={s} canPick={canPick} />
+        {party && party.members.length < MAX_PARTY && !comingSoonPick(getLobbyPick().level) &&
+          <InviteList scale={s} party={party} />}
       </UiEntity>
       <UiEntity uiTransform={{ width: RIGHT * s, flexDirection: 'column', flexShrink: 0, pointerFilter: 'none' }}>
         <DifficultyLadder scale={s} canPick={canPick} />

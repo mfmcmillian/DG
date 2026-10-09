@@ -5,8 +5,8 @@ import { COMBAT_CLIPS } from './combatAnimations'
 export type AttackMotion = 'attack_light' | 'attack_light2' | 'attack_heavy'
 /** Archer and spellblade actions, heroes only (src/heroClasses.ts). */
 export type ClassAttackMotion = 'bow_shoot' | 'bow_volley' | 'bow_bash' | 'cast_bolt' | 'cast_nova'
-/** The Berserker's iron: a low cross-cut, an overhead smash to end the string, and a leap that closes the gap. */
-export type HeavyAttackMotion = 'attack_light3' | 'heavy_combo_c' | 'leap'
+/** Weighty melee clips used by the Berserker and the Gravecaller's scythe string. */
+export type HeavyAttackMotion = 'attack_light3' | 'heavy_combo_a' | 'heavy_combo_c' | 'leap'
 /** What a hero's light/heavy can come out as. */
 export type HeroAttackMotion = AttackMotion | ClassAttackMotion | HeavyAttackMotion
 export type WeaponMotion = HeroAttackMotion | 'flourish_heavy' | 'stab' | 'heavy_combo_a' | 'heavy_combo_b' | 'fencing' | SkillOnlyMotion | GoblinAction

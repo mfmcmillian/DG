@@ -35,6 +35,8 @@ images/scene-thumbnail.png
 images/scene-thumbnail-halloween.png
 images/scene-thumbnail-gravewatch.png
 images/*.prompt.txt
+# Source atlas retained for scripts/build-gravewalk-board-icons.py; runtime uses the transparent PNG.
+images/gravewatch/board-icons.jpg
 models/jump/
 models/equipment/
 models/yard_*.glb

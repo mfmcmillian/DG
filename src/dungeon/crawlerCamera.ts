@@ -121,7 +121,9 @@ let kick = Vector3.Zero()
 
 /** Nudge the camera (world-space metres); it springs back on its own. Used for hit feedback. */
 export function kickCrawlerCamera(offset: Vector3) {
-  if (!enabled) return
+  // Godot's relay is already correcting lower-rate player samples; an impact
+  // kick on top reads as camera instability rather than useful hit feedback.
+  if (!enabled || isGodotClient()) return
   kick = Vector3.add(kick, offset)
   const length = Vector3.length(kick)
   if (length > 0.6) kick = Vector3.scale(kick, 0.6 / length)
@@ -547,11 +549,11 @@ function step(dt: number) {
 
 const RELAY = {
   /** Transition length in scene ticks; the camera must not arrive before the next retarget. */
-  spanTicks: 4,
+  spanTicks: 5,
   /** ...and at least this many times the longest recent tick, which is forgotten at this rate (1/s). */
   peakSpan: 2,
   peakDecay: 0.7,
-  minTime: 0.05,
+  minTime: 0.08,
   maxTime: 0.5,
   /** The first glide, from the player's own camera into the dungeon. */
   entryTime: 0.8,
@@ -562,7 +564,7 @@ const RELAY = {
   /** Retirees beyond this many are recycled oldest first; the camera is not under a mount that old. */
   maxRetired: 24,
   /** Targets closer than this (m) count as unchanged and hold the current mount. */
-  holdEpsilon: 0.001,
+  holdEpsilon: 0.01,
   /**
    * The hero's velocity: sample window (s) and the span it needs before it is
    * trusted, and the easing (1/s) on top. The player arrives in tick-sized
@@ -570,14 +572,16 @@ const RELAY = {
    */
   leadWindow: 0.25,
   leadMinSpan: 0.1,
-  velocityEase: 5,
+  velocityEase: 4,
+  /** Pull the predicted player path toward fresh mobile samples without chasing every tick. */
+  playerTrust: 5,
   /**
    * The camera's offset from its ideal spot dies away at this rate (1/s), on the
    * move and once the hero has stopped (a 133 ms glide closes 30% / 50% of it);
    * never more than this share in one glide, the camera's position being a tick old.
    */
-  correctRate: 2.7,
-  correctStoppedRate: 5.2,
+  correctRate: 2.2,
+  correctStoppedRate: 4.2,
   correctMax: 0.7,
   /** A hero who moved less than this (m) over this long (s) has stopped; the allowance grows when the ticks run longer than the window. */
   stopWindow: 0.1,
@@ -635,7 +639,7 @@ function relayMount(): Entity {
   return mount
 }
 
-function relayStart() {
+function relayStart(snap = false) {
   // Whatever the camera was under before is off limits until a settled hold proves otherwise.
   if (relayCurrent !== undefined) relayRetired.push(relayCurrent)
   relayCurrent = undefined
@@ -647,7 +651,18 @@ function relayStart() {
   relayJumpUntil = 0
   relayShift = undefined
   const player = Transform.getOrNull(engine.PlayerEntity)?.position
-  if (player) stepRelay(0, player)
+  if (player) stepRelay(0, player, snap ? 0 : RELAY.entryTime)
+}
+
+/**
+ * A covered world handoff has already placed the mobile player. Cut the relay
+ * to that confirmed position while the screen is black, so the reveal never
+ * races the camera's interpolation from the previous dungeon.
+ */
+export function snapCrawlerCameraToPlayer() {
+  if (!enabled || !isGodotClient() || CRAWLER_CAMERA.mode !== 'damped') return
+  kick = Vector3.Zero()
+  relayStart(true)
 }
 
 function relayStop() {
@@ -663,7 +678,7 @@ function relayStop() {
  * glide already lags a little. A target that has not moved holds the current
  * mount, so a stop is a stop.
  */
-function stepRelay(dt: number, player: Vector3) {
+function stepRelay(dt: number, player: Vector3, entryTime = RELAY.entryTime) {
   kick = Vector3.scale(kick, Math.exp(-dt * CRAWLER_CAMERA.kickDecay))
   // A glide the camera finishes before the next tick arrives is a halt, and a
   // fortress tick (enemies, spawns) spikes far above the hall's average: the
@@ -681,11 +696,14 @@ function stepRelay(dt: number, player: Vector3) {
   // sample, move the history along with it. The velocity and the stop reading
   // are then about the hero's own motion; the camera closes the new offset
   // through the correction share below, a glide at a time.
+  let scriptedStep = 0
   if (relayShift && last) {
     if (clock > relayShiftUntil) relayShift = undefined
     else if (Vector3.dot(Vector3.subtract(player, last.p), relayShift) > 0.5 * Vector3.lengthSquared(relayShift)) {
+      scriptedStep = Vector3.length(relayShift)
       for (const sample of relaySamples) sample.p = Vector3.add(sample.p, relayShift)
-      if (relayEstimate) relayEstimate = Vector3.add(relayEstimate, relayShift)
+      // Do not jump the camera estimate with the hero. The shifted history keeps
+      // the lunge out of velocity while the estimate eases across the offset.
       relayShift = undefined
     }
   }
@@ -714,6 +732,9 @@ function stepRelay(dt: number, player: Vector3) {
     stopped = Vector3.distance(player, relaySamples[i].p) < RELAY.stopDistance * Math.max(1, age / RELAY.stopWindow)
     break
   }
+  // A scripted step can make the shifted history look stationary immediately;
+  // keep the estimate alive for this tick so it eases instead of snapping.
+  if (scriptedStep > 0) stopped = false
   if (stopped) velocity = Vector3.Zero()
   const flat = Vector3.create(velocity.x, 0, velocity.z)
   relayVelocity = stopped || dt <= 0 ? flat : Vector3.lerp(relayVelocity, flat, 1 - Math.exp(-dt * RELAY.velocityEase))
@@ -722,9 +743,9 @@ function stepRelay(dt: number, player: Vector3) {
   // the run stutters. Dead-reckon the player along the windowed velocity and
   // pull toward each sample gently, as the desktop path does.
   relayEstimate = relayEstimate && dt > 0 && !stopped
-    ? Vector3.lerp(Vector3.add(relayEstimate, Vector3.scale(velocity, dt)), player, 1 - Math.exp(-dt * CRAWLER_CAMERA.playerTrust))
+    ? Vector3.lerp(Vector3.add(relayEstimate, Vector3.scale(velocity, dt)), player, 1 - Math.exp(-dt * RELAY.playerTrust))
     : Vector3.clone(player)
-  if (Vector3.distance(relayEstimate, player) > 1.5) relayEstimate = Vector3.clone(player)
+  if (Vector3.distance(relayEstimate, player) > Math.max(1.5, scriptedStep + 0.5)) relayEstimate = Vector3.clone(player)
   const ideal = Vector3.add(desiredPosition(relayEstimate, Vector3.Zero()), kick)
   // The renderer glides at (mount - camera) / glide time, so a mount placed from
   // the hero alone makes the camera's speed depend on how long the last tick
@@ -765,7 +786,7 @@ function stepRelay(dt: number, player: Vector3) {
       relayPool.push(relayCurrent)
     }
   }
-  relayTime = relayCurrent === undefined ? RELAY.entryTime : glideTime
+  relayTime = relayCurrent === undefined ? entryTime : glideTime
   const transform = Transform.getMutable(next)
   transform.position = target
   transform.rotation = fixedRotation()

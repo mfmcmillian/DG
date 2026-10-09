@@ -14,8 +14,8 @@ import { isClientSynced, isSoloMode, localAddress, netStatus } from './multiplay
 import { netDebugSummary, recentLogs } from './netDebug'
 import { MenuAction } from './menuUi'
 import {
-  atPitGate, doorsWait, getLobbyState, incomingInvites, inRaid, inRun, joinParty, leaveParty, myParty, myPhase, openLobby, openParties,
-  resultsWait, retryRun, returnToHall
+  acknowledgeGravecaller, atPitGate, dismissGravecallerReveal, doorsWait, getLobbyState, incomingInvites, inRaid, inRun, joinParty, leaveParty, myParty, myPhase, openLobby, openParties,
+  resultsWait
 } from './party'
 import { ColossusBar, RaidPrompt } from './raid/raidHudUi'
 import { HUB } from './partyLookup'
@@ -43,6 +43,9 @@ import { cinematicPlaying, cinematicSkippable } from './cinematics'
 import { partyVitals } from './allyVitals'
 import { emberPayout, EmberToasts, GravewatchButton, GravewatchNotice } from './gravewatchUi'
 import { available as gravewatchAvailable } from './gravewatch'
+import { clearTutorialPlayNudge, tutorialPlayNudge } from './tutorial'
+import { MobileCombatUi } from './mobileCombatUi'
+import { dungeonMinimapHeight, DungeonMinimap } from './minimapUi'
 
 /** Still shaking hands with the party server (solo play never waits). */
 function joining() {
@@ -71,8 +74,8 @@ const bossRed = Color4.create(0.75, 0.12, 0.2, 1)
 /** The hall's bottom-right stack: Character and Inventory (40 each), Play (48), two 8 px gaps. */
 const STACK_WIDTH = 190
 const STACK_HEIGHT = 50 + 10 + 50 + 10 + 50 + 10 + 66
-/** The Gravewatch button and its line, while the event runs (gravewatchUi.tsx GravewatchButton). */
-const GW_STACK_EXTRA = 58 + 2 + 16 + 8
+/** The featured Gravewatch event card, while the event runs (gravewatchUi.tsx GravewatchButton). */
+const GW_STACK_EXTRA = 90
 let hovered = ''
 
 /**
@@ -81,7 +84,7 @@ let hovered = ''
  * holds one set of sizes and no scale of its own.
  */
 function hudLayout() {
-  const { width, height } = uiViewport()
+  const { width, height, reserved } = uiViewport()
   const scale = 1
   const left = 24
   const right = 28
@@ -89,7 +92,7 @@ function hudLayout() {
   // Vitals sit on the right, clear of the Explorer's left sidebar and the chat
   // column, under the minimap / top-right controls.
   const vitalsTop = Math.max(110, height * 0.12)
-  return { width, height, scale, left, right, bottom, vitalsTop }
+  return { width, height, scale, left, right, bottom, vitalsTop, reserved }
 }
 
 /** Names longer than the column are cut with an ellipsis: labels do not clip. */
@@ -488,9 +491,8 @@ function RunClock({ width, scale: s }: { width: number; scale: number }) {
 
 /**
  * The rewards screen. The party stands in the fortress it just fought through
- * while the cards turn over; the leader plays again or takes everyone back to
- * the hall, and anyone who has had enough leaves on their own. The host walks
- * an undecided party back when the timer runs out.
+ * while the cards turn over, then the host returns everyone to the Hall and
+ * disbands the completed party.
  */
 function ResultsOverlay({ width, height, scale: s }: { width: number; height: number; scale: number }) {
   const party = myParty()
@@ -498,16 +500,10 @@ function ResultsOverlay({ width, height, scale: s }: { width: number; height: nu
   if (!party || party.state !== 'done' || !result) return null
   const level = levelById(result.level)
   const diff = DIFFICULTIES[result.diff]
-  const me = localAddress()
-  const leader = party.leader === me
-  const solo = party.members.length === 1
-  const readyCount = party.members.filter((m) => party.ready.includes(m)).length
-  const othersReady = party.members.every((m) => m === party.leader || party.ready.includes(m))
   const wait = resultsWait()
   const cardWidth = Math.min(860 * s, width * 0.9)
   const outOfTime = !result.won && (level?.seconds ?? 0) > 0 && result.time >= (level?.seconds ?? 0)
   const title = result.won ? t('DUNGEON CLEARED') : outOfTime ? t('OUT OF TIME') : t('THE PARTY HAS FALLEN')
-  const goText = result.won ? t('Play again') : t('Try again')
   const resultKey = `${party.id}:${party.run}:${result.won ? 'w' : 'l'}:${result.time.toFixed(0)}`
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - cardWidth) / 2, top: height * 0.06 },
     width: cardWidth, padding: { top: 22 * s, bottom: 20 * s, left: 24 * s, right: 24 * s }, borderRadius: 12 * s, borderWidth: 1.5 * s, borderColor: result.won ? gold : line,
@@ -523,21 +519,11 @@ function ResultsOverlay({ width, height, scale: s }: { width: number; height: nu
       <Payout value={`+${localXp().runGain}`} label={t('experience')} color={cyanBright} scale={s} />
       {emberPayout() > 0 && <Payout value={`+${emberPayout()}`} label={t('embers')} color={Color4.create(1, 0.55, 0.2, 1)} scale={s} />}
     </UiEntity>
-    <UiEntity uiTransform={{ width: '100%', height: 44 * s, margin: { top: 14 * s }, flexDirection: 'row', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }}>
-      {leader
-        ? <MenuAction id="results-go" text={othersReady ? goText : `${goText}  ${t('({n}/{total} ready)', { n: readyCount, total: party.members.length })}`} onClick={retryRun}
-          width={220} height={44} scale={s} fontSize={16} primary disabled={!othersReady} />
-        : <Label value={t('Waiting for {name}…', { name: heroLabel(party.leader) })} color={gold} font="sans-serif" fontSize={14 * s} textAlign="middle-center" textWrap="nowrap"
-          uiTransform={{ width: 220 * s, height: '100%', pointerFilter: 'none' }} />}
-      <UiEntity uiTransform={{ width: 12 * s, flexShrink: 0, pointerFilter: 'none' }} />
-      <MenuAction id="results-hall" text={leader ? t('Lobby') : t('Leave for the lobby')} onClick={leader ? returnToHall : leaveParty}
-        width={164} height={44} scale={s} fontSize={14} />
-    </UiEntity>
-    <Label value={leader
-      ? (solo ? t('Back to the hall on its own in {time}.', { time: formatTime(wait) }) : t('You lead: the party goes on when you say. Back to the hall on its own in {time}.', { time: formatTime(wait) }))
-      : t('{name} decides where the party goes next. Back to the hall in {time} at the latest.', { name: heroLabel(party.leader), time: formatTime(wait) })}
-      color={muted} font="sans-serif" fontSize={11.5 * s} textAlign="middle-center" textWrap="nowrap"
-      uiTransform={{ width: '100%', height: 20 * s, margin: { top: 8 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+    <Label value={t('Returning to the Hall in {time}.', { time: formatTime(wait) })}
+      color={muted} font="sans-serif" fontSize={14 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 24 * s, margin: { top: 14 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+    <MenuAction id="results-leave" text={t('Leave now')} onClick={leaveParty}
+      width={150} height={38} scale={s} fontSize={14} />
   </UiEntity>
 }
 
@@ -603,11 +589,22 @@ function HubNotice({ width, top, scale: s }: { width: number; top: number; scale
   if (!notice || open || myPhase() !== HUB) return null
   const alpha = Math.min(1, noticeFor / 0.6)
   const noticeWidth = Math.min(720 * s, width * 0.8)
+  const welcome = notice === t('Welcome to the Hall of Antrom. Press Play to head for the fortresses.')
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - noticeWidth) / 2, top },
-    width: noticeWidth, height: 40 * s, borderRadius: 8 * s, alignItems: 'center', justifyContent: 'center', pointerFilter: 'none' }}
+    width: noticeWidth, height: (welcome ? 88 : 40) * s, borderRadius: 8 * s, flexDirection: 'column',
+    alignItems: 'center', justifyContent: 'center', pointerFilter: 'none' }}
     uiBackground={{ color: Color4.create(panel.r, panel.g, panel.b, panel.a * alpha) }}>
-    <Label value={notice} color={Color4.create(gold.r, gold.g, gold.b, alpha)} font="sans-serif" fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
-      uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} />
+    {welcome
+      ? <UiEntity uiTransform={{ width: '100%', height: 68 * s, flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
+        <Label value={t('WELCOME TO THE HALL OF ANTROM')} color={Color4.create(white.r, white.g, white.b, alpha)}
+          font="serif" fontSize={18 * s} textAlign="middle-center" textWrap="nowrap"
+          uiTransform={{ width: '100%', height: 28 * s, pointerFilter: 'none' }} />
+        <Label value={t('PRESS PLAY TO BEGIN')} color={Color4.create(gold.r, gold.g, gold.b, alpha)}
+          font="sans-serif" fontSize={30 * s} textAlign="middle-center" textWrap="nowrap"
+          uiTransform={{ width: '100%', height: 40 * s, pointerFilter: 'none' }} />
+      </UiEntity>
+      : <Label value={notice} color={Color4.create(gold.r, gold.g, gold.b, alpha)} font="sans-serif" fontSize={13 * s} textAlign="middle-center" textWrap="nowrap"
+        uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} />}
   </UiEntity>
 }
 
@@ -663,6 +660,31 @@ function LevelUpNotice({ width, top, scale: s }: { width: number; top: number; s
     {opened.map((def) => <Label key={def.id} value={`${t('NEW SKILL')}  ·  ${t('{skill} on key {key}', { skill: def.name, key: def.slot + 1 })}  ·  ${t(def.blurb)}`}
       color={Color4.create(gold.r, gold.g, gold.b, alpha)} font="sans-serif" fontSize={12 * s} textAlign="middle-center" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 18 * s, margin: { top: 4 * s }, pointerFilter: 'none' }} />)}
+  </UiEntity>
+}
+
+function GravecallerReveal({ width, height, scale: s }: { width: number; height: number; scale: number }) {
+  if (!getLobbyState().gravecallerReveal) return null
+  return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width, height,
+    justifyContent: 'center', alignItems: 'center', pointerFilter: 'block' }}
+    uiBackground={{ color: Color4.create(0.01, 0.015, 0.025, 0.86) }}>
+    <UiEntity uiTransform={{ width: Math.min(580 * s, width * 0.82), padding: { top: 34 * s, bottom: 30 * s, left: 34 * s, right: 34 * s },
+      flexDirection: 'column', alignItems: 'center', borderRadius: 10 * s, borderWidth: 2 * s,
+      borderColor: Color4.create(0.2, 0.88, 0.82, 1), pointerFilter: 'block' }}
+      uiBackground={{ color: Color4.create(0.025, 0.035, 0.07, 0.98) }}>
+      <Label value={t('THE CRYPT HAS ANSWERED')} color={Color4.create(0.2, 0.88, 0.82, 1)} font="serif"
+        fontSize={16 * s} textAlign="middle-center" textWrap="nowrap"
+        uiTransform={{ width: '100%', height: 24 * s, pointerFilter: 'none' }} />
+      <Label value={t('Gravecaller Unlocked')} color={white} font="serif" fontSize={36 * s}
+        textAlign="middle-center" textWrap="nowrap"
+        uiTransform={{ width: '100%', height: 50 * s, margin: { top: 8 * s }, pointerFilter: 'none' }} />
+      <Label value={t('Wield the scythe. Raise the fallen. Become the Demon.')} color={muted}
+        font="sans-serif" fontSize={14 * s} textAlign="middle-center" textWrap="wrap"
+        uiTransform={{ width: '100%', height: 42 * s, margin: { top: 8 * s, bottom: 20 * s }, pointerFilter: 'none' }} />
+      <MenuAction id="gravecaller-reveal-close" text={t('View Gravecaller')}
+        onClick={() => { dismissGravecallerReveal(); acknowledgeGravecaller(); openPicker() }}
+        width={190} height={44} scale={s} fontSize={15} primary />
+    </UiEntity>
   </UiEntity>
 }
 
@@ -741,7 +763,7 @@ function LeaveConfirm({ width, height, scale: s }: { width: number; height: numb
 }
 
 export function WorldHudUi() {
-  const { width, height, scale: s, right, bottom, vitalsTop } = hudLayout()
+  const { width, height, scale: s, right, bottom, vitalsTop, reserved } = hudLayout()
   // A shot has the screen to itself; one that can be skipped says so in the corner.
   if (pitCinematicPlaying() || cinematicPlaying()) {
     return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width, height, pointerFilter: 'none' }}>
@@ -754,12 +776,21 @@ export function WorldHudUi() {
   const ready = created && player.active && player.loading === 'ready'
   const inHub = myPhase() === HUB && !getLobbyState().open
   const canLeave = ready && inRun() && !inRaid()
+  const vitalsScale = cardScale(width, s, myPhase() === HUB)
+  const minimapTop = Math.max(8 * s, reserved.top + 8 * s)
+  const runVitalsTop = inRun() ? Math.max(vitalsTop, minimapTop + dungeonMinimapHeight(s) + 12 * s) : vitalsTop
   // The skill bar sits at the foot of the screen; the prompts that used to stand there move up over it.
   const showBar = ready && !getLobbyState().open
   const lift = showBar ? SKILL_BAR_HEIGHT * s + 6 * s : 0
   return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width, height, pointerFilter: 'none' }}>
     {showBar && <SkillBar width={width} bottom={bottom} scale={s} />}
-    {ready && <PlayerVitals right={right} top={vitalsTop} scale={cardScale(width, s, myPhase() === HUB)} />}
+    {ready && !inHub && <MobileCombatUi />}
+    {ready && <PlayerVitals right={right} top={runVitalsTop} scale={vitalsScale} />}
+    {ready && inRun() && <DungeonMinimap
+      right={right}
+      top={minimapTop}
+      scale={s}
+    />}
     {ready && <ResultsOverlay width={width} height={height} scale={s} />}
     {ready && <HubPrompt width={width} bottom={bottom + lift} scale={s} />}
     {ready && <HubNotice width={width} top={vitalsTop - 60 * s} scale={s} />}
@@ -773,7 +804,7 @@ export function WorldHudUi() {
     {ready && <RaidPrompt width={width} bottom={bottom + lift} scale={s} />}
     {ready && <LootToasts right={right} bottom={inHub ? bottom + (STACK_HEIGHT + (gravewatchAvailable() ? GW_STACK_EXTRA : 0)) * s : bottom} scale={s} />}
     {ready && <GravewatchNotice width={width} top={vitalsTop + 110 * s} scale={s} />}
-    {ready && <EmberToasts right={right} top={vitalsTop + 170 * s} scale={s} />}
+    {ready && <EmberToasts right={right} top={runVitalsTop + 170 * s} scale={s} />}
     {ready && devToolsOn() && <DungeonDevPanel />}
     {created && <StatusNotice width={width} bottom={bottom + lift} scale={s} />}
     {created && devToolsOn() && <Label value={`${netStatus()} | ${netDebugSummary()}`} color={muted} font="sans-serif" fontSize={10 * s} textAlign="bottom-left" textWrap="nowrap"
@@ -788,16 +819,20 @@ export function WorldHudUi() {
       width: STACK_WIDTH * s, flexDirection: 'column', alignItems: 'flex-end', pointerFilter: 'none' }}>
       <StackButton id="settings" label={t('Settings')} icon="images/hud/settings.png" scale={s} onClick={openSettings} />
       <UiEntity uiTransform={{ height: 10 * s, pointerFilter: 'none' }} />
-      <StackButton id="character" label={t('Character')} icon="images/hud/character.png" scale={s} onClick={openPicker} />
+      <StackButton id="character" label={t('Character')} icon="images/hud/character.png" scale={s}
+        onClick={() => { acknowledgeGravecaller(); openPicker() }}
+        glow={getLobbyState().gravecallerNew} badge={getLobbyState().gravecallerNew ? t('NEW') : undefined} />
       <UiEntity uiTransform={{ height: 10 * s, pointerFilter: 'none' }} />
       <StackButton id="inventory" label={t('Inventory')} icon="images/hud/inventory.png" scale={s} tone="gold" disabled={!ready} onClick={openInventory}
         glow={newGearCount() > 0 || newGearWaiting()} badge={t('NEW')} />
       <UiEntity uiTransform={{ height: 10 * s, pointerFilter: 'none' }} />
       <GravewatchButton scale={s} disabled={!ready} />
-      <StackButton id="play" label={myParty() ? t('Party') : t('Play')} scale={s} tone="green" height={66} fontSize={28} disabled={!ready} onClick={() => openLobby()} />
+      <StackButton id="play" label={myParty() ? t('Party') : t('Play')} scale={s} tone="green" height={66} fontSize={28} disabled={!ready}
+        glow={tutorialPlayNudge()} badge={tutorialPlayNudge() ? t('NEXT') : undefined}
+        onClick={() => { clearTutorialPlayNudge(); openLobby() }} />
     </UiEntity>}
     {/* A run: one big door above the vitals card's left edge (over the level). Inventory and Settings wait for the hall; nothing else competes with the fight. */}
-    {canLeave && <UiEntity uiTransform={{ positionType: 'absolute', position: { right: right + CARD_WIDTH * cardScale(width, s, false) - 64 * s, top: vitalsTop - 76 * s },
+    {canLeave && <UiEntity uiTransform={{ positionType: 'absolute', position: { right: right + CARD_WIDTH * cardScale(width, s, false) - 64 * s, top: runVitalsTop - 76 * s },
       width: 64 * s, height: 64 * s, pointerFilter: 'none' }}>
       <IconButton id="leave-run" label={t('Leave the fortress')} icon="images/hud/leave.png" scale={s} size={64} tooltip="below" onClick={() => { leaveAsked = true }} />
     </UiEntity>}
@@ -808,5 +843,6 @@ export function WorldHudUi() {
         uiTransform={{ width: '100%', height: 27 * s, margin: { bottom: 8 * s }, pointerFilter: 'none' }} />
       <TextAction id="create-character" text={t('Create character')} onClick={openPicker} scale={s} width={220} />
     </UiEntity>}
+    {ready && <GravecallerReveal width={width} height={height} scale={s} />}
   </UiEntity>
 }

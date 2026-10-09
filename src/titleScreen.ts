@@ -5,7 +5,7 @@ import { MENU_CAMERA_POSITION, MENU_CAMERA_TARGET } from './menuPreviewStage'
 import { closePicker, getPickerState, openPicker } from './characterPicker'
 import { isPreloadComplete } from './preload'
 import { heroGroupId, PRELOAD_HUB } from './preloadPlan'
-import { continueSavedHero, getHeroSaveState, isHeroSavePending, isHeroSaveUnreachable } from './heroSave'
+import { continueSavedHero, getHeroSaveState, isHeroSaveUnreachable } from './heroSave'
 
 let open = false
 let session: SceneCameraSession | undefined
@@ -51,7 +51,9 @@ export function isTitleResuming(): boolean {
  * says so instead.
  */
 export function isTitleLooking(): boolean {
-  return isHeroSavePending() && !isHeroSaveUnreachable() && !getPickerState().hasCreatedCharacter
+  // The same answer carries both champion and tutorial state. Do not route
+  // around onboarding merely because the old champion-only timeout elapsed.
+  return !getHeroSaveState().loaded && !isHeroSaveUnreachable() && !getPickerState().hasCreatedCharacter
 }
 
 export function isTitleChanging(): boolean {
@@ -66,6 +68,17 @@ export function titleAskChange() {
 
 export function titleCancelChange() {
   changing = false
+}
+
+/** Training has placed its temporary recruit; release the title camera without touching picker state. */
+export function closeTitleForTutorial(): boolean {
+  if (!open || resuming || !isTitleReady() || isTitleLooking()) return false
+  changing = false
+  closeSceneCamera(session)
+  session = undefined
+  open = false
+  markMilestone('play')
+  return true
 }
 
 /** The class picker came from a title with a saved champion, so it has a Back. */

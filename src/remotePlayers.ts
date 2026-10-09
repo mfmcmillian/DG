@@ -25,6 +25,7 @@ import { partyOf } from './partyLookup'
 import { GW_REMOTE_BODY_CAP } from './shared/gravewatch'
 import { RISING_PARTY } from './shared/levels'
 import { HeroView } from './shared/heroBody'
+import { DEFAULT_LOADOUTS } from './equipmentCatalog'
 
 /**
  * Another hero's body. The synced HeroBody entity says who and what to show;
@@ -65,6 +66,7 @@ type Replica = {
   weaponLegendary: boolean
   /** Billboard over the head: the owner's Decentraland display name. */
   nameTag: Entity
+  demonLeft: number
 }
 
 /** How fast the lock-on offset eases in and out (1/s); fast enough to read as a turn, not a snap. */
@@ -123,7 +125,7 @@ function createReplica(id: string, hero: HeroView): Replica {
   rearmAvatarHiding()
   return {
     id, anchor, root, attachedAs: '', look: '', motion: 'idle', netMotion: 'idle', seq: hero.seq, echoGrace: 0, retryIn: 0,
-    beat: hero.beat, silence: 0, turn: 0, pivot, auraKey: '', weaponLegendary: false, nameTag: createHeroNameTag(root)
+    beat: hero.beat, silence: 0, turn: 0, pivot, auraKey: '', weaponLegendary: false, nameTag: createHeroNameTag(root), demonLeft: 0
   }
 }
 
@@ -159,6 +161,24 @@ function replicaByAddress(id: string): Replica | undefined {
     if (replica.id === id && (!best || replica.silence < best.silence)) best = replica
   }
   return best
+}
+
+export function presentRemoteDemonForm(id: string, seconds: number, scale: number) {
+  const replica = replicaByAddress(id)
+  if (!replica) return
+  replica.demonLeft = Math.max(replica.demonLeft, seconds)
+  setEquipmentAvatar(replica.root, 'dk-demon', { ...DEFAULT_LOADOUTS.vanguard, weapon: 'dk-halberd-01' }, false)
+  Transform.getMutable(replica.root).scale = Vector3.create(scale, scale, scale)
+  applyMotion(replica, 'idle', true)
+}
+
+export function clearRemoteDemonForms() {
+  for (const replica of replicas.values()) {
+    if (replica.demonLeft <= 0) continue
+    replica.demonLeft = 0
+    replica.look = ''
+    Transform.getMutable(replica.root).scale = Vector3.One()
+  }
 }
 
 /** Into (-PI, PI], so easing between yaws takes the short way round. */
@@ -278,8 +298,15 @@ function updateRemotePlayers(dt: number) {
     } else {
       replica.silence += dt
     }
+    if (replica.demonLeft > 0) {
+      replica.demonLeft = Math.max(0, replica.demonLeft - Math.max(0, dt))
+      if (replica.demonLeft === 0) {
+        replica.look = ''
+        Transform.getMutable(replica.root).scale = Vector3.One()
+      }
+    }
     const look = lookKey(hero)
-    if (look !== replica.look) {
+    if (replica.demonLeft <= 0 && look !== replica.look) {
       replica.look = look
       loadOutfit(replica, hero)
     }

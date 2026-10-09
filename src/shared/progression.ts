@@ -60,7 +60,8 @@ const GAINS: Record<string, { might: number; toughness: number; stamina: number 
   vanguard: { might: 0.007, toughness: 0.01, stamina: 1 },
   brute: { might: 0.015, toughness: 0.01, stamina: 1 },
   scout: { might: 0.01, toughness: 0.005, stamina: 2 },
-  striker: { might: 0.012, toughness: 0.005, stamina: 1 }
+  striker: { might: 0.012, toughness: 0.005, stamina: 1 },
+  gravecaller: { might: 0.012, toughness: 0.007, stamina: 1 }
 }
 const DEFAULT_GAINS = { might: 0.01, toughness: 0.005, stamina: 1 }
 

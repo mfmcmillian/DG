@@ -8,7 +8,7 @@ export type EquipmentLoadout = Record<EquipmentSlot, string>
 
 /** Loot weapons (scripts/build-weapons.py writes src/weaponCatalog.json from the manifest). */
 export type WeaponInfo = {
-  class: 'sword' | 'dagger' | 'axe' | 'mace' | 'hammer' | 'club' | 'great' | 'bow' | 'staff' | 'sceptre'
+  class: 'sword' | 'dagger' | 'axe' | 'mace' | 'hammer' | 'club' | 'great' | 'bow' | 'staff' | 'sceptre' | 'scythe'
   rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
   /** Which Synty pack the mesh came from, for the inventory line. */
   pack: string
@@ -508,8 +508,20 @@ export function armorSourceComingSoon(realm: ArmorRealm | undefined): boolean {
   return !!realm && realm !== 'raid' && !!REALMS.find((r) => r.id === realm)?.comingSoon
 }
 
+/** The Gravecaller's common starter uses the Rune Scythe mesh without turning the existing epic drop into starter gear. */
+const GRAVECALLER_STARTER: EquipmentItem = {
+  id: 'gc-scythe-01',
+  name: 'Gravebound Scythe',
+  slot: 'weapon',
+  description: 'A rune-lit scythe that stirred when the Crypt opened.',
+  icon: 'images/weapons/df-scythe-01.png',
+  models: ['models/roaming/weapons/df-scythe-01.glb'],
+  weapon: { class: 'scythe', rarity: 'common', pack: 'Dark Fantasy' }
+}
+
 export const EQUIPMENT_ITEMS: EquipmentItem[] = [
-  ...(ASSETS.items as EquipmentItem[]).map(annotateBuiltIn), ...(outfitCatalog.items as EquipmentItem[]), ...(weaponCatalog.items as EquipmentItem[])
+  ...(ASSETS.items as EquipmentItem[]).map(annotateBuiltIn), ...(outfitCatalog.items as EquipmentItem[]),
+  ...(weaponCatalog.items as EquipmentItem[]), GRAVECALLER_STARTER
 ]
 
 /**
@@ -531,6 +543,15 @@ export const DEFAULT_LOADOUTS: Record<string, EquipmentLoadout> = Object.fromEnt
     id, { ...loadout, ...((outfitCatalog.defaults as Record<string, Partial<EquipmentLoadout>>)[id] ?? {}) }
   ])
 )
+DEFAULT_LOADOUTS.gravecaller = {
+  head: 'spectral-head',
+  chest: 'spectral-chest',
+  shoulders: 'spectral-shoulders',
+  hands: 'spectral-hands',
+  legs: 'spectral-legs',
+  boots: 'spectral-boots',
+  weapon: GRAVECALLER_STARTER.id
+}
 /** Outfit pieces with bare skin: a per-tone file exists under models/roaming/customization/armor/<tone>/. */
 export const SKIN_TONED_ARMOR = new Set<string>(outfitCatalog.skinVariants)
 

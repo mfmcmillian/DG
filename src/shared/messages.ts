@@ -186,6 +186,8 @@ export const Messages = {
     skin: Schemas.String,
     /** The loadout as JSON, so new slots never need a schema change. */
     loadout: Schemas.String,
+    /** Every champion's last equipped loadout as JSON ({ cid: loadout }); `loadout` remains for old saves. */
+    loadouts: Schemas.String,
     coins: Schemas.Int,
     unlocks: Schemas.Array(Schemas.String),
     /** Player settings as JSON (camera, dev panel), same reasoning as loadout. */
@@ -197,6 +199,8 @@ export const Messages = {
   }),
   /** Client -> server: send me what you have saved for my wallet. */
   loadHero: Schemas.Map({ v: Schemas.Int }),
+  /** Client -> server: completion or Skip acknowledged this version of onboarding. */
+  tutorialDone: Schemas.Map({ version: Schemas.Int }),
   /** Developer -> server: write every wallet's saves into scene storage as `export:N` (src/saveMigration.ts). */
   exportSaves: Schemas.Map({ v: Schemas.Int }),
   /** Server -> one client: the saved hero, or `found: false`. */
@@ -209,6 +213,7 @@ export const Messages = {
     hc: Schemas.String,
     skin: Schemas.String,
     loadout: Schemas.String,
+    loadouts: Schemas.String,
     coins: Schemas.Int,
     unlocks: Schemas.Array(Schemas.String),
     prefs: Schemas.String,
@@ -217,7 +222,9 @@ export const Messages = {
     bag: Schemas.Array(Schemas.String),
     progress: Schemas.Array(Schemas.Int),
     /** Experience per champion as JSON ({ cid: xp }); the server owns and awards it. */
-    xp: Schemas.String
+    xp: Schemas.String,
+    /** Highest onboarding version completed or skipped by this wallet. */
+    tutorial: Schemas.Int
   }),
   /** Server -> all: a hero's level progress changed (a run was cleared). */
   progress: Schemas.Map({ id: Schemas.String, progress: Schemas.Array(Schemas.Int) }),

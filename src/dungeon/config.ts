@@ -16,7 +16,7 @@ export const LEGACY_SPAN = 96
  * are the Dark Fortress; every later realm (Synty pack exported through
  * scripts/realms/) is one more entry here.
  */
-export type StyleId = 'tight' | 'open' | 'gauntlet' | 'hall' | 'castle' | 'forge' | 'pit' | 'pass' | 'bog' | 'crypt' | 'yard'
+export type StyleId = 'tight' | 'open' | 'gauntlet' | 'hall' | 'castle' | 'forge' | 'pit' | 'pass' | 'bog' | 'crypt' | 'yard' | 'isle'
 
 export interface DungeonStyle {
   id: StyleId
@@ -79,6 +79,13 @@ export interface DungeonStyle {
    * to see more than a room: the raid arena pulls back to frame the Colossus.
    */
   camera?: { height: number; pitch: number }
+  /**
+   * Platforms in the sky instead of rooms in a void: no black slab over the
+   * plot; each floor rectangle stands on a rock block `depth` metres thick
+   * faced with `texture`, and nothing is drawn beneath (src/backdrop.ts hangs
+   * the cliffs and clouds).
+   */
+  island?: { depth: number; texture: string }
 }
 
 /**
@@ -133,6 +140,50 @@ const CRYPT_STYLE: DungeonStyle = {
  * everything keyed on the kit (the fog, the gates, the backdrop) treats them alike.
  */
 const YARD_STYLE: DungeonStyle = { ...CRYPT_STYLE, id: 'yard', label: 'The Barrow Yard', torchEvery: 4 }
+
+/**
+ * The Skyhold, drawn by hand in ./isle.ts: the Warlord's eyrie, courts and
+ * ramparts on a rock above the clouds with bridges between them. The Dark
+ * Fortress's own kit at its 5 m pitch, but every wall is the 2 m parapet, so
+ * the overhead camera sees across the whole island and the edges read as
+ * drops; the gothic arch stands at each bridge end. No slab under the plot:
+ * each platform is a block of rock, and the backdrop hangs cliffs beneath it.
+ */
+const ISLE_STYLE: DungeonStyle = {
+  id: 'isle',
+  label: 'The Skyhold',
+  tile: 5,
+  size: 32,
+  span: SCENE_SIZE,
+  wallHeight: 2,
+  entranceSize: 2,
+  minLeaf: 4,
+  maxLeaf: 6,
+  minRoom: 2,
+  ceiling: false,
+  firstPerson: false,
+  walls: ['parapet'],
+  door: 'wall_l_arch',
+  pillar: 'pillar',
+  torch: 'torch_stand',
+  torchHeight: 0,
+  torchInset: 0.9,
+  torchEvery: 3,
+  props: {
+    entrance: ['torch_stand', 'banner', 'torch_stand'],
+    boss: ['brazier', 'cage', 'skulls', 'brazier', 'bones'],
+    treasure: ['chest', 'crystal', 'urn', 'rubble'],
+    combat: ['cage', 'rubble', 'bones', 'skulls', 'brazier'],
+    quiet: ['rubble', 'bones']
+  },
+  bossCentrepiece: 'statue',
+  torchLightCount: 8,
+  torchLightIntensity: 900,
+  torchLightRange: 22,
+  floorTexture: FLOOR_TEXTURE,
+  camera: { height: 18, pitch: 50 },
+  island: { depth: 12, texture: 'models/kits/isle/rock.png' }
+}
 
 export const STYLES: Record<StyleId, DungeonStyle> = {
   tight: {
@@ -207,7 +258,7 @@ export const STYLES: Record<StyleId, DungeonStyle> = {
     id: 'gauntlet',
     label: 'The Dark Fortress',
     tile: 5,
-    size: 30,
+    size: 20,
     span: SCENE_SIZE,
     wallHeight: 6,
     entranceSize: 2,
@@ -505,7 +556,8 @@ export const STYLES: Record<StyleId, DungeonStyle> = {
     floorMetres: 5
   },
   crypt: CRYPT_STYLE,
-  yard: YARD_STYLE
+  yard: YARD_STYLE,
+  isle: ISLE_STYLE
 }
 
 /** Options the generator needs from a style, including whether it plants traps. */

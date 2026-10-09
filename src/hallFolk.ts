@@ -131,6 +131,14 @@ let queueIn = 0
 let systemAdded = false
 /** The one a hero is talking to (src/hallTalk.ts): they face the hero and a walker stops. */
 let attended: Folk | undefined
+let trainingSquireSuppressed = false
+
+export function suppressTrainingSquire(suppressed: boolean) {
+  trainingSquireSuppressed = suppressed
+  for (const f of folk) {
+    if (f.role.body === 'folk-squire') setEquipmentVisible(f.root, f.loaded && !suppressed)
+  }
+}
 
 /** One of the folk as the talk system sees them. */
 export type FolkView = { key: number; title: string; x: number; z: number }
@@ -140,6 +148,7 @@ export function hallFolkNear(x: number, z: number, reach: number): FolkView | un
   let best: Folk | undefined
   let bestD = reach * reach
   for (const f of folk) {
+    if (trainingSquireSuppressed && f.role.body === 'folk-squire') continue
     if (!f.loaded || f.role.silent) continue
     const dx = f.x - x
     const dz = f.z - z
@@ -307,8 +316,9 @@ function update(dt: number) {
       const loading = getEquipmentLoading(f.root)
       if (loading !== 'ready') continue
       f.loaded = true
-      setEquipmentVisible(f.root, true)
+      setEquipmentVisible(f.root, !trainingSquireSuppressed || f.role.body !== 'folk-squire')
     }
+    if (trainingSquireSuppressed && f.role.body === 'folk-squire') continue
     if (f.role.patrol) patrol(f, span, hero)
     else stand(f, span, hero)
     turnToward(f, span)

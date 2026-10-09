@@ -27,7 +27,7 @@ import {
 import { BARROW_YARD, LEVELS, RISING_PARTY } from './shared/levels'
 import {
   newRunState, RUN_BOARD_SIZE, RUN_END_STEP, RUN_EXTRA_COST, RUN_HOST_DELAY, RUN_LANES, RUN_MILE, RUN_SPD_STEP, RUN_STAMINA, RUN_STATS, RUN_SYNC_SECONDS, RUN_TOKENS,
-  RUN_TRAIN_MAX, runTierEmbers, runTrainCost, RunStat, RunState, runWeekKey, stepRun
+  RUN_STEP_SECONDS, RUN_TRAIN_MAX, runTierEmbers, runTrainCost, RunStat, RunState, runWeekKey, stepRun
 } from './shared/barrowRun'
 import { HUB } from './partyLookup'
 import { RARITIES, rollArmorDrop, rollArmorRank } from './weapons'
@@ -649,20 +649,32 @@ function laneAt(run: HostRun, t: number): number {
 function tickRuns() {
   if (!runs.size) return
   const t = now()
-  for (const [id, run] of runs) {
-    const target = (t - run.started) / 1000 - RUN_HOST_DELAY
-    while (!run.state.over && run.state.t < target) {
-      run.state.lane = laneAt(run, run.state.t)
-      stepRun(run.state, Math.min(0.05, target - run.state.t), run.seed)
-    }
-    if (run.state.over) {
+  for (const [id, run] of [...runs]) {
+    // Each race is fenced: the engine runs systems unguarded, so one runner's
+    // bad state must not stall the other races, the dungeons or the ledger.
+    try {
+      tickRun(id, run, t)
+    } catch (error) {
       runs.delete(id)
+      console.log(`[Gravewatch] run of ${id} dropped at ${run.state.s.toFixed(1)} m: ${error instanceof Error ? error.stack ?? error.message : String(error)}`)
       void finishRun(id, run)
-    } else if (run.state.t - run.syncAt >= RUN_SYNC_SECONDS) {
-      run.syncAt = run.state.t
-      const st = run.state
-      sendNet('gwRunSync', { t: st.t, s: st.s, stamina: st.stamina, hits: st.hits, embers: st.embers, over: false, paid: 0 }, { to: [id] })
     }
+  }
+}
+
+function tickRun(id: string, run: HostRun, t: number) {
+  const target = (t - run.started) / 1000 - RUN_HOST_DELAY
+  while (!run.state.over && run.state.t + RUN_STEP_SECONDS <= target + 1e-9) {
+    run.state.lane = laneAt(run, run.state.t)
+    stepRun(run.state, RUN_STEP_SECONDS, run.seed)
+  }
+  if (run.state.over) {
+    runs.delete(id)
+    void finishRun(id, run)
+  } else if (run.state.t - run.syncAt >= RUN_SYNC_SECONDS) {
+    run.syncAt = run.state.t
+    const st = run.state
+    sendNet('gwRunSync', { t: st.t, s: st.s, stamina: st.stamina, hits: st.hits, embers: st.embers, over: false, paid: 0 }, { to: [id] })
   }
 }
 

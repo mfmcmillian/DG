@@ -166,9 +166,9 @@ export function UpgradeUi() {
       </UiEntity>
       <UiEntity uiTransform={{ width: 200 * s, height: 2 * s, margin: { bottom: 10 * s }, flexShrink: 0, pointerFilter: 'none' }}
         uiBackground={{ color: gold }} />
-      <Label value={t('Offer a weapon or a piece of armor to the fire and it comes back a level stronger, to level {max} at most. Every level adds {pct}% to what it does, and a weapon +{flat} flat damage besides.', { max: MAX_LEVEL, pct: LEVEL_PERCENT, flat: LEVEL_FLAT_DAMAGE })}
+      <Label value={t('Offer gear to the fire to forge it up to level {max}. Each level adds {pct}% weapon damage or armor damage and defense. Health and stamina gain flat points; weapons also gain +{flat} flat damage.', { max: MAX_LEVEL, pct: LEVEL_PERCENT, flat: LEVEL_FLAT_DAMAGE })}
         color={muted} fontSize={13 * s} textAlign="top-left" textWrap="wrap"
-        uiTransform={{ width: '100%', height: 38 * s, margin: { bottom: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+        uiTransform={{ width: '100%', height: 52 * s, margin: { bottom: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />
 
       <UiEntity uiTransform={{ width: '100%', height: (PER_PAGE / PER_ROW) * (CARD.height + CARD.gap) * s, padding: { left: gridPad * s }, flexDirection: 'row', flexWrap: 'wrap', alignContent: 'flex-start', flexShrink: 0, pointerFilter: 'none' }}>
         {shown.map((offer) => <WeaponCard key={offer.uid} offer={offer} scale={s} />)}

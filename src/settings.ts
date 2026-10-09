@@ -9,6 +9,7 @@ import { parsePrefs, prefsOpenAll } from './shared/prefs'
 import { getLanguage, isLanguage, Language, setLanguage } from './i18n'
 import { loadSeenHints, seenHints } from './hints'
 import { loadNewGear, newGearIds } from './newGear'
+import { isMobile } from '@dcl/sdk/platform'
 
 /** The two cameras a player picks between. */
 export type CameraPreference = 'crawler' | 'native'
@@ -24,6 +25,12 @@ export type Settings = {
   nativeAvatar: boolean
   /** Developer: every level of every realm selectable, whatever the progress says. The host honours it from the saved prefs. */
   openAll: boolean
+  /** The player has dismissed Gravewatch's three-step welcome card. */
+  gravewatchIntroSeen: boolean
+  /** The one-time Gravecaller unlock reveal has been dismissed. */
+  gravecallerRevealSeen: boolean
+  /** Mobile only: tapping the floor moves; tapping an enemy selects and approaches it. */
+  mobileTapWorld: boolean
 }
 
 export const CAMERA_OPTIONS: Array<{ id: CameraPreference; name: string; blurb: string }> = [
@@ -31,7 +38,10 @@ export const CAMERA_OPTIONS: Array<{ id: CameraPreference; name: string; blurb: 
   { id: 'native', name: 'Third person', blurb: 'The Decentraland camera: behind the hero, turns with the mouse, zoom as you like.' }
 ]
 
-const DEFAULTS: Settings = { language: 'en', camera: 'crawler', devTools: false, nativeAvatar: false, openAll: false }
+const DEFAULTS: Settings = {
+  language: 'en', camera: 'crawler', devTools: false, nativeAvatar: false, openAll: false,
+  gravewatchIntroSeen: false, gravecallerRevealSeen: false, mobileTapWorld: false
+}
 /** Bumping this puts every saved hero back on the default camera on their next load. */
 const CAMERA_GENERATION = 2
 const settings: Settings = { ...DEFAULTS }
@@ -99,6 +109,23 @@ export function setOpenAll(on: boolean) {
   settings.openAll = on
 }
 
+export function setGravewatchIntroSeen() {
+  settings.gravewatchIntroSeen = true
+}
+
+export function setGravecallerRevealSeen() {
+  settings.gravecallerRevealSeen = true
+}
+
+/** Desktop mouse play is unchanged; mobile must explicitly opt into world taps. */
+export function tapWorldControlsEnabled(): boolean {
+  return !isMobile() || settings.mobileTapWorld
+}
+
+export function setMobileTapWorld(on: boolean) {
+  settings.mobileTapWorld = on
+}
+
 /** Put the saved camera on. */
 export function applyCameraSetting() {
   const current: CameraChoice = getDungeonState().camera
@@ -109,7 +136,9 @@ export function applyCameraSetting() {
 
 export function serializeSettings(): string {
   return JSON.stringify({
-    camera: settings.camera, camV: CAMERA_GENERATION, dev: settings.devTools ? 1 : 0, nat: settings.nativeAvatar ? 1 : 0, open: settings.openAll ? 1 : 0, lang: settings.language, hints: seenHints(), fresh: newGearIds(), lv: 1, ps: 1, bg: 1
+    camera: settings.camera, camV: CAMERA_GENERATION, dev: settings.devTools ? 1 : 0, nat: settings.nativeAvatar ? 1 : 0, open: settings.openAll ? 1 : 0,
+    gwIntro: settings.gravewatchIntroSeen ? 1 : 0, gcReveal: settings.gravecallerRevealSeen ? 1 : 0, mobileTap: settings.mobileTapWorld ? 1 : 0,
+    lang: settings.language, hints: seenHints(), fresh: newGearIds(), lv: 1, ps: 1, bg: 1
   })
 }
 
@@ -124,6 +153,9 @@ export function loadSettings(json: string) {
     settings.camera = value.camV === CAMERA_GENERATION && chosen ? 'native' : 'crawler'
     settings.devTools = value.dev === 1 || value.dev === true
     settings.openAll = prefsOpenAll(json)
+    settings.gravewatchIntroSeen = value.gwIntro === 1 || value.gwIntro === true
+    settings.gravecallerRevealSeen = value.gcReveal === 1 || value.gcReveal === true
+    settings.mobileTapWorld = value.mobileTap === 1 || value.mobileTap === true
     // A save from before languages, or one made in another session's tongue,
     // never overrides a choice made on this title screen.
     if (isLanguage(value.lang) && !languageChosen) setLanguage(settings.language = value.lang)

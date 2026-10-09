@@ -87,12 +87,17 @@ export type LevelDefinition = {
   coins: number
   /** The run fails when this many seconds pass without the boss falling (0: no limit). */
   seconds: number
+  /**
+   * Still being built: the war table skips its page (developer tools show it)
+   * and the ladder steps over it, so a clear below never lands a party here.
+   */
+  hidden?: boolean
 }
 
 export const LEVELS: LevelDefinition[] = [
   {
     id: 0, realm: 'fortress', name: 'The Dark Fortress', seed: 1337, style: 'gauntlet',
-    blurb: 'Seven rooms, two wardens, one Warlord. Ten minutes.',
+    blurb: 'Two rooms, one Warden, then the Warlord. Ten minutes.',
     health: 1, damage: 1, coins: 1.5, seconds: 600
   },
   {
@@ -109,6 +114,11 @@ export const LEVELS: LevelDefinition[] = [
     id: 3, realm: 'crypt', name: 'The Crypt', seed: 6066, style: 'crypt',
     blurb: 'Under the hill: the graveyard, the ossuary and its Bone Warden, the witches\' catacombs, the Gargoyle\'s chapel, and Morvane the Lich, who raises what you kill. Fifteen minutes.',
     health: 2.0, damage: 1.7, coins: 3.0, seconds: 900
+  },
+  {
+    id: 4, realm: 'fortress', name: 'The Skyhold', seed: 7077, style: 'isle',
+    blurb: 'The Warlord\'s eyrie: courts and ramparts on a rock above the clouds, bridges between them, the keep gate at the top. Twelve minutes.',
+    health: 2.0, damage: 1.7, coins: 3, seconds: 720, hidden: true
   }
 ]
 
@@ -211,9 +221,10 @@ export function armorDropLevels(realm: RealmId): LevelDefinition[] {
   return LEVELS.filter((l) => ARMOR_DROP_REALMS[l.realm].includes(realm))
 }
 
-/** The level that follows a cleared one on the linear ladder, or undefined after the last. */
+/** The level that follows a cleared one on the linear ladder (hidden ones skipped), or undefined after the last. */
 export function nextLevel(level: number): LevelDefinition | undefined {
-  return level >= 0 && level < LEVELS.length - 1 ? LEVELS[level + 1] : undefined
+  if (level < 0) return undefined
+  return LEVELS.find((l) => l.id > level && !l.hidden)
 }
 
 /** The level before this one on the linear ladder, or undefined for the first. */

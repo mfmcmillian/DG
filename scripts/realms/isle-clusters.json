@@ -1,0 +1,15 @@
+{
+  "dumps": {
+    "fortress": "$TEMP/synty-demo/demo-fortress.json",
+    "buildings": "$TEMP/synty-demo/demo-fortress-buildings.json"
+  },
+  "clusters": [
+    { "id": "isle_tower", "dump": "buildings", "groups": ["Tower_01"], "flatten": "min", "collide": false },
+    { "id": "isle_tower_ruin", "dump": "buildings", "groups": ["Tower_Destroyed_01"], "flatten": "min", "collide": false },
+    { "id": "isle_gatehouse", "dump": "fortress", "groups": ["Castle_Courtyard/Buildings/Main Gate"], "flatten": "min",
+      "exclude": "^SM_Prop_(Corpse|Torch)|^SM_Env_Chain|Drawbridge", "colliders": "^SM_Bld_Base_Wall_01$|^SM_Bld_L_Pillar" },
+    { "id": "isle_ruin_a", "dump": "fortress", "groups": ["Environment/Ruins/Background_Building_01"], "flatten": "min", "collide": false },
+    { "id": "isle_ruin_b", "dump": "fortress", "groups": ["Environment/Ruins/Background_Building_03"], "flatten": "min", "collide": false },
+    { "id": "isle_spire", "dump": "fortress", "groups": ["Environment/Ruins/Background_Building_04"], "flatten": "min", "collide": false }
+  ]
+}

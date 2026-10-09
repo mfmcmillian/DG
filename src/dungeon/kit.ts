@@ -9,6 +9,7 @@ import bogKit from './kits/bog.json'
 import castleKit from './kits/castle.json'
 import cryptKit from './kits/crypt.json'
 import forgeKit from './kits/forge.json'
+import isleKit from './kits/isle.json'
 import passKit from './kits/pass.json'
 import pitKit from './kits/pit.json'
 import vikKit from './kits/vik.json'
@@ -77,6 +78,7 @@ export const KIT = {
   ...realmPieces(castleKit),
   ...realmPieces(cryptKit),
   ...realmPieces(forgeKit),
+  ...realmPieces(isleKit),
   ...realmPieces(pitKit),
   ...realmPieces(passKit),
   ...realmPieces(vikKit)
@@ -109,6 +111,7 @@ export const PIT_TEXTURES = pitKit.textures
 export const PASS_TEXTURES = passKit.textures
 export const BOG_TEXTURES = bogKit.textures
 export const CRYPT_TEXTURES = cryptKit.textures
+export const ISLE_TEXTURES = isleKit.textures
 
 /** Triangle cost of the primitive pieces the builder makes itself. */
 export const PRIMITIVE_TRIS = { plane: 4, box: 12 }

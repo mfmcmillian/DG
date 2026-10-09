@@ -52,6 +52,12 @@ let blows = 0
 let lastHealth = 0
 let lastHeroKey = ''
 let systemAdded = false
+let yardCoveredByTutorial = false
+
+export function setYardCoveredByTutorial(covered: boolean) {
+  yardCoveredByTutorial = covered
+  if (covered && current?.id === 'yard') current = undefined
+}
 
 export function getHint(): Readonly<HintView> | undefined {
   return current
@@ -166,7 +172,7 @@ function update(dt: number) {
   if (current) return
 
   // Lessons, each once.
-  if (!seen.has('yard') && hall && armed && p && nearTrainingDummy(p.x, p.z, YARD_REACH)) {
+  if (!yardCoveredByTutorial && !seen.has('yard') && hall && armed && p && nearTrainingDummy(p.x, p.z, YARD_REACH)) {
     show('yard', combatChips(), t('Try the keys on the dummies.'))
     return
   }

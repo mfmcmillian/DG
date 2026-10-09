@@ -47,6 +47,11 @@ function floorMaterial(style: DungeonStyle): PBMaterial_PbrMaterial {
     specularIntensity: 0
   }
 }
+/** Box UVs with the texture repeated `u` times along and `v` times up on every face. */
+function boxUvs(u: number, v: number): number[] {
+  const face = [0, 0, u, 0, u, v, 0, v]
+  return [...face, ...face, ...face, ...face, ...face, ...face]
+}
 /** Near-black, matte: the negative space around the rooms swallows the sky's ambient tint. */
 const VOID_MATERIAL: PBMaterial_PbrMaterial = {
   albedoColor: Color4.create(0.012, 0.01, 0.016, 1),
@@ -113,8 +118,14 @@ export function buildDungeon(dungeon: Dungeon, style: DungeonStyle, options?: La
       case 'ground':
         Transform.create(e, { position: Vector3.create(p.x, p.y, p.z), scale: Vector3.create(p.sx, p.sy, p.sz), parent: root })
         MeshCollider.setBox(e, solid)
-        MeshRenderer.setBox(e)
-        Material.setPbrMaterial(e, VOID_MATERIAL)
+        if (style.island) {
+          // A platform's rock block: the texture repeats every 4 m on its sides (the top is under the floor).
+          MeshRenderer.setBox(e, boxUvs(p.sx / 4, p.sy / 4))
+          Material.setPbrMaterial(e, { texture: Material.Texture.Common({ src: style.island.texture, wrapMode: TextureWrapMode.TWM_REPEAT }), roughness: 1, metallic: 0, specularIntensity: 0 })
+        } else {
+          MeshRenderer.setBox(e)
+          Material.setPbrMaterial(e, VOID_MATERIAL)
+        }
         break
       case 'floor':
       case 'ceiling':

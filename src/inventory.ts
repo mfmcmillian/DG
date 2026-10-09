@@ -36,17 +36,20 @@ import {
   setEquipmentVisible
 } from './equipmentAvatar'
 import {
+  getCommittedCopy,
   getCommittedLoadout as readCommittedLoadout,
-  isItemCommitted,
+  isCopyCommitted,
+  setCommittedCopy,
   setCommittedLoadout
 } from './equipmentState'
 import { classAllowsArmor, classAllowsWeapon, HERO_CLASSES } from './heroClasses'
 import { isGearNew, markGearSeen } from './newGear'
 import { setLegendaryAura } from './legendaryAura'
-import { legendaryPieces } from './weapons'
-import { addGear, bagRow, bagRowsOf, clearBag, ownsGear, setActiveGear, setGearProbes } from './shared/gearBag'
+import { legendaryPieces, rarityOf, Rarity } from './weapons'
+import { addGear, bagRow, bagRowsOf, clearBag, ownsGear, setGearProbes } from './shared/gearBag'
 
 export type InventoryFilter = 'all' | 'other' | EquipmentSlot
+export type InventoryRarityFilter = 'all' | Rarity
 
 /**
  * One card in the backpack: a copy the hero owns, or the free copy of a
@@ -62,6 +65,7 @@ export interface InventoryState {
   /** The copy the selected card stands for ('s:<item>' for a starter's free copy). */
   selectedUid: string
   filter: InventoryFilter
+  rarity: InventoryRarityFilter
   page: number
   loading: 'loading' | 'ready' | 'error'
 }
@@ -73,6 +77,7 @@ const state: InventoryState = {
   selectedItemId: '',
   selectedUid: '',
   filter: 'all',
+  rarity: 'all',
   page: 0,
   loading: 'loading'
 }
@@ -98,7 +103,7 @@ export function initializeInventory(
   onApply = applyEquipment
   if (initialized) return
   initialized = true
-  setGearProbes((id) => (getEquipmentItemOrNull(id)?.slot === 'weapon' ? 'weapon' : 'armor'), isItemCommitted)
+  setGearProbes((id) => (getEquipmentItemOrNull(id)?.slot === 'weapon' ? 'weapon' : 'armor'), isCopyCommitted)
   engine.addSystem(inventorySystem)
 }
 
@@ -221,7 +226,8 @@ export function inventoryEntry(uid: string): InventoryEntry | undefined {
 
 /** The backpack: every copy the hero owns that its class can use, under the current filter. */
 export function getInventoryItems(): InventoryEntry[] {
-  return filtered(wardrobe()).flatMap(entriesFor)
+  const entries = filtered(wardrobe()).flatMap(entriesFor)
+  return state.rarity === 'all' ? entries : entries.filter((entry) => rarityOf(entry.item.id, entry.rank) === state.rarity)
 }
 
 /** Owned gear not yet looked at, whatever the filter (the backpack's NEW tags and tab dots). */
@@ -252,8 +258,8 @@ function filtered(items: EquipmentItem[]): EquipmentItem[] {
 }
 
 /** The copy of an item the hero uses, as a card uid: the active row, or the free copy. */
-function activeUidOf(itemId: string): string {
-  return bagRowsOf(itemId)[0]?.uid ?? FREE_COPY + itemId
+function activeUidOf(itemId: string, slot: EquipmentSlot = state.selectedSlot): string {
+  return getCommittedCopy(state.characterId, slot) ?? FREE_COPY + itemId
 }
 
 /** Runs once when the inventory closes (the lobby uses it to come back). */
@@ -275,6 +281,7 @@ export function openInventory(options: { onClose?: () => void } = {}): boolean {
   state.characterId = getEquippedCharacter().id
   state.selectedSlot = 'chest'
   state.filter = 'all'
+  state.rarity = 'all'
   state.page = 0
   state.loading = 'loading'
   previewLoadout = getCommittedLoadout()
@@ -330,9 +337,9 @@ export function selectInventorySlot(slot: EquipmentSlot) {
 }
 
 /**
- * Pick a card. A copy of the item already on the hero needs no preview: it
- * becomes the copy in use there and then (same look, its own rarity and
- * level). Anything else is tried on first.
+ * Pick a card. Another copy of the same item needs no visual rebuild, but still
+ * waits for the Equip button so taking it from another champion can be confirmed.
+ * Anything with a different look is tried on first.
  */
 export function selectInventoryItem(uid: string) {
   if (!state.open) return
@@ -345,10 +352,6 @@ export function selectInventoryItem(uid: string) {
   state.selectedUid = uid
   const committed = getCommittedLoadout()
   if (committed[item.slot] === item.id && !getInventoryIsDirty()) {
-    if (!entry.virtual && setActiveGear(uid)) {
-      equipmentWasApplied = true
-      if (committedPreview !== undefined) previewAura(committedPreview, committed)
-    }
     return
   }
   const next = { ...committed }
@@ -363,6 +366,12 @@ export function setInventoryFilter(filter: InventoryFilter) {
   state.page = 0
 }
 
+export function setInventoryRarity(filter: InventoryRarityFilter) {
+  if (!state.open || (filter !== 'all' && !['common', 'uncommon', 'rare', 'epic', 'legendary'].includes(filter))) return
+  state.rarity = filter
+  state.page = 0
+}
+
 export function setInventoryPage(page: number) {
   if (!state.open || !Number.isFinite(page)) return
   const lastPage = Math.max(0, Math.ceil(getInventoryItems().length / PAGE_SIZE) - 1)
@@ -370,18 +379,21 @@ export function setInventoryPage(page: number) {
 }
 
 export function equipSelectedItem() {
-  if (!state.open || state.loading !== 'ready' || !getInventoryIsDirty()) return
+  if (!state.open || state.loading !== 'ready') return
   const item = EQUIPMENT_ITEMS.find((entry) => entry.id === state.selectedItemId && entry.slot === state.selectedSlot)
   if (!item || previewLoadout?.[item.slot] !== item.id || isInventoryItemLocked(item.id)) return
+  const selectedCopy = state.selectedUid.startsWith(FREE_COPY) || bagRow(state.selectedUid)?.item === item.id ? state.selectedUid : undefined
+  const copyChange = getCommittedLoadout()[item.slot] === item.id && getCommittedCopy(state.characterId, item.slot) !== selectedCopy
+  if (!getInventoryIsDirty() && !copyChange) return
   const readyPreview = candidatePreview ?? committedPreview
   if (readyPreview === undefined || getEquipmentLoading(readyPreview) !== 'ready') return
-  if (candidatePreview === undefined && item.slot !== 'weapon') return
+  if (candidatePreview === undefined && item.slot !== 'weapon' && !copyChange) return
 
   const committed = getCommittedLoadout()
   committed[item.slot] = item.id
   setCommittedLoadout(state.characterId, committed)
-  // The card picked is the copy that goes on.
-  if (!state.selectedUid.startsWith(FREE_COPY) && bagRow(state.selectedUid)?.item === item.id) setActiveGear(state.selectedUid)
+  // The card picked is the unique copy that goes on; taking it off another champion happens here.
+  setCommittedCopy(state.characterId, item.slot, selectedCopy)
   previewLoadout = getCommittedLoadout()
   pendingUnequip = undefined
   equipmentWasApplied = true

@@ -10,6 +10,7 @@ import { pitDungeon } from './pit'
 import { bogDungeon, BOG_STAGES } from './bogmaw'
 import { cryptDungeon, CRYPT_STAGES } from './crypt'
 import { barrowYardDungeon, YARD_STAGES } from './barrowYard'
+import { isleDungeon, ISLE_OPEN_FOR_TESTING, ISLE_STAGES } from './isle'
 import { Stage } from './stages'
 
 /** The authored layout for a style, or undefined when the style is generated from a seed. */
@@ -21,6 +22,7 @@ export function authoredLayout(style: DungeonStyle): Dungeon | undefined {
   if (style.id === 'bog') return bogDungeon(style.torchEvery)
   if (style.id === 'crypt') return cryptDungeon(style.torchEvery)
   if (style.id === 'yard') return barrowYardDungeon(style.torchEvery)
+  if (style.id === 'isle') return isleDungeon(style.torchEvery)
   return undefined
 }
 
@@ -31,6 +33,7 @@ export function stagesFor(style: StyleId): readonly Stage[] | undefined {
   if (style === 'bog') return BOG_STAGES
   if (style === 'crypt') return CRYPT_STAGES
   if (style === 'yard') return YARD_STAGES
+  if (style === 'isle') return ISLE_OPEN_FOR_TESTING ? [] : ISLE_STAGES
   return undefined
 }
 

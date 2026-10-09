@@ -11,7 +11,7 @@
 import { EQUIPMENT_ITEMS, EQUIPMENT_SLOTS, EquipmentItem, EquipmentLoadout, EquipmentSlot, getEquipmentItemOrNull } from './equipmentCatalog'
 import { t } from './i18n'
 import { affixOf } from './shared/affixes'
-import { levelMultiplier, upgradeAffixOf, upgradeLevelOf, upgradeRankOf } from './shared/upgradeRanks'
+import { clampLevel, levelMultiplier, upgradeAffixOf, upgradeLevelOf, upgradeRankOf } from './shared/upgradeRanks'
 import { Rarity, RARITIES, rarityOf } from './weapons'
 
 /** How rare a hero's copy of an item is, by id: this hero's own ranks by default, a synced body's on the host. */
@@ -133,8 +133,16 @@ function affixStats(affix: number, forged: number): ArmorStats {
 export function armorPieceStats(item: EquipmentItem | undefined, rankOf: RankOf = upgradeRankOf, levelOf: LevelOf = upgradeLevelOf, affixOfItem: AffixOf = upgradeAffixOf): ArmorStats {
   if (!isArmor(item)) return NOTHING
   const rarity = rarityOf(item.id, rankOf(item.id))
-  const forged = levelMultiplier(levelOf(item.id))
-  return add(add(slotStats(item.slot as EquipmentSlot, rarity, forged), leanStats(setLean(item.set!), rarity, forged)), affixStats(affixOfItem(item.id), forged))
+  const level = clampLevel(levelOf(item.id))
+  const forged = levelMultiplier(level)
+  const base = add(add(slotStats(item.slot as EquipmentSlot, rarity, 1), leanStats(setLean(item.set!), rarity, 1)), affixStats(affixOfItem(item.id), 1))
+  const steps = level - 1
+  return {
+    might: base.might * forged,
+    toughness: base.toughness * forged,
+    stamina: base.stamina > 0 ? base.stamina + steps : 0,
+    health: base.health > 0 ? base.health + steps * (item.slot === 'chest' ? 2 : 1) : 0
+  }
 }
 
 /** The set bonus for `worn` pieces of a set of this rarity and size: might, toughness and health, doubled when the set is complete. */
@@ -206,7 +214,7 @@ export function armorStatLine(item: EquipmentItem | undefined, rank?: number, le
   if (s.stamina) parts.push(t('+{n} stamina', { n: pct(s.stamina) }))
   if (s.health) parts.push(t('+{n} health', { n: pct(s.health) }))
   if (level === undefined) level = item ? upgradeLevelOf(item.id) : 1
-  if (level > 1) parts.push(t('Level {n}: +{pct}% to all of it', { n: level, pct: pct((levelMultiplier(level) - 1) * 100) }))
+  if (level > 1) parts.push(t('Level {n} forged', { n: level }))
   return parts.join(' · ')
 }
 

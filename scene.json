@@ -130,6 +130,7 @@
       "9,9"
     ]
   },
+  "landscapeTerrain": false,
   "worldConfiguration": {
     "name": "dungeons.dcl.eth",
     "placesConfig": {

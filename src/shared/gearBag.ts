@@ -36,7 +36,7 @@ export const BAG_CAPS: Record<BagKind, number> = { weapon: 60, armor: 120 }
 
 /** The pit forges an item this far. */
 export const MAX_LEVEL = 10
-/** What every level above the first adds to what the item does (damage for a weapon, every stat for armor). */
+/** What every level adds to weapon damage and armor's percentage stats; armor health and stamina use flat gains. */
 export const LEVEL_STEP = 0.05
 /** Flat damage a weapon gains per level above the first, on top of the multiplier (rarity's flat bonus is 0..9). */
 export const LEVEL_FLAT = 1
@@ -52,13 +52,13 @@ const copies = new Map<string, number>()
 let revision = 0
 
 let kindOf: (item: string) => BagKind = () => 'weapon'
-let wornProbe: (item: string) => boolean = () => false
+let wornProbe: (uid: string) => boolean = () => false
 
 /**
- * Tell the bag which items are weapons and which items are on a hero right
+ * Tell the bag which items are weapons and which unique copies are on a hero right
  * now, so it can count what is loose. Installed by the client's inventory.
  */
-export function setGearProbes(kind: (item: string) => BagKind, worn: (item: string) => boolean) {
+export function setGearProbes(kind: (item: string) => BagKind, worn: (uid: string) => boolean) {
   kindOf = kind
   wornProbe = worn
 }
@@ -143,7 +143,7 @@ export function upgradeAffixOf(id: string | undefined): number {
 
 /** A copy is worn when it is the one in use for an item a hero has on. */
 export function isGearWorn(row: GearInstance): boolean {
-  return wornProbe(row.item) && activeGear(row.item)?.uid === row.uid
+  return wornProbe(row.uid)
 }
 
 /** Copies of `kind` lying loose in the bag: everything but what is worn. */

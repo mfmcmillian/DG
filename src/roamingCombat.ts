@@ -167,6 +167,10 @@ export function setRoamingClass(combat: RoamingCombat, characterId: string | und
   combat.cls = heroClassOf(characterId)
 }
 
+export function setRoamingDefinition(combat: RoamingCombat, definition: HeroClassDefinition) {
+  combat.cls = definition
+}
+
 export function resetRoamingCombat(combat: RoamingCombat) {
   resetCombatControls(combat.controls)
   combat.elapsed = 0

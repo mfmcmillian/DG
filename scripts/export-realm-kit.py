@@ -79,6 +79,7 @@ TILING_SLOTS = re.compile(manifest.get('tilingSlots', '^$'))
 # pipes and reading desk sweep three quarters of the atlas; they are not triplanar).
 ATLAS_SLOTS = re.compile(manifest.get('atlasSlots', '^$'))
 TILING_WORLD = float(manifest.get('tilingWorldSize', 2.5))
+UPK_INDEX = {}
 
 
 def extract(member):
@@ -96,23 +97,28 @@ def extract(member):
             hit = next((n for n in names if n.lower().endswith('/' + base) or n.lower() == base), None)
         if hit is None:
             # Some textures (the moss TGAs) ship only in the .unitypackage beside the zip.
-            upk = os.path.join(DOWNLOADS, PACK.replace('.zip', '.unitypackage'))
+            upk = os.path.join(DOWNLOADS, manifest.get('unitypackage', PACK.replace('.zip', '.unitypackage')))
             if os.path.exists(upk):
                 import tarfile
                 base = os.path.basename(member).lower()
-                with tarfile.open(upk) as t:
-                    assets = {}
+                # Indexed once: basename -> guid folder (the tar is a 300 MB gzip; one pass is a minute).
+                if not UPK_INDEX:
+                    UPK_INDEX['__tar__'] = t = tarfile.open(upk)
+                    assets, paths = {}, {}
                     for m in t.getmembers():
-                        g = m.name.split('/')[0]
-                        if m.name.endswith('/pathname'):
-                            p = t.extractfile(m).read().decode('utf-8', 'ignore').split('\n')[0]
-                            if os.path.basename(p).lower() == base:
-                                assets[g] = p
-                    for g in assets:
-                        m = t.getmember(g + '/asset')
-                        with t.extractfile(m) as src, open(out, 'wb') as dst:
-                            shutil.copyfileobj(src, dst)
-                        return out
+                        g, leaf = m.name.split('/')[0], m.name.split('/')[-1]
+                        if leaf == 'asset':
+                            assets[g] = m
+                        elif leaf == 'pathname':
+                            paths[g] = os.path.basename(t.extractfile(m).read().decode('utf-8', 'ignore').split('\n')[0]).lower()
+                    for g, p in paths.items():
+                        if g in assets:
+                            UPK_INDEX.setdefault(p, assets[g])
+                m = UPK_INDEX.get(base)
+                if m is not None:
+                    with UPK_INDEX['__tar__'].extractfile(m) as src, open(out, 'wb') as dst:
+                        shutil.copyfileobj(src, dst)
+                    return out
             raise FileNotFoundError(f'{member} not in {PACK}')
         with z.open(hit) as src, open(out, 'wb') as dst:
             shutil.copyfileobj(src, dst)

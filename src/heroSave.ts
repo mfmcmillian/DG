@@ -7,22 +7,28 @@ import { engine } from '@dcl/sdk/ecs'
 import { getCommittedAppearance, normalizeAppearance, setCommittedAppearance } from './appearance'
 import { adoptSavedCharacter, CHARACTERS, getEquippedCharacter, getPickerState } from './characterPicker'
 import { EQUIPMENT_SLOTS, EquipmentLoadout, getEquipmentItemOrNull } from './equipmentCatalog'
-import { getCommittedLoadout, setCommittedLoadout } from './equipmentState'
+import {
+  EquipmentCopies, getCommittedCopies, getCommittedLoadout, reconcileCommittedCopies, setCommittedCopy, setCommittedLoadout
+} from './equipmentState'
 import { enforceOwnedLoadout, getUnlockedItems } from './inventory'
 import { classOfCharacter } from './heroClasses'
 import { getLootState, setCoins } from './loot'
 import { isClientSynced, isSoloMode, localAddress } from './multiplayer'
 import { onNet, sendNet } from './net'
-import { setProgress } from './party'
+import { presentGravecallerUnlockIfNeeded, setProgress } from './party'
 import { requestHeroPreload } from './preloadPlan'
 import { loadSettings, serializeSettings } from './settings'
 import { addGear, bagRevision, clearBag, convertLegacyBag, loadBag, serializeBag } from './shared/gearBag'
 import { parsePrefs } from './shared/prefs'
+import { TUTORIAL_VERSION } from './shared/tutorial'
 import { printedRankOf } from './weapons'
+import { setYardCoveredByTutorial } from './hints'
 
 type SaveState = {
   /** The host answered our load request. */
   loaded: boolean
+  /** Highest version of onboarding completed or skipped by this wallet. */
+  tutorial: number
   /** A hero was saved for this wallet. */
   found: boolean
   cid: string
@@ -30,7 +36,7 @@ type SaveState = {
   waited: number
 }
 
-const state: SaveState = { loaded: false, found: false, cid: '', waited: 0 }
+const state: SaveState = { loaded: false, tutorial: 0, found: false, cid: '', waited: 0 }
 /** Coins alone are written this often at most; anything else goes out within a second. */
 const COIN_SAVE_SECONDS = 10
 const SAVE_SECONDS = 1
@@ -50,6 +56,8 @@ export function initializeHeroSave() {
   onNet('savedHero', (msg) => {
     if (msg.id.toLowerCase() !== localAddress()) return
     state.loaded = true
+    state.tutorial = Math.max(0, Math.floor(msg.tutorial))
+    setYardCoveredByTutorial(state.tutorial >= TUTORIAL_VERSION)
     state.found = msg.found && CHARACTERS.some((c) => c.id === msg.cid)
     setProgress(msg.progress)
     if (!state.found) return
@@ -66,6 +74,7 @@ export function initializeHeroSave() {
     }))
     const loadout = parseLoadout(msg.loadout)
     if (loadout) setCommittedLoadout(msg.cid, loadout)
+    const savedCopies = loadSavedLoadouts(msg.loadouts)
     const prefs = parsePrefs(msg.prefs)
     if (prefs.bg) {
       loadBag(msg.bag)
@@ -97,12 +106,24 @@ export function initializeHeroSave() {
       // still, whatever is in hand today; new heroes start on a plain sword.
       if (!prefs.ps && classOfCharacter(msg.cid) === 'blade') addGear('pride-sword', 0, 1, 'm-pride-sword', true)
     }
-    // Armor from before it had to be earned comes off; the class default goes back on.
-    enforceOwnedLoadout(msg.cid)
+    // Unowned gear comes off every saved champion; old saves only populated the active one.
+    for (const character of CHARACTERS) enforceOwnedLoadout(character.id)
+    const copyPriority = [msg.cid, ...CHARACTERS.map((character) => character.id).filter((id) => id !== msg.cid)]
+    // Restore lower-priority champions first so a malformed duplicate assignment is won by the active saved champion.
+    for (const characterId of [...copyPriority].reverse()) {
+      const copies = savedCopies[characterId]
+      if (!copies) continue
+      for (const slot of EQUIPMENT_SLOTS) {
+        const uid = copies[slot.id]
+        if (uid) setCommittedCopy(characterId, slot.id, uid)
+      }
+    }
+    reconcileCommittedCopies(copyPriority)
     // The title's Continue waits on this outfit; fetch it ahead of the queue.
     requestHeroPreload(msg.cid, getCommittedLoadout(msg.cid), true)
     setCoins(msg.coins)
     loadSettings(msg.prefs)
+    presentGravecallerUnlockIfNeeded()
     // What came back is what is stored; do not write it straight back.
     lastSaved = fingerprint(msg.cid)
     lastSavedCoins = msg.coins
@@ -113,6 +134,22 @@ export function initializeHeroSave() {
 
 export function getHeroSaveState(): Readonly<SaveState> {
   return state
+}
+
+export function tutorialStatusLoaded(): boolean {
+  return state.loaded
+}
+
+export function tutorialIsComplete(): boolean {
+  return state.tutorial >= TUTORIAL_VERSION
+}
+
+/** Completion and Skip deliberately share persistence semantics. */
+export function persistTutorialComplete(): void {
+  if (state.tutorial >= TUTORIAL_VERSION) return
+  state.tutorial = TUTORIAL_VERSION
+  setYardCoveredByTutorial(true)
+  sendNet('tutorialDone', { version: TUTORIAL_VERSION })
 }
 
 /** Title: pick the saved hero back up and stand it in the hub. */
@@ -150,11 +187,39 @@ function parseLoadout(json: string): EquipmentLoadout | undefined {
   }
 }
 
+type SavedChampionGear = { items: EquipmentLoadout; copies?: EquipmentCopies }
+
+/** New saves carry one loadout and its unique copies per champion; direct loadout values from the brief item-only format still read. */
+function loadSavedLoadouts(json: string): Record<string, EquipmentCopies> {
+  const copies: Record<string, EquipmentCopies> = {}
+  if (!json) return copies
+  try {
+    const saved = JSON.parse(json) as Record<string, EquipmentLoadout | SavedChampionGear>
+    for (const character of CHARACTERS) {
+      const entry = saved?.[character.id]
+      if (!entry || typeof entry !== 'object') continue
+      const wrapped = 'items' in entry
+      const loadout = wrapped ? entry.items : entry
+      if (loadout && typeof loadout === 'object') setCommittedLoadout(character.id, loadout)
+      if (wrapped && entry.copies && typeof entry.copies === 'object') copies[character.id] = entry.copies
+    }
+  } catch {
+    // A malformed optional map must not prevent the active champion's legacy loadout from loading.
+  }
+  return copies
+}
+
+function serializeLoadouts(): string {
+  return JSON.stringify(Object.fromEntries(CHARACTERS.map((character) => [character.id, {
+    items: getCommittedLoadout(character.id),
+    copies: getCommittedCopies(character.id)
+  }])))
+}
+
 function fingerprint(cid: string): string {
   const a = getCommittedAppearance(cid)
-  const l = getCommittedLoadout(cid)
   // The bag goes in as its revision, not its rows: this runs every frame, and a bag of a hundred copies is not for serializing that often.
-  return [cid, a.bodyType, a.hairStyle, a.hairColor, a.skinTone, ...EQUIPMENT_SLOTS.map((s) => l[s.id]), bagRevision(), serializeSettings()].join('#')
+  return [cid, a.bodyType, a.hairStyle, a.hairColor, a.skinTone, serializeLoadouts(), bagRevision(), serializeSettings()].join('#')
 }
 
 function update(dt: number) {
@@ -177,7 +242,8 @@ function update(dt: number) {
   const a = getCommittedAppearance(cid)
   sendNet('saveHero', {
     cid, body: a.bodyType, hair: a.hairStyle, hc: a.hairColor, skin: a.skinTone,
-    loadout: JSON.stringify(getCommittedLoadout(cid)), coins, unlocks: getUnlockedItems(), prefs: serializeSettings(), ups: [], bag: serializeBag()
+    loadout: JSON.stringify(getCommittedLoadout(cid)), loadouts: serializeLoadouts(),
+    coins, unlocks: getUnlockedItems(), prefs: serializeSettings(), ups: [], bag: serializeBag()
   })
   lastSaved = now
   lastSavedCoins = coins
@@ -192,7 +258,8 @@ export function flushHeroSave() {
   const coins = getLootState().coins
   sendNet('saveHero', {
     cid, body: a.bodyType, hair: a.hairStyle, hc: a.hairColor, skin: a.skinTone,
-    loadout: JSON.stringify(getCommittedLoadout(cid)), coins, unlocks: getUnlockedItems(), prefs: serializeSettings(), ups: [], bag: serializeBag()
+    loadout: JSON.stringify(getCommittedLoadout(cid)), loadouts: serializeLoadouts(),
+    coins, unlocks: getUnlockedItems(), prefs: serializeSettings(), ups: [], bag: serializeBag()
   })
   lastSaved = fingerprint(cid)
   lastSavedCoins = coins

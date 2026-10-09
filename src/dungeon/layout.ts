@@ -137,16 +137,25 @@ export function layoutDungeon(dungeon: Dungeon, style: DungeonStyle, options: La
   // grid: the crawler camera looks down at 58 degrees, so anything not covered
   // shows the Explorer's own terrain and sky tint. This is the void between and
   // around the rooms, the way top-down dungeons fill their negative space black.
-  push({ kind: 'ground', x: SCENE_SPAN / 2, y: -0.5, z: SCENE_SPAN / 2, sx: SCENE_SPAN, sy: 1, sz: SCENE_SPAN }, PRIMITIVE_TRIS.box)
+  // An island style has no void: each floor rectangle stands on its own block
+  // of rock instead (the walkable collider too), and the sky shows between.
+  const rects = floorRectangles(dungeon)
+  if (!style.island) {
+    push({ kind: 'ground', x: SCENE_SPAN / 2, y: -0.5, z: SCENE_SPAN / 2, sx: SCENE_SPAN, sy: 1, sz: SCENE_SPAN }, PRIMITIVE_TRIS.box)
+  }
 
   // Floors and ceilings are one plane per rectangle of open cells rather than
   // one per cell: the texture repeats per cell either way, and a 30-room
   // dungeon is ~400 fewer entities and draw calls.
-  for (const r of floorRectangles(dungeon)) {
+  for (const r of rects) {
     const a = cellCenter(style, r.x, r.y)
     const b = cellCenter(style, r.x + r.w - 1, r.y + r.d - 1)
     const x = (a.x + b.x) / 2
     const z = (a.z + b.z) / 2
+    if (style.island) {
+      const depth = style.island.depth
+      push({ kind: 'ground', x, y: -depth / 2, z, sx: T * r.w, sy: depth, sz: T * r.d }, PRIMITIVE_TRIS.box)
+    }
     push({ kind: 'floor', x, y: 0.005, z, w: r.w, d: r.d }, PRIMITIVE_TRIS.plane)
     if (style.ceiling) push({ kind: 'ceiling', x, y: H, z, w: r.w, d: r.d }, PRIMITIVE_TRIS.plane)
     else if (style.roof) push({ kind: 'ceiling', only: 'full', x, y: H, z, w: r.w, d: r.d }, PRIMITIVE_TRIS.plane)
@@ -163,7 +172,9 @@ export function layoutDungeon(dungeon: Dungeon, style: DungeonStyle, options: La
       // full-height collider stands where the tall wall would have been.
       push({ kind: 'box', only: 'cutaway', x: m.x, y: H / 2, z: m.z, yaw: sideYaw(w.side), sx: T, sy: H, sz: Math.max(0.5, KIT[style.cutawayWall!].size[2]) }, 0)
     } else {
-      kit(id, m.x, 0, m.z, sideYaw(w.side))
+      // Synty's battlement piece has corbels under its crenels (it is made to top a
+      // wall); on an island they hang over the rock face instead of standing on the floor.
+      kit(id, m.x, style.island && id === 'parapet' ? -0.75 : 0, m.z, sideYaw(w.side))
     }
     // Breached or doored wall variants collide only where they have mesh, so a
     // solid slab stands behind them; the cutaway box already covers the low wall.

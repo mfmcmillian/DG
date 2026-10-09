@@ -1,0 +1,11 @@
+Generated with built-in image_gen.
+
+Use case: ads-marketing.
+Asset type: landscape game thumbnail, approximately 3:2 aspect ratio, for Dungeons of Antrom.
+Primary request: Create a polished Halloween-themed thumbnail for this co-op fantasy dungeon crawler. Premium cinematic dark-fantasy painted key art, rich detailed armor, dramatic readable silhouettes.
+Scene/backdrop: A haunted gothic stone fortress entrance at night, iron portcullis, hanging chains, spectral violet fog, glowing orange jack-o'-lanterns on the stone steps and small bats silhouetted in moonlight.
+Subject: A powerful bearded berserker champion in weathered black steel and fur armor, holding an ornate engraved battle axe, dominates the left foreground. Three smaller armored adventurers advance together toward the dungeon gate in the lower right. Heroic, ominous, adventurous Halloween mood; no gore.
+Composition/framing: Impactful close-up hero on the left, a large beautifully crafted antique gold title treatment across the upper and middle right, pumpkins grounding the lower corners. Strong clean focal hierarchy, legible as a small discovery-card thumbnail. Keep all lettering within generous safe margins.
+Lighting/mood: Warm pumpkin fire lighting on the hero's face and armor, cold violet and moonlit blue mist behind him; deep shadows with visible sculptural detail.
+Text (verbatim): "DUNGEONS OF ANTROM", set in large dimensional engraved gold fantasy serif lettering with a modest crown ornament above, and "HALLOWEEN" in a smaller orange-lit plaque directly below. ANTROM must be spelled A N T R O M. Render only these words.
+Constraints: Full-bleed finished image, no border, no watermark, no dates, no invented gameplay claims, no UI buttons. Halloween details must read clearly even at thumbnail size.

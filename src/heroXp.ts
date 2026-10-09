@@ -63,9 +63,12 @@ export type LocalXp = {
 
 const local: LocalXp = { xp: 0, level: 1, into: 0, span: 100, runGain: 0, levelUp: 0, levelUpFor: 0 }
 const LEVEL_UP_SECONDS = 6
+const LEVEL_UP_DELAY_SECONDS = 0.2
 let wasInRun = false
 let knownLevel = 0
 let initialized = false
+let pendingLevelUp = 0
+let pendingLevelUpFor = 0
 
 export function localXp(): Readonly<LocalXp> {
   return local
@@ -82,9 +85,10 @@ function refreshLocal() {
   local.span = p.span
   // A new champion (or a first look at the table) sets the baseline; only a climb announces itself.
   if (knownLevel && p.level > knownLevel && getPickerState().hasCreatedCharacter) {
-    local.levelUp = p.level
-    local.levelUpFor = 0
-    fxSound('level_up', 0.8)
+    // Let the killing blow's impact, death and loot finish their first frame
+    // before adding the level-up sound and notice.
+    pendingLevelUp = p.level
+    pendingLevelUpFor = LEVEL_UP_DELAY_SECONDS
   }
   knownLevel = p.level
   const bonuses = heroBonuses(cid, p.level)
@@ -120,9 +124,20 @@ export function initializeHeroXp() {
     if (cid !== lastCid) {
       lastCid = cid
       knownLevel = 0
+      pendingLevelUp = 0
+      pendingLevelUpFor = 0
       refreshLocal()
     }
-    if (local.levelUp) {
+    if (pendingLevelUp) {
+      pendingLevelUpFor -= dt
+      if (pendingLevelUpFor <= 0) {
+        local.levelUp = pendingLevelUp
+        local.levelUpFor = 0
+        pendingLevelUp = 0
+        pendingLevelUpFor = 0
+        fxSound('level_up', 0.8)
+      }
+    } else if (local.levelUp) {
       local.levelUpFor += dt
       if (local.levelUpFor > LEVEL_UP_SECONDS) {
         local.levelUp = 0

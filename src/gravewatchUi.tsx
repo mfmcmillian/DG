@@ -12,10 +12,10 @@ import {
   available, boardRolling, boardState, boardTiming, closeGravewatch, DICE_STRIP, dismissGearCard, emberGains, GAIN_SECONDS, gearCard, getGravewatch, gravewatchBusy, gravewatchButtonLine, gravewatchConfirm,
   gravewatchCurse, gravewatchGrant, gravewatchRedeem, gravewatchRising, gravewatchRoll, gravewatchRun, gravewatchScreenNote, gravewatchSpin, gravewatchTab, gravewatchTrain, GW_TABS, GwTab,
   runBoard, RunBoardRow, toggleRunBoard,
-  emberTickLeft, inRisingArena, isAutoRoll, isFlyer, openGravewatch, risingClock, runEmberGain, serverNow, setGravewatchTab, shownEmbers, toggleAutoRoll, WHEEL_POINTER, WHEEL_SHEET_COLS, WHEEL_SHEET_FRAMES, wheelSheet, wheelState
+  emberTickLeft, inRisingArena, isAutoRoll, openGravewatch, risingClock, runEmberGain, serverNow, setGravewatchTab, shownEmbers, toggleAutoRoll, WHEEL_POINTER, WHEEL_SHEET_COLS, WHEEL_SHEET_FRAMES, wheelSheet, wheelState
 } from './gravewatch'
 import { heroLabel } from './lobbyUi'
-import { myParty } from './party'
+import { myParty, openLobby } from './party'
 import { localAddress } from './multiplayer'
 import { isDeveloper } from './devAccess'
 import { t } from './i18n'
@@ -24,10 +24,11 @@ import {
   GW_HAT_STEPS, GW_ITEM_INFO, GW_ITEMS, GW_MULT, GW_PRICES, GW_RISING_FIGHT_EMBERS, GW_RISING_UNLOCKS, GW_RISING_WIN_EMBERS, GW_SPIN_COST,
   GW_TILE_MAX_LEVEL, GW_WHEEL, GW_WHEEL_PITY, GwItem, GwSegment, GwTileKind, tilePay
 } from './shared/gravewatch'
-import { StackButton } from './hudButtons'
 import { RUN_END_STEP, RUN_EXTRA_COST, RUN_MILE, RUN_SPD_STEP, RUN_STATS, RUN_TIERS, RUN_TOKENS, RUN_TRAIN_MAX, runTrainCost, RunStat } from './shared/barrowRun'
 import { getEquipmentItemOrNull } from './equipmentCatalog'
 import { RARITIES, rarityOf } from './weapons'
+import { getSettings, setGravewatchIntroSeen } from './settings'
+import { flushHeroSave } from './heroSave'
 
 const { white, muted, gold, panel: panelColor, card, line, goldLine, green, coral, cyan } = menuColors
 const veil = Color4.create(0.01, 0.02, 0.03, 0.62)
@@ -51,12 +52,18 @@ const RELIQUARY_STRIP = 'images/gravewatch/reliquary-strip.png'
 const ICON = { ember: 0, coins: 1, gear: 2, mult: 3, dice: 4, demon: 5 } as const
 const RARITY_COLORS: Record<GwItem, Color4> = { w1: cyan, w2: gold, w3: coral }
 let rulesOpen = false
+let gravewatchHovered = false
 /** Dev-only +1000 embers button; hidden for now, flip to true when testing payouts. */
 const SHOW_GRANT = false
 /** The wheel's prize stays popped over it this long. */
 const RESULT_SECONDS = 4
 /** Six tiles a side; twenty around the edge. */
 const BOARD_SIDE = 6
+const BOARD_ICONS = 'images/gravewatch/board-icons.png'
+/** Cells in BOARD_ICONS (four columns by two rows), cut onto transparency. */
+const BOARD_TILE_ICON: Record<GwTileKind, readonly [number, number]> = {
+  start: [0, 0], embers: [1, 0], coins: [2, 0], chest: [3, 0], curse: [0, 1], mystery: [1, 1], gear: [2, 1]
+}
 const TILE_COLORS: Record<GwTileKind, Color4> = {
   start: Color4.create(0.2, 0.15, 0.05, 0.92),
   embers: Color4.create(0.2, 0.08, 0.03, 0.9),
@@ -129,12 +136,20 @@ function Gap({ h, scale: s }: { h: number; scale: number }) {
   return <UiEntity uiTransform={{ height: h * s, flexShrink: 0, pointerFilter: 'none' }} />
 }
 
+function chooseGravewatchTab(id: GwTab) {
+  setGravewatchTab(id)
+  rulesOpen = false
+  if (!getSettings().gravewatchIntroSeen) {
+    setGravewatchIntroSeen()
+    flushHeroSave()
+  }
+}
+
 export function GravewatchUi() {
   const gw = getGravewatch()
   const { scale: s, width, height, x, y } = layout()
   const inner = FRAME.width - 80
   const tab = gravewatchTab()
-  const flyer = isFlyer()
   return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}>
     <UiEntity uiTransform={wholeCanvas()} uiBackground={{ color: veil }} />
     <UiEntity uiTransform={{ width, height, positionType: 'absolute', position: { left: x, top: y },
@@ -143,7 +158,7 @@ export function GravewatchUi() {
       uiBackground={{ color: sheetColor }}>
       <UiEntity uiTransform={{ width: '100%', height: 62 * s, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', flexShrink: 0, pointerFilter: 'none' }}>
         <UiEntity uiTransform={{ flexDirection: 'column', flexGrow: 1, flexShrink: 1, minWidth: 0, margin: { right: 12 * s }, pointerFilter: 'none' }}>
-          <Label value={`${flyer ? t('WELCOME TO').toUpperCase() : `${t('UNTIL')} ${etLabel(GW_EVENT_END, false).toUpperCase()}`}  ·  ${t('DAILY RESET IN')} ${countdown(untilReset())}`} color={gold} fontSize={10.5 * s} textAlign="middle-left" textWrap="nowrap"
+          <Label value={`${t('UNTIL')} ${etLabel(GW_EVENT_END, false).toUpperCase()}  ·  ${t('DAILY RESET IN')} ${countdown(untilReset())}`} color={gold} fontSize={10.5 * s} textAlign="middle-left" textWrap="nowrap"
             uiTransform={{ width: '100%', height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
           <Label value={t('Gravewatch')} font="serif" color={white} fontSize={32 * s} textAlign="middle-left" textWrap="nowrap"
             uiTransform={{ width: '100%', height: 42 * s, flexShrink: 0, pointerFilter: 'none' }} />
@@ -151,18 +166,21 @@ export function GravewatchUi() {
         <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
           {emberTickLeft() > 0 && <Label value={`+${emberTickLeft()}`} color={gold} font="serif" fontSize={20 * s} textAlign="middle-right" textWrap="nowrap"
             uiTransform={{ width: 80 * s, height: 38 * s, margin: { right: 10 * s }, flexShrink: 0, pointerFilter: 'none' }} />}
-          <UiEntity uiTransform={{ height: 38 * s, padding: { left: 14 * s, right: 14 * s }, margin: { right: 10 * s }, borderRadius: 4 * s, borderWidth: shownEmbers() !== gw.embers ? 2 * s : s, borderColor: shownEmbers() !== gw.embers ? gold : ember,
-            alignItems: 'center', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: emberDark }}>
-            <Label value={`${shownEmbers()}  ${t('embers')}`} color={shownEmbers() !== gw.embers ? gold : ember} font="serif" fontSize={17 * s} textWrap="nowrap"
-              uiTransform={{ height: '100%', pointerFilter: 'none' }} />
-            {gw.mult > serverNow() && <UiEntity uiTransform={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', margin: { left: 12 * s }, flexShrink: 0, pointerFilter: 'none' }}>
-              <Label value={`×${GW_MULT}`} color={gold} font="serif" fontSize={15 * s} textAlign="middle-center" textWrap="nowrap" uiTransform={{ height: 18 * s, pointerFilter: 'none' }} />
-              <Label value={minutesLeft((gw.mult - serverNow()) / 1000)} color={gold} fontSize={10 * s} textAlign="middle-center" textWrap="nowrap" uiTransform={{ height: 14 * s, pointerFilter: 'none' }} />
-            </UiEntity>}
+          <UiEntity uiTransform={{ width: 142 * s, height: 38 * s, padding: { left: 10 * s, right: 10 * s }, margin: { right: 10 * s }, borderRadius: 4 * s, borderWidth: shownEmbers() !== gw.embers ? 2 * s : s, borderColor: shownEmbers() !== gw.embers ? gold : ember,
+            flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: emberDark }}>
+            <Label value={`${shownEmbers()}  ${t('embers')}`} color={shownEmbers() !== gw.embers ? gold : ember} font="serif" fontSize={15 * s} textWrap="nowrap"
+              uiTransform={{ height: 20 * s, flexShrink: 0, pointerFilter: 'none' }} />
+            <Label value={t('Spend in the Reliquary')} color={Color4.create(1, 0.73, 0.44, 1)} font="sans-serif" fontSize={8.5 * s} textWrap="nowrap"
+              uiTransform={{ height: 11 * s, flexShrink: 0, pointerFilter: 'none' }} />
           </UiEntity>
+          {gw.mult > serverNow() && <UiEntity uiTransform={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 38 * s, margin: { right: 10 * s }, flexShrink: 0, pointerFilter: 'none' }}>
+            <Label value={`×${GW_MULT}`} color={gold} font="serif" fontSize={15 * s} textAlign="middle-center" textWrap="nowrap" uiTransform={{ height: 18 * s, pointerFilter: 'none' }} />
+            <Label value={minutesLeft((gw.mult - serverNow()) / 1000)} color={gold} fontSize={10 * s} textAlign="middle-center" textWrap="nowrap" uiTransform={{ height: 14 * s, pointerFilter: 'none' }} />
+          </UiEntity>}
           {SHOW_GRANT && isDeveloper() && <Action id="gw-grant" text="+1000" onClick={gravewatchGrant} width={64} height={38} scale={s} fontSize={13} accent="gold" />}
           {SHOW_GRANT && isDeveloper() && <UiEntity uiTransform={{ width: 10 * s, pointerFilter: 'none' }} />}
-          <Action id="gw-rules" text={t('Rules')} onClick={() => { rulesOpen = !rulesOpen }} width={64} height={38} scale={s} fontSize={13} accent="gold" active={rulesOpen} />
+          <Action id="gw-rules" text={t('Rules')} onClick={() => { rulesOpen = !rulesOpen }}
+            width={64} height={38} scale={s} fontSize={13} accent="gold" active={rulesOpen} />
           <UiEntity uiTransform={{ width: 10 * s, pointerFilter: 'none' }} />
           <Action id="gw-close" text="×" onClick={closeGravewatch} width={38} height={38} scale={s} fontSize={26} accent="gold" />
         </UiEntity>
@@ -171,7 +189,7 @@ export function GravewatchUi() {
         uiBackground={{ color: gold }} />
 
       <UiEntity uiTransform={{ width: '100%', height: 34 * s, flexDirection: 'row', justifyContent: 'space-between', margin: { bottom: 14 * s }, flexShrink: 0, pointerFilter: 'none' }}>
-        {GW_TABS.map((id) => <Action key={`gw-tab-${id}`} id={`gw-tab-${id}`} text={t(TAB_NAMES[id])} onClick={() => setGravewatchTab(id)}
+        {GW_TABS.map((id) => <Action key={`gw-tab-${id}`} id={`gw-tab-${id}`} text={t(TAB_NAMES[id])} onClick={() => chooseGravewatchTab(id)}
           width={(inner - 4 * 6) / 5} height={36} scale={s} fontSize={13} accent="gold" active={tab === id} />)}
       </UiEntity>
 
@@ -187,6 +205,7 @@ export function GravewatchUi() {
         {tab === 'reliquary' && <ReliquaryTab scale={s} inner={inner} />}
         {rulesOpen && <Rules scale={s} inner={inner} tab={tab} />}
         {!rulesOpen && gearCard() && <GearCard scale={s} prize={gearCard()!} />}
+        {!getSettings().gravewatchIntroSeen && <GravewatchIntro scale={s} inner={inner} />}
       </UiEntity>
 
       <Label value={gw.note} color={gw.note ? coral : muted} fontSize={14 * s} textAlign="middle-center" textWrap="nowrap"
@@ -195,13 +214,54 @@ export function GravewatchUi() {
   </UiEntity>
 }
 
+/** Shown once per saved hero: the event loop before any tabs or numbers ask for attention. */
+function GravewatchIntro({ scale: s, inner }: { scale: number; inner: number }) {
+  const steps = [
+    { n: '1', title: 'PLAY', text: 'Run, spin or roll' },
+    { n: '2', title: 'EARN', text: 'Collect Embers' },
+    { n: '3', title: 'CLAIM', text: 'Spend them in the Reliquary' }
+  ]
+  const cardWidth = (inner - 32) / 3
+  return <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width: inner * s, height: '100%',
+    padding: { left: 22 * s, right: 22 * s, top: 24 * s, bottom: 18 * s }, borderRadius: 8 * s, borderWidth: 2 * s,
+    borderColor: ember, flexDirection: 'column', alignItems: 'center', pointerFilter: 'block' }}
+    uiBackground={{ color: Color4.create(0.035, 0.025, 0.075, 1) }}>
+    <Label value={t('Welcome to Gravewatch')} color={white} font="serif" fontSize={29 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 40 * s, flexShrink: 0, pointerFilter: 'none' }} />
+    <Label value={t('Play events. Earn Embers. Spend them on rewards.')} color={ember} fontSize={15 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 24 * s, margin: { bottom: 22 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+    <UiEntity uiTransform={{ width: '100%', height: 150 * s, flexDirection: 'row', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
+      {steps.map((step) => <UiEntity key={`gw-intro-${step.n}`} uiTransform={{ width: cardWidth * s, height: 150 * s,
+        borderRadius: 8 * s, borderWidth: s, borderColor: goldLine, flexDirection: 'column', alignItems: 'center',
+        justifyContent: 'center', padding: { left: 10 * s, right: 10 * s }, flexShrink: 0, pointerFilter: 'none' }}
+        uiBackground={{ color: Color4.create(0.12, 0.045, 0.18, 0.96) }}>
+        <UiEntity uiTransform={{ width: 42 * s, height: 42 * s, borderRadius: 21 * s, margin: { bottom: 10 * s },
+          alignItems: 'center', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }} uiBackground={{ color: ember }}>
+          <Label value={step.n} color={Color4.create(0.12, 0.04, 0.02, 1)} font="serif" fontSize={22 * s} textWrap="nowrap"
+            uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} />
+        </UiEntity>
+        <Label value={t(step.title)} color={gold} font="sans-serif" fontSize={12 * s} textAlign="middle-center" textWrap="nowrap"
+          uiTransform={{ width: '100%', height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
+        <Label value={t(step.text)} color={white} fontSize={13 * s} textAlign="middle-center" textWrap="wrap"
+          uiTransform={{ width: '100%', height: 38 * s, flexShrink: 0, pointerFilter: 'none' }} />
+      </UiEntity>)}
+    </UiEntity>
+    <UiEntity uiTransform={{ flexGrow: 1, pointerFilter: 'none' }} />
+    <Action id="gw-intro-go" text={t('Show me the events')} onClick={() => { setGravewatchTab('board'); setGravewatchIntroSeen(); flushHeroSave() }}
+      width={220} height={48} scale={s} fontSize={17} primary accent="gold" />
+    <Label value={t('Open How it works whenever you want the details.')} color={muted} fontSize={11 * s} textAlign="middle-center" textWrap="nowrap"
+      uiTransform={{ width: '100%', height: 20 * s, margin: { top: 7 * s }, flexShrink: 0, pointerFilter: 'none' }} />
+  </UiEntity>
+}
+
 // --- Rounds ------------------------------------------------------------------------------------
 
 function RunTab({ scale: s, inner }: { scale: number; inner: number }) {
   const gw = getGravewatch()
+  const party = myParty()
   const free = gw.runs < RUN_TOKENS
-  const can = !gw.guest && !gw.over && !myParty() && (free || gw.embers >= RUN_EXTRA_COST)
-  const label = myParty() ? t('Leave your party first') : free ? t('Run') : t('Run ({n} embers)', { n: RUN_EXTRA_COST })
+  const can = !gw.guest && !gw.over && !party && (free || gw.embers >= RUN_EXTRA_COST)
+  const label = party ? t('Leave your party first') : free ? t('Run') : t('Run ({n} embers)', { n: RUN_EXTRA_COST })
   const cardW = (inner - 2 * 10) / 3
   const left = Math.max(0, RUN_TOKENS - gw.runs)
   return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', pointerFilter: 'none' }}>
@@ -209,6 +269,8 @@ function RunTab({ scale: s, inner }: { scale: number; inner: number }) {
       uiBackground={{ textureMode: 'stretch', texture: { src: RUN_BANNER }, color: Color4.White() }}>
       <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 18 * s, bottom: 12 * s }, flexDirection: 'column', pointerFilter: 'none' }}>
         <Label value={t('THE BARROW RUN')} font="serif" color={white} fontSize={27 * s} textAlign="middle-left" textWrap="nowrap" uiTransform={{ height: 34 * s, pointerFilter: 'none' }} />
+        <Label value={t('Earn embers by running')} color={white} fontSize={12 * s} textAlign="middle-left" textWrap="nowrap"
+          uiTransform={{ height: 18 * s, pointerFilter: 'none' }} />
         <Label value={`${t('Runs today')}: ${Math.min(gw.runs, RUN_TOKENS)}/${RUN_TOKENS}   ·   ${gw.best > 0 ? t('Best today: {n} m', { n: gw.best }) : t('No run yet today')}`}
           color={gold} fontSize={13 * s} textAlign="middle-left" textWrap="nowrap" uiTransform={{ height: 20 * s, pointerFilter: 'none' }} />
       </UiEntity>
@@ -222,7 +284,8 @@ function RunTab({ scale: s, inner }: { scale: number; inner: number }) {
     <Gap h={8} scale={s} />
     <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', flexShrink: 0, pointerFilter: 'none' }}>
       <Glow on={can} scale={s}>
-        <Action id="gw-run-go" text={label} onClick={gravewatchRun} width={300} height={46} scale={s} fontSize={17} primary accent="gold" disabled={!can} />
+        <Action id="gw-run-go" text={label} onClick={party ? () => { closeGravewatch(); openLobby() } : gravewatchRun}
+          width={300} height={46} scale={s} fontSize={17} primary accent="gold" disabled={party ? false : !can} />
       </Glow>
       <Label value={free ? (left === 1 ? t('1 free run left') : t('{n} free runs left', { n: left })) : t('Free runs spent')} color={muted} fontSize={12 * s} textAlign="middle-left" textWrap="nowrap"
         uiTransform={{ width: 120 * s, height: 20 * s, margin: { left: 12 * s }, pointerFilter: 'none' }} />
@@ -521,16 +584,19 @@ function BoardTab({ scale: s, inner }: { scale: number; inner: number }) {
           const level = gw.tiles[i] ?? 1
           const here = play.pawn === i
           const lit = here && landed
+          const icon = BOARD_TILE_ICON[tileInfo.kind]
           return <UiEntity key={`gw-tile-${i}`} uiTransform={{ positionType: 'absolute', position: { left: (col * cell + 2) * s, top: (row * cell + 2) * s }, width: tile * s, height: tile * s,
             borderRadius: 3 * s, borderWidth: lit ? (2 + 2 * pulse) * s : s, borderColor: lit ? Color4.create(1, 0.85 + 0.15 * pulse, 0.45 + 0.4 * pulse, 1) : here ? ember : Color4.create(0.5, 0.42, 0.25, 0.45),
-            flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: { top: 3 * s, bottom: 4 * s }, pointerFilter: 'none' }}
+            flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: { top: 2 * s, bottom: 3 * s }, pointerFilter: 'none' }}
             uiBackground={{ color: TILE_COLORS[tileInfo.kind] }}>
             <Label value={tileInfo.kind === 'embers' ? `${tilePay(tileInfo.amount, level)} ${t('embers')}` : tileInfo.kind === 'coins' ? `${tilePay(tileInfo.amount, level)} ${t('coins')}` : t(tileInfo.label)}
-              color={tileInfo.kind === 'curse' ? coral : tileInfo.kind === 'start' ? gold : white} fontSize={(tileInfo.kind === 'mystery' ? 16 : 9) * s} textAlign="middle-center" textWrap="wrap"
-              uiTransform={{ width: '100%', height: 26 * s, flexShrink: 0, pointerFilter: 'none' }} />
-            <UiEntity uiTransform={{ height: 8 * s, flexDirection: 'row', flexShrink: 0, pointerFilter: 'none' }}>
+              color={tileInfo.kind === 'curse' ? coral : tileInfo.kind === 'start' ? gold : white} fontSize={(tileInfo.kind === 'mystery' ? 12 : 8.5) * s} textAlign="middle-center" textWrap="nowrap"
+              uiTransform={{ width: '100%', height: 14 * s, flexShrink: 0, pointerFilter: 'none' }} />
+            <UiEntity uiTransform={{ width: 23 * s, height: 23 * s, flexShrink: 0, pointerFilter: 'none' }}
+              uiBackground={{ textureMode: 'stretch', texture: { src: BOARD_ICONS }, uvs: sheetUvs(icon[0], icon[1], 4, 2), color: Color4.White() }} />
+            <UiEntity uiTransform={{ height: 7 * s, flexDirection: 'row', flexShrink: 0, pointerFilter: 'none' }}>
               {tileInfo.kind !== 'start' && Array.from({ length: GW_TILE_MAX_LEVEL }, (_v, k) => <UiEntity key={`gw-pip-${i}-${k}`}
-                uiTransform={{ width: 8 * s, height: 8 * s, margin: { left: 0.5 * s, right: 0.5 * s }, flexShrink: 0, pointerFilter: 'none' }}
+                uiTransform={{ width: 7 * s, height: 7 * s, margin: { left: 0.4 * s, right: 0.4 * s }, flexShrink: 0, pointerFilter: 'none' }}
                 uiBackground={{ textureMode: 'stretch', texture: { src: STAR_IMAGE }, color: k < level ? Color4.White() : Color4.create(0.5, 0.5, 0.5, 0.25) }} />)}
             </UiEntity>
           </UiEntity>
@@ -561,7 +627,8 @@ function BoardTab({ scale: s, inner }: { scale: number; inner: number }) {
             uiTransform={{ flexGrow: 1, height: '100%', pointerFilter: 'none' }} />
         </UiEntity>
         <Line text={t('rolls left today')} scale={s} size={13} height={20} />
-        <Gap h={10} scale={s} />
+        <Label value={t('Roll. Move. Win the grave you land on.')} color={white} fontSize={11.5 * s} textAlign="middle-left" textWrap="wrap"
+          uiTransform={{ width: '100%', height: 30 * s, margin: { top: 4 * s, bottom: 6 * s }, flexShrink: 0, pointerFilter: 'none' }} />
         <Glow on={can} scale={s}>
           <Action id="gw-roll-one" text={rolling ? t('Rolling…') : t('Roll one die')} onClick={() => gravewatchRoll(false)} width={panel - 8} height={44} scale={s} fontSize={15} primary accent="gold" disabled={!can} />
         </Glow>
@@ -775,11 +842,10 @@ export function emberPayout(): number {
 function RisingTab({ scale: s, inner }: { scale: number; inner: number }) {
   const gw = getGravewatch()
   const clock = risingClock()
-  const dev = isDeveloper()
   const inside = inRisingArena()
   const unlock = clock.start > 0 ? GW_RISING_UNLOCKS[clock.start] : undefined
   const fight = clock.phase === 'fight'
-  const canJoin = !gw.guest && !gw.over && !inside && (fight || dev) && !myParty()
+  const canJoin = !gw.guest && !gw.over && !inside && fight && !myParty()
   let headline = ''
   let sub = ''
   if (clock.phase === 'closed') {
@@ -790,10 +856,10 @@ function RisingTab({ scale: s, inner }: { scale: number; inner: number }) {
     sub = t('{n} heroes in the yard. Join before the gate shuts at 10 PM ET.', { n: gw.arena })
   } else if (clock.phase === 'lobby') {
     headline = t('The Rising begins')
-    sub = t('Be in the hall; the Join button appears at 9:15.')
+    sub = t('Be in the hall; Play turns gold at 9:15.')
   } else {
     headline = `${t('Next Rising')}: ${etLabel(clock.start)}`
-    sub = t('Be in the hall and press Join.')
+    sub = t('Be in the hall when Play turns gold.')
   }
   const left = Math.max(0, Math.floor(clock.seconds))
   const boxes: [number, string][] = [[Math.floor(left / 86400), t('days')], [Math.floor((left % 86400) / 3600), t('hours')], [Math.floor((left % 3600) / 60), t('min')], [left % 60, t('sec')]]
@@ -834,13 +900,11 @@ function RisingTab({ scale: s, inner }: { scale: number; inner: number }) {
     <Gap h={8} scale={s} />
     <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', justifyContent: 'center', flexShrink: 0, pointerFilter: 'none' }}>
       {inside && <Action id="gw-rising-leave" text={t('Leave the yard')} onClick={() => gravewatchRising('leave')} width={220} height={46} scale={s} fontSize={15} accent="gold" />}
-      {!inside && (fight || (dev && clock.phase !== 'closed')) &&
-        <Glow on={canJoin} scale={s}>
-          <Action id="gw-rising-join" text={myParty() ? t('Leave your party first') : dev && !fight ? t('Open a test arena') : t('Join the Rising')} onClick={() => gravewatchRising('join')}
-            width={260} height={46} scale={s} fontSize={16} primary accent="gold" disabled={!canJoin} />
+      {!inside && clock.phase !== 'closed' &&
+        <Glow on={fight && canJoin} scale={s}>
+          <Action id="gw-rising-join" text={t('Play')} onClick={() => gravewatchRising('join')}
+            width={260} height={46} scale={s} fontSize={16} primary={fight} accent="gold" disabled={!canJoin} />
         </Glow>}
-      {!inside && !fight && !dev && clock.phase !== 'closed' && <Label value={t('The Join button appears here at 9:15 PM ET on Saturday.')} color={muted} fontSize={12 * s} textAlign="middle-center" textWrap="nowrap"
-        uiTransform={{ width: '100%', height: 22 * s, flexShrink: 0, pointerFilter: 'none' }} />}
     </UiEntity>
   </UiEntity>
 }
@@ -934,17 +998,54 @@ function Relic({ item, scale: s, width }: { key?: string; item: GwItem; scale: n
 
 // --- the hall and the yard ----------------------------------------------------------------------------
 
-/** The big button above Play: the event's name and what waits today. Gone after the event. */
+/** The featured event card above Play. Bright and chunky so it reads as a destination, not another utility button. */
 export function GravewatchButton({ scale: s, disabled }: { scale: number; disabled: boolean }) {
   if (!available()) return null
   const gw = getGravewatch()
   const glow = gw.known && !gw.guest && (gw.rounds === 0 || gw.spins === 0 || risingClock().phase === 'fight')
-  return <UiEntity uiTransform={{ flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0, pointerFilter: 'none' }}>
-    <StackButton id="gravewatch" label={t('Gravewatch')} icon="images/hud/gravewatch.png" scale={s} tone="dark" height={58} fontSize={18} disabled={disabled}
-      onClick={() => openGravewatch()} glow={glow} badge={risingClock().phase === 'fight' ? t('NOW') : t('NEW')} />
-    <Label value={gravewatchButtonLine()} color={ember} font="sans-serif" fontSize={10.5 * s} textAlign="middle-right" textWrap="nowrap"
-      uiTransform={{ width: 190 * s, height: 16 * s, margin: { top: 2 * s }, flexShrink: 0, pointerFilter: 'none' }} />
-    <UiEntity uiTransform={{ height: 8 * s, pointerFilter: 'none' }} />
+  const fight = risingClock().phase === 'fight'
+  const pulse = glow && !disabled ? 0.5 + 0.5 * Math.sin(Date.now() / 250) : 0
+  const edge = fight ? Color4.create(1, 0.38, 0.16, 1) : Color4.create(1, 0.76, 0.22, 1)
+  const badge = fight ? t('NOW') : glow ? t('NEW') : 'EVENT'
+  const spread = 2 + pulse * 4
+  return <UiEntity uiTransform={{ width: 190 * s, height: 90 * s, flexShrink: 0, pointerFilter: 'none' }}>
+    {/* The attention pulse belongs to the frame, not the artwork: it grows outward without moving the stack. */}
+    {glow && !disabled && <UiEntity uiTransform={{ positionType: 'absolute',
+      position: { left: -spread * s, top: -spread * s }, width: (190 + spread * 2) * s, height: (80 + spread * 2) * s,
+      borderRadius: (10 + spread) * s, borderWidth: (1 + pulse * 1.5) * s,
+      borderColor: Color4.create(1, fight ? 0.34 : 0.63, 0.12, 0.35 + pulse * 0.5), pointerFilter: 'none' }} />}
+    {/* Offset slab gives the card the chunky, toy-like depth of a Roblox game tile. */}
+    <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 4 * s, top: 6 * s }, width: 186 * s, height: 78 * s,
+      borderRadius: 10 * s, pointerFilter: 'none' }} uiBackground={{ color: Color4.create(0.10, 0.025, 0.17, 0.96) }} />
+    <UiEntity uiTransform={{ width: 190 * s, height: 80 * s, borderRadius: 10 * s,
+      borderWidth: 2 * s, borderColor: edge, opacity: disabled ? 0.4 : 1, pointerFilter: 'block' }}
+      uiBackground={{ color: Color4.create(0.08, 0.025, 0.12, 1) }}
+      onMouseEnter={() => { gravewatchHovered = true }}
+      onMouseLeave={() => { gravewatchHovered = false }}
+      onMouseDown={disabled ? undefined : () => { gravewatchHovered = false; openGravewatch() }}>
+      <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 4 * s, top: 4 * s },
+        width: 182 * s, height: 72 * s, borderRadius: 7 * s, pointerFilter: 'none' }}
+        uiBackground={{ textureMode: 'stretch', texture: { src: 'images/gravewatch/event-card.png' } }} />
+      {gravewatchHovered && !disabled && <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 },
+        width: '100%', height: '100%', borderRadius: 8 * s, pointerFilter: 'none' }}
+        uiBackground={{ color: Color4.create(0.36, 0.12, 0.54, 0.16) }} />}
+      <Label value="LIMITED EVENT" color={edge} font="sans-serif" fontSize={8.5 * s} textAlign="middle-left" textWrap="nowrap"
+        uiTransform={{ positionType: 'absolute', position: { left: 10 * s, top: 7 * s },
+          width: 105 * s, height: 12 * s, pointerFilter: 'none' }} />
+      <Label value={t('Gravewatch')} color={white} font="serif" fontSize={20 * s} textAlign="middle-left" textWrap="nowrap"
+        uiTransform={{ positionType: 'absolute', position: { left: 10 * s, bottom: 18 * s },
+          width: 150 * s, height: 25 * s, pointerFilter: 'none' }} />
+      <Label value={gravewatchButtonLine()} color={Color4.create(1, 0.77, 0.48, 1)} font="sans-serif" fontSize={9 * s}
+        textAlign="middle-left" textWrap="nowrap"
+        uiTransform={{ positionType: 'absolute', position: { left: 10 * s, bottom: 5 * s },
+          width: 150 * s, height: 14 * s, pointerFilter: 'none' }} />
+    </UiEntity>
+    <UiEntity uiTransform={{ positionType: 'absolute', position: { right: -6 * s, top: -8 * s }, width: 43 * s, height: 20 * s,
+      borderRadius: 10 * s, borderWidth: s, borderColor: Color4.create(0.12, 0.04, 0.02, 0.8),
+      alignItems: 'center', justifyContent: 'center', pointerFilter: 'none' }} uiBackground={{ color: edge }}>
+      <Label value={badge} color={Color4.create(0.12, 0.04, 0.02, 1)} font="sans-serif" fontSize={9 * s} textWrap="nowrap"
+        uiTransform={{ width: '100%', height: '100%', pointerFilter: 'none' }} />
+    </UiEntity>
   </UiEntity>
 }
 

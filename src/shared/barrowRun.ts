@@ -8,13 +8,13 @@
 
 /** Free runs a day, and the ember price of one more. */
 export const RUN_TOKENS = 3
-export const RUN_EXTRA_COST = 30
+export const RUN_EXTRA_COST = 60
 /** Distance tiers and what each pays; every tier reached in a run pays. */
 export const RUN_TIERS: readonly { m: number; embers: number }[] = [
-  { m: 300, embers: 20 },
-  { m: 600, embers: 40 },
-  { m: 1000, embers: 70 },
-  { m: 1500, embers: 120 }
+  { m: 300, embers: 10 },
+  { m: 600, embers: 20 },
+  { m: 1000, embers: 35 },
+  { m: 1500, embers: 60 }
 ]
 /** A mileage point per this many metres; the points train the three stats below. */
 export const RUN_MILE = 50
@@ -39,10 +39,14 @@ export function runWeekKey(dayKey: string): string {
 
 export const RUN_LANES = 3
 export const RUN_LANE_WIDTH = 2.2
+/** Host and client use the same sideways motion, so collision follows the visible runner. */
+export const RUN_LATERAL_SPEED = 11
 /** Metres a second at the start, the ramp per hundred metres, and the ceiling. */
 export const RUN_BASE_SPEED = 7
 export const RUN_SPEED_PER_100 = 0.35
 export const RUN_MAX_SPEED = 13
+/** Final ceiling after training and a lantern; prevents speed from outrunning reliable play. */
+export const RUN_MAX_TOTAL_SPEED = 18
 /** The meter: where it starts, what it loses a second (plus distance over RUN_DRAIN_RAMP a second more). */
 export const RUN_STAMINA = 100
 export const RUN_DRAIN = 3.2
@@ -51,17 +55,21 @@ export const RUN_DRAIN_RAMP = 500
 export const RUN_HIT_STAMINA = 22
 export const RUN_STUMBLE_SECONDS = 0.8
 export const RUN_STUMBLE_SPEED = 0.35
+/** Brief protection after damage prevents a two-obstacle row from chaining hits during the stumble. */
+export const RUN_HIT_GRACE_SECONDS = 1
 /** Pickups: an ember's stamina (and one ember to the tally), the lantern's burst, the ward's cover. */
 export const RUN_EMBER_STAMINA = 9
 export const RUN_LANTERN_SECONDS = 4
 export const RUN_LANTERN_MULT = 1.6
-export const RUN_WARD_SECONDS = 5
-/** The road is laid in chunks this long; the hero's reach to an item either way. */
+export const RUN_WARD_SECONDS = 4
+/** The road is laid in chunks this long; the largest overlap reach is used to scan it. */
 export const RUN_CHUNK = 40
-export const RUN_HIT_RADIUS = 0.9
+export const RUN_HIT_RADIUS = 1.6
 /** The host runs this far behind the clock so lane changes arrive in time, and tells the client where it stands this often. */
-export const RUN_HOST_DELAY = 0.25
+export const RUN_HOST_DELAY = 0.4
 export const RUN_SYNC_SECONDS = 0.5
+/** Host and client both advance the deterministic race in exactly this-sized slice. */
+export const RUN_STEP_SECONDS = 0.025
 /** A run cannot outlast this, whatever the meter says. */
 export const RUN_MAX_SECONDS = 240
 
@@ -70,6 +78,24 @@ export type RunItem = { kind: RunItemKind; lane: number; at: number; key: string
 
 export function isObstacle(kind: RunItemKind): boolean {
   return kind === 'stone' || kind === 'tomb' || kind === 'ghoul'
+}
+
+export type RunItemBounds = Readonly<{ width: number; height: number; depth: number }>
+
+/** Model-sized boxes in metres. Pickups stay slightly generous so they remain pleasant to collect. */
+export function runItemBounds(kind: RunItemKind): RunItemBounds {
+  switch (kind) {
+    case 'stone': return { width: 0.651, height: 1.776, depth: 0.649 }
+    // Slightly inset from the stone model so its long ends and corners do not feel unfair from the overhead camera.
+    case 'tomb': return { width: 1.22, height: 1.77, depth: 2.35 }
+    case 'ghoul': return { width: 0.9, height: 2, depth: 0.65 }
+    case 'lantern': return { width: 0.6, height: 0.8, depth: 0.6 }
+    default: return { width: 0.8, height: 0.8, depth: 0.8 }
+  }
+}
+
+export function runItemHitRadius(kind: RunItemKind): number {
+  return runItemBounds(kind).depth / 2
 }
 
 /** A small fast PRNG (mulberry32) so both sides lay the same road. */
@@ -122,10 +148,15 @@ export function chunkItems(seed: number, index: number, luck = 0): RunItem[] {
       // Something to run through in an open lane just past it.
       const open: number[] = []
       for (let l = 0; l < RUN_LANES; l++) if (!lanes.includes(l)) open.push(l)
-      const pickChance = 0.55 + luck * 0.08
+      // Luck helps without making every obstacle produce a pickup. Wards stay
+      // uncommon so a Luck build cannot chain near-permanent immunity.
+      const pickChance = Math.min(0.85, 0.55 + luck * 0.03)
       if (r() < pickChance) {
         const lane = open[Math.floor(r() * open.length)]
-        const kind: RunItemKind = r() < 0.08 + luck * 0.02 ? 'ward' : r() < 0.14 + luck * 0.03 ? 'lantern' : 'ember'
+        const special = r()
+        const wardChance = 0.04 + luck * 0.006
+        const lanternChance = 0.14 + luck * 0.012
+        const kind: RunItemKind = special < wardChance ? 'ward' : special < wardChance + lanternChance ? 'lantern' : 'ember'
         items.push({ kind, lane, at: at + 2.2, key: `${index}:${n++}` })
       }
       at += gapMin + r() * (gapMax - gapMin)
@@ -136,10 +167,11 @@ export function chunkItems(seed: number, index: number, luck = 0): RunItem[] {
 }
 
 export type RunState = {
-  /** Run seconds, metres along the road, the lane (0 left, 2 right). */
+  /** Run seconds, metres along the road, target lane (0 left, 2 right), and current lateral offset. */
   t: number
   s: number
   lane: number
+  x: number
   stamina: number
   staminaMax: number
   /** Training and cheer, as a factor on speed. */
@@ -147,6 +179,7 @@ export type RunState = {
   luck: number
   /** Seconds left of each. */
   stumble: number
+  hitGrace: number
   lantern: number
   ward: number
   hits: number
@@ -157,7 +190,10 @@ export type RunState = {
 }
 
 export function newRunState(staminaMax = RUN_STAMINA, speedMult = 1, luck = 0): RunState {
-  return { t: 0, s: 0, lane: 1, stamina: staminaMax, staminaMax, speedMult, luck, stumble: 0, lantern: 0, ward: 0, hits: 0, embers: 0, picks: 0, over: false, taken: new Set() }
+  return {
+    t: 0, s: 0, lane: 1, x: laneOffset(1), stamina: staminaMax, staminaMax, speedMult, luck,
+    stumble: 0, hitGrace: 0, lantern: 0, ward: 0, hits: 0, embers: 0, picks: 0, over: false, taken: new Set()
+  }
 }
 
 /** The hero's speed right now, in metres a second. */
@@ -165,7 +201,7 @@ export function runSpeed(st: RunState): number {
   let v = Math.min(RUN_MAX_SPEED, RUN_BASE_SPEED + RUN_SPEED_PER_100 * (st.s / 100)) * st.speedMult
   if (st.lantern > 0) v *= RUN_LANTERN_MULT
   if (st.stumble > 0) v *= RUN_STUMBLE_SPEED
-  return v
+  return Math.min(RUN_MAX_TOTAL_SPEED, v)
 }
 
 export type RunEvent = 'hit' | 'ember' | 'lantern' | 'ward' | 'smash' | 'over'
@@ -175,9 +211,13 @@ export function stepRun(st: RunState, dt: number, seed: number): RunEvent[] {
   const events: RunEvent[] = []
   if (st.over || dt <= 0) return events
   const s0 = st.s
+  const targetX = laneOffset(st.lane)
+  const lateralStep = RUN_LATERAL_SPEED * dt
+  st.x = Math.abs(targetX - st.x) <= lateralStep ? targetX : st.x + Math.sign(targetX - st.x) * lateralStep
   st.s += runSpeed(st) * dt
   st.t += dt
   st.stumble = Math.max(0, st.stumble - dt)
+  st.hitGrace = Math.max(0, st.hitGrace - dt)
   st.lantern = Math.max(0, st.lantern - dt)
   st.ward = Math.max(0, st.ward - dt)
   st.stamina -= (RUN_DRAIN + st.s / RUN_DRAIN_RAMP) * dt
@@ -187,14 +227,22 @@ export function stepRun(st: RunState, dt: number, seed: number): RunEvent[] {
   const lastChunk = Math.floor(hi / RUN_CHUNK)
   for (let c = firstChunk; c <= lastChunk; c++) {
     for (const item of chunkItems(seed, c, st.luck)) {
-      if (item.lane !== st.lane || item.at < lo || item.at > hi || st.taken.has(item.key)) continue
+      const bounds = runItemBounds(item.kind)
+      const radius = runItemHitRadius(item.kind)
+      const lateralReach = bounds.width / 2
+      if (Math.abs(laneOffset(item.lane) - st.x) > lateralReach ||
+        item.at < s0 - radius || item.at > st.s + radius || st.taken.has(item.key)) continue
       st.taken.add(item.key)
       if (isObstacle(item.kind)) {
         if (st.ward > 0) {
           events.push('smash')
+        } else if (st.hitGrace > 0) {
+          // It is already in `taken`, so an obstacle crossed during grace
+          // cannot deal delayed damage when protection ends.
         } else {
           st.stamina -= RUN_HIT_STAMINA
           st.stumble = RUN_STUMBLE_SECONDS
+          st.hitGrace = RUN_HIT_GRACE_SECONDS
           st.hits++
           events.push('hit')
         }

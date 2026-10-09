@@ -1,0 +1,4 @@
+Edited with built-in image_gen.
+Reference: images/scene-thumbnail-halloween.png
+
+Use case: text-localization. Edit the supplied thumbnail with a single precise text change: replace the word "HALLOWEEN" in the small glowing orange plaque below "DUNGEONS OF ANTROM" with the exact text "GraveWatch" (capital G and capital W, all other letters lowercase, no space). Match the original luminous orange-gold fantasy serif lettering, centered within the same plaque, fitting the new word cleanly. Keep the entire rest of the image unchanged: title DUNGEONS OF ANTROM and crown, plaque frame and pumpkin ornaments, warrior face and armor, axe, three adventurers, fortress, ghost figures, pumpkins, bats, moon, lighting, colors, composition, and original landscape dimensions. Only replace the plaque lettering. Do not repaint, restyle, crop or add anything else.

@@ -6,20 +6,24 @@
 import { engine, InputModifier, PointerLock, Transform } from '@dcl/sdk/ecs'
 import { markMilestone } from './clientInfo'
 import { getDungeonState, loadDungeon } from './dungeon'
+import { snapCrawlerCameraToPlayer } from './dungeon/crawlerCamera'
 import { PIT_GATE_REACH, PIT_GATE_TAG } from './dungeon/hub'
 import { setClientRun } from './dungeonEnemies'
 import { getLootState, getRunLoot, resetRunLoot } from './loot'
 import { isClientSynced, localAddress } from './multiplayer'
 import { onNet, sendNet } from './net'
 import { HUB, setPartyLookup } from './partyLookup'
-import { movePlayerToSpawn } from './playerPlacement'
-import { applyCameraSetting } from './settings'
+import { movePlayerToSpawn, movePlayerToSpawnAndWait } from './playerPlacement'
+import { applyCameraSetting, getSettings, setGravecallerRevealSeen } from './settings'
 import { isRealmPreloaded } from './preloadPlan'
 import { t } from './i18n'
-import { getPickerState } from './characterPicker'
+import { getPickerState, setCharacterProgress } from './characterPicker'
 import { getPlayerCharacterState } from './playerCharacter'
 import { COMING_SOON, DIFFICULTIES, difficultyById, HUB_LEVEL, levelById, LEVELS, MAX_PARTY, RAID_PARTY, RealmDefinition } from './shared/levels'
 import { fxSound } from './combatFx'
+import { beginSceneTransition } from './sceneTransitionUi'
+import { isTitleOpen } from './titleScreen'
+import { tutorialActive } from './tutorial'
 
 /** What the player has picked in the lobby before they have a party of their own. */
 let pickLevel = 0
@@ -34,13 +38,26 @@ let pickedFor = ''
  */
 export function getLobbyPick(): { level: number; diff: number } {
   const party = myParty()
-  if (!party) return { level: pickLevel, diff: pickDiff }
+  if (!party) return { level: visibleLevel(pickLevel), diff: pickDiff }
   const browsing = party.state === 'open' && party.leader === localAddress() && comingSoonPick(pickLevel) !== undefined
-  return { level: browsing ? pickLevel : party.level, diff: party.diff }
+  return { level: visibleLevel(browsing ? pickLevel : party.level), diff: party.diff }
 }
 
-/** Pages on the war table: every dungeon, then the realms with no map yet (COMING_SOON), which cannot be picked for a party. */
-export const LOBBY_PAGES = LEVELS.length + COMING_SOON.length
+/** A hidden level is never shown: the first page stands in for it. */
+function visibleLevel(level: number): number {
+  return LEVELS[level]?.hidden ? lobbyPages()[0] : level
+}
+
+/**
+ * Pages on the war table, as pick levels in order: every dungeon not hidden,
+ * then the realms with no map yet
+ * (COMING_SOON, numbered on past LEVELS), which cannot be picked for a party.
+ */
+export function lobbyPages(): number[] {
+  const pages = LEVELS.filter((l) => !l.hidden).map((l) => l.id)
+  for (let i = 0; i < COMING_SOON.length; i++) pages.push(LEVELS.length + i)
+  return pages
+}
 
 /** The realm a page past the last dungeon shows as coming soon, or undefined for a real level. */
 export function comingSoonPick(level: number): RealmDefinition | undefined {
@@ -48,14 +65,17 @@ export function comingSoonPick(level: number): RealmDefinition | undefined {
 }
 
 export function setLobbyPickLevel(level: number) {
-  pickLevel = Math.max(0, Math.min(LOBBY_PAGES - 1, Math.floor(level)))
+  pickLevel = Math.max(0, Math.min(LEVELS.length + COMING_SOON.length - 1, Math.floor(level)))
   const party = myParty()
   if (party && isLeader() && pickLevel < LEVELS.length) setPartyLevel(pickLevel)
 }
 
 export function cycleLobbyPickLevel(dir: number) {
-  const current = getLobbyPick().level
-  setLobbyPickLevel((current + dir + LOBBY_PAGES) % LOBBY_PAGES)
+  const pages = lobbyPages()
+  const at = pages.indexOf(getLobbyPick().level)
+  // A stale hidden pick steps from the start.
+  const from = at < 0 ? (dir > 0 ? -1 : 0) : at
+  setLobbyPickLevel(pages[(from + dir + pages.length) % pages.length])
 }
 
 export function setLobbyPickDiff(diff: number) {
@@ -119,9 +139,12 @@ type LobbyState = {
   /** A line over the hall for a few seconds: the welcome, or what the last run changed. */
   notice: string
   noticeFor: number
+  /** One-time reveal when Bogmaw's first clear opens the Crypt and Gravecaller. */
+  gravecallerReveal: boolean
+  gravecallerNew: boolean
 }
 
-const state: LobbyState = { parties: [], open: false, page: 'choose', silence: 0, progress: [], result: undefined, levelId: HUB_LEVEL.id, banner: '', notice: '', noticeFor: 0 }
+const state: LobbyState = { parties: [], open: false, page: 'choose', silence: 0, progress: [], result: undefined, levelId: HUB_LEVEL.id, banner: '', notice: '', noticeFor: 0, gravecallerReveal: false, gravecallerNew: false }
 /** The phase the built dungeon is for, and the party's run counter it was built for. */
 let appliedPhase = HUB
 let appliedRun = -1
@@ -153,7 +176,14 @@ export function initializeParty() {
     }
   })
   onNet('progress', (msg) => {
-    if (msg.id.toLowerCase() === localAddress()) state.progress = [...msg.progress]
+    if (msg.id.toLowerCase() === localAddress()) {
+      if (state.progress.length > 2 && (state.progress[2] ?? 0) === 0 && (msg.progress[2] ?? 0) > 0 && !getSettings().gravecallerRevealSeen) {
+        state.gravecallerReveal = true
+        state.gravecallerNew = true
+      }
+      state.progress = [...msg.progress]
+      setCharacterProgress(msg.progress)
+    }
   })
   onNet('invite', (msg) => {
     if (msg.to.toLowerCase() !== localAddress() || myPhase() !== HUB) return
@@ -227,6 +257,23 @@ export function getLobbyState(): Readonly<LobbyState> {
 
 export function setProgress(progress: readonly number[]) {
   state.progress = [...progress]
+  setCharacterProgress(progress)
+}
+
+export function dismissGravecallerReveal() {
+  state.gravecallerReveal = false
+  setGravecallerRevealSeen()
+}
+
+export function acknowledgeGravecaller() {
+  state.gravecallerNew = false
+}
+
+/** Called after saved preferences load, so an unlocked wallet sees the reveal exactly once across sessions. */
+export function presentGravecallerUnlockIfNeeded() {
+  if ((state.progress[2] ?? 0) <= 0 || getSettings().gravecallerRevealSeen) return
+  state.gravecallerReveal = true
+  state.gravecallerNew = true
 }
 
 export function myParty(): PartyInfo | undefined {
@@ -438,6 +485,9 @@ function update(dt: number) {
   }
   if (leaving > 0) leaving = phase === HUB ? 0 : leaving - span
   syncReadiness(party, span)
+  // Party snapshots may arrive behind the intro. Do not rebuild or cover the
+  // title/tutorial; dungeon entry begins once normal play owns the screen.
+  if ((isTitleOpen() || tutorialActive()) && (phase !== appliedPhase || (party && phase !== HUB && party.run !== appliedRun))) return
   if (phase !== appliedPhase) {
     if (phase === HUB) enterHub()
     else if (party) enterRun(party)
@@ -462,11 +512,9 @@ function update(dt: number) {
 /**
  * Readiness the player never has to press. As leader of an open party we are
  * ready when the realm is on disk (the host holds the doors while we are not,
- * and Go now is refused until then). As a member on the results, we are ready as soon as they show: the
- * leader decides, and anyone who has had enough leaves for the hall instead.
+ * and Go now is refused until then).
  */
 let readinessAge = 0
-let autoReadyRun = -1
 function syncReadiness(party: PartyInfo | undefined, span: number) {
   readinessAge += span
   if (!party || readinessAge < 1) return
@@ -479,10 +527,6 @@ function syncReadiness(party: PartyInfo | undefined, span: number) {
       readinessAge = 0
       act(want ? 'ready' : 'unready')
     }
-  } else if (party.state === 'done' && !leader && !ready && autoReadyRun !== party.run) {
-    autoReadyRun = party.run
-    readinessAge = 0
-    act('ready')
   }
 }
 
@@ -497,12 +541,15 @@ function enterRun(party: PartyInfo) {
   const level = levelById(party.level)
   state.levelId = level.id
   closeLobby()
-  setClientRun({ party: party.id, level: party.level, diff: party.diff, crowd: party.crowd })
-  applyCameraSetting()
-  loadDungeon(level.seed, level.style)
-  movePlayerToSpawn()
-  markMilestone(`dungeon:${level.id}`)
-  console.log(`[DG] entering ${level.name} (${difficultyById(party.diff).name}) with party ${party.id}, run ${party.run}`)
+  beginSceneTransition(t(level.name), async () => {
+    setClientRun({ party: party.id, level: party.level, diff: party.diff, crowd: party.crowd })
+    applyCameraSetting()
+    loadDungeon(level.seed, level.style)
+    await movePlayerToSpawnAndWait()
+    snapCrawlerCameraToPlayer()
+    markMilestone(`dungeon:${level.id}`)
+    console.log(`[DG] entering ${level.name} (${difficultyById(party.diff).name}) with party ${party.id}, run ${party.run}`)
+  })
 }
 
 function enterHub() {

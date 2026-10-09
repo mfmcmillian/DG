@@ -1,0 +1,217 @@
+{
+  "realm": "isle",
+  "textures": {
+    "rock": "models/kits/isle/rock.png",
+    "cliff": "models/kits/isle/cliff.png"
+  },
+  "pieces": {
+    "isle_cliff_a": {
+      "src": "models/kits/isle/isle_cliff_a.gltf",
+      "size": [
+        26.825,
+        23.513,
+        32.965
+      ],
+      "tris": 452,
+      "collide": false
+    },
+    "isle_cliff_b": {
+      "src": "models/kits/isle/isle_cliff_b.gltf",
+      "size": [
+        38.1,
+        88.228,
+        45.243
+      ],
+      "tris": 452,
+      "collide": false
+    },
+    "isle_cliff_c": {
+      "src": "models/kits/isle/isle_cliff_c.gltf",
+      "size": [
+        37.663,
+        42.689,
+        43.111
+      ],
+      "tris": 664,
+      "collide": false
+    },
+    "isle_cliff_flat": {
+      "src": "models/kits/isle/isle_cliff_flat.gltf",
+      "size": [
+        31.393,
+        24.6,
+        30.068
+      ],
+      "tris": 246,
+      "collide": false
+    },
+    "isle_cliff_curve": {
+      "src": "models/kits/isle/isle_cliff_curve.gltf",
+      "size": [
+        88.785,
+        46.775,
+        137.069
+      ],
+      "tris": 396,
+      "collide": false
+    },
+    "isle_rock_a": {
+      "src": "models/kits/isle/isle_rock_a.gltf",
+      "size": [
+        1.366,
+        1.042,
+        1.135
+      ],
+      "tris": 162,
+      "collide": false
+    },
+    "isle_rock_b": {
+      "src": "models/kits/isle/isle_rock_b.gltf",
+      "size": [
+        2.593,
+        1.195,
+        1.985
+      ],
+      "tris": 196,
+      "collide": false
+    },
+    "isle_clouds": {
+      "src": "models/kits/isle/isle_clouds.gltf",
+      "size": [
+        310.268,
+        57.83,
+        295.389
+      ],
+      "tris": 18556,
+      "collide": false
+    },
+    "isle_mountains": {
+      "src": "models/kits/isle/isle_mountains.gltf",
+      "size": [
+        23.804,
+        5.627,
+        24.368
+      ],
+      "tris": 10771,
+      "collide": false
+    },
+    "isle_bridge": {
+      "src": "models/kits/isle/isle_bridge.gltf",
+      "size": [
+        5.0,
+        6.008,
+        5.0
+      ],
+      "tris": 68
+    },
+    "isle_bridge_broken": {
+      "src": "models/kits/isle/isle_bridge_broken.gltf",
+      "size": [
+        3.594,
+        2.68,
+        5.354
+      ],
+      "tris": 684,
+      "collide": false
+    },
+    "isle_skull": {
+      "src": "models/kits/isle/isle_skull.gltf",
+      "size": [
+        1.729,
+        2.069,
+        2.439
+      ],
+      "tris": 1004,
+      "collide": false
+    },
+    "isle_ribs": {
+      "src": "models/kits/isle/isle_ribs.gltf",
+      "size": [
+        4.137,
+        3.557,
+        4.849
+      ],
+      "tris": 4002,
+      "collide": false
+    },
+    "isle_battlement": {
+      "src": "models/kits/isle/isle_battlement.gltf",
+      "size": [
+        5.0,
+        1.988,
+        0.921
+      ],
+      "tris": 346
+    },
+    "isle_waterfall": {
+      "src": "models/kits/isle/isle_waterfall.gltf",
+      "size": [
+        8.503,
+        116.31,
+        6.717
+      ],
+      "tris": 2070,
+      "collide": false
+    },
+    "isle_tower": {
+      "src": "models/kits/isle/isle_tower.gltf",
+      "size": [
+        9.517,
+        31.282,
+        9.517
+      ],
+      "tris": 45167,
+      "collide": false
+    },
+    "isle_tower_ruin": {
+      "src": "models/kits/isle/isle_tower_ruin.gltf",
+      "size": [
+        9.707,
+        35.223,
+        13.908
+      ],
+      "tris": 54521,
+      "collide": false
+    },
+    "isle_gatehouse": {
+      "src": "models/kits/isle/isle_gatehouse.gltf",
+      "size": [
+        15.469,
+        28.987,
+        46.077
+      ],
+      "tris": 37903,
+      "colliders": true
+    },
+    "isle_ruin_a": {
+      "src": "models/kits/isle/isle_ruin_a.gltf",
+      "size": [
+        113.059,
+        28.102,
+        87.716
+      ],
+      "tris": 19878,
+      "collide": false
+    },
+    "isle_ruin_b": {
+      "src": "models/kits/isle/isle_ruin_b.gltf",
+      "size": [
+        34.519,
+        25.149,
+        30.101
+      ],
+      "tris": 32234,
+      "collide": false
+    },
+    "isle_spire": {
+      "src": "models/kits/isle/isle_spire.gltf",
+      "size": [
+        10.414,
+        25.34,
+        12.249
+      ],
+      "tris": 8012,
+      "collide": false
+    }
+  }
+}

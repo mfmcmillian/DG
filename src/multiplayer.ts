@@ -3,6 +3,7 @@ import { clampLevel } from './shared/upgradeRanks'
 import { clampAffix } from './shared/affixes'
 import { Vector3 } from '@dcl/sdk/math'
 import { isStateSyncronized, syncEntity } from '@dcl/sdk/network'
+import { AUTH_SERVER_PEER_ID } from '@dcl/sdk/network/message-bus-sync'
 import { CombatPose, isMeleeSwing, MAX_COMBAT_HEALTH } from './combatActions'
 import { EquipmentMotion } from './combatAnimations'
 import { CharacterAppearance } from './appearance'
@@ -785,7 +786,53 @@ const VITALS_SECONDS = 2
 let heartbeatAge = 0
 let vitalsAge = 0
 
+/**
+ * May `sender` write a hero entity? Only its owner: the client that created it,
+ * and whose address every `id` on it carries. The server itself always may.
+ * The SDK asks this for each component write a client sends (PUT or DELETE)
+ * before it applies the write or relays it; a refused write is answered with
+ * the state the server holds, so the sender's copy snaps back.
+ */
+function ownsHero(sender: string, createdBy: string, ...ids: Array<string | undefined>): boolean {
+  if (!sender || sender === AUTH_SERVER_PEER_ID) return true
+  const who = sender.toLowerCase()
+  if (createdBy && createdBy !== AUTH_SERVER_PEER_ID && createdBy.toLowerCase() !== who) return false
+  return ids.every((id) => id === undefined || id.toLowerCase() === who)
+}
+
+/**
+ * Relayed cosmetics (impacts, shots, casts, pit fire) go to every client in the
+ * room, so one client sending them in a loop would cost everyone. Each sender
+ * gets a bucket per message: `burst` sends at once, refilling `perSecond`.
+ */
+const relayBuckets = new Map<string, { tokens: number; at: number }>()
+function relayAllowed(from: string, kind: string, burst: number, perSecond: number): boolean {
+  const key = `${kind}:${from.toLowerCase()}`
+  const now = Date.now()
+  let b = relayBuckets.get(key)
+  if (!b) {
+    b = { tokens: burst, at: now }
+    relayBuckets.set(key, b)
+  }
+  b.tokens = Math.min(burst, b.tokens + ((now - b.at) / 1000) * perSecond)
+  b.at = now
+  if (b.tokens < 1) return false
+  b.tokens -= 1
+  return true
+}
+
+function finite(...values: number[]): boolean {
+  return values.every((v) => Number.isFinite(v))
+}
+
 function bindServer() {
+  // Only a hero's owner may write its synced body and look (src/shared/heroBody.ts):
+  // nobody can move, re-arm or "dodge" another player's hero, nor take down their body.
+  HeroBody.validateBeforeChange(({ currentValue, newValue, senderAddress, createdBy }) =>
+    ownsHero(senderAddress, createdBy, currentValue?.id, newValue?.id))
+  HeroLook.validateBeforeChange(({ entity, senderAddress, createdBy }) =>
+    ownsHero(senderAddress, createdBy, HeroBody.getOrNull(entity)?.id))
+
   onNet('hitEnemy', (msg, context) => {
     if (!context) return
     onHitEnemy?.(context.from.toLowerCase(), msg.i, msg.motion, msg.finisher)
@@ -793,14 +840,17 @@ function bindServer() {
   onNet('impact', (msg, context) => {
     // Relay to the other clients; solo has none (and relaying would loop back here).
     if (!context || isSolo()) return
+    if (!finite(msg.x, msg.y, msg.z, msg.vol) || !relayAllowed(context.from, 'impact', 16, 10)) return
     sendNet('impact', { ...msg, id: context.from.toLowerCase() })
   })
   onNet('shot', (msg, context) => {
     if (!context || isSolo()) return
+    if (!finite(msg.x, msg.y, msg.z, msg.yaw, msg.pitch) || !relayAllowed(context.from, 'shot', 8, 5)) return
     sendNet('shot', { ...msg, id: context.from.toLowerCase() })
   })
   onNet('pitEvent', (msg, context) => {
     if (!context || isSolo()) return
+    if (!relayAllowed(context.from, 'pitEvent', 6, 2)) return
     if (msg.beat === 'result') metricsUpgrade(context.from, !!msg.success)
     sendNet('pitEvent', { ...msg, id: context.from.toLowerCase() })
   })
@@ -810,6 +860,8 @@ function bindServer() {
   })
   onNet('skillCast', (msg, context) => {
     if (!context) return
+    // The host applies the aura or zone from this too, so a bad or flooded cast is dropped whole.
+    if (!finite(msg.x, msg.z, msg.yaw) || !relayAllowed(context.from, 'skillCast', 4, 2)) return
     const id = context.from.toLowerCase()
     onSkillCast?.(id, msg.skill, msg.x, msg.z, msg.yaw)
     if (!isSolo()) sendNet('skillCast', { ...msg, id })

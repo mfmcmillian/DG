@@ -6,10 +6,10 @@ import { cinematicPlaying } from './cinematics'
 import { Quaternion, Vector3 } from '@dcl/sdk/math'
 import { movePlayerTo } from '~system/RestrictedActions'
 import { COURTYARD, isInCourtyard } from './courtyard'
-import { EquipmentLoadout } from './equipmentCatalog'
+import { DEFAULT_LOADOUTS, EquipmentLoadout } from './equipmentCatalog'
 import {
   AttackContext, createRoamingCombat, healRoamingCharacter, hitRoamingCharacter, isRoamingBlocking, isRoamingInvulnerable, isRoamingSwinging,
-  isRoamingRooted, maxHealth, maxStamina, resetRoamingCombat, restoreRoamingHealth, RoamingCombatHooks, setGearHealth, setGearStamina, setRoamingClass, setRoamingHealth, trackLocalCombat, updateRoamingCombat
+  isRoamingRooted, maxHealth, maxStamina, resetRoamingCombat, restoreRoamingHealth, RoamingCombatHooks, setGearHealth, setGearStamina, setRoamingClass, setRoamingDefinition, setRoamingHealth, trackLocalCombat, updateRoamingCombat
 } from './roamingCombat'
 import { CombatPose, HeroAttackMotion, isHeavyMotion, isRangedAttack, isSlashMotion, WeaponMotion } from './combatActions'
 import { getCommittedAppearance } from './appearance'
@@ -28,6 +28,7 @@ import { flushNativeMotion, mirrorLocalMotion, nativeHeroOn, nativeNote, setLoca
 import { CRAWLER_CAMERA, isCrawlerCameraOn, kickCrawlerCamera, noteScriptedMove } from './dungeon/crawlerCamera'
 import { SkillDef } from './shared/skills'
 import { upgradeAffixOf, upgradeLevelOf, upgradeRankOf } from './shared/upgradeRanks'
+import { DEMON_FORM_CLASS } from './heroClasses'
 
 type Locomotion = 'idle' | 'walk' | 'run'
 export type PlayerCharacterState = {
@@ -53,10 +54,15 @@ let characterRoot: Entity | undefined
 let systemAdded = false
 let active = false
 let suspended = false
+/** Tutorial recruits are local-only and never represent this wallet to other players. */
+let publishingEnabled = true
+/** Timed renderer travel may report only its endpoint; publish this smooth estimate meanwhile so host AI can follow. */
+let publishedTravel: { from: Vector3; to: Vector3; age: number; duration: number } | undefined
 let hasReadyCharacter = false
 let visible = false
 let characterId: string | undefined
 let requestedLoadout: EquipmentLoadout | undefined
+let demonFormLeft = 0
 /** Gravewatch's pumpkin curse: until this local time the hero wears the grinning mask over whatever helm they chose (cosmetic; the bonuses stay the chosen helm's). */
 let curseUntil = 0
 const CURSE_HEAD = 'brute-head'
@@ -79,11 +85,36 @@ function wornLoadout(): EquipmentLoadout | undefined {
 }
 
 function refreshWorn() {
+  if (demonFormLeft > 0) return
   const worn = wornLoadout()
   if (!characterId || !worn || characterRoot === undefined || !active) return
   setEquipmentAvatar(characterRoot, characterId, worn, false, requestedOptions)
   setEquipmentVisible(characterRoot, visible)
   setEquipmentMotion(characterRoot, locomotion)
+}
+
+export function isPlayerDemonForm(): boolean {
+  return demonFormLeft > 0
+}
+
+export function beginPlayerDemonForm(seconds: number, scale: number) {
+  if (characterId !== 'gravecaller' || characterRoot === undefined || !active) return
+  demonFormLeft = Math.max(demonFormLeft, seconds)
+  resetRoamingCombat(roamingCombat)
+  setRoamingDefinition(roamingCombat, DEMON_FORM_CLASS)
+  setEquipmentAvatar(characterRoot, 'dk-demon', { ...DEFAULT_LOADOUTS.vanguard, weapon: 'dk-halberd-01' }, false)
+  Transform.getMutable(characterRoot).scale = Vector3.create(scale, scale, scale)
+  setEquipmentVisible(characterRoot, visible)
+  setEquipmentMotion(characterRoot, 'idle')
+}
+
+export function endPlayerDemonForm() {
+  if (demonFormLeft <= 0) return
+  demonFormLeft = 0
+  resetRoamingCombat(roamingCombat)
+  setRoamingClass(roamingCombat, characterId)
+  if (characterRoot !== undefined) Transform.getMutable(characterRoot).scale = Vector3.One()
+  refreshWorn()
 }
 let requestedOptions: EquipmentAvatarOptions = {}
 let samplePosition: Vector3 | undefined
@@ -298,7 +329,7 @@ function turnPlayer(yaw: number): Promise<void> | undefined {
 const LUNGE_DISTANCE: Record<HeroAttackMotion, number> = {
   attack_light: 0.45, attack_light2: 0.4, attack_heavy: 0.7,
   // The Berserker: the cross-cut steps like a light, the smash plants, the leap flies.
-  attack_light3: 0.45, heavy_combo_c: 0.5, leap: 2.4,
+  attack_light3: 0.45, heavy_combo_a: 0.5, heavy_combo_c: 0.5, leap: 2.4,
   // Shots are fired from a standstill; the bow bash is a short shove forward.
   bow_shoot: 0, bow_volley: 0, bow_bash: 0.35, cast_bolt: 0, cast_nova: 0
 }
@@ -561,6 +592,8 @@ export function setPlayerCharacter(
   const root = initializePlayerCharacter()
   resetRoamingCombat(roamingCombat)
   setRoamingClass(roamingCombat, nextCharacterId)
+  demonFormLeft = 0
+  Transform.getMutable(root).scale = Vector3.One()
   characterId = nextCharacterId
   requestedLoadout = { ...loadout }
   requestedOptions = { ...options }
@@ -573,6 +606,24 @@ export function setPlayerCharacter(
   // Keep its visibility and native-avatar suppression while the new outfit loads.
   setEquipmentVisible(root, visible)
   setEquipmentMotion(root, locomotion)
+}
+
+export function setPlayerCharacterPublishing(enabled: boolean) {
+  publishingEnabled = enabled
+  if (!enabled) withdrawHero()
+}
+
+export function beginPlayerPublishedTravel(from: Vector3, to: Vector3, duration: number) {
+  publishedTravel = {
+    from: Vector3.create(from.x, from.y, from.z),
+    to: Vector3.create(to.x, to.y, to.z),
+    age: 0,
+    duration: Math.max(0.01, duration)
+  }
+}
+
+export function clearPlayerPublishedTravel() {
+  publishedTravel = undefined
 }
 
 /** The legendary aura for our own outfit: this hero's copies as the pit has raised them. */
@@ -597,6 +648,8 @@ export function adoptPlayerCharacter(
 
   resetRoamingCombat(roamingCombat)
   setRoamingClass(roamingCombat, nextCharacterId)
+  demonFormLeft = 0
+  Transform.getMutable(root).scale = Vector3.One()
   characterId = nextCharacterId
   requestedLoadout = { ...loadout }
   requestedOptions = { ...options }
@@ -647,8 +700,10 @@ export function disposePlayerCharacter() {
   hasReadyCharacter = false
   visible = false
   characterId = undefined
+  demonFormLeft = 0
   requestedLoadout = undefined
   requestedOptions = {}
+  publishedTravel = undefined
   setGearStamina(0)
   setGearHealth(0)
   samplePosition = undefined
@@ -676,6 +731,14 @@ function isInsideScene(position: Vector3) {
 
 function updatePlayerCharacter(dt: number) {
   if (characterRoot === undefined || !active) return
+  if (demonFormLeft > 0) {
+    demonFormLeft = Math.max(0, demonFormLeft - Math.max(0, dt))
+    if (demonFormLeft === 0) {
+      setRoamingClass(roamingCombat, characterId)
+      Transform.getMutable(characterRoot).scale = Vector3.One()
+      refreshWorn()
+    }
+  }
   const player = Transform.getOrNull(engine.PlayerEntity)
   if (!player || !isInsideScene(player.position)) {
     resetRoamingCombat(roamingCombat)
@@ -768,7 +831,27 @@ function updatePlayerCharacter(dt: number) {
   const me = localAddress()
   setLocalNativeShown(shown && native)
   syncNativeWeapon('local', shown && native && me ? playerAddressAsReported(me) : undefined, requestedLoadout?.weapon, localWeaponLegendary())
-  publishLocalPlayer(player, dt)
+  publishLocalPlayer(publishedPlayerTransform(player, dt), dt)
+}
+
+function publishedPlayerTransform(player: { position: Vector3; rotation: Quaternion }, dt: number) {
+  const travel = publishedTravel
+  if (!travel) return player
+  travel.age += Math.max(0, dt)
+  const raw = Math.min(1, travel.age / travel.duration)
+  const eased = raw * raw * (3 - 2 * raw)
+  const position = Vector3.create(
+    travel.from.x + (travel.to.x - travel.from.x) * eased,
+    travel.from.y + (travel.to.y - travel.from.y) * eased,
+    travel.from.z + (travel.to.z - travel.from.z) * eased
+  )
+  // Keep the endpoint briefly if this client exposes timed moves as a final
+  // snap; release as soon as the real player transform catches up.
+  if (raw >= 1 && (Vector3.distance(player.position, travel.to) < 0.2 || travel.age > travel.duration + 0.5)) {
+    publishedTravel = undefined
+    return player
+  }
+  return { position, rotation: player.rotation }
 }
 
 /**
@@ -789,7 +872,7 @@ function mirrorMotion(motion: EquipmentMotion, restart: boolean) {
 
 /** Our HeroBody: what everyone else needs to show this hero. */
 function publishLocalPlayer(player: { position: Vector3; rotation: Quaternion }, dt: number) {
-  if (!characterId || !requestedLoadout || characterRoot === undefined) return
+  if (!publishingEnabled || !characterId || !requestedLoadout || characterRoot === undefined) return
   const appearance = requestedOptions.appearance ?? getCommittedAppearance(characterId)
   const motion = getEquipmentMotion(characterRoot)
   // A one-shot that begins (or begins again) bumps the counter so watchers restart it.

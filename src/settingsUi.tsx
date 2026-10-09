@@ -5,7 +5,7 @@ import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { Color4 } from '@dcl/sdk/math'
 import { uiViewport, wholeCanvas } from './uiScale'
 import { menuColors, MenuAction as Action } from './menuUi'
-import { CAMERA_OPTIONS, closeSettings, getSettings, setCameraPreference, setDevTools, setNativeAvatar } from './settings'
+import { CAMERA_OPTIONS, closeSettings, getSettings, setCameraPreference, setDevTools, setMobileTapWorld, setNativeAvatar } from './settings'
 import { getUnlockedItems, relockAllWeapons, unlockAllWeapons } from './inventory'
 import { isDeveloper } from './devAccess'
 import { flushHeroSave } from './heroSave'
@@ -14,6 +14,7 @@ import { cycleLobbyPickLevel, getLobbyPick } from './party'
 import { LEVELS } from './shared/levels'
 import { t } from './i18n'
 import { LanguageRow } from './languageUi'
+import { getGravewatch, grantTestEmbers } from './gravewatch'
 
 const { white, muted, gold, panel, card, line, goldLine } = menuColors
 const veil = Color4.create(0.01, 0.02, 0.03, 0.62)
@@ -51,7 +52,8 @@ export function SettingsUi() {
   // jump and armoury rows only show with the panel switched on.
   const developer = isDeveloper()
   const dev = developer && settings.devTools
-  const { scale: s, width, height, x, y } = layout(80 + (developer ? (dev ? 150 : 0) : -80))
+  const mobile = uiViewport().mobile
+  const { scale: s, width, height, x, y } = layout(80 + (developer ? (dev ? (mobile ? 250 : 200) : 0) : -80))
   const inner = FRAME.width - 80
   return <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { left: 0, top: 0 }, pointerFilter: 'none' }}>
     <UiEntity uiTransform={wholeCanvas()} uiBackground={{ color: veil }} />
@@ -137,6 +139,17 @@ export function SettingsUi() {
           width={136} height={38} scale={s} fontSize={13} accent="gold" active={settings.devTools} />
       </UiEntity>}
 
+      {dev && mobile && <UiEntity uiTransform={{ width: '100%', height: 44 * s, margin: { top: 6 * s }, flexDirection: 'row',
+        alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
+        <Label value="Mobile taps: ground movement and enemy approach." color={muted} fontSize={11.5 * s}
+          textAlign="middle-left" textWrap="nowrap"
+          uiTransform={{ width: (inner - 150) * s, height: '100%', pointerFilter: 'none' }} />
+        <Action id="settings-mobile-tap" text={settings.mobileTapWorld ? 'Enabled' : 'Off'} onClick={() => {
+          setMobileTapWorld(!getSettings().mobileTapWorld)
+          flushHeroSave()
+        }} width={136} height={38} scale={s} fontSize={13} accent="gold" active={settings.mobileTapWorld} />
+      </UiEntity>}
+
       {dev && <UiEntity uiTransform={{ width: '100%', height: 44 * s, margin: { top: 6 * s }, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
         <Label value={`Jump: ${LEVELS[getLobbyPick().level]?.name ?? ''} (does not write clears).`} color={muted} fontSize={11.5 * s} textAlign="middle-left" textWrap="nowrap"
           uiTransform={{ width: (inner - 200) * s, height: '100%', pointerFilter: 'none' }} />
@@ -165,6 +178,12 @@ export function SettingsUi() {
           <UiEntity uiTransform={{ width: 8 * s, pointerFilter: 'none' }} />
           <Action id="settings-coins-none" text="Empty purse" onClick={() => { setCoins(0); flushHeroSave() }} width={136} height={38} scale={s} fontSize={13} accent="gold" />
         </UiEntity>
+      </UiEntity>}
+
+      {dev && <UiEntity uiTransform={{ width: '100%', height: 44 * s, margin: { top: 6 * s }, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, pointerFilter: 'none' }}>
+        <Label value={`Gravewatch: ${getGravewatch().embers} embers (server test ledger).`} color={muted} fontSize={11.5 * s} textAlign="middle-left" textWrap="nowrap"
+          uiTransform={{ width: (inner - 150) * s, height: '100%', pointerFilter: 'none' }} />
+        <Action id="settings-embers-add" text="+1000 embers" onClick={grantTestEmbers} width={136} height={38} scale={s} fontSize={13} accent="gold" />
       </UiEntity>}
 
       <Label value={t('Saved with your champion.')} color={muted} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"

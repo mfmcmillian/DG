@@ -7,12 +7,11 @@
 // simulation of that level (dungeonEnemies.createRunSim) and the party is
 // `running` until the Warlord falls or every member is down at once. It is
 // then `done`: the party stands in the cleared fortress with the results up
-// and decides where to go. The leader can `descend` to the next level or
-// `retry` this one once everyone is ready again, or send everyone back to
-// the `hall` (state `open`); left alone long enough, the host does that.
+// briefly, after which the host returns everyone to the Hall and disbands it.
 
 import { engine } from '@dcl/sdk/ecs'
 import { Storage } from '@dcl/sdk/server'
+import { getRealm } from '~system/Runtime'
 import { createRunSim, destroyRunSim, runStatus } from './dungeonEnemies'
 import { healHero, heroHealth, heroMaxHealth, RAID_RECOVER_SECONDS, RECOVER_SECONDS, reviveHero, setRecoverPolicy } from './heroVitals'
 import { addXp, heroLevel, setXpRecord, xpRecordOf } from './heroXp'
@@ -23,12 +22,14 @@ import { heroClassOf } from './heroClasses'
 import { onNet, sendNet } from './net'
 import { HUB, setPartyLookup } from './partyLookup'
 import {
-  BARROW_YARD, DIFFICULTIES, difficultyAllowed, difficultyById, levelById, LevelDefinition, LEVELS, levelUnlocked, MAX_PARTY, MAX_RAID, nextLevel,
+  BARROW_YARD, DIFFICULTIES, difficultyAllowed, difficultyById, levelById, LevelDefinition, LEVELS, levelUnlocked, MAX_PARTY, MAX_RAID,
   previousLevel, RAID_LEVEL, RAID_OPEN, RAID_PARTY, RISING_PARTY
 } from './shared/levels'
 import { initializeColossusServer } from './raid/colossusServer'
-import { clearXp, killXp, levelForXp, XpRecord } from './shared/progression'
+import { clearXp, killXp, levelForXp, xpForLevel, XpRecord } from './shared/progression'
 import { prefsHaveDevTools, prefsOpenAll } from './shared/prefs'
+import { DEVELOPERS } from './shared/developers'
+import { TUTORIAL_VERSION } from './shared/tutorial'
 
 type PartyState = 'open' | 'running' | 'done'
 
@@ -56,15 +57,15 @@ type Party = {
 
 type SavedHero = {
   cid: string; body: string; hair: string; hc: string; skin: string
-  loadout: string; coins: number; unlocks: string[]; prefs?: string
+  loadout: string; loadouts?: string; coins: number; unlocks: string[]; prefs?: string
   /** Before the bag: "itemId:ranks" per raised item (absent on saves from before the pit). */
   ups?: string[]
   /** The bag, "uid|item|rank|level|a" per copy (src/shared/gearBag.ts); absent on saves from before 2.8.35. */
   bag?: string[]
 }
 
-/** How long the party may stand on the results before the host walks it back to the hall. */
-const DECISION_SECONDS = 120
+/** Time to reveal rewards before every member returns to the Hall and the completed party disbands. */
+const RESULT_SECONDS = 12
 /** "Go" opens the doors for this long so others in the hall can step in; a joiner is given at least this much. */
 const DOOR_SECONDS = 15
 /** Gravewatch's Rounds hold the doors a little longer: the button joins whoever is going. */
@@ -77,6 +78,7 @@ const BROADCAST_SECONDS = 3
 const parties = new Map<string, Party>()
 const heroes = new Map<string, SavedHero>()
 const progress = new Map<string, number[]>()
+const tutorials = new Map<string, number>()
 /** Wallets whose experience is loaded into src/heroXp.ts; those with unsaved gains. */
 const xpLoaded = new Set<string>()
 const xpDirty = new Set<string>()
@@ -116,9 +118,14 @@ function bind() {
   onNet('saveHero', (msg, context) => {
     if (!context) return
     const id = context.from.toLowerCase()
+    // The client hides the card too, but persistence is authoritative: a forged save cannot unlock the fifth champion.
+    if (msg.cid === 'gravecaller' && !levelUnlocked(progress.get(id) ?? [], 3)) {
+      console.log(`[Server] refused locked Gravecaller save for ${id}`)
+      return
+    }
     const hero: SavedHero = {
       cid: msg.cid, body: msg.body, hair: msg.hair, hc: msg.hc, skin: msg.skin,
-      loadout: msg.loadout, coins: msg.coins, unlocks: [...msg.unlocks], prefs: msg.prefs, ups: [...msg.ups], bag: [...msg.bag]
+      loadout: msg.loadout, loadouts: msg.loadouts, coins: msg.coins, unlocks: [...msg.unlocks], prefs: msg.prefs, ups: [...msg.ups], bag: [...msg.bag]
     }
     heroes.set(id, hero)
     void persist(id, 'hero', hero)
@@ -126,6 +133,14 @@ function bind() {
   onNet('loadHero', (_msg, context) => {
     if (!context) return
     void answerLoad(context.from)
+  })
+  onNet('tutorialDone', (msg, context) => {
+    if (!context) return
+    const id = context.from.toLowerCase()
+    const version = Math.max(0, Math.min(TUTORIAL_VERSION, Math.floor(msg.version) || 0))
+    if (version <= (tutorials.get(id) ?? 0)) return
+    tutorials.set(id, version)
+    void persist(id, 'tutorial', version)
   })
   initializeSaveMigration()
   setMultiplayerHandlers({ leave: leaveParty })
@@ -288,6 +303,14 @@ async function xpOf(id: string): Promise<XpRecord> {
   return xpRecordOf(id)
 }
 
+async function tutorialOf(id: string): Promise<number> {
+  const known = tutorials.get(id)
+  if (known !== undefined) return known
+  const stored = Math.max(0, Math.floor((await fetch<number>(id, 'tutorial')) ?? 0))
+  tutorials.set(id, stored)
+  return stored
+}
+
 /** The champion a wallet is playing right now: the synced body first, the save as a fallback. */
 function championOf(id: string): string {
   return heroCharacters((owner) => owner === id)[0] ?? heroes.get(id)?.cid ?? ''
@@ -362,6 +385,21 @@ async function answerLoad(from: string) {
   }
   const p = await progressOf(id)
   const xp = await xpOf(id)
+  const tutorial = await tutorialOf(id)
+  // Local preview convenience for our test wallets. This is session-only:
+  // production saves and the preview storage file are never changed.
+  try {
+    const realm = await getRealm({})
+    if (realm.realmInfo?.isPreview && DEVELOPERS.has(id)) {
+      while (p.length < LEVELS.length) p.push(0)
+      p[2] = Math.max(p[2] ?? 0, 1) // Bogmaw clear opens the Crypt and Gravecaller.
+      progress.set(id, p)
+      xp.gravecaller = Math.max(xp.gravecaller ?? 0, xpForLevel(20))
+      setXpRecord(id, xp)
+    }
+  } catch {
+    // A realm lookup failure leaves the real save untouched.
+  }
   sendNet('savedHero', {
     id,
     found: !!hero,
@@ -371,13 +409,15 @@ async function answerLoad(from: string) {
     hc: hero?.hc ?? '',
     skin: hero?.skin ?? '',
     loadout: hero?.loadout ?? '',
+    loadouts: hero?.loadouts ?? '',
     coins: hero?.coins ?? 0,
     unlocks: hero?.unlocks ?? [],
     prefs: hero?.prefs ?? '',
     ups: hero?.ups ?? [],
     bag: hero?.bag ?? [],
     progress: p,
-    xp: JSON.stringify(xp)
+    xp: JSON.stringify(xp),
+    tutorial
   }, { to: [from] })
   // The room learns this wallet's levels; the newcomer learns everyone else's.
   tellXp(id)
@@ -418,10 +458,13 @@ function clampLevel(id: string, level: number): number {
   if (level === BARROW_YARD.id) return BARROW_YARD.id
   const wanted = Math.max(0, Math.min(LEVELS.length - 1, Math.floor(level) || 0))
   const prefs = heroes.get(id)?.prefs
+  // Hidden levels cannot be selected, including with developer tools.
+  if (LEVELS[wanted].hidden) return clampLevel(id, wanted - 1)
   // Developer tools (or the older open-all switch) skip the progress gate; they do not write fake clears.
   if (prefsHaveDevTools(prefs) || prefsOpenAll(prefs)) return wanted
   const p = progress.get(id) ?? []
-  for (let l: LevelDefinition | undefined = LEVELS[wanted]; l; l = previousLevel(l.id)) if (levelUnlocked(p, l.id)) return l.id
+  // A hidden level (still being built) is locked for players whatever their progress.
+  for (let l: LevelDefinition | undefined = LEVELS[wanted]; l; l = previousLevel(l.id)) if (!l.hidden && levelUnlocked(p, l.id)) return l.id
   return 0
 }
 
@@ -520,38 +563,16 @@ function handleAction(id: string, action: string, partyId: string, level: number
       const party = partyOfMember(id)
       if (!party || party.leader !== id || party.state !== 'open') return
       if (!everyoneReady(party)) return
+      // A party left holding a level that has since been hidden runs what it is allowed instead.
+      party.level = clampLevel(id, party.level)
       beginRun(party)
       break
     }
-    // The results screen's three ways out. `descend` and `retry` need the
-    // party ready again, like `start`; the leader's click counts as theirs.
-    case 'descend': {
-      const party = partyOfMember(id)
-      if (!party || party.leader !== id || party.state !== 'done' || !party.won) return
-      const next = nextLevel(party.level)
-      if (!next) return
-      party.ready.add(id)
-      if (!everyoneReady(party)) return
-      // The party just cleared the level below, so the next one is open by
-      // definition; no clamp against progress that may still be persisting.
-      party.level = next.id
-      beginRun(party)
-      break
-    }
-    case 'retry': {
-      const party = partyOfMember(id)
-      if (!party || party.leader !== id || party.state !== 'done') return
-      party.ready.add(id)
-      if (!everyoneReady(party)) return
-      beginRun(party)
-      break
-    }
-    case 'hall': {
-      const party = partyOfMember(id)
-      if (!party || party.leader !== id || party.state !== 'done') return
-      returnToHall(party)
-      break
-    }
+    // Completed runs exit automatically; ignore obsolete result-screen actions.
+    case 'descend':
+    case 'retry':
+    case 'hall':
+      return
     default:
       return
   }
@@ -580,18 +601,6 @@ function beginRun(party: Party) {
     metricsHeroCount(m, 'runs')
   }
   console.log(`[Server] party ${party.id} started ${levelById(party.level).name} (${DIFFICULTIES[party.diff].name}) with ${party.members.length} hero(es), run ${party.run}`)
-}
-
-/** Back to the hall as an open party, with the next level picked if this one was cleared. */
-function returnToHall(party: Party) {
-  destroyRunSim(party.id)
-  party.state = 'open'
-  party.ready = new Set(party.members)
-  party.doors = 0
-  // Back in the hall on their feet; a fallen party is not still down at the bar.
-  for (const m of party.members) restoreHero(m)
-  const next = party.won ? nextLevel(party.level) : undefined
-  if (next) party.level = clampLevel(party.leader, next.id)
 }
 
 /** Full health, up if down; the ledger broadcasts whichever it did. */
@@ -684,10 +693,9 @@ function update(deltaTime: number) {
         console.log(`[Server] party ${party.id} ran out of time`)
         finishRun(party, false)
       }
-    } else if (party.state === 'done' && elapsed - party.ended >= DECISION_SECONDS) {
-      // Nobody decided; the host walks the party back to the hall.
-      console.log(`[Server] party ${party.id} idled on the results, back to the hall`)
-      returnToHall(party)
+    } else if (party.state === 'done' && elapsed - party.ended >= RESULT_SECONDS) {
+      console.log(`[Server] party ${party.id} results complete, returning members to the Hall`)
+      for (const member of [...party.members]) leaveParty(member, false)
       changed = true
     } else if (party.state === 'open' && party.doors > 0 && elapsed >= party.doors) {
       // The doors close on their own. Someone not ready (the leader's client still
@@ -713,7 +721,7 @@ function broadcast() {
       members: [...p.members], ready: [...p.ready],
       time: p.state === 'open' ? 0 : (p.state === 'done' ? p.ended : elapsed) - p.started,
       slain: p.slain, total: p.total, won: p.won, run: p.run,
-      wait: p.state === 'done' ? Math.max(0, DECISION_SECONDS - (elapsed - p.ended))
+      wait: p.state === 'done' ? Math.max(0, RESULT_SECONDS - (elapsed - p.ended))
         : p.state === 'open' && p.doors > 0 ? Math.max(0, p.doors - elapsed) : 0,
       crowd: p.crowd ?? 0
     }))

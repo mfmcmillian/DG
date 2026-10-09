@@ -4,16 +4,18 @@ import {
   Entity,
   GltfContainer,
   Material,
+  MaterialTransparencyMode,
   MeshRenderer,
   TextureWrapMode,
   Transform
 } from '@dcl/sdk/ecs'
-import { Quaternion, Vector3 } from '@dcl/sdk/math'
+import { Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
 import alpine from './backdrop/alpine.json'
 import { onDungeonLoaded } from './dungeon'
 import { YARD_ROOM_BOXES } from './dungeon/barrowYard'
+import { ISLE_ROOM_BOXES } from './dungeon/isle'
 import { SCENE_SIZE } from './dungeon/config'
-import { BOG_TEXTURES, CRYPT_TEXTURES, KIT, KitId } from './dungeon/kit'
+import { BOG_TEXTURES, CRYPT_TEXTURES, FLOOR_TEXTURE, KIT, KitId } from './dungeon/kit'
 
 /**
  * The world outside the hall: Synty's Alpine Mountain biome (scripts/export-alpine.py)
@@ -51,6 +53,94 @@ interface Put<Id extends string = PieceId> {
   /** Metres to bury the base (hides a mountain's skirt in the ground). */
   sink?: number
 }
+
+/**
+ * A continuous, collider-free row on all four parcel edges. The repeated
+ * pieces overlap slightly so native and cinematic cameras cannot find a slit
+ * through to neighbouring LAND. Models remain wholly inside the 160 m scene.
+ */
+function perimeterRow<Id extends string>(
+  ids: readonly Id[],
+  options: {
+    inset: number
+    margin: number
+    spacing: number
+    scale: number | [number, number, number]
+    sink?: number
+    stagger?: number
+  }
+): Put<Id>[] {
+  const usable = SCENE_SIZE - options.margin * 2
+  const segments = Math.max(1, Math.ceil(usable / options.spacing))
+  const step = usable / segments
+  const out: Put<Id>[] = []
+  for (let i = 0; i <= segments; i++) {
+    const along = options.margin + step * i
+    const id = ids[i % ids.length]
+    const stagger = i % 2 ? options.stagger ?? 0 : 0
+    out.push(
+      { id, x: along, z: options.inset + stagger, yaw: 0, s: options.scale, sink: options.sink },
+      { id, x: along, z: SCENE_SIZE - options.inset - stagger, yaw: 180, s: options.scale, sink: options.sink },
+      { id, x: options.inset + stagger, z: along, yaw: 90, s: options.scale, sink: options.sink },
+      { id, x: SCENE_SIZE - options.inset - stagger, z: along, yaw: 270, s: options.scale, sink: options.sink }
+    )
+  }
+  return out
+}
+
+/** Dark forest first, broken crags behind it: the Dark Fortress's scenery box. */
+const FORTRESS_BORDER: Put[] = [
+  ...perimeterRow(['trees_01', 'trees_02'] as const, {
+    inset: 2.6, margin: 14, spacing: 23, scale: [1.05, 1.1, 0.3], stagger: 0.2
+  }),
+  ...perimeterRow(['cliff_07', 'cliff_02', 'cliff_05'] as const, {
+    inset: 3, margin: 18, spacing: 37, scale: [1.05, 1.55, 0.24], sink: 1.5, stagger: 0.3
+  })
+]
+
+/** The Pass already has vistas; these overlapping rows close their gaps. */
+const PASS_BORDER: Put[] = [
+  ...perimeterRow(['trees_01', 'trees_02'] as const, {
+    inset: 4.5, margin: 14, spacing: 23, scale: [1.05, 1.15, 0.65], stagger: 1
+  }),
+  ...perimeterRow(['cliff_01', 'cliff_07', 'cliff_02'] as const, {
+    inset: 10, margin: 18, spacing: 34, scale: [1.0, 1.8, 0.68], sink: 1.5, stagger: 1
+  })
+]
+
+/** Broad swamp hills make the outer mass; trees break up its silhouette. */
+const BOG_BORDER: Put<KitId>[] = [
+  ...perimeterRow(['bog_mountain', 'bog_hill'] as const, {
+    inset: 7, margin: 18, spacing: 29, scale: [0.9, 3.1, 0.32], sink: 0.8, stagger: 1.2
+  }),
+  ...perimeterRow(['bog_tree', 'bog_tree_b', 'bog_tree_c', 'bog_tree_d'] as const, {
+    inset: 12, margin: 12, spacing: 13, scale: 1.25, stagger: 2
+  })
+]
+
+/** Crypt cliffs are narrow enough to form a convincing high, broken escarpment. */
+const CRYPT_BORDER: Put<KitId>[] = [
+  ...perimeterRow(['crypt_cliff'] as const, {
+    inset: 5, margin: 10, spacing: 17, scale: [1.95, 1.12, 0.72], sink: 1.2, stagger: 0.8
+  }),
+  ...perimeterRow(['crypt_tree_b', 'crypt_tree_c', 'crypt_tree_a'] as const, {
+    inset: 11, margin: 9, spacing: 12, scale: 1.3, stagger: 2
+  })
+]
+
+/** The Rising's 3x Demon needs a taller arena bowl than the normal Crypt. */
+const RISING_BORDER: Put<KitId>[] = [
+  ...perimeterRow(['crypt_cliff'] as const, {
+    inset: 5, margin: 10, spacing: 17, scale: [1.95, 1.48, 0.72], sink: 1.2, stagger: 0.8
+  }),
+  ...perimeterRow(['crypt_tree_c', 'crypt_tree_b'] as const, {
+    inset: 11, margin: 9, spacing: 11, scale: 1.55, stagger: 2.5
+  }),
+  { id: 'crypt_mausoleum_a', x: 22, z: 22, yaw: 45, s: 1.35 },
+  { id: 'crypt_mausoleum_b', x: 138, z: 22, yaw: 315, s: 1.35 },
+  { id: 'crypt_mausoleum_b', x: 22, z: 138, yaw: 135, s: 1.35 },
+  { id: 'crypt_mausoleum_a', x: 138, z: 138, yaw: 225, s: 1.35 }
+]
 
 const SNOW_TEXTURE = 'models/backdrop/alpine/alpine_snow.png'
 const SNOW_METRES_PER_TILE = 6
@@ -394,17 +484,182 @@ const CRYPT_LAYOUT: Put<KitId>[] = [
   { id: 'crypt_fern', x: 98, z: 108, s: 1.8 }
 ]
 
+/**
+ * Around and under the Skyhold (src/dungeon/isle.ts). There is no ground: the
+ * platforms are rock blocks in the sky, so the backdrop hangs Synty's cliffs
+ * under every outer edge (isleCliffs, from the room boxes), rings the void
+ * below with their cloud ring and mountain range, and stands the demo scene's
+ * gatehouse and towers behind the Keep Gate, its ruined spires and giant bones
+ * on far rocks. Everything sits inside the plot; y is free below 0.
+ */
+const ISLE_LAYOUT: Put<KitId>[] = [
+  // --- below: nothing but sky (landscapeTerrain is off in scene.json) -------------------------
+  // --- behind the Keep Gate: the gatehouse on its rock, a tower at either end ---------------
+  { id: 'isle_cliff_flat', x: 94, z: 33, s: [0.9, 0.8, 0.7], sink: 0.5 },
+  { id: 'isle_cliff_flat', x: 116, z: 33, yaw: 180, s: [0.9, 0.8, 0.7], sink: 0.5 },
+  { id: 'isle_cliff_b', x: 105, z: 31, yaw: 90, s: 0.6, sink: 8 },
+  { id: 'isle_gatehouse', x: 105, z: 33, yaw: 90, s: 1 },
+  { id: 'isle_cliff_a', x: 75, z: 33, s: 0.5, sink: 0.5 },
+  { id: 'isle_tower', x: 75, z: 33, s: 1 },
+  { id: 'isle_cliff_a', x: 135, z: 33, yaw: 180, s: 0.5, sink: 0.5 },
+  { id: 'isle_tower', x: 135, z: 33, s: 1 },
+  // --- far rocks with ruins on them -------------------------------------------------------------
+  // Each at its own height below the keep, so the eye reads depth between them.
+  { id: 'isle_cliff_c', x: 22, z: 26, s: 0.55, sink: 14.5 },
+  { id: 'isle_ruin_a', x: 22, z: 26, yaw: 30, s: 0.35, sink: 14 },
+  { id: 'isle_cliff_c', x: 138, z: 140, yaw: 90, s: 0.6, sink: 9.5 },
+  { id: 'isle_ruin_b', x: 138, z: 140, yaw: 200, s: 0.8, sink: 9 },
+  { id: 'isle_cliff_a', x: 30, z: 138, yaw: 270, s: 0.5, sink: 20.5 },
+  { id: 'isle_tower_ruin', x: 30, z: 138, yaw: 40, s: 1, sink: 20 },
+  { id: 'isle_cliff_a', x: 150, z: 95, yaw: 90, s: 0.4, sink: 26.5 },
+  { id: 'isle_spire', x: 150, z: 95, s: 1, sink: 26 },
+  { id: 'isle_cliff_a', x: 14, z: 72, s: 0.4, sink: 12.5 },
+  { id: 'isle_spire', x: 14, z: 72, yaw: 120, s: 1, sink: 12 },
+  // --- towers on the platforms' outer corners, the island's own skyline -------------------------
+  { id: 'isle_cliff_a', x: 81, z: 129, s: 0.5, sink: 0.5 },
+  { id: 'isle_tower', x: 81, z: 129, yaw: 90, s: 0.9, sink: 0.5 },
+  { id: 'isle_cliff_a', x: 129, z: 129, yaw: 90, s: 0.5, sink: 0.5 },
+  { id: 'isle_tower', x: 129, z: 129, yaw: 180, s: 0.9, sink: 0.5 },
+  { id: 'isle_cliff_a', x: 36, z: 129, yaw: 270, s: 0.5, sink: 0.5 },
+  { id: 'isle_tower_ruin', x: 36, z: 129, yaw: 90, s: 0.8, sink: 0.5 },
+  { id: 'isle_cliff_a', x: 26, z: 36, s: 0.45, sink: 0.5 },
+  { id: 'isle_spire', x: 26, z: 36, yaw: 45, s: 1.1, sink: 0.5 },
+  { id: 'isle_cliff_a', x: 119, z: 153, yaw: 180, s: 0.45, sink: 0.5 },
+  { id: 'isle_spire', x: 119, z: 153, yaw: 200, s: 0.9, sink: 0.5 },
+  // --- the rock mass under the big platforms, tapering down into the sky -----------------------
+  { id: 'isle_cliff_b', x: 105, z: 112, s: 0.55, sink: 4 },
+  { id: 'isle_cliff_b', x: 55, z: 110, yaw: 90, s: 0.5, sink: 4 },
+  { id: 'isle_cliff_b', x: 50, z: 52, yaw: 180, s: 0.5, sink: 4 },
+  { id: 'isle_cliff_b', x: 105, z: 52, yaw: 270, s: 0.55, sink: 4 },
+  { id: 'isle_cliff_c', x: 107, z: 142, yaw: 45, s: 0.45, sink: 3 },
+  { id: 'isle_cliff_c', x: 50, z: 80, yaw: 135, s: 0.4, sink: 3 },
+  // --- boulders adrift around the island -----------------------------------------------------------
+  { id: 'isle_rock_b', x: 20, z: 120, yaw: 30, s: 4, sink: 6 },
+  { id: 'isle_rock_a', x: 148, z: 72, yaw: 100, s: 5, sink: 10 },
+  { id: 'isle_rock_b', x: 62, z: 150, yaw: 200, s: 3.5, sink: 14 },
+  { id: 'isle_rock_a', x: 10, z: 50, yaw: 60, s: 4.5, sink: 18 },
+  { id: 'isle_rock_b', x: 140, z: 20, yaw: 300, s: 3, sink: 8 },
+  { id: 'isle_rock_a', x: 75, z: 85, yaw: 0, s: 3, sink: 12 },
+  { id: 'isle_waterfall', x: 39.5, z: 100, yaw: 270, s: [0.3, 0.3, 0.3], sink: 35 },
+  // --- the giant's bones on a rock in the east ------------------------------------------------
+  { id: 'isle_cliff_flat', x: 140, z: 108, yaw: 45, s: 0.6, sink: 0.5 },
+  { id: 'isle_skull', x: 136, z: 104, yaw: 300, s: 6 },
+  { id: 'isle_ribs', x: 144, z: 112, yaw: 20, s: 5 },
+  // --- a fall of water off the Lower Ward's east edge -------------------------------------------
+  { id: 'isle_waterfall', x: 126.5, z: 112, yaw: 90, s: [0.3, 0.3, 0.3], sink: 35 }
+]
+
+/** Cliffs hung under every outer edge of the platforms and bridges, one per 10 m, variant by position. */
+function isleCliffs(): Put<KitId>[] {
+  const inside = (x: number, z: number) => ISLE_ROOM_BOXES.some((b) => x > b.x && x < b.x + b.w && z > b.z && z < b.z + b.d)
+  const variants: KitId[] = ['isle_cliff_a', 'isle_cliff_c', 'isle_cliff_flat']
+  const out: Put<KitId>[] = []
+  for (const b of ISLE_ROOM_BOXES) {
+    const sides: Array<{ along: 'x' | 'z'; at: number; out: number; len: number; from: number }> = [
+      { along: 'x', at: b.z, out: -1, len: b.w, from: b.x },          // north edge
+      { along: 'x', at: b.z + b.d, out: 1, len: b.w, from: b.x },     // south
+      { along: 'z', at: b.x, out: -1, len: b.d, from: b.z },          // west
+      { along: 'z', at: b.x + b.w, out: 1, len: b.d, from: b.z }      // east
+    ]
+    for (const s of sides) {
+      for (let t = 3.5; t < s.len + 3.5; t += 7) {
+        const u = s.from + Math.min(t, s.len - 2.5)
+        const x = s.along === 'x' ? u : s.at
+        const z = s.along === 'x' ? s.at : u
+        const probe = s.along === 'x' ? { x, z: z + s.out * 2 } : { x: x + s.out * 2, z }
+        if (inside(probe.x, probe.z)) continue
+        const h = Math.abs(Math.sin(x * 12.9898 + z * 78.233) * 43758.5453) % 1
+        const id = variants[Math.floor(h * variants.length)]
+        const scale = 0.55 + h * 0.3
+        const push = KIT[id].size[2] * scale * 0.25
+        out.push({ id, x: x + (s.along === 'z' ? s.out * push : 0), z: z + (s.along === 'x' ? s.out * push : 0), yaw: Math.floor(h * 4) * 90 + (s.along === 'x' ? 0 : 90), s: scale, sink: 2 + h * 3 })
+      }
+    }
+  }
+  return out
+}
+
+const CLOUD_TEXTURE = 'models/kits/isle/cloud.png'
+const clouds: Array<{ e: Entity; speed: number }> = []
+
+/** Static scenery requested with each realm so its horizon is present before the run appears. */
+export function backdropAssets(style: string): string[] {
+  let layout: Put<string>[] = []
+  let pieces: Record<string, Piece> = alpine.pieces as Record<string, Piece>
+  let texture: string | null = null
+  switch (style) {
+    case 'hall': layout = HALL_LAYOUT; texture = SNOW_TEXTURE; break
+    case 'gauntlet': layout = FORTRESS_BORDER; texture = FLOOR_TEXTURE; break
+    case 'pass': layout = [...PASS_LAYOUT, ...PASS_BORDER]; texture = SNOW_TEXTURE; break
+    case 'bog': layout = [...BOG_LAYOUT, ...BOG_BORDER]; pieces = KIT; texture = BOG_TEXTURES.grass; break
+    case 'crypt': layout = [...CRYPT_LAYOUT, ...CRYPT_BORDER]; pieces = KIT; texture = CRYPT_TEXTURES.dirt; break
+    case 'yard': layout = [...CRYPT_LAYOUT.filter((p) => !insideYard(p.x, p.z)), ...RISING_BORDER]; pieces = KIT; texture = CRYPT_TEXTURES.dirt; break
+    default: return []
+  }
+  return [...new Set([...layout.map((put) => pieces[put.id]?.src).filter((src): src is string => !!src), ...(texture ? [texture] : [])])]
+}
+
+/**
+ * Cloud banks under and around the island: soft alpha planes at several depths
+ * and sizes, drifting east slowly and wrapping, so the drop below the platforms
+ * has layers to it and the island reads as adrift rather than cut out.
+ */
+function isleClouds(parent: Entity) {
+  let seed = 11
+  const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647 }
+  for (let i = 0; i < 26; i++) {
+    const e = engine.addEntity()
+    const size = 35 + rnd() * 60
+    const depth = 10 + rnd() * 45
+    Transform.create(e, {
+      position: Vector3.create(rnd() * SCENE_SIZE, -depth, rnd() * SCENE_SIZE),
+      rotation: Quaternion.fromEulerDegrees(90, rnd() * 360, 0),
+      scale: Vector3.create(size, size * (0.6 + rnd() * 0.4), 1),
+      parent
+    })
+    MeshRenderer.setPlane(e)
+    Material.setPbrMaterial(e, {
+      texture: Material.Texture.Common({ src: CLOUD_TEXTURE }),
+      alphaTexture: Material.Texture.Common({ src: CLOUD_TEXTURE }),
+      transparencyMode: MaterialTransparencyMode.MTM_ALPHA_BLEND,
+      albedoColor: Color4.create(1, 1, 1, 0.55 + (depth / 55) * 0.35),
+      emissiveColor: Color4.create(0.6, 0.6, 0.68, 1),
+      emissiveIntensity: 0.6,
+      roughness: 1, metallic: 0, specularIntensity: 0, castShadows: false
+    })
+    clouds.push({ e, speed: 0.4 + rnd() * 0.6 })
+  }
+}
+
+function driftClouds(dt: number) {
+  for (const c of clouds) {
+    const t = Transform.getMutableOrNull(c.e)
+    if (!t) continue
+    t.position.x += c.speed * dt
+    if (t.position.x > SCENE_SIZE + 40) t.position.x = -40
+  }
+}
+
 let root: Entity | undefined
 
 export function initializeBackdrop() {
+  engine.addSystem(driftClouds)
   onDungeonLoaded((state) => {
     clear()
     if (state.style.id === 'hall') build(HALL_LAYOUT, 'hall')
-    else if (state.style.id === 'pass') build(PASS_LAYOUT, 'pass')
-    else if (state.style.id === 'bog') build(BOG_LAYOUT, 'bog', KIT, BOG_TEXTURES.grass, MARSH_METRES_PER_TILE)
-    else if (state.style.id === 'crypt') build(CRYPT_LAYOUT, 'crypt', KIT, CRYPT_TEXTURES.dirt, GRAVE_METRES_PER_TILE)
-    // The Barrow Yard shares the Crypt's hill; whatever stood where its rooms now are stays out.
-    else if (state.style.id === 'yard') build(CRYPT_LAYOUT.filter((p) => !insideYard(p.x, p.z)), 'yard', KIT, CRYPT_TEXTURES.dirt, GRAVE_METRES_PER_TILE)
+    else if (state.style.id === 'isle') {
+      build([...isleCliffs(), ...ISLE_LAYOUT], 'isle', KIT, null)
+      if (root !== undefined) isleClouds(root)
+    }
+    else if (state.style.id === 'gauntlet') build(FORTRESS_BORDER, 'fortress', alpine.pieces, FLOOR_TEXTURE, 5)
+    else if (state.style.id === 'pass') build([...PASS_LAYOUT, ...PASS_BORDER], 'pass')
+    else if (state.style.id === 'bog') build([...BOG_LAYOUT, ...BOG_BORDER], 'bog', KIT, BOG_TEXTURES.grass, MARSH_METRES_PER_TILE)
+    else if (state.style.id === 'crypt') build([...CRYPT_LAYOUT, ...CRYPT_BORDER], 'crypt', KIT, CRYPT_TEXTURES.dirt, GRAVE_METRES_PER_TILE)
+    // The Rising has its own taller scenery box; keep the Crypt scatter out of its authored rooms.
+    else if (state.style.id === 'yard') build([
+      ...CRYPT_LAYOUT.filter((p) => !insideYard(p.x, p.z)),
+      ...RISING_BORDER
+    ], 'yard', KIT, CRYPT_TEXTURES.dirt, GRAVE_METRES_PER_TILE)
   })
 }
 
@@ -417,7 +672,7 @@ function build<Id extends string>(
   layout: Put<Id>[],
   label: string,
   pieces: Record<Id, Piece> = alpine.pieces as Record<Id, Piece>,
-  texture = SNOW_TEXTURE,
+  texture: string | null = SNOW_TEXTURE,
   metresPerTile = SNOW_METRES_PER_TILE
 ) {
   if (root !== undefined) return
@@ -426,13 +681,15 @@ function build<Id extends string>(
   // Snow (or marsh grass) over the whole plot, a hair above the dungeon's black
   // slab and just under the room floors (0.005): everything that is not a floored
   // room, the gaps between the hall's buildings included, reads as open ground.
-  ground(SCENE_SIZE / 2, SCENE_SIZE / 2, SCENE_SIZE, SCENE_SIZE, texture, metresPerTile)
+  // The Skyhold has no ground at all (texture null): sky between the platforms.
+  if (texture !== null) ground(SCENE_SIZE / 2, SCENE_SIZE / 2, SCENE_SIZE, SCENE_SIZE, texture, metresPerTile)
   let tris = 0
   for (const put of layout) tris += place(put, pieces[put.id])
   console.log(`[backdrop] ${label}: ${layout.length + 1} entities, ${tris} tris`)
 }
 
 function clear() {
+  clouds.length = 0
   if (root === undefined) return
   for (const [e] of engine.getEntitiesWith(Transform)) {
     if (Transform.get(e).parent === root) engine.removeEntity(e)

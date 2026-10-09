@@ -7,8 +7,47 @@ const SKILL_KEYS = [InputAction.IA_ACTION_3, InputAction.IA_ACTION_4, InputActio
 
 /** A skill slot tapped on the HUD bar (the phone's pad has no 1-4); cast on the next read, as the key would. */
 let tappedSlot: number | undefined
+let hudPointerBlockedUntil = 0
 export function tapSkillSlot(slot: number) {
   tappedSlot = slot
+  // Scene-wide pointer input also sees this click. Keep click-to-move from
+  // treating the skill press as a point on the floor behind the HUD.
+  hudPointerBlockedUntil = Date.now() + 250
+}
+
+export function hudConsumedWorldPointer(): boolean {
+  return Date.now() < hudPointerBlockedUntil
+}
+let tappedAction: 'light' | 'heavy' | undefined
+let heldTouchAction: 'light' | 'heavy' | undefined
+let touchGuardHeld = false
+let touchDodgeTapped = false
+
+/** World pointer interactions use the same buffered combat path as E/F. */
+export function tapCombatAction(action: 'light' | 'heavy') {
+  tappedAction = action
+}
+
+/** Mobile HUD: hold an attack button to keep chaining it, as holding E/F does. */
+export function holdTouchCombatAction(action: 'light' | 'heavy' | undefined) {
+  heldTouchAction = action
+}
+
+/** Mobile HUD: Guard is held rather than toggled. */
+export function holdTouchGuard(held: boolean) {
+  touchGuardHeld = held
+}
+
+/** Mobile HUD: one tap requests one dodge. */
+export function tapTouchDodge() {
+  touchDodgeTapped = true
+}
+
+/** Menus and mode changes must never leave a held touch action stuck down. */
+export function releaseTouchCombatControls() {
+  heldTouchAction = undefined
+  touchGuardHeld = false
+  touchDodgeTapped = false
 }
 
 export type CombatControls = {
@@ -28,6 +67,7 @@ export function createCombatControls(): CombatControls {
 }
 
 export function resetCombatControls(controls: CombatControls, delay = 0.2) {
+  releaseTouchCombatControls()
   controls.armed = false
   controls.delay = delay
   controls.pointerArmed = false
@@ -63,10 +103,12 @@ export function readCombatControls(controls: CombatControls, dt: number): {
   const acceptsKeys = controls.armed
   // The native controller can jump while scene attack controls are rearming.
   const jumpPressed = inputSystem.isTriggered(InputAction.IA_JUMP, PointerEventType.PET_DOWN)
-  const blockHeld = acceptsKeys && inputSystem.isPressed(InputAction.IA_JUMP)
-  const dodgePressed = acceptsKeys && inputSystem.isTriggered(InputAction.IA_WALK, PointerEventType.PET_DOWN)
+  const blockHeld = acceptsKeys && (inputSystem.isPressed(InputAction.IA_JUMP) || touchGuardHeld)
+  const dodgePressed = acceptsKeys && (inputSystem.isTriggered(InputAction.IA_WALK, PointerEventType.PET_DOWN) || touchDodgeTapped)
+  touchDodgeTapped = false
   if (!acceptsKeys) {
     tappedSlot = undefined
+    tappedAction = undefined
     return { acceptsKeys, jumpPressed, blockHeld, dodgePressed }
   }
   if (jumpPressed) return { acceptsKeys, jumpPressed, blockHeld, dodgePressed, action: 'jump' }
@@ -79,6 +121,12 @@ export function readCombatControls(controls: CombatControls, dt: number): {
     tappedSlot = undefined
     return { acceptsKeys, jumpPressed, blockHeld, dodgePressed, action: 'skill', slot }
   }
+  if (tappedAction !== undefined) {
+    const action = tappedAction
+    tappedAction = undefined
+    return { acceptsKeys, jumpPressed, blockHeld, dodgePressed, action }
+  }
+  if (heldTouchAction) return { acceptsKeys, jumpPressed, blockHeld, dodgePressed, action: heldTouchAction }
   // Holding an attack key keeps requesting the attack; the fighter only accepts
   // it once the current swing and its recovery are over, so a held key chains
   // strikes back to back. A fresh press still wins over a key that was held.

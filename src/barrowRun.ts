@@ -27,7 +27,8 @@ import { getCommittedAppearance } from './appearance'
 import { destroyEquipmentAvatar, setEquipmentAvatar, setEquipmentMotion } from './equipmentAvatar'
 import { KIT, KitId } from './dungeon/kit'
 import {
-  chunkItems, isObstacle, laneOffset, newRunState, RUN_CHUNK, RUN_LANES, RUN_STUMBLE_SECONDS, RunEvent, RunItem, RunState, runTierEmbers, stepRun
+  chunkItems, isObstacle, laneOffset, newRunState, RUN_CHUNK, RUN_LANES, RUN_STEP_SECONDS, RUN_STUMBLE_SECONDS,
+  RunEvent, RunItem, RunState, runItemBounds, runTierEmbers, stepRun
 } from './shared/barrowRun'
 
 /** Where the road sits: well above the hall, inside the parcels, out of every window. */
@@ -41,8 +42,6 @@ const ROAD_WIDTH = RUN_LANES * 2.2 + 1.6
 const FENCE = 10.033
 const FENCES = Math.ceil((AHEAD + BEHIND) / FENCE)
 const SPAN = FENCES * FENCE
-/** The lane swap, as the puppet slides (metres a second). */
-const SLIDE_SPEED = 11
 /** The cage the real avatar waits in, beside the road and out of shot. */
 const CAGE = Vector3.create(ORIGIN.x + 28, ORIGIN.y, ORIGIN.z + HERO_Z)
 /** A high view from above and behind the hero, tilted down the road so what is coming shows at the top of the screen. */
@@ -80,6 +79,8 @@ const history: { t: number; s: number; stamina: number }[] = []
 /** Corrections owed to the host, paid out a little each frame. */
 let drift = 0
 let staminaDrift = 0
+/** Unsimulated real time; consumed in the same fixed slices as the host. */
+let simAccumulator = 0
 /** How fast a correction is paid (metres a second, stamina a second). */
 const DRIFT_RATE = 2.5
 const STAMINA_DRIFT_RATE = 12
@@ -108,7 +109,9 @@ let puppetX = 0
 let puppetMotion = ''
 const scenery: { entity: Entity; lane: number; along: number; span: number; y: number; yaw: number; bob: boolean }[] = []
 /** `gone`: undefined while live; -1 once hit (it stays and rolls past); 0+ counting up after a smash, removed at a second. */
-const itemEntities = new Map<string, { entity: Entity; item: RunItem; bob: boolean; body: boolean; gone?: number }>()
+const itemEntities = new Map<string, { entity: Entity; bounds?: Entity; item: RunItem; bob: boolean; body: boolean; gone?: number }>()
+/** Enable locally when tuning collision windows; never changes gameplay. */
+const SHOW_ITEM_BOUNDS = false
 /** The dead that stand in the road: a body and the weapon it carries, picked by the item's key so every player sees the same. */
 const GHOULS: readonly { body: string; weapon: string }[] = [
   { body: 'dk-skeleton', weapon: 'dk-sword-03' },
@@ -152,6 +155,7 @@ export function initializeBarrowRun() {
     history.length = 0
     drift = 0
     staminaDrift = 0
+    simAccumulator = 0
     begin()
   })
   onNet('gwRunSync', (msg) => {
@@ -164,16 +168,22 @@ export function initializeBarrowRun() {
       finish()
       return
     }
-    // The host's word is from a quarter second ago, so it is compared with where we were at its time,
+    // The host's word is deliberately behind, so it is compared with where we were at its time,
     // not where we are now; the difference is then fed in gently over the next frames rather than jumped.
     const then = sampleAt(msg.t)
     const gap = msg.s - then.s
     if (Math.abs(gap) > 6) {
-      state.s += gap
-      drift = 0
-    } else if (Math.abs(gap) > 0.15) drift += gap
+      // Never jump across unsimulated road: that can visually skip an item.
+      // Replace the correction debt and let the normal overlapping collision
+      // windows cover it as it is paid down.
+      drift = gap
+    } else {
+      // Each sync reports the total current difference, not an additional
+      // delta. Replacing the debt avoids counting the same drift repeatedly.
+      drift = Math.abs(gap) > 0.15 ? gap : 0
+    }
     const staminaGap = msg.stamina - then.stamina
-    if (Math.abs(staminaGap) > 0.5) staminaDrift += staminaGap
+    staminaDrift = Math.abs(staminaGap) > 0.5 ? staminaGap : 0
     if (msg.hits > state.hits) {
       state.hits = msg.hits
       state.stumble = Math.max(state.stumble, 0.4)
@@ -486,15 +496,36 @@ function piece(id: KitId, x: number, along: number, span: number, y: number, yaw
   return { entity, lane: x, along, span, y, yaw, bob }
 }
 
-function itemModel(kind: RunItem['kind']): { id?: KitId; y: number; yaw: number; sphere?: Color4; ghoul?: boolean } {
+function itemModel(kind: RunItem['kind']): { id?: KitId; src?: string; y: number; yaw: number; sphere?: Color4; ghoul?: boolean } {
   switch (kind) {
     case 'stone': return { id: 'crypt_stone_b', y: 0, yaw: 180 }
     case 'tomb': return { id: 'crypt_tomb_a', y: 0, yaw: 0 }
     case 'ghoul': return { y: 0, yaw: 180, ghoul: true }
-    case 'ember': return { y: 1.0, yaw: 0, sphere: Color4.create(1, 0.5, 0.15, 1) }
+    case 'ember': return { src: 'models/loot/ember.glb', y: 1.0, yaw: 0, sphere: Color4.create(1, 0.5, 0.15, 1) }
     case 'lantern': return { id: 'crypt_lantern', y: 1.1, yaw: 0 }
-    default: return { y: 1.0, yaw: 0, sphere: Color4.create(0.6, 0.4, 1, 1) }
+    default: return { src: 'models/loot/ward.glb', y: 1.0, yaw: 0, sphere: Color4.create(0.6, 0.4, 1, 1) }
   }
+}
+
+function itemBounds(item: RunItem): Entity {
+  const bounds = runItemBounds(item.kind)
+  const y = isObstacle(item.kind) ? bounds.height / 2 : itemModel(item.kind).y + bounds.height / 2
+  const entity = engine.addEntity()
+  Transform.create(entity, {
+    position: Vector3.create(ORIGIN.x + laneOffset(item.lane), ORIGIN.y + y, ORIGIN.z + HERO_Z + item.at),
+    scale: Vector3.create(bounds.width, bounds.height, bounds.depth)
+  })
+  MeshRenderer.setBox(entity)
+  const obstacle = isObstacle(item.kind)
+  const glow = obstacle ? Color3.create(1, 0.08, 0.03) : Color3.create(0.05, 0.8, 1)
+  Material.setPbrMaterial(entity, {
+    albedoColor: obstacle ? Color4.create(1, 0.04, 0.02, 0.14) : Color4.create(0.03, 0.7, 1, 0.14),
+    emissiveColor: glow,
+    emissiveIntensity: 0.8,
+    transparencyMode: MaterialTransparencyMode.MTM_ALPHA_BLEND,
+    castShadows: false
+  })
+  return entity
 }
 
 // --- each frame ----------------------------------------------------------------------------
@@ -507,7 +538,10 @@ function update(dt: number) {
   if (phase !== 'running' && phase !== 'over') return
   const st = state
   if (!st) return
-  const span = Number.isFinite(dt) && dt > 0 ? Math.min(dt, 0.1) : 0
+  // Keep visual motion bounded, but retain ordinary mobile/frame hitches for
+  // the race simulation instead of silently throwing that elapsed time away.
+  const elapsed = Number.isFinite(dt) && dt > 0 ? Math.min(dt, 0.5) : 0
+  const span = Math.min(elapsed, 0.1)
   if (phase === 'running') {
     // Lanes: one step per press, told to the host at our run clock.
     let lane = st.lane
@@ -519,16 +553,22 @@ function update(dt: number) {
       sendNet('gwRunLane', { at: st.t, lane })
       fxSound('dodge', 0.1)
     }
-    const events = stepRun(st, span, seed)
-    for (const ev of events) onEvent(ev)
+    simAccumulator += elapsed
+    let simulated = 0
+    while (!st.over && simAccumulator + 1e-9 >= RUN_STEP_SECONDS) {
+      const events = stepRun(st, RUN_STEP_SECONDS, seed)
+      for (const ev of events) onEvent(ev)
+      simAccumulator -= RUN_STEP_SECONDS
+      simulated += RUN_STEP_SECONDS
+    }
     // Owed corrections, a little a frame, so the host's word never shows as a jump.
     if (drift !== 0) {
-      const pay = Math.sign(drift) * Math.min(Math.abs(drift), DRIFT_RATE * span + Math.abs(drift) * 0.5 * span)
+      const pay = Math.sign(drift) * Math.min(Math.abs(drift), DRIFT_RATE * simulated + Math.abs(drift) * 0.5 * simulated)
       st.s += pay
       drift -= pay
     }
     if (staminaDrift !== 0) {
-      const pay = Math.sign(staminaDrift) * Math.min(Math.abs(staminaDrift), STAMINA_DRIFT_RATE * span)
+      const pay = Math.sign(staminaDrift) * Math.min(Math.abs(staminaDrift), STAMINA_DRIFT_RATE * simulated)
       st.stamina = Math.min(st.staminaMax, st.stamina + pay)
       staminaDrift -= pay
     }
@@ -543,10 +583,9 @@ function update(dt: number) {
   }
   // The puppet: slides to its lane, stumbles when hit.
   if (puppet !== undefined) {
-    const targetX = ORIGIN.x + laneOffset(st.lane)
+    const targetX = ORIGIN.x + st.x
     const dx = targetX - puppetX
-    const step = SLIDE_SPEED * span
-    puppetX = Math.abs(dx) <= step ? targetX : puppetX + Math.sign(dx) * step
+    puppetX = targetX
     const tr = Transform.getMutable(puppet)
     tr.position = Vector3.create(puppetX, ORIGIN.y, ORIGIN.z + HERO_Z)
     tr.rotation = Quaternion.fromEulerDegrees(0, dx > 0.05 ? 18 : dx < -0.05 ? -18 : 0, 0)
@@ -596,12 +635,9 @@ function update(dt: number) {
         setEquipmentAvatar(entity, who.body, { ...(DEFAULT_LOADOUTS[who.body] ?? DEFAULT_LOADOUTS.vanguard), weapon: who.weapon }, false)
         setEquipmentMotion(entity, 'menace', true)
       } else if (look.id) GltfContainer.create(entity, { src: KIT[look.id].src, invisibleMeshesCollisionMask: 0, visibleMeshesCollisionMask: 0 })
+      else if (look.src) GltfContainer.create(entity, { src: look.src, invisibleMeshesCollisionMask: 0, visibleMeshesCollisionMask: 0 })
       if (look.sphere) {
-        // A glowing core with sparks coming off it: an ember on the road, or the violet ward.
-        const core = engine.addEntity()
-        Transform.create(core, { parent: entity, scale: Vector3.create(0.34, 0.34, 0.34) })
-        MeshRenderer.setSphere(core)
-        Material.setPbrMaterial(core, { albedoColor: look.sphere, emissiveColor: look.sphere, emissiveIntensity: 3, roughness: 0.4 })
+        // The textured ember/ward orb keeps the sparks that made the old plain core readable at speed.
         const sparks = engine.addEntity()
         Transform.create(sparks, { parent: entity })
         ParticleSystem.create(sparks, { ...sparksConfig(item.kind === 'ember' ? 9 : 6, look.sphere), active: true, loop: true, prewarm: true, playbackState: PLAYING })
@@ -611,7 +647,8 @@ function update(dt: number) {
         Transform.create(flame, { parent: entity, position: Vector3.create(0, 0.1, 0) })
         ParticleSystem.create(flame, { ...flameConfig(0.35), active: true, loop: true, prewarm: true, playbackState: PLAYING })
       }
-      itemEntities.set(item.key, { entity, item, bob: !isObstacle(item.kind), body: !!look.ghoul })
+      const bounds = SHOW_ITEM_BOUNDS ? itemBounds(item) : undefined
+      itemEntities.set(item.key, { entity, bounds, item, bob: !isObstacle(item.kind), body: !!look.ghoul })
     }
   }
   for (const [key, held] of itemEntities) {
@@ -626,6 +663,15 @@ function update(dt: number) {
     const bob = held.bob ? Math.sin(st.t * 4 + held.item.at) * 0.15 : 0
     tr.position = Vector3.create(ORIGIN.x + laneOffset(held.item.lane), ORIGIN.y + look.y + bob, ORIGIN.z + HERO_Z + rel)
     if (held.bob) tr.rotation = Quaternion.fromEulerDegrees(0, (st.t * 90) % 360, 0)
+    if (held.bounds !== undefined) {
+      const bounds = runItemBounds(held.item.kind)
+      const y = isObstacle(held.item.kind) ? bounds.height / 2 : look.y + bounds.height / 2
+      Transform.getMutable(held.bounds).position = Vector3.create(
+        ORIGIN.x + laneOffset(held.item.lane),
+        ORIGIN.y + y,
+        ORIGIN.z + HERO_Z + rel
+      )
+    }
   }
   // A stumble shakes the camera a little, settling as the hero recovers.
   if (rig) {
@@ -661,6 +707,7 @@ function dropItem(key: string) {
   if (!held) return
   if (held.body) destroyEquipmentAvatar(held.entity)
   engine.removeEntityWithChildren(held.entity)
+  if (held.bounds !== undefined) engine.removeEntity(held.bounds)
   itemEntities.delete(key)
 }
 

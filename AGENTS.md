@@ -1,5 +1,13 @@
 # Agent Instructions
 
+## How to work here
+
+- Make the smallest change that does the job. One change at a time, and check it works before moving on. Do not bundle extra improvements, refactors, or "while I'm here" fixes into a request.
+- Do not overthink it. If the existing code already has a way to do something, use it. Do not design a new system, write a plan, or explore the codebase beyond what the change needs.
+- Ask one question when something is genuinely ambiguous, then do the work. Do not present options and wait when a reasonable default exists.
+- The user tests in-game and sends screenshots. Do not run smoke tests, and do not restart the preview or re-run exports unless asked.
+- Keep responses short. Say what changed and where, nothing more.
+
 This is a Decentraland SDK7 scene project.
 
 ## Before writing any code

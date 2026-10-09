@@ -13,7 +13,7 @@ import {
 import { openTitle } from './titleScreen'
 import { setupCharacterPickerUi } from './characterPickerUi'
 import { initializeInventory } from './inventory'
-import { getCommittedLoadout } from './equipmentState'
+import { activateCommittedCopies, getCommittedLoadout } from './equipmentState'
 import { initializeCombat } from './combat'
 import { initializeDungeonEnemies } from './dungeonEnemies'
 import { initializeTrainingDummies } from './trainingDummies'
@@ -52,6 +52,7 @@ import { initializeTitleVideo } from './titleVideo'
 import { initializeMusic } from './music'
 import { initializeHeroSkills } from './heroSkills'
 import { initializePartyServer } from './partyServer'
+import { initializeTutorial } from './tutorial'
 import { HUB_LEVEL } from './shared/levels'
 export async function main() {
   // Ask the runtime directly rather than reading the SDK's isServer() atom: that
@@ -124,6 +125,7 @@ function initClient() {
   // hosts the party registry itself (see partyServer's onHostStart binding).
   initializeParty()
   initializeHeroSave()
+  initializeTutorial()
   initializeHeroXp()
   initializeHeroSkills()
   initializePartyServer()
@@ -141,6 +143,7 @@ const HALL_BREATHER_SECONDS = 8
 
 function applyCharacter(character: CharacterDefinition, previewRoot?: Entity): boolean {
   holdPreloadQueue(HALL_BREATHER_SECONDS)
+  activateCommittedCopies(character.id)
   if (previewRoot !== undefined) return adoptPlayerCharacter(previewRoot, character.id, getCommittedLoadout(character.id))
   setPlayerCharacter(character.id, getCommittedLoadout(character.id))
   return true

@@ -10,7 +10,7 @@ import { heroClassOf } from './heroClasses'
 import { activeBuff, Buff } from './heroVitals'
 import { localXp } from './heroXp'
 import { localAddress } from './multiplayer'
-import { getPlayerCharacterState, getPlayerVitals, setPlayerSkillHandlers } from './playerCharacter'
+import { getPlayerCharacterState, getPlayerVitals, isPlayerDemonForm, setPlayerSkillHandlers } from './playerCharacter'
 import { SkillDef, skillInSlot, skillsFor } from './shared/skills'
 import { t } from './i18n'
 
@@ -39,7 +39,7 @@ export function initializeHeroSkills() {
   if (initialized) return
   initialized = true
   setPlayerSkillHandlers(
-    (slot) => skillInSlot(heroClassId(), slot, localXp().level),
+    (slot) => isPlayerDemonForm() ? undefined : skillInSlot(heroClassId(), slot, localXp().level),
     (slot, why) => {
       refusal = { slot, why, age: 0 }
       if (why !== 'cooldown') fxSound('block', 0.25)
@@ -88,5 +88,9 @@ export function skillSummaryText(def: SkillDef): string {
       if (e.seconds) parts.push(`${e.seconds} s`)
       return `${e.target === 'party' ? t('Party') : t('You')} · ${parts.join(' · ')}`
     }
+    case 'line': return `${t('{n} m line', { n: e.range })} · ${t('{pct}% heavy damage', { pct: Math.round(e.mult * 100) })}`
+    case 'summon': return `${e.count} ${t('spectral warriors')} · ${e.seconds} s`
+    case 'drain': return `${t('{n} m circle', { n: e.radius })} ${t('where you aim')} · ${t('{hits} hits over {seconds} s', { hits: e.ticks, seconds: e.seconds })}`
+    case 'transform': return `${e.seconds} s · ${t('+{pct}% melee damage', { pct: Math.round((e.meleeMight - 1) * 100) })}`
   }
 }

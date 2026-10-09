@@ -21,6 +21,7 @@ export type SkillId =
   | 'ground_slam' | 'cleave' | 'berserk' | 'second_wind'
   | 'piercing_shot' | 'arrow_rain' | 'explosive_arrow' | 'focus'
   | 'chain_bolt' | 'fire_circle' | 'mend' | 'arcane_shield'
+  | 'gravespike' | 'raise_legion' | 'soul_siphon' | 'dread_ascension'
 
 export type SkillEffect =
   | {
@@ -74,6 +75,42 @@ export type SkillEffect =
     /** Health restored on cast. */
     heal: number
   }
+  | {
+    kind: 'line'
+    /** Sequential eruptions from the caster toward the aim point. */
+    range: number
+    spacing: number
+    radius: number
+    mult: number
+    seconds: number
+    stagger: number
+    knockback: number
+  }
+  | {
+    kind: 'summon'
+    count: number
+    seconds: number
+    /** Each warrior's sustained damage relative to its owner. */
+    damageShare: number
+  }
+  | {
+    kind: 'drain'
+    aimRange: number
+    radius: number
+    mult: number
+    ticks: number
+    seconds: number
+    /** Fraction of damage returned as health, with a per-cast ceiling. */
+    leech: number
+    healCap: number
+  }
+  | {
+    kind: 'transform'
+    seconds: number
+    scale: number
+    meleeMight: number
+    body: string
+  }
 
 export type SkillDef = {
   id: SkillId
@@ -101,6 +138,7 @@ const BLADE: [number, number, number] = [0.85, 0.88, 1]
 const HEAVY: [number, number, number] = [1, 0.55, 0.3]
 const BOW: [number, number, number] = [0.55, 0.9, 0.5]
 const MAGIC: [number, number, number] = [0.7, 0.55, 1]
+const GRAVE: [number, number, number] = [0.2, 0.88, 0.82]
 
 export const SKILLS: Record<SkillId, SkillDef> = {
   // --- Blade: the Vanguard --------------------------------------------------------
@@ -144,9 +182,9 @@ export const SKILLS: Record<SkillId, SkillDef> = {
   },
   berserk: {
     id: 'berserk', name: 'Berserk', cls: 'heavy', slot: 3, level: SKILL_LEVELS[3],
-    blurb: 'Eight seconds of a third more damage dealt.',
+    blurb: 'Ten seconds of a third more damage dealt.',
     cooldown: 22, stamina: 10, motion: 'menace_enter', contact: 0.6, color: HEAVY,
-    effect: { kind: 'aura', target: 'self', radius: 0, seconds: 8, might: 1.35, toughness: 1, heal: 0 }
+    effect: { kind: 'aura', target: 'self', radius: 0, seconds: 10, might: 1.35, toughness: 1, heal: 0 }
   },
   second_wind: {
     id: 'second_wind', name: 'Second Wind', cls: 'heavy', slot: 2, level: SKILL_LEVELS[2],
@@ -205,10 +243,36 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     blurb: 'A ward over the party: blows take three tenths less for six seconds.',
     cooldown: 24, stamina: 15, motion: 'cast_nova', color: MAGIC,
     effect: { kind: 'aura', target: 'party', radius: 9, seconds: 6, might: 1, toughness: 0.7, heal: 0 }
+  },
+
+  // --- Grave: the Gravecaller ----------------------------------------------------------
+  gravespike: {
+    id: 'gravespike', name: 'Gravespike', cls: 'grave', slot: 0, level: SKILL_LEVELS[0],
+    blurb: 'A line of bone erupts toward your aim, striking every enemy caught along it.',
+    cooldown: 8, stamina: 18, motion: 'cast_nova', contact: 0.75, color: GRAVE,
+    effect: { kind: 'line', range: 8, spacing: 1.15, radius: 0.85, mult: 0.95, seconds: 0.7, stagger: 0.75, knockback: 0.15 }
+  },
+  raise_legion: {
+    id: 'raise_legion', name: 'Raise Legion', cls: 'grave', slot: 1, level: SKILL_LEVELS[1],
+    blurb: 'Three spectral warriors crawl from the earth and fight beside you for twenty seconds.',
+    cooldown: 24, stamina: 25, motion: 'menace_enter', contact: 0.6, color: GRAVE,
+    effect: { kind: 'summon', count: 3, seconds: 20, damageShare: 0.2 }
+  },
+  soul_siphon: {
+    id: 'soul_siphon', name: 'Soul Siphon', cls: 'grave', slot: 2, level: SKILL_LEVELS[2],
+    blurb: 'Drain the ground you aim at, reclaiming some of the life torn from every enemy within.',
+    cooldown: 16, stamina: 22, motion: 'cast_nova', contact: 0.8, color: GRAVE,
+    effect: { kind: 'drain', aimRange: 7, radius: 2.8, mult: 0.45, ticks: 4, seconds: 4, leech: 0.3, healCap: 30 }
+  },
+  dread_ascension: {
+    id: 'dread_ascension', name: 'Dread Ascension', cls: 'grave', slot: 3, level: SKILL_LEVELS[3],
+    blurb: 'Take the Demon\'s shape for thirty seconds: scythe arts give way to a devastating halberd combo and ground slam.',
+    cooldown: 45, stamina: 10, motion: 'menace_enter', contact: 0.6, color: GRAVE,
+    effect: { kind: 'transform', seconds: 30, scale: 1.6, meleeMight: 2, body: 'dk-demon' }
   }
 }
 
-const BY_CLASS: Record<HeroClass, SkillDef[]> = { blade: [], heavy: [], bow: [], magic: [] }
+const BY_CLASS: Record<HeroClass, SkillDef[]> = { blade: [], heavy: [], bow: [], magic: [], grave: [] }
 for (const def of Object.values(SKILLS)) BY_CLASS[def.cls].push(def)
 for (const kit of Object.values(BY_CLASS)) kit.sort((a, b) => a.slot - b.slot)
 

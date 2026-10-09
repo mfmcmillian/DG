@@ -40,15 +40,15 @@ function tint(color: [number, number, number], alpha: number, k = 1): Color4 {
 }
 
 /**
- * The skill pictures, images/hud/skills.png: a 4x4 sheet, one row per class in
- * this order, one column per slot (the order the kit opens in).
+ * The skill pictures, images/hud/skills.png: a 4x4 sheet, one row per original class.
+ * Gravecaller temporarily shares the magic row until its own four icons are painted.
  */
 const SHEET = 'images/hud/skills.png'
 const SHEET_ROWS: HeroClass[] = ['blade', 'heavy', 'bow', 'magic']
 
 /** UV corners of a skill's cell: bottom-left, top-left, top-right, bottom-right (v runs up). */
 function sheetUvs(def: SkillDef): number[] {
-  const row = Math.max(0, SHEET_ROWS.indexOf(def.cls))
+  const row = def.cls === 'grave' ? SHEET_ROWS.indexOf('magic') : Math.max(0, SHEET_ROWS.indexOf(def.cls))
   const u0 = def.slot / 4
   const u1 = u0 + 1 / 4
   const vTop = 1 - row / 4
@@ -96,7 +96,7 @@ export function SkillBar({ width, bottom, scale: s }: { width: number; bottom: n
         // small key tag, and on a locked one a veil with the level it opens at.
         // Tappable: on a phone the pad has no 1-4 keys, the slot itself is the button.
         return <UiEntity key={`skill-${v.slot}`} uiTransform={{ width: SLOT * s, height: SLOT * s, borderRadius: 6 * s, borderWidth: 2 * s, borderColor: border,
-          flexDirection: 'column' }} uiBackground={{ color: lockedFace }} onMouseDown={() => tapSkillSlot(v.slot)}
+          flexDirection: 'column', pointerFilter: 'block' }} uiBackground={{ color: lockedFace }} onMouseDown={() => tapSkillSlot(v.slot)}
           onMouseEnter={() => { hoveredSlot = v.slot }} onMouseLeave={() => { if (hoveredSlot === v.slot) hoveredSlot = undefined }}>
           <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width: '100%', height: '100%', pointerFilter: 'none' }}
             uiBackground={{ textureMode: 'stretch', texture: { src: SHEET }, uvs: sheetUvs(v.def), color: v.unlocked ? pictureOpen : pictureLocked }} />

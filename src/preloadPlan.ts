@@ -11,6 +11,7 @@ import { CRYPT_TEXTURES, KIT } from './dungeon/kit'
 import { bogFurnitureIds } from './dungeon/bogmaw'
 import { cryptFurnitureIds } from './dungeon/crypt'
 import { yardFurnitureIds } from './dungeon/barrowYard'
+import { isleFurnitureIds } from './dungeon/isle'
 import { isCryptKit } from './dungeon/layouts'
 import { hubFurnitureIds } from './dungeon/hub'
 import { passFurnitureIds } from './dungeon/pass'
@@ -20,6 +21,7 @@ import { EquipmentLoadout } from './equipmentCatalog'
 import { equipmentModelPaths } from './equipmentAvatar'
 import { getCommittedLoadout } from './equipmentState'
 import { isPreloadComplete, preloadGroup, PreloadGroup } from './preload'
+import { backdropAssets } from './backdrop'
 import { projectileAssets } from './projectiles'
 import { partSources } from './raid/colossusPose'
 import { GW_EVENT_END } from './shared/gravewatch'
@@ -59,7 +61,7 @@ export function requestRealmPreload(style: StyleId, urgent = false) {
     return
   }
   // The pass is drawn by hand: its lake, camp and bone field are furniture on top of the style's props.
-  const furniture = style === 'pass' ? passFurnitureIds() : style === 'bog' ? bogFurnitureIds() : style === 'crypt' ? cryptFurnitureIds() : style === 'yard' ? yardFurnitureIds() : []
+  const furniture = style === 'pass' ? passFurnitureIds() : style === 'bog' ? bogFurnitureIds() : style === 'crypt' ? cryptFurnitureIds() : style === 'yard' ? yardFurnitureIds() : style === 'isle' ? isleFurnitureIds() : []
   const furnitureSrcs = furniture.map((id) => KIT[id].src)
   // The Crypt's night (src/cryptFx.ts): its bats, its moon, the ground beyond the walls, the wind.
   const air = isCryptKit(style) ? [CRYPT_TEXTURES.bat, CRYPT_TEXTURES.moon, CRYPT_TEXTURES.dirt, 'sounds/crypt_loop.wav'] : []
@@ -67,6 +69,7 @@ export function requestRealmPreload(style: StyleId, urgent = false) {
     ...kitSrcsForStyle(STYLES[style]),
     ...furnitureSrcs,
     ...styleTexturesFor(STYLES[style]),
+    ...backdropAssets(style),
     ...enemyPreloadAssets(style),
     ...air
   ], urgent)
@@ -88,7 +91,7 @@ const GRAVEWATCH_ART = [
   'images/ui/kit/title-bg-gravewatch.jpg',
   'images/gravewatch/wheel-0.png', 'images/gravewatch/wheel-1.png', 'images/gravewatch/wheel-2.png', 'images/gravewatch/wheel-3.png',
   'images/gravewatch/wheel-pointer.png', 'images/gravewatch/wheel-strip.png',
-  'images/gravewatch/board.png', 'images/gravewatch/icons.png', 'images/gravewatch/rising-banner.png',
+  'images/gravewatch/board.png', 'images/gravewatch/board-icons.png', 'images/gravewatch/icons.png', 'images/gravewatch/event-card.png', 'images/gravewatch/rising-banner.png',
   'images/gravewatch/reliquary-strip.png', 'images/gravewatch/run-banner.png', 'images/gravewatch/run-icons.png'
 ]
 
@@ -99,7 +102,8 @@ export function planPreload() {
   preloadGroup(PRELOAD_HUB, 'the hall', [
     ...kitSrcsForStyle(STYLES.hall, hubFurnitureIds()),
     ...styleTexturesFor(STYLES.hall),
-    'models/loot/coin.glb', 'models/loot/heart.glb',
+    ...backdropAssets('hall'),
+    'models/loot/coin.glb', 'models/loot/heart.glb', 'models/loot/ember.glb', 'models/loot/ward.glb',
     ...projectileAssets(),
     ...fxSoundAssets(),
     ...AMBIENCE_ASSETS,

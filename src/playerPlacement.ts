@@ -3,6 +3,7 @@ import { Vector3 } from '@dcl/sdk/math'
 import { movePlayerTo } from '~system/RestrictedActions'
 import { rearmAvatarHiding } from './avatarHiding'
 import { COURTYARD, courtyardSpawnCameraTarget, courtyardSpawnPosition, isInCourtyard } from './courtyard'
+import { isCrawlerCameraOn } from './dungeon/crawlerCamera'
 
 const CHECK_INTERVAL = 0.25
 const RETRY_INTERVAL = 1
@@ -64,6 +65,16 @@ export function movePlayerToSpawn() {
       retryAfter = RETRY_INTERVAL
     }
   })
+}
+
+/** Dungeon handoff: move to the current entrance and resolve only after the renderer reports arrival. */
+export function movePlayerToSpawnAndWait(): Promise<void> {
+  // A virtual crawler camera already owns the view. Sending a native camera
+  // target as well can land later on mobile and tug the view after the reveal.
+  return preparePlayerForCameraReturn(
+    courtyardSpawnPosition(),
+    isCrawlerCameraOn() ? undefined : courtyardSpawnCameraTarget()
+  )
 }
 
 function requestMove(position: Vector3, cameraTarget?: Vector3): Promise<boolean> {

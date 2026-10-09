@@ -33,15 +33,20 @@ import { t } from './i18n'
 import { LanguageRow } from './languageUi'
 import { heroGroupId, preloadCaption, PRELOAD_HUB } from './preloadPlan'
 import { BODY_TYPES, HAIR_STYLES, HAIR_COLORS, SKIN_TONES } from './appearance'
+import {
+  equipTutorialBow, skipTutorial, startTutorial, tutorialActive, tutorialOfferRequired, tutorialView
+} from './tutorial'
 import { attackRange, HeroAttackMotion, MAX_COMBAT_HEALTH, resolveCombatHit, STAMINA } from './combatActions'
 import { classOfCharacter, heroClassOf } from './heroClasses'
 import { SKILLS } from './shared/skills'
 import { WEAPON_CLASSES, weaponStats } from './weapons'
+import { MobileCombatUi } from './mobileCombatUi'
+import { SceneTransitionUi, sceneTransitionActive } from './sceneTransitionUi'
 import {
   CHARACTERS, getPickerState, getSelectedCharacter,
   getCreatorAppearance, setCreatorAppearance,
   closePicker, selectCharacter, confirmCharacter, rotatePreview,
-  setPreviewMotion, toggleAutoRotate
+  setPreviewMotion, toggleAutoRotate, isCharacterUnlocked
 } from './characterPicker'
 
 const { white, muted, gold, card, selectedGold, line, goldLine, coral, ink } = menuColors
@@ -160,26 +165,30 @@ function OutfitPresets({ scale: s }: { scale: number }) {
   const state = getPickerState()
   const first = !state.hasCreatedCharacter
   return <Sheet left={0} top={100} width={234} height={538} padding={18} scale={s}>
-    <Heading title={first ? t('CHAMPION') : t('OUTFIT')} scale={s} />
-    <Label value={first ? t('Pick one') : t('Starting armor')} font="serif" color={white} fontSize={20 * s} textAlign="middle-left" textWrap="nowrap"
+    <Heading title={first ? t('CHAMPION') : t('CHAMPIONS')} scale={s} />
+    <Label value={first ? t('Pick one') : t('Choose your class')} font="serif" color={white} fontSize={20 * s} textAlign="middle-left" textWrap="nowrap"
       uiTransform={{ width: '100%', height: 34 * s, margin: { bottom: 12 * s }, flexShrink: 0, pointerFilter: 'none' }} />
     <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', pointerFilter: 'none' }}>
       {CHARACTERS.map((entry) => {
         const active = entry.id === state.selectedId
+        const unlocked = isCharacterUnlocked(entry.id)
         const key = `outfit-${entry.id}`
-        return <UiEntity key={key} uiTransform={{ width: 96 * s, height: 168 * s, margin: { bottom: 10 * s }, flexShrink: 0,
+        return <UiEntity key={key} uiTransform={{ width: 96 * s, height: 134 * s, margin: { bottom: 8 * s }, flexShrink: 0,
           borderRadius: 5 * s, borderWidth: (active ? 2 : 1) * s, borderColor: active ? gold : hovered === key ? goldLine : line,
-          overflow: 'hidden', opacity: state.confirming ? 0.5 : 1, pointerFilter: 'block' }}
+          overflow: 'hidden', opacity: state.confirming ? 0.5 : 1, pointerFilter: unlocked ? 'block' : 'none' }}
           uiBackground={{ color: active ? selectedGold : card }}
-          onMouseEnter={() => { hovered = key }} onMouseLeave={() => { if (hovered === key) hovered = '' }}
-          onMouseDown={state.confirming ? undefined : () => selectCharacter(entry.id)}>
-          <UiEntity uiTransform={{ positionType: 'absolute', position: { top: 8 * s, left: 3 * s }, width: 90 * s, height: 96 * s, pointerFilter: 'none' }}
-            uiBackground={{ textureMode: 'stretch', texture: { src: entry.portrait } }} />
-          <UiEntity uiTransform={{ positionType: 'absolute', position: { bottom: 0, left: 0 }, width: '100%', height: 52 * s,
-            padding: { left: 8 * s, top: 6 * s }, flexDirection: 'column', pointerFilter: 'none' }} uiBackground={{ color: ink }}>
-            <Label value={entry.name} color={active ? gold : white} fontSize={14 * s} textAlign="middle-left" textWrap="nowrap"
+          onMouseEnter={unlocked ? () => { hovered = key } : undefined} onMouseLeave={() => { if (hovered === key) hovered = '' }}
+          onMouseDown={!unlocked || state.confirming ? undefined : () => selectCharacter(entry.id)}>
+          <UiEntity uiTransform={{ positionType: 'absolute', position: { top: 6 * s, left: 3 * s }, width: 90 * s, height: 76 * s,
+            opacity: unlocked ? 1 : 0.12, pointerFilter: 'none' }}
+            uiBackground={{ textureMode: 'stretch', texture: { src: entry.portrait }, color: unlocked ? Color4.White() : Color4.Black() }} />
+          {!unlocked && <Label value="🔒" color={muted} fontSize={22 * s} textAlign="middle-center"
+            uiTransform={{ positionType: 'absolute', position: { top: 28 * s, left: 0 }, width: '100%', height: 30 * s, pointerFilter: 'none' }} />}
+          <UiEntity uiTransform={{ positionType: 'absolute', position: { bottom: 0, left: 0 }, width: '100%', height: 48 * s,
+            padding: { left: 7 * s, top: 5 * s }, flexDirection: 'column', pointerFilter: 'none' }} uiBackground={{ color: ink }}>
+            <Label value={unlocked ? entry.name : t('Locked')} color={active ? gold : white} fontSize={13 * s} textAlign="middle-left" textWrap="nowrap"
               uiTransform={{ width: '100%', height: 20 * s, flexShrink: 0, pointerFilter: 'none' }} />
-            <Label value={t(entry.role)} color={muted} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
+            <Label value={unlocked ? t(entry.role) : t('Clear Bogmaw')} color={muted} fontSize={10 * s} textAlign="middle-left" textWrap="nowrap"
               uiTransform={{ width: '100%', height: 16 * s, flexShrink: 0, pointerFilter: 'none' }} />
           </UiEntity>
         </UiEntity>
@@ -351,6 +360,40 @@ function TitleScreen() {
   </UiEntity>
 }
 
+function TutorialOverlay() {
+  const view = tutorialView()
+  if (!view) return null
+  const { width, height, mobile } = uiViewport()
+  const s = Math.max(0.65, Math.min(1, width / 1600, height / 900))
+  const input = mobile ? view.touch : view.desktop
+  const progress = view.goal > 0 ? `  ${view.progress}/${view.goal}` : ''
+  return <UiEntity uiTransform={wholeCanvas()}>
+    <UiEntity uiTransform={{ positionType: 'absolute', position: { left: (width - 760 * s) / 2, top: 28 * s },
+      width: 760 * s, padding: { top: 24 * s, bottom: 24 * s, left: 32 * s, right: 32 * s },
+      flexDirection: 'column', alignItems: 'center', borderRadius: 10 * s, borderWidth: 2 * s, borderColor: goldLine,
+      pointerFilter: 'none' }} uiBackground={{ color: sheet }}>
+      <Label value={t(view.title)} color={gold} font="serif" fontSize={34 * s} textWrap="nowrap"
+        uiTransform={{ width: '100%', height: 46 * s, pointerFilter: 'none' }} />
+      <Label value={`${t(view.instruction)}${progress}`} color={white} fontSize={22 * s} textWrap="nowrap"
+        uiTransform={{ width: '100%', height: 34 * s, pointerFilter: 'none' }} />
+      {input && <Label value={t(input)} color={muted} fontSize={20 * s} textWrap="nowrap"
+        uiTransform={{ width: '100%', height: 32 * s, margin: { top: 4 * s }, pointerFilter: 'none' }} />}
+      {view.feedback && <Label value={`✓ ${t(view.feedback)}`} color={Color4.create(0.55, 1, 0.65, 1)} fontSize={18 * s} textWrap="nowrap"
+        uiTransform={{ width: '100%', height: 28 * s, margin: { top: 4 * s }, pointerFilter: 'none' }} />}
+      {view.phase === 'bow' && <UiEntity uiTransform={{ margin: { top: 14 * s }, pointerFilter: 'none' }}>
+        <Action id="tutorial-equip-bow" text={t('Equip Bow')} onClick={equipTutorialBow} primary accent="gold"
+          width={280} height={58} scale={s} fontSize={20} />
+      </UiEntity>}
+    </UiEntity>
+    {view.phase !== 'starting' && view.phase !== 'complete' && <MobileCombatUi />}
+    {view.phase !== 'complete' && <UiEntity uiTransform={{ positionType: 'absolute',
+      position: { right: 18 * s, bottom: 18 * s }, pointerFilter: 'none' }}>
+      <Action id="tutorial-skip" text={t('Skip Tutorial')} onClick={skipTutorial} accent="gold"
+        width={180} height={42} scale={s} fontSize={15} />
+    </UiEntity>}
+  </UiEntity>
+}
+
 /** What stands under the crest once the hall is in: Play, and whatever the saved champion calls for around it. Another class is chosen in the hall, not here. */
 function TitleActions({ created, saved, unreachable, heroReady, resuming, scale: s }: {
   created: boolean; saved: boolean; unreachable: boolean; heroReady: boolean; resuming: boolean; scale: number
@@ -361,7 +404,7 @@ function TitleActions({ created, saved, unreachable, heroReady, resuming, scale:
   const playText = resuming ? t('Entering the hall…')
     : preparing ? preloadCaption(getPreloadGroup(heroGroupId(getHeroSaveState().cid)), t('Preparing'))
     : unreachable && !created ? t('Play offline') : t('Play')
-  const play = savedOnly ? titleResumeSaved : created ? titleContinue : titleBegin
+  const play = tutorialOfferRequired() ? startTutorial : savedOnly ? titleResumeSaved : created ? titleContinue : titleBegin
   return <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
     {unreachable && !created && <UiEntity uiTransform={{ width: 520 * s, flexDirection: 'column', alignItems: 'center', margin: { bottom: 10 * s }, pointerFilter: 'none' }}>
       <Label value={t("Can't reach the server.")} color={coral} fontSize={15 * s} textAlign="middle-center" textWrap="nowrap"
@@ -474,7 +517,7 @@ function Picker() {
       <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width: 700 * s, flexDirection: 'column', pointerFilter: 'none' }}>
         <Label value="DUNGEONS OF ANTROM" color={gold} fontSize={11 * s} textAlign="middle-left" textWrap="nowrap"
           uiTransform={{ width: '100%', height: 18 * s, flexShrink: 0, pointerFilter: 'none' }} />
-        <Label value={state.hasCreatedCharacter ? t('Your champion') : t('Choose your champion')} font="serif" color={white} fontSize={32 * s}
+        <Label value={state.hasCreatedCharacter ? t('Switch champion') : t('Choose your champion')} font="serif" color={white} fontSize={32 * s}
           textAlign="middle-left" textWrap="nowrap"
           uiTransform={{ width: '100%', height: 44 * s, flexShrink: 0, pointerFilter: 'none' }} />
         <UiEntity uiTransform={{ width: 200 * s, height: 2 * s, margin: { top: 6 * s }, flexShrink: 0, pointerFilter: 'none' }}
@@ -496,11 +539,12 @@ function Picker() {
       {editing && <PreviewControls scale={s} />}
       <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 794 * s, top: 650 * s }, width: 486 * s,
         flexDirection: 'column', alignItems: 'center', pointerFilter: 'none' }}>
-        <Label value={state.confirmationError ? t(state.confirmationError) : t('Gear can be changed after you enter.')} color={state.confirmationError ? coral : muted}
+        <Label value={state.confirmationError ? t(state.confirmationError)
+          : state.hasCreatedCharacter ? t('Each champion keeps its own equipped gear.') : t('Gear can be changed after you enter.')} color={state.confirmationError ? coral : muted}
           fontSize={13 * s} uiTransform={{ width: '100%', height: 28 * s, margin: { bottom: 8 * s }, flexShrink: 0, pointerFilter: 'none' }} />
         <Action id="confirm"
           text={state.confirming ? t('Entering the hall…') : state.confirmationError ? t('Try again')
-            : state.loading === 'error' ? t('Retry this look') : state.hasCreatedCharacter ? t('Save champion') : t('Enter the hall')}
+            : state.loading === 'error' ? t('Retry this look') : state.hasCreatedCharacter ? t('Switch to {name}', { name: t(selected.name) }) : t('Enter the hall')}
           onClick={state.loading === 'error' ? () => selectCharacter(selected.id) : () => { customising = false; confirmCharacter() }}
           width={438} height={52} scale={s} fontSize={18} primary accent="gold"
           disabled={state.confirming || state.loading === 'loading'} />
@@ -511,7 +555,7 @@ function Picker() {
 
 export function setupCharacterPickerUi() {
   ReactEcsRenderer.setUiRenderer(
-    () => getCombatState().open ? <CombatUi /> : getInventoryState().open ? <InventoryUi />
+    () => sceneTransitionActive() ? <SceneTransitionUi /> : tutorialActive() ? <TutorialOverlay /> : getCombatState().open ? <CombatUi /> : getInventoryState().open ? <InventoryUi />
       : isTitleOpen() ? <TitleScreen /> : getPickerState().open ? <Picker />
         : isSettingsOpen() ? <SettingsUi /> : isBarrowRunOpen() ? <BarrowRunUi /> : isGravewatchOpen() ? <GravewatchUi /> : getLobbyState().open ? <LobbyUi /> : isUpgradePickerOpen() ? <UpgradeUi /> : isSellOpen() ? <SellUi /> : <WorldHudUi />,
     // Every layout is drawn in virtual pixels of one screen (uiScale.ts); the SDK

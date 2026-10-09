@@ -11,7 +11,7 @@ import { t } from './i18n'
 import { affixOf } from './shared/affixes'
 import { levelFlatBonus, levelMultiplier, upgradeAffixOf, upgradeLevelOf, upgradeRankOf } from './shared/upgradeRanks'
 
-export type WeaponClass = 'sword' | 'dagger' | 'axe' | 'mace' | 'hammer' | 'club' | 'great' | 'bow' | 'staff' | 'sceptre'
+export type WeaponClass = 'sword' | 'dagger' | 'axe' | 'mace' | 'hammer' | 'club' | 'great' | 'bow' | 'staff' | 'sceptre' | 'scythe'
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
 
 export type WeaponStats = {
@@ -36,7 +36,8 @@ export const WEAPON_CLASSES: Record<WeaponClass, { label: string; blurb: string 
   // Class weapons: the archer's and the spellblade's. Their reach is in the motion, not the class.
   bow: { label: 'Bow', blurb: 'Arrows from range. Light shafts reel less; a volley makes up for it.', damage: 1, stagger: 0.8, knockback: 0.7 },
   staff: { label: 'Staff', blurb: 'Bolts and bursts. Hits stagger more than they shove.', damage: 1, stagger: 1.2, knockback: 0.8 },
-  sceptre: { label: 'Sceptre', blurb: 'A short casting focus. Sharper bolts, less weight behind the stagger.', damage: 1.1, stagger: 0.9, knockback: 0.7 }
+  sceptre: { label: 'Sceptre', blurb: 'A short casting focus. Sharper bolts, less weight behind the stagger.', damage: 1.1, stagger: 0.9, knockback: 0.7 },
+  scythe: { label: 'Scythe', blurb: 'A reaper\'s reach in close, with a soul cast held in reserve.', damage: 1.08, stagger: 1.1, knockback: 0.9 }
 }
 
 export type WeaponTemper = NonNullable<NonNullable<EquipmentItem['weapon']>['temper']>
@@ -65,12 +66,20 @@ export function weaponTemper(id: string): WeaponTemper {
   return TEMPER_ORDER[h % TEMPER_ORDER.length]
 }
 
-export const RARITIES: Record<Rarity, { label: string; rank: number; bonus: number; color: Color4; coins: number }> = {
-  common: { label: 'Common', rank: 0, bonus: 0, color: Color4.create(0.82, 0.82, 0.8, 1), coins: 3 },
-  uncommon: { label: 'Uncommon', rank: 1, bonus: 2, color: Color4.create(0.45, 0.9, 0.45, 1), coins: 6 },
-  rare: { label: 'Rare', rank: 2, bonus: 4, color: Color4.create(0.4, 0.7, 1, 1), coins: 12 },
-  epic: { label: 'Epic', rank: 3, bonus: 6, color: Color4.create(0.78, 0.5, 1, 1), coins: 25 },
-  legendary: { label: 'Legendary', rank: 4, bonus: 9, color: Color4.create(1, 0.72, 0.25, 1), coins: 50 }
+/**
+ * The tiers. `damage` multiplies a blow like the class and temper do, `bonus`
+ * is added flat after. Each tier's multiplier is at least 12% over the one
+ * below, which is more than the whole temper spread (keen 1.06 over weighted
+ * 0.95), so within a weapon class any copy of a higher tier out-hits any copy
+ * of a lower one at the same forge level: rarity is a step up, never flavour.
+ * Common is 1 so the starters and the early dungeons stand where they were.
+ */
+export const RARITIES: Record<Rarity, { label: string; rank: number; damage: number; bonus: number; color: Color4; coins: number }> = {
+  common: { label: 'Common', rank: 0, damage: 1, bonus: 0, color: Color4.create(0.82, 0.82, 0.8, 1), coins: 3 },
+  uncommon: { label: 'Uncommon', rank: 1, damage: 1.12, bonus: 2, color: Color4.create(0.45, 0.9, 0.45, 1), coins: 6 },
+  rare: { label: 'Rare', rank: 2, damage: 1.25, bonus: 4, color: Color4.create(0.4, 0.7, 1, 1), coins: 12 },
+  epic: { label: 'Epic', rank: 3, damage: 1.4, bonus: 6, color: Color4.create(0.78, 0.5, 1, 1), coins: 25 },
+  legendary: { label: 'Legendary', rank: 4, damage: 1.57, bonus: 9, color: Color4.create(1, 0.72, 0.25, 1), coins: 50 }
 }
 
 export const RARITY_ORDER: Rarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary']
@@ -108,7 +117,7 @@ export function weaponStats(id: string | undefined, withBonus = true, rank?: num
   const at = level ?? upgradeLevelOf(id)
   const forged = levelMultiplier(at)
   return {
-    damage: cls.damage * temper.damage * (mark?.damage ?? 1) * pride * forged,
+    damage: cls.damage * temper.damage * RARITIES[rarity].damage * (mark?.damage ?? 1) * pride * forged,
     stagger: cls.stagger * temper.stagger * (mark?.stagger ?? 1),
     knockback: cls.knockback * temper.knockback * (mark?.knockback ?? 1),
     bonus: withBonus ? RARITIES[rarity].bonus + (info.pride ? PRIDE.bonus : 0) + levelFlatBonus(at) + (mark?.bonus ?? 0) : 0
@@ -346,7 +355,9 @@ export function rollWeaponLoot(
     if (pride) return { id: pride, up: 0 }
   }
   const rarity = rollRarity(source, level + diff + (source === 'boss' ? 2 : source === 'elite' ? 1 : 0), rng)
-  const usable = pool ? lootWeapons().filter((item) => pool.includes(item.weapon!.class)) : lootWeapons()
+  // Gravecaller weapon copies begin in the Crypt (level 3); the free starter remains available as soon as the class unlocks.
+  const available = lootWeapons().filter((item) => item.weapon!.class !== 'scythe' || level >= 3)
+  const usable = pool ? available.filter((item) => pool.includes(item.weapon!.class)) : available
   if (!usable.length) return { id: '', up: 0 }
   return { id: usable[Math.min(usable.length - 1, Math.floor(rng() * usable.length))].id, up: RARITIES[rarity].rank }
 }

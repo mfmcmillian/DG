@@ -20,7 +20,7 @@ import {
   setEquipmentAvatar, setEquipmentMotion
 } from './equipmentAvatar'
 
-export type CharacterId = 'vanguard' | 'scout' | 'striker' | 'brute'
+export type CharacterId = 'vanguard' | 'scout' | 'striker' | 'brute' | 'gravecaller'
 export type PreviewMotion = 'idle' | 'walk' | 'run'
 
 export interface CharacterDefinition {
@@ -71,6 +71,16 @@ export const CHARACTERS: CharacterDefinition[] = [
     model: 'models/characters/brute-animated.glb',
     portrait: 'images/characters/brute-idle.png',
     clips: SIDEKICK_CLIPS
+  },
+  {
+    id: 'gravecaller',
+    name: 'Gravecaller',
+    role: 'Grave',
+    description: 'A scythe-wielding revenant who commands the fallen, drains the living, and wears the Demon\'s shape.',
+    model: 'models/characters/striker-animated.glb',
+    // The equipment preview is authoritative; this portrait is temporary until the Gravecaller render is made.
+    portrait: 'images/characters/striker-idle.png',
+    clips: SIDEKICK_CLIPS
   }
 ]
 
@@ -105,6 +115,16 @@ let stage: MenuPreviewStage | undefined
 let facing = MENU_PREVIEW_FACING
 let cameraSession: SceneCameraSession | undefined
 let creatorAppearance = getCommittedAppearance(state.selectedId)
+let characterProgress: readonly number[] = []
+
+/** Gravecaller appears on the roster from the start, but only answers after Bogmaw opens the Crypt. */
+export function setCharacterProgress(progress: readonly number[]) {
+  characterProgress = [...progress]
+}
+
+export function isCharacterUnlocked(id: CharacterId): boolean {
+  return id !== 'gravecaller' || (characterProgress[2] ?? 0) > 0
+}
 
 export function getCreatorAppearance(): Readonly<CharacterAppearance> {
   return creatorAppearance
@@ -147,7 +167,7 @@ export function initializeCharacterPicker(
 export function adoptSavedCharacter(id: string): boolean {
   if (state.open || state.confirming) return false
   const character = CHARACTERS.find((entry) => entry.id === id)
-  if (!character) return false
+  if (!character || !isCharacterUnlocked(character.id)) return false
   if (!applySelection(character)) return false
   state.equippedId = character.id
   state.selectedId = character.id
@@ -192,7 +212,7 @@ export function closePicker() {
 }
 
 export function selectCharacter(id: CharacterId) {
-  if (!state.open || state.confirming || !CHARACTERS.some((character) => character.id === id)) return
+  if (!state.open || state.confirming || !CHARACTERS.some((character) => character.id === id) || !isCharacterUnlocked(id)) return
   if (id === state.selectedId && state.loading !== 'error') return
   state.selectedId = id
   // Outfit selection keeps the user's angle and preview motion.
@@ -202,6 +222,7 @@ export function selectCharacter(id: CharacterId) {
 export function confirmCharacter() {
   if (!state.open || state.confirming || state.loading !== 'ready' || preview === undefined) return
   const selected = getSelectedCharacter()
+  if (!isCharacterUnlocked(selected.id)) return
   const source = preview
   const session = cameraSession
   state.confirming = true
@@ -212,8 +233,9 @@ export function confirmCharacter() {
       const previousAppearance = getCommittedAppearance(selected.id)
       const previousLoadout = getCommittedLoadout(selected.id)
       setCommittedAppearance(selected.id, creatorAppearance)
+      const firstChampion = !state.hasCreatedCharacter
       // Transfer the already-loaded preview instead of loading a second body.
-      setCommittedLoadout(selected.id, { ...previousLoadout, head: 'none-head' })
+      setCommittedLoadout(selected.id, firstChampion && selected.id !== 'gravecaller' ? { ...previousLoadout, head: 'none-head' } : previousLoadout)
       if (!applySelection(selected, source)) {
         setCommittedAppearance(selected.id, previousAppearance)
         setCommittedLoadout(selected.id, previousLoadout)
@@ -270,7 +292,8 @@ function replacePreview() {
   // Keep the preview root and current character until the replacement parts are
   // ready. Selecting a card does not rebuild or retarget the camera.
   const loadout = getCommittedLoadout(character.id)
-  loadout.head = 'none-head'
+  // First-time creation exposes the face editor; an existing champion previews the exact outfit it last wore.
+  if (!state.hasCreatedCharacter && character.id !== 'gravecaller') loadout.head = 'none-head'
   setEquipmentAvatar(preview, character.id, loadout, false, { appearance: creatorAppearance, presentation: 'menu' })
   setEquipmentMotion(preview, state.motion)
 }

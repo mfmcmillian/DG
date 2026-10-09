@@ -8,7 +8,7 @@ import { engine, InputModifier, PointerLock } from '@dcl/sdk/ecs'
 import { onNet, sendNet } from './net'
 import { isSoloMode, localAddress } from './multiplayer'
 import { getPlayerCharacterState, setPumpkinCurse } from './playerCharacter'
-import { myParty, myPhase } from './party'
+import { myPhase } from './party'
 import { HUB } from './partyLookup'
 import { isTitleOpen } from './titleScreen'
 import { GW_BOARD, GW_BOARD_MILESTONES, GW_BOARD_TOKENS, GW_EVENT_END, GW_WHEEL, GwItem, GwRisingPhase, risingAt } from './shared/gravewatch'
@@ -88,18 +88,13 @@ const DICE_SECONDS = 0.9
 const STEP_SECONDS = 0.16
 const NOTE_SECONDS = 4
 const POLL_SECONDS = 10
-/** The flyer waits this long after the hero stands in the hall. */
-const FLYER_AFTER_SECONDS = 1.5
 
 const sheet: GwSheet = {
   known: false, over: false, guest: false, embers: 0, rounds: 0, clears: 0, spins: 0, rolls: 0, pos: 0, tiles: GW_BOARD.map(() => 1), points: 0, miles: 0, mult: 0, curse: 0, held: false, heads: 0, pity: 0, runs: 0, best: 0, mileage: 0, train: [0, 0, 0],
   live: ['w1'], won: [], sold: [], keyed: [], redeemed: {}, rising: 0, phase: 'idle', signed: 0, signedUp: false, arena: 0, note: '', noteFor: 0
 }
 let open = false
-let tab: GwTab = 'rounds'
-let flyer = false
-let flyerShown = false
-let standingFor = 0
+let tab: GwTab = 'board'
 let sincePoll = 0
 let askedOnce = false
 /** Server clock minus ours. */
@@ -358,15 +353,6 @@ function update(dt: number) {
       ask('state')
     }
   }
-  // The flyer, once a session, when the hero has stood in the hall a moment.
-  if (!flyerShown && inHall && !myParty() && !open) {
-    standingFor += span
-    if (standingFor >= FLYER_AFTER_SECONDS && sheet.known) {
-      flyerShown = true
-      flyer = true
-      openGravewatch('rising')
-    }
-  }
 }
 
 // --- what the UI reads ---------------------------------------------------------------------
@@ -381,10 +367,6 @@ export function isGravewatchOpen(): boolean {
 
 export function gravewatchTab(): GwTab {
   return tab
-}
-
-export function isFlyer(): boolean {
-  return flyer
 }
 
 export function gravewatchBusy(): string {
@@ -544,7 +526,6 @@ export function closeGravewatch() {
   if (!open) return
   open = false
   autoRoll = false
-  flyer = false
   confirmItem = ''
   gearPrize = undefined
   ladder.open = false
@@ -555,12 +536,16 @@ export function setGravewatchTab(which: GwTab) {
   tab = which
   autoRoll = false
   confirmItem = ''
-  flyer = false
 }
 
 function ask(what: string) {
   if (!localAddress()) return
   sendNet('gwAct', { what })
+}
+
+/** Developer-only on the host: add test embers and refresh the sheet. */
+export function grantTestEmbers() {
+  ask('grant')
 }
 
 /** Rounds: into an open Barrow Yard party, or off in one of your own. The sheet closes so the lobby can show. */

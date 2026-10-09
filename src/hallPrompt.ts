@@ -38,10 +38,12 @@ const SEGMENTS = 24
 const RADIUS = 0.3
 /** Where the prompt sits beside one of the folk: at their shoulder, off to their side as the camera sees them. */
 const AT = Vector3.create(0.78, 1.3, 0)
-/** ...and at the upgrade pit: beside the fire, clear of the flames. */
-const AT_PIT = Vector3.create(1.5, 2.3, 0)
-/** ...and beside the weapon hovering over it. */
-const AT_HOVER = Vector3.create(1.3, 3.5, 0)
+/** The Quartermaster stands left of the pit, so his prompt belongs on his clear outer side. */
+const AT_QUARTERMASTER = Vector3.create(-0.9, 1.3, 0)
+/** ...and outside the oversized upgrade pit rather than inside its stone rim. */
+const AT_PIT = Vector3.create(3.2, 2.3, 0)
+/** ...and beside the weapon hovering over it, likewise clear of the rim. */
+const AT_HOVER = Vector3.create(3.2, 3.5, 0)
 /** The tap target's width (metres) and how far off the camera may stand and still reach it. */
 const TAP_SIZE = 0.95
 const TAP_REACH = 40
@@ -77,7 +79,10 @@ function targetNow(): Target | undefined {
     // The smith stands at the pit: whichever is nearer has the ring.
     const p = Transform.getOrNull(engine.PlayerEntity)?.position
     const folkNearer = !pit || !p || (who.x - p.x) ** 2 + (who.z - p.z) ** 2 <= (pit.x - p.x) ** 2 + (pit.z - p.z) ** 2
-    if (folkNearer) return { key: 'folk:' + who.title, x: who.x, z: who.z, at: AT, title: t(who.title), hint: t('hold to talk'), run: openTalk }
+    if (folkNearer) return {
+      key: 'folk:' + who.title, x: who.x, z: who.z, at: who.title === 'Quartermaster' ? AT_QUARTERMASTER : AT,
+      title: t(who.title), hint: t('hold to talk'), run: openTalk
+    }
   }
   return pit
 }
@@ -102,6 +107,13 @@ function pitTarget(): Target | undefined {
 /** The ring is up, or a conversation is open: E belongs to the hall, not to the weapon. */
 export function hallPromptActive(): boolean {
   return !!prompt?.visible || !!getTalkState().open
+}
+
+let suppressed = false
+
+export function setHallPromptSuppressed(value: boolean) {
+  suppressed = value
+  if (value && prompt) hide(prompt)
 }
 
 function plane(parent: Entity, position: Vector3, scale: number, src: string, color: Color4, glow = 0): Entity {
@@ -192,6 +204,10 @@ function hide(p: Prompt) {
 
 function update(dt: number) {
   const span = Number.isFinite(dt) && dt > 0 ? Math.min(dt, 0.1) : 0
+  if (suppressed) {
+    if (prompt) hide(prompt)
+    return
+  }
   // Mid-conversation, a press of E turns the page (a fresh press: the hold that opened it does not count).
   if (getTalkState().open && inputSystem.isTriggered(InputAction.IA_PRIMARY, PointerEventType.PET_DOWN)) nextLine()
   const who = targetNow()

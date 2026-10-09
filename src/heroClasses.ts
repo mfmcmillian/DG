@@ -13,7 +13,7 @@ import type { HeroAttackMotion } from './combatActions'
 import type { WeaponClass } from './weapons'
 import type { SkillDef } from './shared/skills'
 
-export type HeroClass = 'blade' | 'heavy' | 'bow' | 'magic'
+export type HeroClass = 'blade' | 'heavy' | 'bow' | 'magic' | 'grave'
 
 /** `venom` is the goblin shaman's green bolt: an enemy's shot, never a hero's. */
 export type ProjectileKind = 'arrow' | 'bolt' | 'orb' | 'venom'
@@ -114,14 +114,43 @@ export const HERO_CLASSES: Record<HeroClass, HeroClassDefinition> = {
       cast_bolt: { kind: 'bolt', speed: 20, range: 14, radius: 0.7, count: 1, spread: 0 },
       cast_nova: { kind: 'orb', speed: 9, range: 12, radius: 0.9, count: 1, spread: 0, burst: 2.5 }
     }
+  },
+  grave: {
+    id: 'grave',
+    label: 'Gravecaller',
+    blurb: 'A scythe in close and soul magic at range. The dead answer when called.',
+    weaponClasses: ['scythe'],
+    starterWeapon: 'gc-scythe-01',
+    light: ['attack_light3', 'heavy_combo_a', 'heavy_combo_c'],
+    heavy: 'cast_nova',
+    block: 'block',
+    aimCone: 35,
+    ranged: {
+      cast_nova: { kind: 'orb', speed: 11, range: 13, radius: 0.85, count: 1, spread: 0, burst: 2.2 }
+    }
   }
+}
+
+/** Temporary move set while Dread Ascension replaces the Gravecaller with the Demon body. */
+export const DEMON_FORM_CLASS: HeroClassDefinition = {
+  id: 'grave',
+  label: 'Demon',
+  blurb: 'Wide halberd cuts and a crushing ground slam.',
+  weaponClasses: ['scythe'],
+  starterWeapon: 'gc-scythe-01',
+  light: ['attack_light', 'attack_light2', 'attack_heavy'],
+  heavy: 'heavy_combo_c',
+  block: 'block',
+  aimCone: 45,
+  ranged: {}
 }
 
 const CLASS_OF_CHARACTER: Record<string, HeroClass> = {
   vanguard: 'blade',
   brute: 'heavy',
   scout: 'bow',
-  striker: 'magic'
+  striker: 'magic',
+  gravecaller: 'grave'
 }
 
 /** Unknown characters (another build's hero, an enemy body) fight as blades. */

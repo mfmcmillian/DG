@@ -32,9 +32,9 @@ const state: DungeonState = {
   camera: 'crawler'
 }
 
-/** The crawler camera only makes sense with no ceiling and a low camera-facing wall. */
+/** The crawler camera only makes sense with no ceiling and a low camera-facing wall (an island's walls are all parapets). */
 export function crawlerCameraAvailable(style: DungeonStyle = state.style): boolean {
-  return !style.ceiling && !style.firstPerson && style.cutawayWall !== undefined
+  return !style.ceiling && !style.firstPerson && (style.cutawayWall !== undefined || style.island !== undefined)
 }
 
 export function getDungeonState(): Readonly<DungeonState> {
